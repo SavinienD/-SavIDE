@@ -1,12 +1,12 @@
 <p align="center">
-  <img src="src-tauri/icons/axe-logo.svg" alt="Axe International" width="320" />
+  <img src="src-tauri/icons/savide-logo.svg" alt="SavIDE" width="320" />
 </p>
 
-<h1 align="center">Axecode</h1>
+<h1 align="center">SavIDE</h1>
 
 <p align="center">
-  <b>Le cerveau de Prime Agent dans l'IDE Axecode.</b><br/>
-  Éditeur, terminal, chat et rollback d’Axecode ; REPL Python persistant, harness auto-évolutif<br/>
+  <b>IDE à agent IA, édition locale (Windows).</b><br/>
+  Éditeur, terminal, chat et rollback ; REPL Python persistant, harness auto-évolutif<br/>
   et sessions qui survivent à la fermeture de l'IDE, inspirés de Prime Agent.
 </p>
 
@@ -16,12 +16,12 @@
 
 ---
 
-> Axecode est un **fork figé** d'un IDE open source sous licence MIT (voir [Licence](#licence)). Le cordon est coupé : plus aucune
+> SavIDE (édition locale d'Axecode) est un **fork figé** d'un IDE open source sous licence MIT (voir [Licence](#licence)). Le cordon est coupé : plus aucune
 > synchronisation avec l'amont. La boucle d'agent, les outils, les modes et les providers sont désormais maintenus ici.
 
 ## Sommaire
 
-- [Ce que fait Axecode](#ce-que-fait-axecode)
+- [Ce que fait SavIDE](#ce-que-fait-savide)
 - [Architecture](#architecture)
 - [Commandes de session](#commandes-de-session)
 - [Providers](#providers)
@@ -35,7 +35,7 @@
 
 ---
 
-## Ce que fait Axecode
+## Ce que fait SavIDE
 
 | Sujet | Décision |
 |---|---|
@@ -53,7 +53,7 @@
 
 ```mermaid
 flowchart LR
-    subgraph IDE["Axecode (fenêtre)"]
+    subgraph IDE["SavIDE (fenêtre)"]
         UI[Éditeur · Terminal · Chat · Settings]
         AV[Vue Agents]
     end
@@ -121,116 +121,48 @@ d'accent. Un bouton « Revenir au défaut Axe » restaure le thème d'origine. L
 
 ## Installation
 
-Récupérez la dernière build pour votre OS sur la page des releases :
-`https://github.com/AxeInternational/axecode/releases/latest`
+Windows x64 uniquement. Téléchargez l'installeur `.exe` (NSIS) de la dernière release :
+https://github.com/SavinienD/-SavIDE/releases/latest
 
-- **macOS** — `.dmg` (universel)
-- **Windows** — `.msi` / `.exe`
-- **Linux** — `.AppImage` / `.deb`
-
-L'application se met à jour seule depuis ces releases.
+L'installeur n'est pas signé : SmartScreen affiche « éditeur inconnu » (« Informations complémentaires » puis « Exécuter quand même »).
+L'application se met ensuite à jour seule depuis ces releases.
 
 ---
 
 ## Service distant
 
-Le service d'arrière-plan peut tourner sur une autre machine (serveur Linux, poste fixe) ; l'IDE s'y connecte depuis **Settings > Connexions** et le **sélecteur de connexion** de la barre latérale. Conversations, vue Agents et Settings > Service s'appliquent alors à la connexion active ; la vue Agents peut afficher toutes les machines groupées. Les sessions continuent de tourner sur la machine distante quand l'IDE est fermé.
+Le service d'arrière-plan peut tourner sur une autre machine ; l'IDE s'y connecte depuis **Settings > Connexions** (connexion distante en WebSocket ou par tunnel SSH). L'écoute réseau est **fermée par défaut** ; hors loopback, le service refuse de démarrer sans identifiants et vérifie l'en-tête `Host`. Commandes du binaire (`SavIDE.exe`) :
 
-L'écoute réseau est **fermée par défaut** : seul le pipe local est actif. `--listen` expose le même protocole en WebSocket (`/ws`, plus `/healthz`). Hors loopback, le service **refuse de démarrer sans identifiants** ; l'en-tête `Host` est vérifié (anti DNS-rebinding) et toute requête relayée (`X-Forwarded-For`) exige une authentification.
-
-```bash
-# 1. identifiants (stockés hachés : argon2 pour les mots de passe, SHA-256 pour les jetons)
-axecode --daemon set-password --user axe        # mot de passe lu sur stdin (ou AXECODE_PASSWORD)
-axecode --daemon token --label laptop           # affiche un jeton axs_… une seule fois
-axecode --daemon token list | token revoke <id> | auth
-
-# 2. écoute (n'arrête plus seule ; --allow-host pour le nom public servi par le proxy)
-axecode --daemon serve --listen 0.0.0.0:9119 --allow-host axe.example.com
+```text
+SavIDE.exe --daemon set-password --user axe     # mot de passe lu sur stdin (ou AXECODE_PASSWORD)
+SavIDE.exe --daemon token --label laptop        # affiche un jeton une seule fois
+SavIDE.exe --daemon serve --listen 127.0.0.1:9119 --allow-host axe.example.com
 ```
 
-**systemd** (`~/.config/systemd/user/axecode.service`, puis `systemctl --user enable --now axecode` et `loginctl enable-linger $USER`) :
-
-```ini
-[Unit]
-Description=Axecode service
-After=network-online.target
-
-[Service]
-ExecStart=/usr/bin/axecode --daemon serve --listen 127.0.0.1:9119 --allow-host axe.example.com
-Restart=on-failure
-
-[Install]
-WantedBy=default.target
-```
-
-**TLS** : exposez le service derrière un reverse proxy HTTPS et laissez-le n'écouter que sur `127.0.0.1`. Exemple Caddy :
-
-```
-axe.example.com {
-    reverse_proxy 127.0.0.1:9119
-}
-```
-
-Dans l'IDE : connexion **Distante**, URL `https://axe.example.com` (convertie en `wss://…/ws`), identifiant + mot de passe ou jeton. Les secrets restent dans `connection-secrets.json` du dossier data de l'IDE et ne sont jamais réaffichés.
-
-**Sans exposition réseau** : connexion **SSH** (`user@host:port`). L'IDE ouvre un tunnel avec votre client `ssh` et vos clés (agent, `~/.ssh/config` ou clé choisie), et peut lancer `axecode --daemon serve --listen 127.0.0.1:9119` sur la machine distante s'il ne répond pas. Une écoute loopback sans identifiants est acceptée ; ajoutez-en si d'autres utilisateurs ont accès à la machine.
+Exposez-le derrière un reverse proxy HTTPS plutôt que directement.
 
 ---
 
 ## Mises à jour et releases
 
-L'updater Tauri vérifie `https://github.com/AxeInternational/axecode/releases/latest/download/latest.json`
-(voir `plugins.updater.endpoints` dans `src-tauri/tauri.conf.json` — adaptez l'organisation/dépôt si vous publiez ailleurs)
-et n'accepte que des artefacts signés avec la clé publique embarquée dans ce même fichier (`plugins.updater.pubkey`).
+L'updater Tauri lit `https://github.com/SavinienD/-SavIDE/releases/latest/download/latest.json`
+(`plugins.updater.endpoints` dans `src-tauri/tauri.conf.json`) et n'accepte que des installeurs signés par la clé
+publique de ce même fichier (`plugins.updater.pubkey`). La clé privée n'est jamais dans le dépôt (`*.key` ignoré par git) ;
+elle est stockée dans les secrets GitHub du dépôt `TAURI_SIGNING_PRIVATE_KEY` et `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (vide).
+Si elle est perdue, les postes installés ne pourront plus se mettre à jour et devront réinstaller.
 
-### Clé de signature
-
-La paire de clés a été générée avec :
-
-```powershell
-npx tauri signer generate -w src-tauri/savide-updater.key
-```
-
-- `src-tauri/savide-updater.key.pub` — clé **publique**, copiée dans `tauri.conf.json`. Elle peut être commitée.
-- `src-tauri/savide-updater.key` — clé **privée**, ignorée par git (`*.key` dans `.gitignore`). **Ne la commitez jamais.**
-  Conservez-la dans un gestionnaire de secrets : si elle est perdue, les postes déjà installés ne pourront plus
-  accepter de mise à jour et devront réinstaller.
-
-### Secrets GitHub à configurer
-
-Dans *Settings → Secrets and variables → Actions* du dépôt :
-
-| Secret | Contenu |
-|---|---|
-| `TAURI_SIGNING_PRIVATE_KEY` | contenu intégral du fichier `src-tauri/savide-updater.key` |
-| `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` | mot de passe de la clé (chaîne vide si générée sans) |
-
-Optionnels pour la notarisation macOS : `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`,
-`APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`.
-
-### Publier une release
-
-```powershell
-# 1. bump de version (package.json, Cargo.toml [workspace.package], src-tauri/tauri.conf.json)
-# 2. tag semver
-git tag v0.2.0
-git push --tags
-```
-
-Le workflow `.github/workflows/release.yml` construit Windows x64, macOS universel et Linux x64, signe les artefacts
-d'updater, génère `latest.json`, publie le tout dans une release *draft* puis la bascule automatiquement en
-*published* + *latest* une fois les trois plateformes terminées. Dès lors, les postes équipés se mettent à jour seuls.
-Le workflow échoue tôt si le secret `TAURI_SIGNING_PRIVATE_KEY` n'est pas défini.
+Publication : poser la version puis pousser un tag `vX.Y.Z` ; le workflow `.github/workflows/release.yml` (runner Windows)
+construit l'installeur NSIS signé, génère `latest.json` et crée la release. Détails : [docs/publier.md](docs/publier.md).
 
 ---
 
 ## Compiler depuis les sources
 
 ```powershell
-# Rust 1.80+ et Node 20+ ; dépendances plateforme : https://tauri.app/start/prerequisites/
+# Windows : Rust 1.80+ (MSVC), Node 20+, Build Tools C++ ; voir docs/BUILD-INSTALLEUR.md
 npm install
 npm run tauri dev      # développement
-npm run tauri build    # bundle release
+npx tauri build --bundles nsis --config src-tauri/tauri.sidecars.conf.json --config src-tauri/tauri.build-local.json
 ```
 
 Vérifications rapides :
@@ -261,4 +193,4 @@ synchronisant plus avec l'amont, c'est à nous de suivre les évolutions des cli
 
 ## Licence
 
-[MIT](./LICENSE) — Axecode est dérivé d’un projet libre sous licence MIT ; la notice de copyright d’origine est conservée telle quelle dans [LICENSE](./LICENSE).
+[MIT](./LICENSE) — SavIDE est dérivé d’un projet libre sous licence MIT ; la notice de copyright d’origine est conservée telle quelle dans [LICENSE](./LICENSE).

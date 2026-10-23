@@ -154,7 +154,7 @@ Liste complète : `node scripts/francisation/inventaire.mjs --blanche`.
 
 - Non vérifié : rendu réel sous Windows (WebView2), menus natifs et blocs Rust `#[cfg(windows)]` /
   `#[cfg(target_os = "macos")]` (cargo check sous Linux seulement, syntaxe vérifiée par rustfmt), installeur
-  NSIS français (aucun exe construit). L'installeur MSI (WiX) reste en anglais.
+  NSIS français (aucun exe construit).
 - Hors périmètre : le client du téléphone (`remote/public/app.js`, environ 70 textes anglais) et les
   messages des crates (`crates/*/src`) : le type d'erreur du moteur s'affiche en français (« Réponse
   interrompue : … »), mais le détail technique (fournisseur, réseau) reste en anglais.
