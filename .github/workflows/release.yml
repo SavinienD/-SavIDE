@@ -69,8 +69,9 @@ jobs:
       - name: latest.json
         shell: pwsh
         run: |
-          $dir = "src-tauri/target/release/bundle/nsis"
-          $exe = Get-ChildItem $dir -Filter *.exe | Select-Object -First 1
+          $exe = Get-ChildItem -Path target, src-tauri/target -Recurse -Filter *-setup.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match "bundle[\\/]nsis" } | Select-Object -First 1
+          if (-not $exe) { throw "installeur NSIS introuvable" }
+          $dir = $exe.DirectoryName
           $sig = "$($exe.FullName).sig"
           if (-not (Test-Path $sig)) { throw "signature absente : $sig" }
           $name = $exe.Name -replace ' ', '.'
