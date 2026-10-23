@@ -15,11 +15,15 @@ jobs:
   windows:
     runs-on: windows-latest
     env:
-      TMP: ${{ runner.temp }}
-      TEMP: ${{ runner.temp }}
       CUA_URL: https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.38.0/cua-driver-rs-0.38.0-windows-x86_64-binary.zip
       CUA_SHA256: 5edaa74d0afa1b55a9668dbc4f32736507bd2bd4d75b18ca1dc8881bb12402b5
     steps:
+      - name: Dossier temporaire sur le disque de travail (EXDEV)
+        shell: pwsh
+        run: |
+          "TMP=$env:RUNNER_TEMP" >> $env:GITHUB_ENV
+          "TEMP=$env:RUNNER_TEMP" >> $env:GITHUB_ENV
+
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
