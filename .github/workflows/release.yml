@@ -15,6 +15,9 @@ jobs:
   windows:
     runs-on: windows-latest
     env:
+      TMP: ${{ runner.temp }}
+      TEMP: ${{ runner.temp }}
+    env:
       CUA_URL: https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.38.0/cua-driver-rs-0.38.0-windows-x86_64-binary.zip
       CUA_SHA256: 5edaa74d0afa1b55a9668dbc4f32736507bd2bd4d75b18ca1dc8881bb12402b5
     steps:
