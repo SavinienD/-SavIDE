@@ -106,6 +106,13 @@ export function installerSimulation(scene: Scene): void {
       }
     },
     freechat_index: () => ({ scratchRoot: "C:\\Users\\utilisateur\\AppData\\Local\\ancien-editeur\\axecode\\data\\libre", conversations: D.conversations(6).map((c) => ({ ...c, workspaceId: "C:\\Users\\utilisateur\\AppData\\Local\\ancien-editeur\\axecode\\data\\libre", messageCount: 12 })) }),
+    // Conversation sans dossier (layout « chat ») : même amorce qu'un espace, racine = dossier « libre ».
+    freechat_open: () => ({
+      workspace: { path: D.WS, name: "libre" },
+      conversations: listeConversations(),
+      activeConversation: D.conversationSauvee(active, { compaction: !!scene.compaction }),
+      modeModelSettings: D.MODES,
+    }),
     list_active_turns: () => (tourActif ? [{ workspaceId: D.WS, conversationId: active, startedAtMs: Date.now() - 95_000, latestSequence: evenementsTour(scene).length }] : []),
     replay_active_turn_events: (a) => {
       const id = a.conversationId ?? a.input?.conversationId;

@@ -86,6 +86,7 @@
   color: var(--text-0);
   font-family: var(--font-ui);
   font-size: var(--fs-sm);
+  align-self: stretch; /* cible de toute la hauteur du champ (30 px), pas 16 px */
 }
 .axe-freechat__groups {
   flex: 1 1 0;

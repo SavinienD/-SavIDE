@@ -4,6 +4,7 @@
 // are sent as the user message and interpreted by the session service.
 import { useMemo, useState, type KeyboardEvent } from "react";
 import { harnessApi } from "../settings/harnessApi";
+import { demanderSectionReglages } from "../../lib/sectionReglages";
 import "./slash.css";
 
 export type SlashCommandSpec = {
@@ -48,6 +49,15 @@ export type SlashContext = {
 
 export const OPEN_SETTINGS_EVENT = "axecode:open-settings-section";
 export const OPEN_TREE_EVENT = "axe:open-session-tree";
+/** Demande à l'espace (IDE ou conversation sans dossier) d'OUVRIR le volet des Réglages. */
+export const OUVRIR_REGLAGES_EVENT = "axe:ouvrir-reglages";
+
+/** Ouvre les Réglages sur `section`, que le volet soit déjà monté ou non (avant : rien
+ *  ne l'ouvrait, et un volet monté plus tard restait sur « À propos »). */
+export function ouvrirReglages(section: string): void {
+  demanderSectionReglages(section);
+  window.dispatchEvent(new CustomEvent(OUVRIR_REGLAGES_EVENT, { detail: { section } }));
+}
 
 /**
  * Runs a client-side command. Returns `true` when the text was consumed
@@ -77,10 +87,10 @@ export async function runClientSlashCommand(text: string, ctx: SlashContext): Pr
       window.dispatchEvent(new CustomEvent(OPEN_TREE_EVENT, { detail: { conversationId: ctx.conversationId } }));
       return true;
     case "login":
-      window.dispatchEvent(new CustomEvent(OPEN_SETTINGS_EVENT, { detail: { section: "providers" } }));
+      ouvrirReglages("providers");
       return true;
     case "settings":
-      window.dispatchEvent(new CustomEvent(OPEN_SETTINGS_EVENT, { detail: { section: parsed.rest || "about" } }));
+      ouvrirReglages(parsed.rest || "about");
       return true;
     default:
       return false;

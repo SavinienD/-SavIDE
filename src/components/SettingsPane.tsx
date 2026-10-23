@@ -1155,6 +1155,7 @@ export function SettingsPane({ workspacePath }: Props) {
         <button
           type="button"
           className="settings-pane__nav-item"
+          data-section="about"
           data-active={section === "about" ? "true" : "false"}
           onClick={() => setSection("about")}
         >
@@ -1171,6 +1172,7 @@ export function SettingsPane({ workspacePath }: Props) {
         <button
           type="button"
           className="settings-pane__nav-item"
+          data-section="appearance"
           data-active={section === "appearance" ? "true" : "false"}
           onClick={() => setSection("appearance")}
         >
@@ -1186,6 +1188,7 @@ export function SettingsPane({ workspacePath }: Props) {
         <button
           type="button"
           className="settings-pane__nav-item"
+          data-section="providers"
           data-active={section === "providers" ? "true" : "false"}
           onClick={() => setSection("providers")}
         >
@@ -1203,6 +1206,7 @@ export function SettingsPane({ workspacePath }: Props) {
         <button
           type="button"
           className="settings-pane__nav-item"
+          data-section="mcp"
           data-active={section === "mcp" ? "true" : "false"}
           onClick={() => setSection("mcp")}
         >
@@ -1218,6 +1222,7 @@ export function SettingsPane({ workspacePath }: Props) {
         <button
           type="button"
           className="settings-pane__nav-item"
+          data-section="skills"
           data-active={section === "skills" ? "true" : "false"}
           onClick={() => setSection("skills")}
         >
@@ -1234,6 +1239,7 @@ export function SettingsPane({ workspacePath }: Props) {
         <button
           type="button"
           className="settings-pane__nav-item"
+          data-section="harness"
           data-active={section === "harness" ? "true" : "false"}
           onClick={() => setSection("harness")}
         >
@@ -1251,6 +1257,7 @@ export function SettingsPane({ workspacePath }: Props) {
         <button
           type="button"
           className="settings-pane__nav-item"
+          data-section="repl"
           data-active={section === "repl" ? "true" : "false"}
           onClick={() => setSection("repl")}
         >
@@ -1263,10 +1270,11 @@ export function SettingsPane({ workspacePath }: Props) {
           <span className="settings-pane__nav-label">Outils REPL</span>
           <span className="settings-pane__nav-count" />
         </button>
-        {/* axe:daemon */}
-        <button
+        {/* axe:daemon — section cloud : masquée dans l'édition locale */}
+        {EDITION_LOCALE ? null : <button
           type="button"
           className="settings-pane__nav-item"
+          data-section="service"
           data-active={section === "service" ? "true" : "false"}
           onClick={() => setSection("service")}
         >
@@ -1278,11 +1286,12 @@ export function SettingsPane({ workspacePath }: Props) {
           />
           <span className="settings-pane__nav-label">Service</span>
           <span className="settings-pane__nav-count" />
-        </button>
+        </button>}
         {/* axe:e5 — joindre un autre appareil pour lui confier du calcul */}
         {EDITION_LOCALE ? null : <button
           type="button"
           className="settings-pane__nav-item"
+          data-section="connections"
           data-active={section === "connections" ? "true" : "false"}
           onClick={() => setSection("connections")}
         >
@@ -1300,6 +1309,7 @@ export function SettingsPane({ workspacePath }: Props) {
         <button
           type="button"
           className="settings-pane__nav-item"
+          data-section="shortcuts"
           data-active={section === "shortcuts" ? "true" : "false"}
           onClick={() => setSection("shortcuts")}
         >
@@ -1316,6 +1326,7 @@ export function SettingsPane({ workspacePath }: Props) {
         <button
           type="button"
           className="settings-pane__nav-item"
+          data-section="voice"
           data-active={section === "voice" ? "true" : "false"}
           onClick={() => setSection("voice")}
         >

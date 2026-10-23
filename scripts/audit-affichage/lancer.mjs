@@ -175,6 +175,9 @@ async function preparerScene(page, si, sc) {
     // Accueil > « Dossier du cloud partagé » > « Racine de l'espace » (espace Axe Cloud).
     await page.waitForFunction(() => [...document.querySelectorAll("button.axc-btn")].some((b) => b.textContent.trim() === "Racine de l'espace"), { timeout: 8000 });
     await cliquerTexte(page, "button.axc-btn", "Racine de l'espace");
+  } else if (sc.libre) {
+    // Accueil > « Conversation sans dossier » (vue « chat », sans éditeur).
+    await page.evaluate(() => document.querySelector("button.welcome__cta:last-of-type")?.click());
   } else {
     await page.evaluate(() => {
       const b = [...document.querySelectorAll("button.welcome__recent")].find((x) => x.textContent.includes("axecode"));
@@ -325,7 +328,18 @@ async function auditer(page, si, sc, journal, preparation) {
   const verif = await page.evaluate((temoins, attendus) => {
     const texte = document.body.innerText || "";
     const vu = (sel) => [...document.querySelectorAll(sel)].some((el) => el.getClientRects().length > 0);
-    const manquants = temoins.filter((t) => (t.startsWith("sel:") ? !vu(t.slice(4)) : !texte.includes(t)));
+    // « clic: » : TOUS les éléments du sélecteur (au moins un) sont visibles ET cliquables
+    // en leur centre (pas rognés par un parent overflow: hidden, pas recouverts).
+    const cliquable = (sel) => {
+      const els = [...document.querySelectorAll(sel)];
+      return els.length > 0 && els.every((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.width < 1 || r.height < 1) return false;
+        const p = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return !!p && el.contains(p);
+      });
+    };
+    const manquants = temoins.filter((t) => (t.startsWith("sel:") ? !vu(t.slice(4)) : t.startsWith("clic:") ? !cliquable(t.slice(5)) : !texte.includes(t)));
     const disparus = attendus.filter((t) => !window.__texteVisible(t));
     const fil = document.querySelector(".colonne-chat[data-focus='true'] .chat-body")?.getBoundingClientRect();
     const polices = document.fonts.check('13px "Geist"') && document.fonts.check('12px "Geist Mono"');

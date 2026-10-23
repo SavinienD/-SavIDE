@@ -16,6 +16,18 @@
       "regle": "chevauchement",
       "selecteur": ".volet-flottant",
       "raison": "Volet détaché (explorateur, panneau bas…) : fenêtre flottante interne qui passe devant le reste par conception ; on la déplace ou on la réancre."
+    },
+    {
+      "regle": "libelle-2-lignes",
+      "selecteur": ".settings-pane__subtitle",
+      "situation": "^(800x600|1024x768).*/ide-login",
+      "raison": "Réglages > Fournisseurs dans l'IDE à 800-1024 px (volet étroit) : sous-titre sur 2 lignes, défaut préexistant hors du correctif /login, à reprendre."
+    },
+    {
+      "regle": "defilement-horizontal",
+      "selecteur": ".settings-pane__body--providers",
+      "situation": "^(800x600|1024x768).*/ide-login",
+      "raison": "Réglages > Fournisseurs dans l'IDE à 800-1024 px : cartes plus larges que le volet, défaut préexistant hors du correctif /login, à reprendre."
     }
   ]
 }

@@ -1,4 +1,5 @@
 import { EDITION_LOCALE } from "../lib/edition";
+import { OUVRIR_REGLAGES_EVENT } from "./chat/SlashCommands";
 import {
   Fragment,
   useCallback,
@@ -990,6 +991,13 @@ export function Workspace({
       demanderSectionReglages(section);
     }
   }, []);
+
+  // axe:savide-reglages — /login et /settings ouvrent le volet (IDE et conversation sans dossier).
+  useEffect(() => {
+    const ouvrir = () => openSettings();
+    window.addEventListener(OUVRIR_REGLAGES_EVENT, ouvrir);
+    return () => window.removeEventListener(OUVRIR_REGLAGES_EVENT, ouvrir);
+  }, [openSettings]);
 
   const closeSettings = useCallback(() => {
     setSettingsOpen(false);
@@ -3535,14 +3543,16 @@ export function Workspace({
           <button
             className="titlebar__btn"
             data-on={settingsActive ? "true" : "false"}
+            data-action="reglages"
             onClick={() => openSettings()}
-            title="Réglages"
+            title="Réglages (Ctrl+,)"
           >
             <Icon icon="solar:settings-linear" width={12} height={12} />
             <span className="titlebar__btn-label">Réglages</span>
           </button>
           <button
             className="titlebar__btn"
+            data-action="accueil"
             onClick={onSwitchWorkspace}
             title="Revenir à l'accueil (nouvelle conversation, autre dossier)"
           >

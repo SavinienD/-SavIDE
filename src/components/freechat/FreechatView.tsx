@@ -45,6 +45,10 @@ type Props = {
 };
 
 const SIDEBAR_WIDTH = 280;
+// axe:savide-accueil — la barre d'actions est un conteneur (container: inline-size,
+// overflow: hidden) : sans bord droit sa largeur valait 0 et Accueil / Ouvrir un dossier /
+// Réglages étaient rognés, donc invisibles. Bord droit = quota + boutons de fenêtre.
+const BORD_DROIT_BARRE = isWindowsPlatform() ? 260 : 120;
 const GROUP_PREVIEW = 5;
 const IS_WINDOWS = isWindowsPlatform();
 
@@ -136,10 +140,10 @@ export function FreechatView(props: Props) {
   return (
     <div className="workspace axe-freechat">
       <div className="titlebar" data-tauri-drag-region data-platform={IS_WINDOWS ? "windows" : undefined}>
-        <div className="titlebar__actions" data-tauri-drag-region style={{ left: SIDEBAR_WIDTH + 12 }}>
-          <button className="titlebar__btn" onClick={props.onHome} title="Revenir à l'accueil">
+        <div className="titlebar__actions" data-tauri-drag-region style={{ left: SIDEBAR_WIDTH + 12, right: BORD_DROIT_BARRE }}>
+          <button className="titlebar__btn" data-action="accueil" onClick={props.onHome} title="Revenir à l'accueil">
             <Icon icon="solar:home-2-linear" width={12} height={12} />
-            Accueil
+            <span className="titlebar__btn-label">Accueil</span>
           </button>
           <button
             className="titlebar__btn"
@@ -147,16 +151,16 @@ export function FreechatView(props: Props) {
             title="Continuer cette conversation dans un dossier de projet (éditeur, fichiers, terminal)"
           >
             <Icon icon="solar:folder-open-linear" width={12} height={12} />
-            Ouvrir un dossier pour cette conversation
+            <span className="titlebar__btn-label">Ouvrir un dossier</span>
           </button>
           <button
             className="titlebar__btn"
             data-on={props.settingsOpen ? "true" : "false"}
             onClick={props.settingsOpen ? props.onCloseSettings : props.onOpenSettings}
-            title="Paramètres"
+            title="Réglages (Ctrl+,)"
           >
             <Icon icon="solar:settings-linear" width={12} height={12} />
-            Paramètres
+            <span className="titlebar__btn-label">Réglages</span>
           </button>
         </div>
         <div className="titlebar__brand" data-tauri-drag-region>
