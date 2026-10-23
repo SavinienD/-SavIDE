@@ -1,0 +1,21 @@
+{
+  "_lisez-moi": "Exceptions justifiees du banc d'affichage. Chaque entree : regle (ou *), selecteur CSS (l'element ou un de ses ancetres), raison ; situation = expression reguliere facultative sur « taille@echelle/scene ».",
+  "exceptions": [
+    {
+      "regle": "defilement-horizontal",
+      "selecteur": ".md pre, .md .md-table-wrap",
+      "raison": "Bloc de code ou tableau dans un message : le code n'est jamais replié, il défile horizontalement (comme dans un éditeur)."
+    },
+    {
+      "regle": "defilement-horizontal",
+      "selecteur": ".colonnes-chat",
+      "situation": "^(800x600|1024x768)",
+      "raison": "Fenêtre de 800 ou 1024 px avec 2 ou 3 colonnes de conversation : à 220 px minimum chacune, elles ne tiennent pas ; la bande des colonnes défile (dernier recours) au lieu de pousser des colonnes hors de l'écran."
+    },
+    {
+      "regle": "chevauchement",
+      "selecteur": ".volet-flottant",
+      "raison": "Volet détaché (explorateur, panneau bas…) : fenêtre flottante interne qui passe devant le reste par conception ; on la déplace ou on la réancre."
+    }
+  ]
+}

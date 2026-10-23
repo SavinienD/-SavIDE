@@ -1,0 +1,17 @@
+{
+  "name": "axecode-audit-affichage",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Banc d'essai de l'affichage d'Axecode : vraie interface (src/), IPC Tauri simulee, Chromium sans ecran.",
+  "type": "module",
+  "scripts": {
+    "audit": "node lancer.mjs",
+    "test": "node lancer.mjs --strict",
+    "planche": "node planche.mjs"
+  },
+  "dependencies": {
+    "@fontsource/geist": "5.3.0",
+    "@fontsource/geist-mono": "5.3.0",
+    "puppeteer-core": "24.43.1"
+  }
+}

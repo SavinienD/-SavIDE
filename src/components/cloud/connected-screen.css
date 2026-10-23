@@ -1,0 +1,8 @@
+/* Connected screen, responsive single-column actions. */
+.axc-connected__status { margin: 0 0 8px; color: var(--ok); font-size: 13px; font-weight: 650; }
+.axc-connected__actions { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 24px; }
+.axc-connected__actions > button { min-height: 46px; justify-content: center; }
+.axc-connected__actions > .axc-btn { width: 100%; font-size: 14px; }
+.axc-connected__workspace { width: min(100%, 720px); margin: 18px auto 0; text-align: left; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-card); }
+.axc-connected__workspace .axe-agents { min-height: 0; }
+@media (max-width: 520px) { .axc-login__card { padding: 24px; } .axc-login__title { overflow-wrap: anywhere; font-size: 22px; } }

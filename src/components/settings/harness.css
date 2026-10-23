@@ -1,0 +1,66 @@
+/* Settings > Harness (axe:harness) */
+.axe-harness { display: flex; flex-direction: column; gap: 12px; padding: 20px 24px; min-height: 0; height: 100%; overflow: auto; }
+.axe-harness h2 { margin: 0 0 4px; font-size: calc(16px * var(--text-scale, 1)); color: var(--text-0); }
+.axe-harness__muted { color: var(--text-2); font-size: calc(12px * var(--text-scale, 1)); }
+.axe-harness__status { color: var(--accent); font-size: calc(12px * var(--text-scale, 1)); margin: 0; }
+.axe-harness__error { color: #f87171; font-size: calc(12px * var(--text-scale, 1)); margin: 0; white-space: pre-wrap; }
+.axe-harness__banner { margin: 0; padding: 8px 10px; border: 1px solid var(--accent); border-radius: var(--r-small); background: var(--accent-soft); color: var(--text-0); font-size: calc(12px * var(--text-scale, 1)); }
+.axe-harness__btn { padding: 5px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-2); color: var(--text-1); cursor: pointer; font-size: calc(12px * var(--text-scale, 1)); }
+.axe-harness__btn:hover:not(:disabled) { border-color: var(--accent); color: var(--text-0); }
+.axe-harness__btn:disabled { opacity: 0.5; cursor: default; }
+.axe-harness__btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.axe-harness__btn--danger:hover:not(:disabled) { border-color: #f87171; color: #f87171; }
+.axe-harness__tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line-strong); }
+.axe-harness__tabs button { padding: 6px 10px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--text-1); cursor: pointer; font-size: calc(12px * var(--text-scale, 1)); }
+.axe-harness__tabs button[data-active="true"] { border-bottom-color: var(--accent); color: var(--text-0); }
+.axe-harness__split { display: grid; grid-template-columns: minmax(200px, 300px) 1fr; gap: 12px; min-height: 360px; flex: 1; }
+.axe-harness__list { display: flex; flex-direction: column; gap: 2px; overflow: auto; }
+.axe-harness__list-actions { display: flex; gap: 6px; margin-bottom: 6px; }
+.axe-harness__row { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid transparent; border-radius: var(--r-small); background: none; color: var(--text-1); cursor: pointer; text-align: left; font-size: calc(12px * var(--text-scale, 1)); }
+.axe-harness__row:hover { background: var(--bg-2); }
+.axe-harness__row[data-active="true"] { border-color: var(--accent); background: var(--bg-2); color: var(--text-0); }
+.axe-harness__row-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-harness__pill { padding: 1px 6px; border-radius: 999px; background: var(--bg-4); color: var(--text-1); font-size: calc(10px * var(--text-scale, 1)); text-transform: uppercase; letter-spacing: 0.03em; }
+.axe-harness__pill[data-scope="global"] { background: var(--accent-soft); color: var(--accent); }
+.axe-harness__detail { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.axe-harness__title { padding: 6px 8px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-1); color: var(--text-0); font-size: calc(14px * var(--text-scale, 1)); }
+.axe-harness__body { flex: 1; min-height: 240px; padding: 8px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-1); color: var(--text-0); font-family: var(--font-mono, monospace); font-size: calc(12px * var(--text-scale, 1)); resize: vertical; }
+.axe-harness__actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.axe-harness__records { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.axe-harness__records > li { padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-1); font-size: calc(12px * var(--text-scale, 1)); color: var(--text-1); }
+.axe-harness__records > li[data-outcome="rolled_back"] { opacity: 0.6; }
+.axe-harness__records p { margin: 6px 0; color: var(--text-0); }
+.axe-harness__record-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.axe-harness__record-head .axe-harness__btn { margin-left: auto; }
+.axe-harness__brain { display: flex; flex-direction: column; gap: 8px; }
+.axe-harness__brain-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: calc(12px * var(--text-scale, 1)); color: var(--text-1); }
+.axe-harness__brain-body { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-1); }
+.axe-harness__brain-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: calc(12px * var(--text-scale, 1)); }
+.axe-harness__brain-list label { display: flex; gap: 6px; align-items: center; }
+.axe-harness__field { display: flex; flex-direction: column; gap: 4px; font-size: calc(12px * var(--text-scale, 1)); color: var(--text-1); }
+.axe-harness__field select { max-width: 280px; padding: 4px 6px; background: var(--bg-2); color: var(--text-0); border: 1px solid var(--line-strong); border-radius: var(--r-small); }
+
+/* axe:cleanup — sub-agent profile fields */
+.axe-harness__agent { display: flex; flex-direction: column; gap: 6px; font-size: calc(12px * var(--text-scale, 1)); }
+.axe-harness__agent label { display: flex; align-items: center; gap: 8px; }
+.axe-harness__agent input:not([type="checkbox"]) { flex: 1; padding: 4px 6px; font: inherit; font-family: var(--font-mono, monospace); background: transparent; color: inherit; border: 1px solid var(--border, rgba(127,127,127,.3)); border-radius: 4px; }
+
+/* axe:cleanup — unified Skills tab */
+.settings-pane__skill-kinds { margin: 6px 0; }
+.settings-pane__skill-kind { font-size: calc(10px * var(--text-scale, 1)); padding: 1px 6px; border-radius: 999px; border: 1px solid currentColor; opacity: .8; }
+.settings-pane__skill-kind[data-kind="python"] { color: var(--accent, #fc610b); }
+.settings-pane__pyskill { display: flex; flex-direction: column; gap: 8px; padding: 14px 18px; overflow: auto; height: 100%; }
+.settings-pane__pyskill-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.settings-pane__pyskill-head h2 { margin: 0 0 4px; font-size: calc(15px * var(--text-scale, 1)); }
+.settings-pane__pyskill-body { border-top: 1px solid var(--border, rgba(127,127,127,.2)); padding-top: 8px; }
+
+/* axe:e13 — le harnais de l'espace Axe Cloud se lit aussi depuis l'interface
+   classique : un groupe distinct, et des entrees en lecture seule. */
+.axe-harness__group { display: flex; align-items: center; gap: 6px; margin: 10px 0 2px;
+  padding: 0 2px; color: var(--text-2); text-transform: uppercase;
+  letter-spacing: 0.04em; font-size: calc(11px * var(--text-scale, 1)); }
+.axe-harness__pill[data-origin="cloud"] { color: var(--accent);
+  background: var(--bg-2); border: 1px solid var(--accent-soft); }
+.axe-harness__origin { margin: 0; padding: 6px 8px; color: var(--text-1);
+  background: var(--bg-2); border-radius: var(--r-small); line-height: 1.45;
+  font-size: calc(11.5px * var(--text-scale, 1)); }

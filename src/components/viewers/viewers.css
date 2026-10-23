@@ -1,0 +1,1240 @@
+/* axe:viewers — multi-format file viewers. Everything uses the Axe theme
+   variables so the viewers follow the background picked in Settings. */
+
+.xv-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--editor-bg, var(--bg-0));
+  color: var(--text-1);
+  user-select: text;
+}
+.xv-layer > * {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.xv-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px;
+  text-align: center;
+  color: var(--text-2);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+}
+.xv-state code {
+  max-width: 80%;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-1);
+  padding: 5px 9px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-med);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.xv-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-3);
+  border-top-color: var(--accent);
+  animation: xv-spin 0.8s linear infinite;
+}
+@keyframes xv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Shared toolbar ---------------------------------------------------- */
+.xv-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-1);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  user-select: none;
+}
+.xv-toolbar__spacer {
+  flex: 1 1 auto;
+}
+.xv-toolbar__ref {
+  min-width: 56px;
+  padding: 2px 8px;
+  border-radius: var(--r-med);
+  background: var(--bg-2);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  text-align: center;
+}
+.xv-toolbar__value {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  color: var(--text-1);
+}
+.xv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 24px;
+  min-width: 24px;
+  padding: 0 6px;
+  border-radius: var(--r-med);
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+  transition: color 150ms ease, background 150ms ease;
+}
+.xv-btn:hover {
+  color: var(--text-0);
+  background: var(--bg-3);
+}
+.xv-btn[data-active="true"] {
+  color: var(--text-0);
+  background: var(--bg-4);
+}
+.xv-btn--text {
+  padding: 0 10px;
+  background: var(--bg-2);
+}
+.xv-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 4px 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--bg-0);
+  color: var(--text-3);
+}
+.xv-search:focus-within {
+  border-color: var(--accent);
+}
+.xv-search input {
+  width: 170px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text-0);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+}
+.xv-search__count {
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.xv-search button {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.xv-search button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.xv-search button:not(:disabled):hover {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+
+/* Spreadsheet --------------------------------------------------------- */
+.xv-sheet {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.xv-grid {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  position: relative;
+  background: var(--editor-bg, var(--bg-0));
+  font-family: var(--font-ui);
+  font-size: calc(12px * var(--text-scale, 1));
+}
+.xv-grid__canvas {
+  position: relative;
+}
+.xv-grid__colheads {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--line);
+}
+.xv-grid__corner {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  height: 100%;
+  background: var(--bg-1);
+  border-right: 1px solid var(--line);
+}
+.xv-grid__colhead,
+.xv-grid__rowhead {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: calc(11px * var(--text-scale, 1));
+  user-select: none;
+}
+.xv-grid__colhead {
+  top: 0;
+  height: 100%;
+  border-right: 1px solid var(--line);
+}
+.xv-grid__rowheads {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--bg-1);
+  border-right: 1px solid var(--line);
+}
+.xv-grid__rowhead {
+  left: 0;
+  right: 0;
+  border-bottom: 1px solid var(--line);
+}
+.xv-grid__colhead[data-active="true"],
+.xv-grid__rowhead[data-active="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.xv-grid__body {
+  position: absolute;
+}
+.xv-grid__cell {
+  position: absolute;
+  box-sizing: border-box;
+  padding: 0 6px;
+  line-height: 23px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: cell;
+}
+.xv-grid__cell[data-num="true"] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.xv-grid__cell[data-match="true"] {
+  background: var(--accent-soft);
+}
+.xv-grid__cell[data-current="true"] {
+  background: var(--accent-glow);
+  color: var(--text-0);
+}
+.xv-grid__cell[data-selected="true"] {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  z-index: 1;
+}
+.xv-sheet__footer {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  padding: 0 10px 0 4px;
+  border-top: 1px solid var(--line);
+  background: var(--bg-1);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+}
+.xv-sheet__tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.xv-sheet__tab {
+  flex: 0 0 auto;
+  padding: 4px 12px;
+  border-radius: var(--r-med);
+  background: transparent;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.xv-sheet__tab:hover {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+.xv-sheet__tab[data-active="true"] {
+  background: var(--bg-4);
+  color: var(--text-0);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.xv-sheet__stats {
+  flex: 0 0 auto;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+/* HTML preview -------------------------------------------------------- */
+.xv-html {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.xv-html__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+}
+.xv-html__status[data-on="true"] {
+  color: var(--accent);
+}
+.xv-html__frame {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  border: 0;
+  /* Pages without a background expect white, like a browser tab. */
+  background: #fff;
+}
+
+/* PDF ----------------------------------------------------------------- */
+.xv-pdf {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.xv-pager {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+}
+.xv-pager input {
+  width: 44px;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-med);
+  background: var(--bg-0);
+  color: var(--text-0);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  text-align: right;
+  outline: none;
+}
+.xv-pager input:focus {
+  border-color: var(--accent);
+}
+.xv-pdf__body {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+}
+.xv-pdf__thumbs {
+  flex: 0 0 148px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-right: 1px solid var(--line);
+  background: var(--bg-1);
+}
+.xv-pdf__thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--r-med);
+  background: transparent;
+  cursor: pointer;
+}
+.xv-pdf__thumb-img {
+  display: block;
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.xv-pdf__thumb[data-active="true"] .xv-pdf__thumb-img {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.xv-pdf__thumb-num {
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: calc(10px * var(--text-scale, 1));
+}
+.xv-pdf__scroll {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: auto;
+  position: relative;
+  background: var(--bg-0);
+}
+.xv-pdf__canvas {
+  position: relative;
+  min-width: 100%;
+}
+.xv-pdf__slot {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.xv-pdf__page {
+  position: relative;
+  background: #fff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+.xv-pdf__page canvas {
+  display: block;
+}
+.xv-pdf__page[data-painted="false"] canvas {
+  visibility: hidden;
+}
+
+/* Minimal pdf.js text layer (selection + search highlights). */
+.xv-pdf .textLayer {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  line-height: 1;
+  text-align: initial;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  caret-color: CanvasText;
+  z-index: 0;
+}
+.xv-pdf .textLayer :is(span, br) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+.xv-pdf .textLayer span.markedContent {
+  top: 0;
+  height: 0;
+}
+.xv-pdf .textLayer ::selection {
+  background: rgba(252, 97, 11, 0.3);
+}
+.xv-pdf .textLayer br::selection {
+  background: transparent;
+}
+.xv-pdf .textLayer .endOfContent {
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: 0;
+  cursor: default;
+  user-select: none;
+}
+.xv-pdf .textLayer mark.xv-pdf-hit {
+  position: static;
+  color: transparent;
+  background: rgba(252, 97, 11, 0.38);
+  border-radius: 2px;
+}
+
+/* Frozen first row (table header) of the spreadsheet grid. */
+.xv-grid__frozen {
+  position: absolute;
+  background: var(--bg-1);
+  box-shadow: 0 1px 0 var(--line), 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+.xv-grid__frozen .xv-grid__cell {
+  color: var(--text-0);
+  font-weight: 600;
+  background: var(--bg-1);
+}
+.xv-grid__frozenhead {
+  background: var(--bg-1);
+  border-right: 1px solid var(--line);
+}
+
+.xv-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+  background: transparent;
+}
+.xv-toolbar__hint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-3);
+}
+
+/* Split layout: list on the left, content on the right (sqlite, epub). */
+.xv-split {
+  height: 100%;
+  display: flex;
+  min-height: 0;
+}
+.xv-split__side {
+  flex: 0 0 220px;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 8px 6px;
+  border-right: 1px solid var(--line);
+  background: var(--bg-1);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+}
+.xv-split__title {
+  padding: 4px 8px 8px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: calc(10px * var(--text-scale, 1));
+}
+.xv-split__item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 5px 8px;
+  border-radius: var(--r-med);
+  background: transparent;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  text-align: left;
+  cursor: pointer;
+}
+.xv-split__item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.xv-split__item:hover {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+.xv-split__item[data-active="true"] {
+  background: var(--accent-soft);
+  color: var(--text-0);
+}
+.xv-split__empty {
+  padding: 8px;
+  color: var(--text-3);
+}
+.xv-split__main {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Zip archives ---------------------------------------------------------- */
+.xv-zip {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.xv-zip__notice {
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.xv-zip__list {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 6px 0;
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+}
+.xv-zip__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 26px;
+  padding-right: 10px;
+  color: var(--text-1);
+}
+.xv-zip__row:hover {
+  background: var(--bg-2);
+}
+.xv-zip__row[data-dir="true"] {
+  cursor: pointer;
+  color: var(--text-0);
+}
+.xv-zip__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.xv-zip__meta {
+  flex: 0 0 auto;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: calc(11px * var(--text-scale, 1));
+}
+.xv-zip__size {
+  min-width: 72px;
+  text-align: right;
+}
+
+/* Audio / video --------------------------------------------------------- */
+.xv-media {
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--editor-bg, var(--bg-0));
+}
+.xv-media[data-video="true"] {
+  background: #000;
+}
+.xv-media__video {
+  max-width: 100%;
+  max-height: 100%;
+  outline: none;
+}
+.xv-media__audio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(520px, 100%);
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--bg-1);
+}
+.xv-media__audio audio {
+  width: 100%;
+}
+.xv-media__icon {
+  display: inline-flex;
+  padding: 16px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.xv-media__name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-0);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+}
+.xv-media__meta,
+.xv-image__meta {
+  position: absolute;
+  left: 16px;
+  bottom: 14px;
+  display: flex;
+  gap: 10px;
+  max-width: calc(100% - 32px);
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-med);
+  background: var(--bg-1);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  pointer-events: none;
+}
+.xv-media[data-video="true"] .xv-media__meta {
+  top: 12px;
+  bottom: auto;
+}
+
+/* Documents rendered as HTML (docx, epub) ------------------------------- */
+.xv-doc {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.xv-doc__body {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+}
+.xv-doc__frame {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 0;
+  background: var(--editor-bg, var(--bg-0));
+}
+
+/* Zoomable image -------------------------------------------------------- */
+.xv-image {
+  height: 100%;
+  position: relative;
+  min-height: 0;
+  background: var(--editor-bg, var(--bg-0));
+}
+.xv-image__scroll {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.xv-image__scroll[data-pan="true"] {
+  cursor: grab;
+}
+.xv-image__scroll[data-pan="true"]:active {
+  cursor: grabbing;
+}
+.xv-image__scroll img {
+  display: block;
+  user-select: none;
+  image-rendering: auto;
+}
+.xv-image[data-checker="true"] .xv-image__scroll img {
+  background-color: #fff;
+  background-image: linear-gradient(45deg, #e4e4e7 25%, transparent 25%),
+    linear-gradient(-45deg, #e4e4e7 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e4e4e7 75%),
+    linear-gradient(-45deg, transparent 75%, #e4e4e7 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+.xv-image__zoom {
+  position: absolute;
+  right: 14px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--bg-1);
+}
+.xv-image__pct {
+  min-width: 44px;
+  text-align: center;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+/* PowerPoint ------------------------------------------------------------ */
+.xv-pptx {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.xv-pptx__scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px 32px 40px;
+  background: var(--bg-0);
+}
+.xv-pptx__slide-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 22px;
+}
+.xv-pptx__num {
+  align-self: center;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: calc(11px * var(--text-scale, 1));
+}
+.xv-pptx__frame {
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+.xv-pptx__slide {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  overflow: hidden;
+  color: #000;
+  font-family: Calibri, "Segoe UI", Carlito, Arial, sans-serif;
+}
+.xv-pptx__shape {
+  position: absolute;
+  box-sizing: border-box;
+}
+.xv-pptx__text {
+  display: flex;
+  flex-direction: column;
+  padding: 3.6pt 7.2pt;
+  overflow: hidden;
+  line-height: 1.12;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.xv-pptx__text p {
+  margin: 0 0 0.25em;
+  position: relative;
+}
+.xv-pptx__text p[data-bullet="true"]::before {
+  content: "•";
+  position: absolute;
+  left: -0.9em;
+}
+.xv-pptx__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  display: block;
+}
+.xv-pptx__missing,
+.xv-pptx__other {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border: 1px dashed #a1a1aa;
+  color: #71717a;
+  font-size: calc(12pt * var(--text-scale, 1));
+  text-align: center;
+}
+.xv-pptx__table table {
+  width: 100%;
+  height: 100%;
+  border-collapse: collapse;
+  font-size: calc(12pt * var(--text-scale, 1));
+}
+.xv-pptx__table th,
+.xv-pptx__table td {
+  border: 1px solid #a1a1aa;
+  padding: 3pt 6pt;
+  text-align: left;
+  vertical-align: top;
+}
+.xv-pptx__table th {
+  background: #e4e4e7;
+}
+.xv-pptx__outline {
+  max-width: 820px;
+  margin: 0 auto 18px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--bg-1);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  color: var(--text-1);
+}
+.xv-pptx__outline h3 {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 8px;
+  color: var(--text-0);
+  font-size: calc(14px * var(--text-scale, 1));
+}
+.xv-pptx__outline h3 span {
+  color: var(--accent);
+  font-family: var(--font-mono);
+}
+.xv-pptx__outline ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.xv-pptx__empty {
+  margin: 0;
+  color: var(--text-3);
+}
+
+/* Fonts ----------------------------------------------------------------- */
+.xv-font {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.xv-font__body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px 32px 40px;
+  color: var(--text-0);
+}
+.xv-font__sample-input {
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-med);
+  background: var(--bg-1);
+  color: var(--text-0);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  outline: none;
+}
+.xv-font__sample-input:focus {
+  border-color: var(--accent);
+}
+.xv-font__hero {
+  font-size: calc(96px * var(--text-scale, 1));
+  line-height: 1.1;
+  margin-bottom: 18px;
+}
+.xv-font__line {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.xv-font__size {
+  flex: 0 0 28px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: calc(11px * var(--text-scale, 1));
+}
+.xv-font__range h4 {
+  margin: 22px 0 8px;
+  color: var(--text-2);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.xv-font__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 4px;
+  font-size: calc(24px * var(--text-scale, 1));
+}
+.xv-font__grid span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-med);
+  background: var(--bg-1);
+}
+.xv-font__grid span:hover {
+  border-color: var(--accent);
+}
+.xv-font__credits {
+  margin-top: 24px;
+  color: var(--text-3);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+}
+
+/* JSON tree ------------------------------------------------------------- */
+.xv-json {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.xv-json__tree {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 0 24px;
+  font-family: var(--font-mono);
+  font-size: calc(12px * var(--text-scale, 1));
+  line-height: 20px;
+}
+.xv-json__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 20px;
+  padding-right: 12px;
+  white-space: nowrap;
+  cursor: default;
+}
+.xv-json__row:hover {
+  background: var(--bg-2);
+}
+.xv-json__row[data-selected="true"] {
+  background: var(--accent-soft);
+}
+.xv-json__caret {
+  display: inline-flex;
+  width: 12px;
+  color: var(--text-3);
+}
+.xv-json__key {
+  color: #7dd3fc;
+}
+.xv-json__index {
+  color: var(--text-3);
+}
+.xv-json__colon {
+  margin-left: -4px;
+  color: var(--text-3);
+}
+.xv-json__meta {
+  color: var(--text-3);
+}
+.xv-json__value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.xv-json__value--string {
+  color: #86efac;
+}
+.xv-json__value--number {
+  color: #fdba74;
+}
+.xv-json__value--boolean {
+  color: #c4b5fd;
+}
+.xv-json__value--null {
+  color: var(--text-3);
+  font-style: italic;
+}
+.xv-json__more {
+  margin: 2px 0;
+  padding: 2px 8px;
+  border-radius: var(--r-med);
+  background: var(--bg-2);
+  color: var(--text-2);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+.xv-json__more:hover {
+  color: var(--text-0);
+  background: var(--bg-3);
+}
+
+/* Jupyter notebooks ----------------------------------------------------- */
+.xv-nb {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.xv-nb__scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 28px 40px;
+}
+.xv-nb__cell {
+  max-width: 1100px;
+  margin: 0 auto 10px;
+}
+.xv-nb__input,
+.xv-nb__output {
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+.xv-nb__prompt {
+  flex: 0 0 52px;
+  padding-top: 10px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: calc(11px * var(--text-scale, 1));
+  text-align: right;
+}
+.xv-nb__code,
+.xv-nb__output-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.xv-nb__code pre {
+  margin: 0;
+}
+.xv-nb__md {
+  padding: 4px 0 4px 62px;
+  min-width: 0;
+}
+.xv-nb__output-body .xv-nb__md {
+  padding-left: 0;
+}
+.xv-nb__stream {
+  margin: 4px 0;
+  padding: 6px 10px;
+  max-height: 480px;
+  overflow: auto;
+  border-radius: var(--r-med);
+  background: var(--bg-1);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: calc(12px * var(--text-scale, 1));
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.xv-nb__stream[data-stderr="true"] {
+  background: rgba(239, 68, 68, 0.1);
+  color: #fca5a5;
+}
+.xv-nb__image {
+  display: block;
+  max-width: 100%;
+  margin: 6px 0;
+  background: #fff;
+}
+.xv-nb__html {
+  display: flex;
+  margin: 4px 0;
+  border-radius: var(--r-med);
+  overflow: hidden;
+}
+.xv-nb__unsupported {
+  margin: 4px 0;
+  color: var(--text-3);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+}
+
+/* Hex dump (unknown / binary files) ------------------------------------- */
+.xv-hex {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.xv-hex__error {
+  padding: 6px 12px;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.1);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+}
+.xv-hex__scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+  background: var(--editor-bg, var(--bg-0));
+}
+.xv-hex__canvas {
+  position: relative;
+  min-width: 640px;
+}
+.xv-hex__window {
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+}
+.xv-hex__row {
+  position: absolute;
+  left: 0;
+  display: flex;
+  gap: 18px;
+  height: 20px;
+  padding: 0 14px;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: calc(12px * var(--text-scale, 1));
+  white-space: pre;
+  color: var(--text-1);
+}
+.xv-hex__offset {
+  color: var(--text-3);
+  user-select: none;
+}
+.xv-hex__bytes {
+  display: inline-flex;
+  gap: 6px;
+}
+.xv-hex__bytes span[data-gap="true"] {
+  margin-left: 8px;
+}
+.xv-hex__ascii {
+  display: inline-flex;
+  color: var(--text-2);
+}
+.xv-hex__bytes span,
+.xv-hex__ascii span {
+  border-radius: 2px;
+  cursor: default;
+}
+.xv-hex__bytes span:hover,
+.xv-hex__ascii span:hover {
+  background: var(--bg-3);
+}
+.xv-hex__bytes span[data-active="true"],
+.xv-hex__ascii span[data-active="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  outline: 1px solid var(--accent);
+}
+.xv-hex .xv-toolbar .xv-btn--text {
+  flex: 0 0 auto;
+}
+
+/* Large text, paged ----------------------------------------------------- */
+.xv-bigtext {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.xv-bigtext__page {
+  flex: 1 1 0;
+  min-height: 0;
+  margin: 0;
+  padding: 14px 18px 28px;
+  overflow: auto;
+  background: var(--editor-bg, var(--bg-0));
+  color: var(--editor-fg, var(--text-1));
+  font-family: var(--font-mono);
+  font-size: calc(12px * var(--text-scale, 1));
+  line-height: 18px;
+  white-space: pre;
+  tab-size: 4;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}

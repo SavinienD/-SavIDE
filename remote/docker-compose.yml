@@ -1,0 +1,23 @@
+# Axecode Remote relay. Put it behind a TLS reverse proxy (Caddy, Traefik,
+# nginx): the desktop connects over wss://<your-domain>/ws.
+services:
+  relay:
+    build: .
+    image: axecode-relay:latest
+    restart: unless-stopped
+    # Bound to loopback: only the reverse proxy on this host reaches it.
+    ports:
+      - "127.0.0.1:8787:8787"
+    environment:
+      PORT: "8787"
+      # Optional Web Push (generate with `npx web-push generate-vapid-keys`).
+      # Define them in a `.env` file next to this compose file, never in git.
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@localhost}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8787/healthz"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3

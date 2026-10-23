@@ -1,0 +1,232 @@
+/* axe:voix — dictée vocale du compositeur (barre d'enregistrement façon ChatGPT). */
+.axe-voix {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.axe-voix__micro[data-actif="true"] {
+  visibility: hidden;
+}
+
+/* La barre recouvre la rangée d'actions vers la gauche, sans décaler la mise en page. */
+.axe-voix__barre {
+  position: absolute;
+  right: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 6;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 4px 0 4px;
+  border-radius: var(--r-pill, 999px);
+  background: var(--bg-2, #1e1e1e);
+  border: 1px solid var(--line-strong, rgba(128, 128, 128, 0.45));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+  color: var(--text-0, #eee);
+  animation: axe-voix-entree 120ms ease-out;
+}
+
+.axe-voix__barre--attente {
+  padding-left: 12px;
+}
+
+@keyframes axe-voix-entree {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scaleX(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scaleX(1);
+  }
+}
+
+.axe-voix__rond {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: background 120ms ease, color 120ms ease, opacity 120ms ease;
+}
+
+.axe-voix__annuler {
+  background: transparent;
+  color: var(--text-2, #aaa);
+}
+
+.axe-voix__annuler:hover {
+  background: var(--bg-3, rgba(128, 128, 128, 0.2));
+  color: var(--text-0, #fff);
+}
+
+.axe-voix__valider {
+  background: var(--text-0, #fff);
+  color: var(--bg-0, #000);
+}
+
+.axe-voix__valider:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.axe-voix__point {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--danger, #e5484d);
+  flex: 0 0 auto;
+  opacity: 0.5;
+}
+
+.axe-voix__point[data-pret="true"] {
+  opacity: 1;
+  animation: axe-voix-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes axe-voix-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.axe-voix__onde {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 20px;
+}
+
+.axe-voix__onde i {
+  display: block;
+  width: 2px;
+  height: 100%;
+  border-radius: 1px;
+  background: var(--text-1, #ddd);
+  transform-origin: center;
+  transition: transform 70ms linear;
+}
+
+.axe-voix__temps {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--fs-xs, 11px);
+  color: var(--text-2, #aaa);
+  min-width: 30px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.axe-voix__libelle {
+  font-size: var(--fs-sm, 12px);
+  color: var(--text-1, #ddd);
+}
+
+.axe-voix__roue {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong, rgba(128, 128, 128, 0.45));
+  border-top-color: var(--accent, #4c8dff);
+  animation: axe-voix-roue 0.8s linear infinite;
+}
+
+@keyframes axe-voix-roue {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.axe-voix__bulle {
+  position: absolute;
+  right: -4px;
+  bottom: calc(100% + 10px);
+  z-index: 7;
+  width: max-content;
+  max-width: min(380px, 70vw);
+  padding: 8px 10px;
+  border-radius: var(--r-card, 8px);
+  background: var(--bg-2, #1e1e1e);
+  border: 1px solid var(--line-strong, rgba(128, 128, 128, 0.45));
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  color: var(--text-0, #eee);
+  font-size: var(--fs-sm, 12px);
+  line-height: 1.4;
+  white-space: normal;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.axe-voix__bulle--info {
+  color: var(--text-2, #aaa);
+  cursor: default;
+}
+
+.axe-voix__bulle-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.axe-voix__bulle-actions button {
+  font-size: var(--fs-xs, 11px);
+  padding: 3px 8px;
+  border-radius: var(--r-small, 4px);
+  border: 1px solid var(--line, rgba(128, 128, 128, 0.35));
+  background: var(--bg-3, rgba(128, 128, 128, 0.15));
+  color: var(--text-0, #eee);
+  cursor: pointer;
+}
+
+.axe-voix__bulle-actions button:hover {
+  background: var(--bg-4, rgba(128, 128, 128, 0.3));
+}
+
+/* Réglages > Dictée vocale */
+.axe-voix-reglages__ligne {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 10px 0;
+}
+
+.axe-voix-reglages__ligne input[type="checkbox"] {
+  margin-top: 3px;
+}
+
+.axe-voix-reglages textarea {
+  width: 100%;
+  min-height: 64px;
+  font: inherit;
+  font-size: var(--fs-sm, 12px);
+  padding: 6px 8px;
+  border-radius: var(--r-small, 4px);
+  border: 1px solid var(--line, rgba(128, 128, 128, 0.35));
+  background: var(--bg-1, transparent);
+  color: var(--text-0, inherit);
+  resize: vertical;
+}
+
+.axe-voix-reglages__etat {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: var(--fs-xs, 11px);
+  white-space: pre-wrap;
+  color: var(--text-1, inherit);
+}
+
+.axe-voix-reglages__ok {
+  color: var(--ok, #3fb950);
+}
+
+.axe-voix-reglages__ko {
+  color: var(--danger, #e5484d);
+}

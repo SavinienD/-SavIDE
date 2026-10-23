@@ -1,0 +1,61 @@
+[package]
+name = "axecode"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Axecode — the Prime Agent brain inside the Axecode IDE"
+default-run = "axecode"
+
+[lib]
+name = "axecode_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { workspace = true }
+
+[dependencies]
+directories = { workspace = true } # axe:providers
+async-trait = { workspace = true } # axe:providers
+axecode-anthropic = { workspace = true }
+axecode-app = { workspace = true }
+axecode-core = { workspace = true }
+axecode-google = { workspace = true }
+axecode-kimi = { workspace = true }
+axecode-openai = { workspace = true }
+axecode-openrouter = { workspace = true }
+axecode-harness = { workspace = true } # axe:harness
+axecode-daemon = { workspace = true } # axe:daemon
+axecode-repl = { workspace = true } # axe:daemon
+axecode-gemini-web = { workspace = true } # axe:gemini-web
+
+anyhow = { workspace = true }
+base64 = { workspace = true }
+notify = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tauri = { workspace = true }
+tauri-plugin-dialog = { workspace = true }
+tokio = { workspace = true }
+tokio-tungstenite = { workspace = true }
+futures-util = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+url = { workspace = true }
+rusqlite = { workspace = true } # axe:viewers
+zip = { workspace = true } # axe:viewers
+ring = { workspace = true }
+portable-pty = "0.9.0"
+reqwest = { workspace = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6.4"
+objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std", "NSApplication", "NSMenu", "NSMenuItem"] }
+objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSString"] }
+
+# Updater plugin is desktop-only (Tauri does not ship updater for iOS/Android).
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,214 @@
+/* axe:freechat — home screen + free conversation view (Axe theme). */
+
+/* ---- home screen ------------------------------------------------ */
+.welcome__stage.axe-home {
+  max-width: 760px;
+}
+.axe-home__ctas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.axe-home__cta-icon--accent {
+  background: color-mix(in srgb, var(--axe-accent, #fc610b) 18%, var(--bg-5));
+  color: var(--axe-accent, #fc610b);
+}
+.axe-home__lists {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.axe-home__meta {
+  font-family: var(--font-ui);
+  font-size: calc(12px * var(--text-scale, 1));
+  color: var(--text-3);
+}
+@media (max-width: 720px) {
+  .axe-home__ctas,
+  .axe-home__lists {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- free conversation view ------------------------------------- */
+.axe-freechat__main {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+}
+.axe-freechat__sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 8px 8px;
+  background: var(--bg-1);
+  border-right: 1px solid var(--line);
+  overflow: hidden;
+}
+.axe-freechat__new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--r-card);
+  background: var(--bg-3);
+  color: var(--text-0);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  transition: background 140ms ease;
+}
+.axe-freechat__new:hover {
+  background: var(--bg-4);
+}
+.axe-freechat__new svg {
+  color: var(--axe-accent, #fc610b);
+}
+.axe-freechat__search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--r-card);
+  background: var(--bg-2);
+  color: var(--text-3);
+}
+.axe-freechat__search input {
+  flex: 1 1 0;
+  min-width: 0;
+  background: transparent;
+  border: 0;
+  outline: none;
+  color: var(--text-0);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+}
+.axe-freechat__groups {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.axe-freechat__groups .sidebar__body {
+  flex: 0 0 auto;
+  overflow: visible;
+  padding: 0;
+}
+.axe-freechat__group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.axe-freechat__group-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 8px 4px;
+  font-family: var(--font-ui);
+  font-size: calc(11px * var(--text-scale, 1));
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  text-align: left;
+}
+.axe-freechat__group-head span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.axe-freechat__group-head--project:hover {
+  color: var(--text-1);
+}
+.axe-freechat__row,
+.axe-freechat__more {
+  display: block;
+  width: 100%;
+  min-height: 26px;
+  padding: 4px 8px 4px 27px;
+  border-radius: var(--r-med);
+  text-align: left;
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.axe-freechat__row:hover {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+.axe-freechat__more {
+  color: var(--text-3);
+}
+.axe-freechat__more:hover {
+  color: var(--text-1);
+}
+
+.axe-freechat__center {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--bg-1);
+}
+.axe-freechat__chat {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+}
+/* Wide, centered column: the ChatPane keeps its own layout (its head stays:
+   it holds the back button of sub-agent views). */
+.axe-freechat__chat .chat-body__content,
+.axe-freechat__chat .composer {
+  width: 100%;
+  max-width: 860px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.axe-freechat__chat .chat-body {
+  padding-top: 24px;
+}
+.axe-freechat__error {
+  margin: 10px auto 0;
+  max-width: 860px;
+  width: calc(100% - 24px);
+  padding: 10px 14px;
+  border-radius: var(--r-card);
+  background: var(--bg-2);
+  color: var(--danger);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.axe-freechat__settings {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-0);
+}
+.axe-freechat__settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  color: var(--text-0);
+}
+.axe-freechat__settings-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}

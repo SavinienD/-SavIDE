@@ -1,0 +1,16 @@
+{
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "SavIDE",
+        "width": 1500,
+        "height": 940,
+        "minWidth": 1100,
+        "minHeight": 720,
+        "resizable": true,
+        "decorations": false
+      }
+    ]
+  }
+}

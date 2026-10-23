@@ -1,0 +1,255 @@
+[
+ {
+  "fichier": "src/",
+  "motif": "^/[a-z][a-z-]*( |$)",
+  "raison": "commande slash ou syntaxe à taper (/refine, /goal…), gardée telle quelle"
+ },
+ {
+  "fichier": "src/components/chat/SlashCommands.tsx",
+  "motif": "\\((clear \\| pause \\| resume|clear pour arrêter|stop pour arrêter)\\)?",
+  "raison": "mots-clés à taper après la commande (clear, pause, resume)"
+ },
+ {
+  "fichier": "src/components/chat/SlashCommands.tsx",
+  "motif": "compact\\.run\\)$",
+  "raison": "nom de l'outil de l'agent (compact.run)"
+ },
+ {
+  "fichier": "src/components/chat/ChatPane.tsx",
+  "motif": "^(Continue working toward the active goal|Implement completely this plan|\\$\\{\\} Launch with agent swarm only|No, keep updating the plan|Please inspect the attached)",
+  "raison": "consigne envoyée au modèle"
+ },
+ {
+  "fichier": "src/components/chat/ChatPane.tsx",
+  "motif": "^<teammate-message",
+  "raison": "balise envoyée au modèle"
+ },
+ {
+  "fichier": "src/components/chat/stream.ts",
+  "motif": "^(\\[Tool result cleaned by you|Another language model started)",
+  "raison": "texte du modèle reconnu dans l'historique (comparé par le code)"
+ },
+ {
+  "fichier": "src/components/chat/arrierePlan.ts",
+  "motif": "messages\\.send\\(…, receiver_role='parent'\\)",
+  "raison": "consigne envoyée au modèle (nom d'outil)"
+ },
+ {
+  "terme": "\\(commit\\)|\\(push\\)|\\(pull\\)",
+  "raison": "lexique : le terme Git est rappelé entre parenthèses, ex. « Valider (commit) »"
+ },
+ {
+  "fichier": "src/components/Workspace.tsx",
+  "motif": "^(Continue from the compacted context|Continue working toward the active goal|Implement completely this plan)",
+  "raison": "consigne envoyée au modèle"
+ },
+ {
+  "fichier": "src/components/settings/BrainImportWizard.tsx",
+  "motif": "brain|Setup-Brain",
+  "raison": "nom de l'ancien kit et de son dossier brain/ (et de son rituel « Setup-Brain »)"
+ },
+ {
+  "fichier": "src/components/settings/ConnectionsPane.tsx",
+  "motif": "^(axecode|\\{\\}|\\$\\{\\})? ?--daemon|https://axe\\.example\\.com",
+  "raison": "commande à taper ou adresse d'exemple"
+ },
+ {
+  "fichier": "src/axe/AppearanceSection.tsx",
+  "motif": "^(theme\\.ts|export function|name|return|\\+ const retries = 3;|- const retries = 1;|python · files\\.edit)",
+  "raison": "aperçu de code dans l'exemple de thème (du code, pas de l'interface)"
+ },
+ {
+  "fichier": "src/axe/voix/VoixSection.tsx",
+  "motif": "gpt-4o-transcribe|^Déjà connus",
+  "raison": "noms de modèles de transcription et liste de mots à reconnaître (vocabulaire)"
+ },
+ {
+  "fichier": "src/axe/CustomProvidersPanel.tsx",
+  "motif": "Prime Inference|GET /models",
+  "raison": "nom de produit et requête HTTP"
+ },
+ {
+  "fichier": "src/axe/AppearanceSection.tsx",
+  "motif": "^\\(name:",
+  "raison": "aperçu de code dans l'exemple de thème"
+ },
+ {
+  "fichier": "src/axe/mcpCatalog.ts",
+  "motif": "^(npx|uvx) |^Brave Search$|^Fetch$",
+  "raison": "commande d'installation du serveur MCP ou nom du serveur"
+ },
+ {
+  "terme": "\\b[Pp]ull [Rr]equests?\\b|\\bPRs?\\b",
+  "raison": "lexique : « pull request » (PR), terme GitHub gardé"
+ },
+ {
+  "fichier": "src/components/SettingsPane.tsx",
+  "motif": "^(name|description): \\$\\{\\}$",
+  "raison": "en-tête YAML écrit dans SKILL.md (clés du format)"
+ },
+ {
+  "fichier": "src/components/settings/ReplToolsPane.tsx",
+  "texte": "model",
+  "raison": "nom du paramètre de rlm.spawn, dans une balise <code>"
+ },
+ {
+  "fichier": "src/components/viewers/SafeFrame.tsx",
+  "motif": ".",
+  "raison": "liste de balises HTML, CSS et politique de sécurité (CSP) du cadre isolé : du code"
+ },
+ {
+  "fichier": "src/components/GitPanel.tsx",
+  "motif": "^PATH$|^git (pull|push)$",
+  "raison": "variable d'environnement et commande Git"
+ },
+ {
+  "fichier": "src/components/GitPanel.tsx",
+  "terme": "\\bHEAD\\b",
+  "raison": "HEAD : terme Git"
+ },
+ {
+  "fichier": "src/components/agents/remoteItems.ts",
+  "motif": "Plans & Billing",
+  "raison": "nom du menu de la console Anthropic (en anglais sur leur site)"
+ },
+ {
+  "fichier": "",
+  "motif": "^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)$",
+  "raison": "méthode HTTP (valeur technique)"
+ },
+ {
+  "fichier": "src/lib/ipc.ts",
+  "motif": "^--- name: ",
+  "raison": "modèle d'un nouveau SKILL.md : clés YAML du format (le texte est en français)"
+ },
+ {
+  "fichier": "src/components/RemotePanel.tsx",
+  "motif": "^Notifications push activées$",
+  "raison": "« notifications push » : terme courant en français"
+ },
+ {
+  "fichier": "src-tauri/src/",
+  "motif": "^(Bad Request|Method Not Allowed|Not Found|Error|OK)$",
+  "raison": "raison HTTP de la ligne d'état (norme du protocole, en anglais)"
+ },
+ {
+  "fichier": "src-tauri/src/providers.rs",
+  "motif": "^HTTP/1\\.1 ",
+  "raison": "en-tête de réponse HTTP"
+ },
+ {
+  "fichier": "src-tauri/src/",
+  "terme": "\\(state\\)",
+  "raison": "terme OAuth « state » rappelé entre parenthèses"
+ },
+ {
+  "fichier": "src-tauri/src/state.rs",
+  "motif": "^You are Axecode",
+  "raison": "consigne système envoyée au modèle"
+ },
+ {
+  "fichier": "src-tauri/src/turns.rs",
+  "motif": "^(<plan_mode_control|Attached file context|You are implementing this plan|Plan path:|Plan title:|Treat the plan|Use the ToDoList tool|Read the plan file|attached plan$|# Shell environment|# Workspace instructions|# Workspace design context|<attachment|\\{\\} \\[|\\{\\} \\{\\} </attachment>)",
+  "raison": "texte envoyé au modèle (consignes, pièces jointes)"
+ },
+ {
+  "fichier": "src-tauri/src/context.rs",
+  "motif": "agent_team_profile|^# Workspace (instructions|design context)",
+  "raison": "texte envoyé au modèle"
+ },
+ {
+  "fichier": "src-tauri/src/harness.rs",
+  "motif": "^(A background harness refinement failed|# Harness|\\{\\}  ## Latest refinement)",
+  "raison": "couche du harnais envoyée au modèle"
+ },
+ {
+  "fichier": "src-tauri/src/offline.rs",
+  "motif": ".",
+  "raison": "motifs d'erreurs anglaises du service reconnus par le code (comparaisons), et message déjà en français"
+ },
+ {
+  "fichier": "src-tauri/src/viewers.rs",
+  "motif": "^SELECT ",
+  "raison": "requête SQL"
+ },
+ {
+  "fichier": "src-tauri/src/freechat.rs",
+  "motif": "^(update|select) |^New conversation$",
+  "raison": "requête SQL ; titre par défaut du service, comparé par le code"
+ },
+ {
+  "fichier": "src-tauri/src/voix.rs",
+  "texte": "unknown method",
+  "raison": "erreur anglaise du service, comparée par le code"
+ },
+ {
+  "fichier": "src-tauri/src/terminal.rs",
+  "motif": "^(TERM|Bypass)$",
+  "raison": "variable d'environnement et option de PowerShell"
+ },
+ {
+  "fichier": "src-tauri/src/platform.rs",
+  "motif": "^(HOME|Get-Clipboard|CmdOrCtrl\\+Shift\\+N)$|^wl-paste",
+  "raison": "variable d'environnement, commande ou accélérateur clavier (syntaxe Tauri)"
+ },
+ {
+  "fichier": "src-tauri/src/prime_term.rs",
+  "texte": "prime terms lock",
+  "raison": "message de panique interne (expect), jamais affiché"
+ },
+ {
+  "fichier": "src-tauri/src/lib.rs",
+  "motif": "^Add-Type ",
+  "raison": "script PowerShell"
+ },
+ {
+  "fichier": "src-tauri/src/connections.rs",
+  "motif": "=yes$|--daemon status",
+  "raison": "options SSH et commande"
+ },
+ {
+  "fichier": "src-tauri/src/custom_providers.rs",
+  "motif": "^(Mistral Medium|Devstral Medium|Magistral Medium|DeepSeek Reasoner|Grok Code Fast)$",
+  "raison": "noms de modèles"
+ },
+ {
+  "fichier": "src-tauri/src/git.rs",
+  "motif": "^(PATH|HEAD ->|HEAD\\^\\{\\}|C:\\\\Program Files \\(x86\\)\\\\Git|not a git repo(sitory)?)$",
+  "raison": "variable d'environnement, dossier d'installation, syntaxe Git, ou sortie de git comparée par le code"
+ },
+ {
+  "fichier": "src-tauri/src/git.rs",
+  "texte": "upstream is checked before deleting local branch",
+  "raison": "message de panique interne (expect), jamais affiché"
+ },
+ {
+  "fichier": "src-tauri/src/lib.rs",
+  "motif": "^(unable to open app store|error while building axecode desktop)$",
+  "raison": "messages de panique au démarrage (expect), jamais affichés dans l'appli"
+ },
+ {
+  "fichier": "src-tauri/src/conversations.rs",
+  "texte": "a turn is already running for this conversation",
+  "raison": "reconnu par le front (Workspace.tsx, isConversationBusyError) : gardé en anglais"
+ },
+ {
+  "fichier": "src-tauri/src/turns.rs",
+  "texte": "a turn is already running for this conversation",
+  "raison": "reconnu par le front (Workspace.tsx, isConversationBusyError) : gardé en anglais"
+ },
+ {
+  "fichier": "src-tauri/src/",
+  "motif": "^provider `\\{\\}` is not configured or missing credentials$",
+  "raison": "reconnu par le front (remoteItems.ts, explainTurnError) : gardé en anglais"
+ },
+ {
+  "fichier": "src-tauri/src/git.rs",
+  "terme": "\\b(PATH|HEAD|origin)\\b",
+  "raison": "PATH (variable d'environnement), HEAD et origin (termes Git)"
+ },
+ {
+  "fichier": "src/lib/titres.ts",
+  "motif": "^(New conversation|Untitled)$",
+  "raison": "titre par défaut écrit par le moteur (store.rs), reconnu pour l'afficher en français"
+ }
+]

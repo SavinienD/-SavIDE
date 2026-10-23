@@ -1,0 +1,47 @@
+[package]
+name = "axecode-app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Headless desktop runtime for axecode"
+
+[dependencies]
+axecode-core = { workspace = true }
+axecode-openai = { workspace = true }
+axecode-harness = { workspace = true } # axe:rlm
+axecode-repl = { workspace = true } # axe:repl
+axecode-agents = { workspace = true } # axe:ds16
+
+anyhow = { workspace = true }
+base64 = { workspace = true }
+directories = { workspace = true }
+eventsource-stream = { workspace = true }
+flate2 = { workspace = true }
+futures-util = { workspace = true }
+kuchikiki = "0.8.8-speedreader"
+reqwest = { workspace = true }
+regex = { workspace = true }
+sha2 = { workspace = true }
+tar = { workspace = true }
+portable-pty = "0.9.0"
+rand = { workspace = true }
+rusqlite = { workspace = true, features = ["backup"] } # axe:migration
+serde = { workspace = true }
+serde_json = { workspace = true }
+similar = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }
+walkdir = { workspace = true }
+zip = { workspace = true }
+async-trait = { workspace = true } # axe:rlm
+
+[dev-dependencies]
+tempfile = "3"
+futures = { workspace = true }
+axecode-daemon = { workspace = true }
+
+[lints]
+workspace = true
+

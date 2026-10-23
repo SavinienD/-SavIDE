@@ -1,0 +1,12 @@
+{
+  "bundle": {
+    "externalBin": [
+      "binaries/rg"
+    ],
+    "resources": {
+      "binaries/python-runtime/": "python-runtime/",
+      "../python/axecode_kernel/": "python/axecode_kernel/",
+      "binaries/cua-driver/": "cua-driver/"
+    }
+  }
+}

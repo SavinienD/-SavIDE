@@ -1,0 +1,78 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/axecode-core",
+    "crates/axecode-anthropic",
+    "crates/axecode-google",
+    "crates/axecode-kimi",
+    "crates/axecode-openai",
+    "crates/axecode-openrouter",
+    "crates/axecode-app",
+    "crates/axecode-daemon", # axe:daemon
+    "crates/axecode-harness", # axe:harness
+    "crates/axecode-repl", # axe:repl
+    "crates/axecode-agents", # axe:v2-l7c
+    "crates/axecode-gemini-web", # axe:gemini-web
+    "src-tauri",
+]
+
+[workspace.package]
+version = "0.1.58"
+edition = "2021"
+rust-version = "1.80"
+license = "MIT"
+
+[workspace.lints.clippy]
+too_many_arguments = "allow"
+
+[workspace.dependencies]
+axecode-core = { path = "crates/axecode-core" }
+axecode-anthropic = { path = "crates/axecode-anthropic" }
+axecode-google = { path = "crates/axecode-google" }
+axecode-kimi = { path = "crates/axecode-kimi" }
+axecode-openai = { path = "crates/axecode-openai" }
+axecode-openrouter = { path = "crates/axecode-openrouter" }
+axecode-app = { path = "crates/axecode-app" }
+axecode-daemon = { path = "crates/axecode-daemon" } # axe:daemon
+axecode-harness = { path = "crates/axecode-harness" } # axe:harness
+axecode-repl = { path = "crates/axecode-repl" } # axe:repl
+axecode-agents = { path = "crates/axecode-agents" } # axe:v2-l7c
+axecode-gemini-web = { path = "crates/axecode-gemini-web" } # axe:gemini-web
+
+tokio = { version = "1.40", features = ["full"] }
+tokio-tungstenite = { version = "0.26", default-features = false, features = ["connect", "rustls-tls-webpki-roots"] }
+futures = "0.3"
+futures-util = "0.3"
+async-trait = "0.1"
+bytes = "1"
+eventsource-stream = "0.2"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+flate2 = "1"
+regex = "1"
+
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
+rusqlite = { version = "0.32", features = ["bundled"] }
+directories = "5"
+uuid = { version = "1", features = ["v4", "fast-rng"] }
+notify = "6.1"
+rand = "0.9"
+sha2 = "0.10"
+argon2 = "0.5" # axe:remote
+ring = "0.17"
+tar = "0.4"
+url = "2.5"
+
+anyhow = "1"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+similar = "2.6"
+base64 = "0.22"
+tauri = { version = "2.1", features = ["protocol-asset"] }
+tauri-build = { version = "2.1" }
+tauri-plugin-dialog = "2.0"
+tauri-plugin-updater = "2.0"
+walkdir = "2.5"
+zip = { version = "9", default-features = false, features = ["deflate-flate2"] }

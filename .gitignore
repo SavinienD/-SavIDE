@@ -1,0 +1,43 @@
+/target
+/dist
+/node_modules
+/.tools
+/FEATURES.md
+/EDIT_FILE_HARNESS_COMPARISON.md
+/GLOB_HARNESS_COMPARISON.md
+/GREP_HARNESS_COMPARISON.md
+/src-tauri/binaries/rg-*
+/.history
+/.axecode/
+# compat (rebrand:keep-begin) : ancien dossier projet, copié vers .axecode, jamais supprimé
+# rebrand:keep-end
+.DS_Store
+*.log
+.env
+.env.*
+.idea/
+.vscode/
+
+# Tauri updater signing keys — NEVER commit private keys
+/.tauri-keys/
+*.key
+/src-tauri/savide-updater.key
+# Local build logs
+/.cargo-check.log
+
+__pycache__/
+*.pyc
+/src-tauri/binaries/python-runtime/
+.pytest_cache/
+
+# Personal / local files - never push
+/brain/
+/Setup-Brain.ps1
+~$*
+
+
+# axe:webui build output
+/web/dist/
+
+# axe:v2 - schemas generes par tauri, jamais committer
+/src-tauri/gen/schemas/
