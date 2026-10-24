@@ -21,8 +21,87 @@ IS_WINDOWS = sys.platform == "win32"
 _ALWAYS_PROTECTED = ("PYTHONPATH", "PYTHONHOME", "PYTHONIOENCODING", "PYTHONUTF8")
 
 
+def _protected() -> set[str]:
+    names = {n.upper() for n in _ALWAYS_PROTECTED}
+    names.update(n.strip().upper() for n in os.environ.get("AXECODE_PROTECTED_ENV", "").split(",") if n.strip())
+    return names
+
+
+def _read_registry() -> list[tuple[str, dict[str, str]]]:
+    """[(portée, {nom: valeur})] : système puis utilisateur (l'utilisateur l'emporte)."""
+    import winreg
+
+    sources = [
+        (winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment", "machine"),
+        (winreg.HKEY_CURRENT_USER, "Environment", "user"),
+    ]
+    out = []
+    for root, key_path, scope in sources:
+        values: dict[str, str] = {}
+        try:
+            with winreg.OpenKey(root, key_path) as key:
+                index = 0
+                while True:
+                    try:
+                        name, value, kind = winreg.EnumValue(key, index)
+                    except OSError:
+                        break
+                    index += 1
+                    if not isinstance(value, str):
+                        continue
+                    if kind == winreg.REG_EXPAND_SZ:
+                        value = os.path.expandvars(value)
+                    values[name] = value
+        except OSError:
+            pass
+        out.append((scope, values))
+    return out
+
+
 def _split(path: str) -> list[str]:
     return [p for p in path.split(os.pathsep) if p]
+
+
+def refresh_user_environment(reader: Optional[Callable[[], Iterable[tuple[str, dict[str, str]]]]] = None,
+                             environ=None) -> list[str]:
+    """Applique l'environnement utilisateur courant à ``environ`` ; renvoie les noms changés.
+
+    PATH = PATH système + PATH utilisateur, puis les entrées du PATH hérité
+    qui n'y sont pas (celles que l'appli a ajoutées)."""
+    environ = os.environ if environ is None else environ
+    if reader is None:
+        if not IS_WINDOWS:
+            return []
+        reader = _read_registry
+    try:
+        scopes = list(reader())
+    except Exception:
+        return []
+    protected = _protected()
+    merged: dict[str, str] = {}
+    paths: list[str] = []
+    for _scope, values in scopes:
+        for name, value in values.items():
+            if name.upper() == "PATH":
+                paths.extend(_split(value))
+            else:
+                merged[name] = value
+    changed = []
+    for name, value in merged.items():
+        upper = name.upper()
+        if upper in protected or upper.startswith("AXECODE_"):
+            continue
+        if environ.get(name) != value:
+            environ[name] = value
+            changed.append(name)
+    if paths:
+        seen = {os.path.normcase(p) for p in paths}
+        extra = [p for p in _split(environ.get("PATH", "")) if os.path.normcase(p) not in seen]
+        new_path = os.pathsep.join(paths + extra)
+        if environ.get("PATH") != new_path:
+            environ["PATH"] = new_path
+            changed.append("PATH")
+    return changed
 
 
 def setup_ssl(environ=None) -> Optional[str]:
@@ -65,5 +144,6 @@ def prepend_python(environ=None, executable: Optional[str] = None) -> str:
 
 def prepare() -> None:
     """Appelé au démarrage du noyau, dans cet ordre."""
+    refresh_user_environment()
     setup_ssl()
     prepend_python()

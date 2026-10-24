@@ -37,6 +37,11 @@ impl Kernel {
         for (key, value) in &spec.env {
             command.env(key, value);
         }
+        // At startup the kernel re-reads the current user environment
+        // (HKCU\Environment on Windows, see python/axecode_kernel/_env.py):
+        // the values set here by the host must win over it.
+        let protected: Vec<&str> = spec.env.iter().map(|(key, _)| key.as_str()).collect();
+        command.env("AXECODE_PROTECTED_ENV", protected.join(","));
         #[cfg(windows)]
         {
             const CREATE_NO_WINDOW: u32 = 0x0800_0000;
