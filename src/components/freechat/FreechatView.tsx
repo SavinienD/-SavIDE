@@ -165,7 +165,7 @@ export function FreechatView(props: Props) {
         </div>
         <div className="titlebar__brand" data-tauri-drag-region>
           <span className="titlebar__brand-mark">
-            <AxeLogo variant="wordmark" size={11} />
+            <AxeLogo variant="wordmark" size={16} />
           </span>
           <span className="titlebar__brand-name">SavIDE</span>
         </div>

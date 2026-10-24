@@ -278,9 +278,7 @@ textarea {
   align-items: center;
   justify-content: center;
 }
-.welcome__mark-glyph rect {
-  fill: currentColor;
-}
+/* axe:logo-blanc — logo SavIDE à couleurs fixes (fond blanc), plus de currentColor. */
 
 
 .welcome__title {
@@ -597,9 +595,7 @@ textarea {
 .updater-lock__mark-inner--err {
   color: var(--danger);
 }
-.updater-lock__mark-glyph rect {
-  fill: currentColor;
-}
+/* axe:logo-blanc — logo SavIDE à couleurs fixes (fond blanc), plus de currentColor. */
 @keyframes updaterMarkPulse {
   0%, 100% { opacity: 0.55; transform: scale(1); }
   50%      { opacity: 1;    transform: scale(1.06); }
@@ -819,14 +815,11 @@ textarea {
   pointer-events: none;
 }
 .titlebar__brand-mark {
+  /* axe:logo-blanc — le logo SavIDE complet porte sa propre pastille blanche. */
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
   height: 18px;
-  border-radius: 5px;
-  background: var(--bg-3);
-  color: var(--text-1);
 }
 .titlebar__brand-name {
   font-family: var(--font-display);

@@ -1,13 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Axecode">
-  <defs>
-    <linearGradient id="g" x1="36" y1="28" x2="220" y2="228" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#c7f9ff"/>
-      <stop offset="0.45" stop-color="#6ee7b7"/>
-      <stop offset="1" stop-color="#7c3aed"/>
-    </linearGradient>
-  </defs>
-  <rect width="256" height="256" rx="54" fill="#0b0f14"/>
-  <path d="M72 77c0-21 17-38 38-38h36c21 0 38 17 38 38v102c0 21-17 38-38 38h-36c-21 0-38-17-38-38V77Z" fill="none" stroke="url(#g)" stroke-width="14"/>
-  <path d="M105 82h46M111 183h34" stroke="url(#g)" stroke-width="11" stroke-linecap="round"/>
-  <path d="M99 126c18-26 39-26 58 0M99 150c18 26 39 26 58 0" stroke="#e8fff8" stroke-width="12" stroke-linecap="round" fill="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="SavIDE">
+  <!-- Logo SavIDE noir sur fond blanc (comme src-tauri/icons/savide-icon-1024.png), sans orange. -->
+  <rect width="1024" height="1024" rx="180" fill="#ffffff"/>
+  <g transform="translate(62 421.29) scale(0.238095)" fill="#000000">
+    <rect x="0" y="0" width="700" height="190"/>
+    <rect x="0" y="286" width="700" height="190"/>
+    <rect x="0" y="572" width="700" height="190"/>
+    <rect x="0" y="0" width="190" height="476"/>
+    <rect x="510" y="286" width="190" height="476"/>
+    <path d="M1050 310 L1173 512 L927 512 Z"/>
+    <path d="M884 582 L1216 582 L1328 762 L772 762 Z"/>
+    <path d="M1400 306 L1960 306 L1680 762 Z"/>
+    <rect x="2030" y="0" width="190" height="762"/>
+    <path d="M2290 0 L2770 0 L3010 381 L2770 762 L2290 762 Z M2480 190 L2670 190 L2790 381 L2670 572 L2480 572 Z" fill-rule="evenodd"/>
+    <rect x="3080" y="0" width="700" height="190"/>
+    <rect x="3080" y="286" width="700" height="190"/>
+    <rect x="3080" y="572" width="700" height="190"/>
+  </g>
 </svg>
