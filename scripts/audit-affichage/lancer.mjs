@@ -281,6 +281,19 @@ async function preparerScene(page, si, sc) {
     await pause(800);
   }
   if (sc.agents) await page.evaluate(() => window.dispatchEvent(new CustomEvent("axe:open-agents")));
+  if (sc.clicBandeau) {
+    // Clic sur « N agent(s) au travail » (barre du compositeur) : doit ouvrir la conversation de l'agent.
+    await page.waitForSelector("[data-focus=true] .axe-agents-bandeau", { visible: true, timeout: 6000 }).catch(() => undefined);
+    await page.click("[data-focus=true] .axe-agents-bandeau").catch(() => undefined);
+    await pause(600);
+  }
+  if (sc.puisConversation) {
+    // … puis retour à « Conversations » et clic sur une conversation de la liste : elle remplace la vue agent.
+    await page.click(".sidebar-tab[aria-label='Conversations']").catch(() => undefined);
+    await pause(300);
+    await cliquerTexte(page, ".conv-row__title", sc.puisConversation);
+    await pause(800);
+  }
   if (sc.reglages) {
     // Raccourci de l'appli : Ctrl + , (axe/raccourcis.ts).
     await page.keyboard.down("Control");

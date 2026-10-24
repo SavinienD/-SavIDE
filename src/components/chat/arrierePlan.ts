@@ -37,8 +37,19 @@ export function consigneArrierePlan(titre: string | null | undefined): string {
   return (
     `Tu continues en arrière-plan la tâche de la conversation « ${titrePropre(titre)} », ` +
     "que l'utilisateur a libérée. Reprends exactement où le travail s'est arrêté, sans refaire " +
-    "ce qui est fait. À la fin, rends compte en deux phrases à la conversation parente " +
-    "avec messages.send(…, receiver_role='parent')."
+    "ce qui est fait. Ta réponse finale est transmise automatiquement à la conversation " +
+    "principale : termine par un compte rendu court (ce qui est fait, ce qui reste), " +
+    "sans appeler messages.send pour le répéter."
+  );
+}
+
+/** axe:bg-a — message système déposé dans la conversation principale quand son
+ * travail en cours est basculé en arrière-plan (livré à son prochain tour). */
+export function messageSystemeArrierePlan(nom: string, id: string): string {
+  return (
+    `[système] Ton travail en cours a été basculé en arrière-plan dans la session « ${nom} » ` +
+    `(${id}) à la demande de l'utilisateur. Ne le reprends pas ici : son résultat final ` +
+    "arrivera dans cette conversation dès que la session aura fini."
   );
 }
 
@@ -63,6 +74,8 @@ export type ServicesArrierePlan = {
   forker(id: string, nom: string, parentId: string): Promise<{ id: string; name?: string }>;
   envoyer(id: string, texte: string): Promise<unknown>;
   attendre(ms: number): Promise<void>;
+  /** axe:bg-a — note système à la conversation (de la part du clone), sans lancer de tour. */
+  prevenir?(conversationId: string, depuis: string, texte: string): Promise<unknown>;
 };
 
 export class ErreurArrierePlan extends Error {
@@ -96,5 +109,13 @@ export async function mettreEnArrierePlan(
   const clone = await services.forker(conversation.id, nom, conversation.id);
   if (!clone?.id) throw new ErreurArrierePlan("le service n'a pas créé la session d'arrière-plan");
   await services.envoyer(clone.id, consigneArrierePlan(conversation.titre));
-  return { id: clone.id, nom: clone.name || nom };
+  const nomFinal = clone.name || nom;
+  if (services.prevenir) {
+    try {
+      await services.prevenir(conversation.id, clone.id, messageSystemeArrierePlan(nomFinal, clone.id));
+    } catch {
+      /* la note précède aussi le prochain message en file (noteConversation) */
+    }
+  }
+  return { id: clone.id, nom: nomFinal };
 }

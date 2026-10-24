@@ -120,6 +120,17 @@ async fn run_inner(
             volatile.push(block);
         }
     }
+    // axe:bg-d — automatic status of the sub-agents at work, at the start of
+    // the turn, then refreshed every SUBAGENTS_STATUS_EVERY during a long turn.
+    let me_id = request.session.id.clone();
+    let now_ms = || {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as i64)
+            .unwrap_or(0)
+    };
+    let mut subagents_block = crate::rlm::render_subagents_status(&me_id, &sessions, now_ms());
+    let mut subagents_at = std::time::Instant::now();
 
     let mut usage_total = Usage::default();
     let mut final_text = String::new();
@@ -138,8 +149,16 @@ async fn run_inner(
             .providers
             .provider(&meta.model.provider)
             .map_err(SessionError::Runtime)?;
+        if subagents_at.elapsed() >= crate::rlm::SUBAGENTS_STATUS_EVERY {
+            let sessions = shared.host.list_sessions().await;
+            subagents_block = crate::rlm::render_subagents_status(&me_id, &sessions, now_ms());
+            subagents_at = std::time::Instant::now();
+        }
         let todo_block = lock(&shared.todo).system_block();
         let mut blocks = volatile.clone();
+        if let Some(block) = &subagents_block {
+            blocks.push(block.clone());
+        }
         if let Some(todo) = todo_block {
             blocks.push(format!("<todo_list_state>\n{todo}\n</todo_list_state>"));
         }

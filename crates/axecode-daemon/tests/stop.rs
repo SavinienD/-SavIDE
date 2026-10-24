@@ -350,3 +350,63 @@ async fn stop_over_the_websocket_listener() {
     let _ = tokio::time::timeout(Duration::from_secs(5), handle).await;
     std::fs::remove_dir_all(dir).ok();
 }
+
+/// axe:bg-b — the process running a worker goes away mid-turn (runtime
+/// dropped): the session must not stay "running" for good, and a new message
+/// must start a fresh worker instead of being queued behind a dead one.
+#[test]
+fn a_worker_that_vanishes_leaves_the_session_idle() {
+    let (d, counters, dir) = daemon(false, |_| {});
+    let id = create(&d);
+    let rt = tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap();
+    rt.block_on(async {
+        d.send_user(&id, ChatMessage::user_text("hang")).unwrap();
+        wait_turns(&counters, 1).await;
+        wait_status(&d, &id, SessionStatus::Running, Duration::from_secs(2)).await;
+    });
+    rt.shutdown_timeout(Duration::from_secs(1));
+    assert_eq!(d.meta(&id).unwrap().status, SessionStatus::Idle, "finished worker still shown running");
+    let rt = tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap();
+    rt.block_on(async {
+        d.send_user(&id, ChatMessage::user_text("again")).unwrap();
+        wait_text(&d, &id, "reply to: again").await;
+        wait_status(&d, &id, SessionStatus::Idle, Duration::from_secs(5)).await;
+    });
+    std::fs::remove_dir_all(dir).ok();
+}
+
+/// axe:bg-b — messages sent right as a turn ends: the session ends idle,
+/// never "running" with no worker, nor "idle" with one.
+#[tokio::test(flavor = "multi_thread")]
+async fn back_to_back_turns_end_idle() {
+    let (d, counters, dir) = daemon(false, |_| {});
+    let id = create(&d);
+    for i in 0..30 {
+        d.send_user(&id, ChatMessage::user_text(format!("m{i}"))).unwrap();
+        tokio::time::sleep(Duration::from_millis(i % 3)).await;
+    }
+    wait_text(&d, &id, "reply to: m29").await;
+    wait_status(&d, &id, SessionStatus::Idle, Duration::from_secs(5)).await;
+    assert!(counters.turns.load(Ordering::SeqCst) >= 1);
+    std::fs::remove_dir_all(dir).ok();
+}
+
+/// axe:bg-a — `sessions.message` with `wake: false` journals the note for the
+/// next turn without starting one.
+#[tokio::test(flavor = "multi_thread")]
+async fn quiet_system_note_does_not_start_a_turn() {
+    let (d, counters, dir) = daemon(false, |_| {});
+    let id = create(&d);
+    d.dispatch(0, "sessions.message", json!({"sessionId": id, "from": "clone-1", "text": "[système] basculé", "wake": false}))
+        .await
+        .unwrap();
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    assert_eq!(counters.turns.load(Ordering::SeqCst), 0, "a turn was started");
+    assert!(journal_text(&d, &id).contains("basculé"), "note not journaled");
+    // Without `wake: false`, a peer message wakes the session.
+    d.dispatch(0, "sessions.message", json!({"sessionId": id, "from": "clone-1", "text": "[sub-agent result] fini"}))
+        .await
+        .unwrap();
+    wait_turns(&counters, 1).await;
+    std::fs::remove_dir_all(dir).ok();
+}

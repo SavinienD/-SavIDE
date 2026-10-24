@@ -123,6 +123,10 @@ export const SCENES = [
     temoins: ["sel:.axe-indicateur[data-kind='heartbeat']", "sel:.axe-indicateur[data-kind='goal']", "sel:.axe-reveil", "sel:.axe-indicateurs__detail"],
     attendus: ["coucou", "Arrêter le réveil", "Toutes les 1 min"],
   },
+  // Clic sur « N agent(s) au travail » : ouvre la conversation (journal) de l'agent, comme la vue Agents.
+  { id: "bandeau-agents-clic", sim: { tour: "en_cours", sousAgents: 2 }, stockage: () => colonnes([ids(3)]), clicBandeau: true, temoins: ["sel:.axe-journal", "sel:.axe-agents"] },
+  // Bug : après le chat d'un agent, un clic sur une conversation de la liste doit l'afficher (plus le journal de l'agent).
+  { id: "agent-puis-conversation", sim: { tour: "en_cours", sousAgents: 2 }, stockage: () => colonnes([ids(3)]), clicBandeau: true, puisConversation: TITRES["c-002"], temoins: ["sel:.colonne-chat[data-focus='true'] .chat-body"] },
   { id: "agents", sim: { sousAgents: 3 }, stockage: () => colonnes([ids(3)]), agents: true, temoins: ["sel:.axe-agents"] },
   // Bugs SavIDE 0.1.58 : dans une conversation sans dossier, Accueil / Ouvrir un dossier /
   // Réglages étaient rognés (barre d'actions de largeur 0) ; /login ouvrait « À propos » ou rien.

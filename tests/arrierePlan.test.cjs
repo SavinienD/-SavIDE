@@ -63,7 +63,31 @@ test("stop, attente de la fin du tour, fork enfant de la conversation, consigne 
   assert.equal(cible, "clone-1");
   assert.match(consigne, /^Tu continues en arrière-plan la tâche de la conversation « Migration FIC », que l'utilisateur a libérée\./);
   assert.match(consigne, /Reprends exactement où le travail s'est arrêté, sans refaire ce qui est fait\./);
-  assert.match(consigne, /messages\.send\(…, receiver_role='parent'\)\.$/);
+  assert.match(consigne, /transmise automatiquement à la conversation principale/);
+});
+
+test("axe:bg-a — la conversation principale reçoit un message système (du clone)", async () => {
+  const d = demon({ toursAvantArret: 0 });
+  d.services.prevenir = async (conv, depuis, texte) => {
+    d.appels.push(["prevenir", conv, depuis, texte]);
+  };
+  await A.mettreEnArrierePlan(d.services, { id: "conv", titre: "Migration FIC" });
+  const p = d.appels.find((a) => a[0] === "prevenir");
+  assert.ok(p, "conversation non prévenue");
+  assert.equal(p[1], "conv");
+  assert.equal(p[2], "clone-1");
+  const t = p[3].replace(/\u00a0|\u202f/g, " ");
+  assert.match(t, /^\[système\] Ton travail en cours a été basculé en arrière-plan dans la session « Migration FIC — arrière-plan » \(clone-1\)/);
+  assert.deepEqual(d.appels.slice(-3).map((a) => a[0]), ["fork", "send", "prevenir"]);
+});
+
+test("axe:bg-a — l'échec de la note système n'annule pas l'arrière-plan", async () => {
+  const d = demon({ toursAvantArret: 0 });
+  d.services.prevenir = async () => {
+    throw new Error("hors ligne");
+  };
+  const r = await A.mettreEnArrierePlan(d.services, { id: "conv", titre: "x" });
+  assert.equal(r.id, "clone-1");
 });
 
 test("le tour ne s'arrête pas : erreur, ni fork ni envoi", async () => {

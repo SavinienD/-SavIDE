@@ -451,6 +451,10 @@ export function ChatPane({
   const conversationViewsRef = useRef<Map<string, ChatViewState>>(new Map());
   // axe:sub-n — sous-agents (descendants) de la conversation active en cours d'execution.
   const [agentsAuTravail, setAgentsAuTravail] = useState(0);
+  // axe:bg-c — le plus récent des agents au travail : le clic sur le bandeau ouvre sa conversation.
+  const agentRecentRef = useRef<{ id: string; name: string } | null>(null);
+  // axe:bg-b — recompte à la fin de chaque tour (pas seulement sur événement / 10 s).
+  const rechargerAgentsRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     let vivant = true;
     const charger = async () => {
@@ -460,21 +464,30 @@ export function ChatPane({
         for (const x of all) if (x.parentId) enfants.set(x.parentId, [...(enfants.get(x.parentId) ?? []), x.id]);
         const parId = new Map(all.map((x) => [x.id, x]));
         let n = 0;
+        let recent: { id: string; name: string; t: number } | null = null;
         const pile = [...(enfants.get(conversationId) ?? [])];
         const vus = new Set<string>();
         while (pile.length) {
           const id = pile.pop()!;
           if (vus.has(id)) continue;
           vus.add(id);
-          if (parId.get(id)?.status === "running") n++;
+          const m = parId.get(id);
+          if (m?.status === "running") {
+            n++;
+            if (!recent || m.updatedAtMs > recent.t) recent = { id, name: m.name, t: m.updatedAtMs };
+          }
           pile.push(...(enfants.get(id) ?? []));
         }
-        if (vivant) setAgentsAuTravail(n);
+        if (vivant) {
+          agentRecentRef.current = recent ? { id: recent.id, name: recent.name } : null;
+          setAgentsAuTravail(n);
+        }
       } catch {
         if (vivant) setAgentsAuTravail(0);
       }
     };
     void charger();
+    rechargerAgentsRef.current = () => void charger();
     let unlisten: (() => void) | undefined;
     void agentsApi.onEvent(() => void charger()).then((fn) => (unlisten = fn));
     const timer = window.setInterval(() => void charger(), 10_000);
@@ -489,6 +502,10 @@ export function ChatPane({
     return isStreaming ? beginTurn(initial) : initial;
   });
   const viewRef = useRef(view);
+  // axe:bg-b — fin du tour : les agents qui ont fini ne sont plus comptés « au travail ».
+  useEffect(() => {
+    if (view.status !== "streaming") rechargerAgentsRef.current?.();
+  }, [view.status]);
   const appliedHistoryRef = useRef(history);
   const viewConversationIdRef = useRef(conversationId);
   const [subAgentViews, setSubAgentViews] = useState<
@@ -3556,8 +3573,13 @@ export function ChatPane({
           type="button"
           className="axe-agents-bandeau"
           style={{ display: "block", width: "100%", textAlign: "left", padding: "4px 10px", fontSize: 12, border: "none", cursor: "pointer", background: "var(--accent-soft, rgba(80,140,255,0.12))", color: "inherit" }}
-          title="Ouvrir la vue Agents"
-          onClick={() => window.dispatchEvent(new CustomEvent("axe:open-agents"))}
+          title="Ouvrir la conversation de l'agent"
+          onClick={() => {
+            // axe:bg-c — comme la vue Agents : ouvre la conversation (journal) de l'agent.
+            const a = agentRecentRef.current;
+            window.dispatchEvent(new CustomEvent("axe:open-agents"));
+            if (a) window.dispatchEvent(new CustomEvent("axe:open-agent-journal", { detail: { id: a.id, title: a.name || a.id.slice(0, 8) } }));
+          }}
         >
           ● {agentsAuTravail} agent(s) au travail
         </button>

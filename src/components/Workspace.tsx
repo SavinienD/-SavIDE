@@ -244,6 +244,15 @@ export function Workspace({
     window.addEventListener("axe:open-agents", ouvrir);
     return () => window.removeEventListener("axe:open-agents", ouvrir);
   }, []);
+  // axe:bg-c — … et ouvre la conversation de l'agent, comme un clic dans la vue Agents.
+  useEffect(() => {
+    const ouvrir = (e: Event) => {
+      const d = (e as CustomEvent<{ id: string; title: string; conn?: string }>).detail;
+      if (d?.id) setJournalSession({ id: d.id, conn: d.conn ?? LOCAL_CONNECTION, title: d.title });
+    };
+    window.addEventListener("axe:open-agent-journal", ouvrir);
+    return () => window.removeEventListener("axe:open-agent-journal", ouvrir);
+  }, []);
   // axe:e6 — les volets remplacent le verrou du panneau bas : chaque volet se
   // detache, se duplique et se reancre ; sa place et sa taille sont gardees
   // (localStorage) et jamais perdues hors de l'ecran.
@@ -2274,6 +2283,9 @@ export function Workspace({
           forker: (id, nom, parentId) => agentsApi.fork(id, undefined, nom, connexion, parentId),
           envoyer: (id, texte) => agentsApi.send(id, texte, connexion),
           attendre: (ms) => sleep(ms),
+          // axe:bg-a — la conversation est prévenue (message système, sans lancer de tour).
+          prevenir: (conversationId, depuis, texte) =>
+            agentsApi.call("sessions.message", { sessionId: conversationId, from: depuis, text: texte, wake: false }, connexion),
         },
         { id: conversation.id, titre: conversation.title },
       );
@@ -3063,7 +3075,11 @@ export function Workspace({
           conversations={conversations}
           activeId={activeConv.id}
           streamingIds={streamingConversationIds}
-          onSelect={selectConversation}
+          onSelect={(id) => {
+            // axe:bg-e — une conversation choisie dans la liste remplace la vue d'un agent.
+            setJournalSession(null);
+            void selectConversation(id);
+          }}
           onRename={renameConversation}
           onDelete={archiveConversation} // axe:suppr=archive
           // axe:e3 / axe:archive-locale — local comme espace cloud : on archive

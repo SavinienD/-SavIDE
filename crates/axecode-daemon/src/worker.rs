@@ -188,7 +188,39 @@ impl Daemon {
         }
     }
 
+    /// axe:bg-b — end of a worker (normal end, panic, or task dropped when the
+    /// process stops): the session is `Idle` unless another worker already
+    /// took over, decided under the same lock as `enqueue` (no race leaving a
+    /// finished session "running", nor a running one "idle"). A worker that
+    /// vanished without clearing its slot no longer blocks the session.
+    pub(crate) fn worker_ended(&self, id: &str, cancel: &Arc<AtomicBool>) {
+        let idle = {
+            let mut sessions = lock(&self.sessions);
+            let Some(slot) = sessions.get_mut(id) else {
+                return;
+            };
+            if slot.cancel.as_ref().is_some_and(|c| Arc::ptr_eq(c, cancel)) {
+                slot.cancel = None;
+            }
+            slot.cancel.is_none()
+        };
+        if idle {
+            self.set_status(id, SessionStatus::Idle);
+        }
+    }
+
     async fn run_worker(self: Arc<Self>, id: String, cancel: Arc<AtomicBool>) {
+        struct Fin {
+            daemon: Arc<Daemon>,
+            id: String,
+            cancel: Arc<AtomicBool>,
+        }
+        impl Drop for Fin {
+            fn drop(&mut self) {
+                self.daemon.worker_ended(&self.id, &self.cancel);
+            }
+        }
+        let _fin = Fin { daemon: self.clone(), id: id.clone(), cancel: cancel.clone() };
         self.set_status(&id, SessionStatus::Running);
         let mut restarts = 0u32;
         let mut pending: Option<TurnInput> = None;
@@ -233,6 +265,7 @@ impl Daemon {
                             payload: json!({"error": err.to_string()}),
                         },
                     );
+                    self.report_failure_to_parent(&id, &err.to_string());
                     cancel.store(false, Ordering::SeqCst);
                 }
                 Err(_) => {
@@ -243,11 +276,12 @@ impl Daemon {
                             payload: json!({"error": "worker crashed repeatedly"}),
                         },
                     );
+                    self.report_failure_to_parent(&id, "worker crashed repeatedly");
                     self.drop_runtime(&id).await;
                 }
             }
         }
-        self.set_status(&id, SessionStatus::Idle);
+        // Idle: set by `_fin` (worker_ended) on every way out.
     }
 
     /// Runs one turn (end-of-turn snapshot included) against Stop: once

@@ -297,6 +297,10 @@ impl Daemon {
                 let to = sid(&params)?;
                 let from = opt_str(&params, "from").unwrap_or_else(|| "user".into());
                 let text = opt_str(&params, "text").unwrap_or_default();
+                // axe:bg-a — `wake: false` : note système livrée au prochain tour, sans en lancer un.
+                if params.get("wake").and_then(Value::as_bool) == Some(false) {
+                    return ok(json!({"entryId": self.post_peer_quiet(&from, &to, text)?}));
+                }
                 ok(json!({"entryId": self.post_peer(&from, &to, text)?}))
             }
             methods::SESSIONS_STOP => {

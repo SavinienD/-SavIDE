@@ -94,6 +94,62 @@ fn session_json(meta: &SessionMeta) -> Value {
     })
 }
 
+/// axe:bg-d — how often a long turn gets a fresh status of its sub-agents.
+pub const SUBAGENTS_STATUS_EVERY: Duration = Duration::from_secs(180);
+
+/// axe:bg-d — automatic status of the sub-agents still at work under
+/// `parent_id` (descendants, depth shown by indentation): name, id, model,
+/// how long since they started and since their last activity. `None` when
+/// none is running.
+pub fn render_subagents_status(parent_id: &str, sessions: &[SessionMeta], now_ms: i64) -> Option<String> {
+    fn ago(now: i64, then: i64) -> String {
+        let s = ((now - then).max(0) / 1000) as u64;
+        if s < 60 { format!("{s} s") } else if s < 3600 { format!("{} min", s / 60) } else { format!("{} h {:02} min", s / 3600, (s % 3600) / 60) }
+    }
+    let mut lines = Vec::new();
+    let mut stack: Vec<(String, usize)> = sessions
+        .iter()
+        .filter(|m| m.parent_id.as_deref() == Some(parent_id))
+        .map(|m| (m.id.clone(), 0))
+        .collect();
+    stack.reverse();
+    let mut seen = std::collections::HashSet::new();
+    while let Some((id, depth)) = stack.pop() {
+        if !seen.insert(id.clone()) || depth > 8 {
+            continue;
+        }
+        let Some(m) = sessions.iter().find(|m| m.id == id) else { continue };
+        if m.status == SessionStatus::Running {
+            lines.push(format!(
+                "{}- `{}` ({}) running, {}/{}, started {} ago, last activity {} ago, {} journal entries",
+                "  ".repeat(depth),
+                m.name,
+                m.id,
+                m.model.provider,
+                m.model.name,
+                ago(now_ms, m.created_at_ms),
+                ago(now_ms, m.updated_at_ms),
+                m.entry_count
+            ));
+        }
+        let mut kids: Vec<(String, usize)> = sessions
+            .iter()
+            .filter(|c| c.parent_id.as_deref() == Some(id.as_str()))
+            .map(|c| (c.id.clone(), depth + 1))
+            .collect();
+        kids.reverse();
+        stack.extend(kids);
+    }
+    if lines.is_empty() {
+        return None;
+    }
+    Some(format!(
+        "<subagents_status>\nAutomatic status of your sub-agents still at work ({} running; refreshed every few minutes, their results reach you as peer messages):\n{}\n</subagents_status>",
+        lines.len(),
+        lines.join("\n")
+    ))
+}
+
 /// `"provider/model"` → [`ModelRef`].
 pub fn parse_model(value: &str) -> Option<ModelRef> {
     let (provider, name) = value.split_once('/')?;
@@ -508,6 +564,33 @@ mod tests {
     fn utilization_shapes() {
         assert_eq!(max_utilization(&json!({"five_hour": {"utilization": 42.0}, "seven_day": {"utilization": 0.9}})), Some(90.0));
         assert_eq!(max_utilization(&json!({"x": 1})), None);
+    }
+
+    #[test]
+    fn subagents_status_lists_running_descendants_only() {
+        let meta = |id: &str, parent: Option<&str>, status: SessionStatus| -> SessionMeta {
+            let mut m: SessionMeta = serde_json::from_value(json!({
+                "id": id, "name": format!("n-{id}"), "workspaceId": "ws",
+                "model": {"provider": "anthropic", "name": "claude"}, "status": status,
+                "createdAtMs": 0, "updatedAtMs": 120_000, "entryCount": 7
+            }))
+            .unwrap();
+            m.parent_id = parent.map(Into::into);
+            m
+        };
+        let all = vec![
+            meta("me", None, SessionStatus::Running),
+            meta("a", Some("me"), SessionStatus::Running),
+            meta("b", Some("me"), SessionStatus::Idle),
+            meta("c", Some("b"), SessionStatus::Running),
+            meta("z", Some("other"), SessionStatus::Running),
+        ];
+        let out = render_subagents_status("me", &all, 3_725_000).unwrap();
+        assert!(out.contains("2 running"), "{out}");
+        assert!(out.contains("- `n-a` (a) running, anthropic/claude, started 1 h 02 min ago, last activity 1 h 00 min ago, 7 journal entries"), "{out}");
+        assert!(out.contains("  - `n-c` (c)"), "grandchild indented: {out}");
+        assert!(!out.contains("n-b") && !out.contains("n-z"), "{out}");
+        assert!(render_subagents_status("a", &all, 0).is_none());
     }
 
     #[test]

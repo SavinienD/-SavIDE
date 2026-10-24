@@ -891,6 +891,30 @@ impl Daemon {
         Ok(entry)
     }
 
+    /// axe:bg-a — like [`Self::post_peer`] but never starts a turn: the
+    /// message is delivered with the next one (system note to a conversation).
+    pub fn post_peer_quiet(&self, from: &str, to: &str, text: String) -> SessionResult<EntryId> {
+        self.append(
+            to,
+            JournalEntryKind::PeerMessage {
+                from_session: from.to_string(),
+                text,
+            },
+        )
+    }
+
+    /// axe:bg-a — a sub-agent (or background session) whose turn ended on a
+    /// service-side failure still reports to its parent, which would
+    /// otherwise wait for a result that never comes.
+    pub(crate) fn report_failure_to_parent(&self, id: &str, error: &str) {
+        let Ok(meta) = self.meta(id) else { return };
+        let Some(parent) = meta.parent_id.clone() else { return };
+        let text = format!("[sub-agent error] `{}` stopped on an error:\n\n{error}", meta.name);
+        if let Err(err) = self.post_peer(id, &parent, text) {
+            tracing::warn!(session = %id, error = %err, "failure report to parent lost");
+        }
+    }
+
     pub fn stop(&self, id: &str) -> SessionResult<()> {
         let mut sessions = lock(&self.sessions);
         let slot = sessions
