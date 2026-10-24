@@ -10,6 +10,7 @@ pub mod migration; // axe:migration
 pub mod orchestre; // axe:ds16
 pub mod cua; // axe:cua
 pub mod comfyui; // axe:comfyui
+pub mod commandes_naturelles; // axe:cmdnat
 #[cfg(windows)]
 mod powershell;
 pub mod question;

@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import { api, cloudRpc } from "../lib/ipc"; // axe:e16
 import { Markdown } from "./chat/Markdown";
 import { AxeLogo } from "../axe/Logo";
+import { dateMajLisible, noterLancement, versionAppli } from "../lib/versionAppli"; // axe:apropos
 import { RaccourcisSection } from "../axe/RaccourcisSection"; // axe:raccourcis
 import { VoixSection } from "../axe/voix/VoixSection"; // axe:voix
 import { AppearanceSection } from "../axe/AppearanceSection"; // axe:theme
@@ -1527,6 +1528,23 @@ export function SettingsPane({ workspacePath }: Props) {
 // ---- About section -----------------------------------------------------
 
 function AboutSection() {
+  const [version, setVersion] = useState<string | null>(null);
+  const [majLe, setMajLe] = useState<string | null>(null);
+  useEffect(() => {
+    let vivant = true;
+    void versionAppli().then((v) => {
+      if (!vivant || !v) return;
+      setVersion(v);
+      try {
+        setMajLe(dateMajLisible(noterLancement(window.localStorage, v).majLe));
+      } catch {
+        /* stockage indisponible : date inconnue */
+      }
+    });
+    return () => {
+      vivant = false;
+    };
+  }, []);
   return (
     <div className="settings-pane__body settings-pane__body--about">
       <div className="settings-pane__about-hero">
@@ -1535,18 +1553,23 @@ function AboutSection() {
         </span>
         <div className="settings-pane__about-title">
           <h1>SavIDE</h1>
+          {version ? (
+            <span className="settings-pane__about-version" data-version={version}>
+              Version {version}
+            </span>
+          ) : null}
+          {version && majLe ? <span className="settings-pane__about-maj">Mise à jour le {majLe}</span> : null}
         </div>
       </div>
 
       <p className="settings-pane__about-line">
-        SavIDE est un IDE agentique 100 % local : éditeur, terminal, conversation et
-        retour en arrière, avec un REPL Python persistant comme outil principal et un
-        harnais que l&apos;agent fait évoluer lui-même. Rien ne part vers un cloud.
+        SavIDE est un IDE agentique 100 % local : éditeur, terminal et conversation avec un
+        agent qui travaille dans un REPL Python persistant et enrichit lui-même son harnais
+        (notes, mémoires, skills). Aucun cloud : tout reste sur votre machine.
       </p>
       <p className="settings-pane__about-line">
-        Les sessions survivent à la fermeture de la fenêtre, chaque fonction exposée
-        à l&apos;agent est désactivable et sa description éditable, et n&apos;importe quel
-        fournisseur de modèles peut être branché.
+        Les sessions continuent après la fermeture de la fenêtre, chaque outil de l&apos;agent
+        peut être désactivé et vous choisissez le fournisseur de modèles.
       </p>
 
       <div className="settings-pane__about-links">

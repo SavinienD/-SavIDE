@@ -50,13 +50,17 @@ test("toutes les commandes slash proposées sont servies (IDE ou service)", () =
 });
 
 test("/goal et /heartbeat acceptent les formes annoncées (service)", () => {
-  const rust = lire("crates/axecode-app/src/session_commands.rs");
-  for (const forme of ['"pause"', '"resume"', '"done"', '"clear"', '"off"']) {
-    assert.ok(rust.includes(forme), `forme ${forme} absente de run_slash`);
+  // axe:cmdnat — phrases libres analysées par commandes_naturelles.rs ; repli : confié à l'agent.
+  const rust = lire("crates/axecode-app/src/commandes_naturelles.rs");
+  for (const forme of ['"pause"', '"reprends"', '"fini"', '"efface"', '"stop"', '"arrete"', '"toutes"', '"every"', '"chaque"']) {
+    assert.ok(rust.includes(forme), `forme ${forme} absente de l'analyse`);
   }
+  const service = lire("crates/axecode-app/src/session_commands.rs");
+  assert.ok(!service.includes("Invalid /heartbeat usage"), "jamais « usage invalide »");
+  assert.ok(service.includes("fn reveil_a_confier") && service.includes("fn objectif_a_confier"), "repli vers l'agent");
   const usage = lire("src/components/chat/SlashCommands.tsx");
-  assert.match(usage, /\/goal <texte>[^"]*pause \| resume \| done \| clear/);
-  assert.match(usage, /\/heartbeat <intervalle> <message> \| off/);
+  assert.match(usage, /\/goal <objectif en phrase libre>/);
+  assert.match(usage, /\/heartbeat <phrase libre>/);
 });
 
 const ind = require(path.join(racine, "src/components/chat/logiqueIndicateurs.ts"));

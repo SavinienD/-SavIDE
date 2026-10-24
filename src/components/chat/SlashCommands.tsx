@@ -16,9 +16,9 @@ export type SlashCommandSpec = {
 };
 
 export const SLASH_COMMANDS: SlashCommandSpec[] = [
-  { name: "goal", usage: "/goal <texte> [--budget N] | pause | resume | done | clear", description: "Objectif persistant de la session (icône à côté du modèle)" },
+  { name: "goal", usage: "/goal <objectif en phrase libre>, ou « pause », « reprends », « c'est fini », « efface »", description: "Objectif persistant de la session (icône à côté du modèle), en phrase libre, ex. « migrer la base, budget 200k jetons »" },
   { name: "autonomous", usage: "/autonomous [--max-turns N] [--max-tokens N] [--timeout-ms N] [--gate \"cmd\"] [tâche]", description: "Continuation bornée, porte de validation optionnelle (stop pour arrêter)" },
-  { name: "heartbeat", usage: "/heartbeat <intervalle> <message> | off", description: "Réveil périodique de l'agent, ex. /heartbeat 1m coucou" },
+  { name: "heartbeat", usage: "/heartbeat <phrase libre>, ou « stop »", description: "Réveil périodique de l'agent, en phrase libre, ex. « dis coucou toutes les 5 minutes »" },
   { name: "compact", usage: "/compact [directive]", description: "Compacter la conversation (traité par l'agent : compact.run)" },
   { name: "refine", usage: "/refine [focus]", description: "Améliorer le harnais à partir de cette session", client: true },
   { name: "tree", usage: "/tree", description: "Arbre du journal de la session, retour à un point", client: true },

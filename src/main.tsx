@@ -17,6 +17,7 @@ import { initTextScale } from "./axe/zoom"; // axe:zoom
 import { bridgeProviderEvents } from "./axe/providers"; // axe:providers
 import "./lib/customIcons";
 import { api } from "./lib/ipc";
+import { noterLancement, versionAppli } from "./lib/versionAppli"; // axe:apropos
 import { ErrorBoundary, verrouillerRacine } from "./components/ErrorBoundary"; // axe:robustesse
 
 // Suppress the native WebKit context menu everywhere except inside text
@@ -90,3 +91,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </ErrorBoundary>
   </React.StrictMode>,
 );
+
+// axe:apropos — note la version lancée dès le démarrage : la date de mise à jour
+// (Réglages > À propos) est celle du premier lancement de la nouvelle version.
+void versionAppli().then((v) => {
+  if (!v) return;
+  try {
+    noterLancement(window.localStorage, v);
+  } catch {
+    /* stockage indisponible */
+  }
+});

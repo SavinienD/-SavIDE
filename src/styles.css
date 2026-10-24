@@ -3851,8 +3851,9 @@ textarea {
 
 .settings-pane__about-title {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  flex-direction: column; /* axe:apropos — version sous le titre */
+  align-items: flex-start;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -10634,3 +10635,16 @@ textarea {
 .terminal-viewport .xterm { box-sizing: border-box; padding: 4px 4px 8px 8px; }
 /* axe:cles-api — spécificité plus forte que le style des champs des réglages. */
 .settings-pane .settings-pane__tool-credential-field > input { padding-right: 64px !important; }
+
+/* axe:apropos — version et date de mise à jour sous le titre, sur une ligne chacune */
+.settings-pane__about-version,
+.settings-pane__about-maj {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--text-3);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-pane__about-title { flex: 1 1 auto; }

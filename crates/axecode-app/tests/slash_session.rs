@@ -135,10 +135,26 @@ async fn heartbeat_et_goal_par_commande_slash() {
     let hb = b.hook.state(&b.id).heartbeat.expect("/heartbeat 1m coucou doit poser un heartbeat");
     assert_eq!(hb.interval_ms, 60_000);
     assert_eq!(hb.message, "coucou");
-    assert!(b.last_prompt().contains("installed a heartbeat"), "le modèle doit être prévenu");
+    assert!(b.last_prompt().contains("a installé un réveil"), "le modèle doit être prévenu");
 
     b.send("/heartbeat off").await;
     assert!(b.hook.state(&b.id).heartbeat.is_none(), "/heartbeat off doit l'arrêter");
+
+    // axe:cmdnat — langage naturel (exemples réels refusés par la 0.1.62).
+    b.send("/heartbeat dis coucou touets les 5secondes").await;
+    let hb = b.hook.state(&b.id).heartbeat.expect("phrase libre comprise");
+    assert_eq!((hb.interval_ms, hb.message.as_str()), (5_000, "coucou"));
+    b.send("/heartbeat print coucou toutes les 5s").await;
+    assert_eq!(b.hook.state(&b.id).heartbeat.unwrap().message, "coucou");
+    b.send("/heartbeat arrête").await;
+    assert!(b.hook.state(&b.id).heartbeat.is_none(), "« arrête » doit l'arrêter");
+    // Pas compris : confié à l'agent, jamais « usage invalide ».
+    b.send("/heartbeat dis coucou de temps en temps").await;
+    assert!(b.hook.state(&b.id).heartbeat.is_none());
+    let p = b.last_prompt();
+    assert!(p.contains("pas été comprise") && p.contains("heartbeat.set") && !p.contains("Invalid"), "{}", &p[p.len().saturating_sub(800)..]);
+    b.send("/heartbeat dis coucou toutes les 2 secondes").await;
+    assert!(b.hook.state(&b.id).heartbeat.is_none() && b.last_prompt().contains("minimum"));
 
     b.send("/goal finir le lot 3").await;
     let g = b.hook.state(&b.id).goal.expect("goal posé");
@@ -153,6 +169,31 @@ async fn heartbeat_et_goal_par_commande_slash() {
     assert_eq!((g.text.as_str(), g.status.as_str()), ("finir le lot 3", "complete"));
     b.send("/goal clear").await;
     assert!(b.hook.state(&b.id).goal.is_none(), "/goal clear doit l'effacer");
+
+    // axe:cmdnat — /goal en langage naturel.
+    b.send("/goal migrer la base avec un budget de 200k jetons").await;
+    let g = b.hook.state(&b.id).goal.expect("goal naturel");
+    assert_eq!((g.text.as_str(), g.budget_tokens), ("migrer la base", Some(200_000)));
+    // « /goal » seul : objectif rappelé UNE fois, en français (avant : deux fois, en anglais).
+    b.send("/heartbeat dis coucou toutes les 5 minutes").await;
+    b.send("/goal").await;
+    let p = b.last_prompt();
+    assert_eq!(p.matches("## Objectif de la session (en cours)").count(), 1, "{p}");
+    assert!(p.contains("## Commande `/goal`") && p.contains("Toutes les 5 min") && p.contains("/heartbeat stop"), "{p}");
+    for anglais in ["Session goal", "Slash command", "Every 300s", "to stop"] {
+        assert!(!p.contains(anglais), "texte anglais « {anglais} » : {p}");
+    }
+    b.send("/heartbeat stop").await;
+    b.send("/goal mets en pause").await;
+    assert_eq!(b.hook.state(&b.id).goal.unwrap().status, "paused");
+    b.send("/goal reprends").await;
+    assert_eq!(b.hook.state(&b.id).goal.unwrap().status, "active");
+    b.send("/goal c'est fini").await;
+    assert_eq!(b.hook.state(&b.id).goal.unwrap().status, "complete");
+    b.send("/goal termine la migration").await;
+    assert!(b.last_prompt().contains("pas été comprise"), "ambigu : confié à l'agent");
+    b.send("/goal efface").await;
+    assert!(b.hook.state(&b.id).goal.is_none());
 
     b.send("/autonomous --max-turns 1 relis").await;
     b.send("/autonomous stop").await;

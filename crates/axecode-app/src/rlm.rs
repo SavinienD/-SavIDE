@@ -121,7 +121,7 @@ pub fn render_subagents_status(parent_id: &str, sessions: &[SessionMeta], now_ms
         let Some(m) = sessions.iter().find(|m| m.id == id) else { continue };
         if m.status == SessionStatus::Running {
             lines.push(format!(
-                "{}- `{}` ({}) running, {}/{}, started {} ago, last activity {} ago, {} journal entries",
+                "{}- `{}` ({}) en cours, {}/{}, lancé il y a {}, dernière activité il y a {}, {} entrées de journal",
                 "  ".repeat(depth),
                 m.name,
                 m.id,
@@ -144,7 +144,7 @@ pub fn render_subagents_status(parent_id: &str, sessions: &[SessionMeta], now_ms
         return None;
     }
     Some(format!(
-        "<subagents_status>\nAutomatic status of your sub-agents still at work ({} running; refreshed every few minutes, their results reach you as peer messages):\n{}\n</subagents_status>",
+        "<subagents_status>\nÉtat automatique de vos sous-agents encore au travail ({} en cours ; rafraîchi toutes les quelques minutes, leurs résultats vous parviennent comme messages des pairs) :\n{}\n</subagents_status>",
         lines.len(),
         lines.join("\n")
     ))
@@ -586,8 +586,8 @@ mod tests {
             meta("z", Some("other"), SessionStatus::Running),
         ];
         let out = render_subagents_status("me", &all, 3_725_000).unwrap();
-        assert!(out.contains("2 running"), "{out}");
-        assert!(out.contains("- `n-a` (a) running, anthropic/claude, started 1 h 02 min ago, last activity 1 h 00 min ago, 7 journal entries"), "{out}");
+        assert!(out.contains("2 en cours"), "{out}");
+        assert!(out.contains("- `n-a` (a) en cours, anthropic/claude, lancé il y a 1 h 02 min, dernière activité il y a 1 h 00 min, 7 entrées de journal"), "{out}");
         assert!(out.contains("  - `n-c` (c)"), "grandchild indented: {out}");
         assert!(!out.contains("n-b") && !out.contains("n-z"), "{out}");
         assert!(render_subagents_status("a", &all, 0).is_none());

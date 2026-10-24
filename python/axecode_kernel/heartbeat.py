@@ -7,7 +7,7 @@ secondes tant que la session n'a rien d'autre à faire. ``heartbeat.clear()``
 l'arrête.
 
 Intervalles acceptés : ``"45s"``, ``"2m"``, ``"1h"`` ou un nombre de secondes.
-Commande équivalente : ``/heartbeat <intervalle> <message>``.
+Commande équivalente : ``/heartbeat <phrase libre>`` (ex. « dis coucou toutes les 5 minutes »).
 """
 
 from __future__ import annotations

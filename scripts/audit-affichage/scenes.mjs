@@ -135,6 +135,11 @@ export const SCENES = [
   { id: "ide-login", sim: {}, stockage: () => colonnes([ids(3)]), ecrire: "/login", temoins: ["sel:.settings-pane .settings-pane__nav-item[data-section='providers'][data-active='true']"] },
   { id: "ide-barre", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["clic:.titlebar__btn[data-action='accueil']", "clic:.titlebar__btn[data-action='reglages']"] },
   { id: "reglages", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, temoins: ["sel:.settings-pane"] },
+  // Réglages > À propos : version lue à l'exécution (getVersion, simulée 0.1.61) sous le titre ; la
+  // version lancée avant était la 0.1.60, donc la date de mise à jour est connue et affichée.
+  { id: "apropos", sim: {}, stockage: () => ({ ...colonnes([ids(3)]), "axe:version-lancee": { version: "0.1.60", majLe: null } }), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='about']"],
+    temoins: ["sel:.settings-pane__about-version[data-version='0.1.61']", "sel:.settings-pane__about-maj"] },
   // Réglages > MCP : « Supprimer » sur le serveur « github » (un clic arme, le second confirme) :
   // l'entrée quitte la liste (le moteur la retire de la config), « postgres » reste. Identifiants
   // enregistrés (« cat_github ») ≠ identifiants de l'interface (« mcp_github », recalculés du JSON).

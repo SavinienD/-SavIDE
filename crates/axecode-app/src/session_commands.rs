@@ -446,22 +446,34 @@ impl SessionCommandsHook {
         let inner = &self.inner;
         Some(match cmd.name.as_str() {
             "goal" => {
-                let (flags, words) = take_flags(&cmd.args, &["budget"]);
-                let text = words.join(" ");
-                match text.as_str() {
-                    "" => return Some(goal_reminder(&inner.load(id)).unwrap_or_else(|| "No goal is set.".into())),
-                    "clear" | "off" | "stop" => { self.goal_call(session, "goal.clear", json!({})).await.ok(); "The user cleared the goal.".into() }
-                    "pause" => { self.goal_call(session, "goal.pause", json!({})).await.ok(); "The user paused the goal.".into() }
-                    "resume" => { self.goal_call(session, "goal.resume", json!({})).await.ok(); "The user resumed the goal.".into() }
-                    "done" | "complete" | "fini" | "terminé" => {
-                        self.goal_call(session, "goal.complete", json!({"summary": "marqué atteint par l'utilisateur (/goal done)"})).await.ok();
-                        "The user marked the goal as reached (/goal done). Do not keep working on it.".into()
+                // axe:cmdnat — langage naturel ; jamais « usage invalide ».
+                use crate::commandes_naturelles::{analyser_goal, IntentionObjectif as I};
+                let brut = cmd.rest.trim();
+                match analyser_goal(brut) {
+                    // L'objectif est déjà rappelé par le bloc « Objectif de la session » du
+                    // tour : ne pas le répéter ici (avant : affiché deux fois).
+                    I::Afficher => if inner.load(id).goal.is_some() {
+                        "L'utilisateur demande l'objectif actuel (rappelé plus bas) : redis-le-lui en une phrase, en français.".into()
+                    } else {
+                        "Aucun objectif n'est fixé pour cette session : dis-le à l'utilisateur en une phrase (exemple : « /goal migrer la base »).".into()
+                    },
+                    I::Effacer => { self.goal_call(session, "goal.clear", json!({})).await.ok(); "L'utilisateur a effacé l'objectif de la session.".into() }
+                    I::Pause => { self.goal_call(session, "goal.pause", json!({})).await.ok(); "L'utilisateur a mis l'objectif en pause : n'y travaille plus tant qu'il ne l'a pas repris.".into() }
+                    I::Reprendre => { self.goal_call(session, "goal.resume", json!({})).await.ok(); "L'utilisateur a repris l'objectif : continue d'y travailler.".into() }
+                    I::Termine => {
+                        self.goal_call(session, "goal.complete", json!({"summary": "marqué atteint par l'utilisateur (/goal)"})).await.ok();
+                        "L'utilisateur a marqué l'objectif comme atteint. N'y travaille plus.".into()
                     }
-                    _ => {
-                        let budget = flags.get("budget").and_then(|b| b.replace(['_', ' '], "").parse::<u64>().ok());
-                        let _ = self.goal_call(session, "goal.set", json!({"text": text, "budget_tokens": budget})).await;
-                        format!("The user set a persistent session goal: {text}. Work towards it; record progress with `goal.progress(note)` and call `goal.complete(summary)` only when it is fully reached.")
+                    I::Poser { texte, budget } => {
+                        match self.goal_call(session, "goal.set", json!({"text": texte, "budget_tokens": budget})).await {
+                            Ok(_) => format!(
+                                "L'utilisateur a fixé un objectif persistant pour la session : {texte}{}. Travaille à l'atteindre ; note l'avancement avec `goal.progress(note)` et n'appelle `goal.complete(summary)` que lorsqu'il est entièrement atteint. (Demande d'origine : « /goal {brut} » ; si cette lecture est fausse, corrige-la avec `goal.set(...)`.)",
+                                budget.map(|b| format!(" (budget : {b} jetons)")).unwrap_or_default()
+                            ),
+                            Err(e) => objectif_a_confier(brut, &e),
+                        }
                     }
+                    I::Flou { raison } => objectif_a_confier(brut, &raison),
                 }
             }
             "autonomous" => {
@@ -492,18 +504,32 @@ impl SessionCommandsHook {
                 )
             }
             "heartbeat" => {
-                let first = cmd.args.first().cloned().unwrap_or_default();
-                if first.is_empty() || matches!(first.as_str(), "clear" | "off" | "stop") {
-                    let _ = self.heartbeat_call(session, "heartbeat.clear", json!({})).await;
-                    return Some("The user cleared the heartbeat.".into());
-                }
-                let message = cmd.args[1..].join(" ");
-                match parse_interval(&first) {
-                    Some(ms) if !message.trim().is_empty() => {
-                        let _ = self.heartbeat_call(session, "heartbeat.set", json!({"interval_ms": ms, "message": message})).await;
-                        format!("The user installed a heartbeat every {first}: «{message}». It will reach you as a <heartbeat> message.")
+                // axe:cmdnat — langage naturel ; jamais « usage invalide ».
+                use crate::commandes_naturelles::{analyser_heartbeat, decrire_duree, IntentionReveil as I};
+                let brut = cmd.rest.trim();
+                match analyser_heartbeat(brut) {
+                    I::Afficher => match inner.load(id).heartbeat {
+                        Some(_) => "L'utilisateur demande le réveil actuel (rappelé plus bas) : redis-le-lui en une phrase, en français.".into(),
+                        None => "L'utilisateur demande le réveil actuel : aucun réveil n'est en place. Dis-le-lui en une phrase (exemple : « /heartbeat dis coucou toutes les 5 minutes »).".into(),
+                    },
+                    I::Arreter => {
+                        let _ = self.heartbeat_call(session, "heartbeat.clear", json!({})).await;
+                        "L'utilisateur a arrêté le réveil (heartbeat).".into()
                     }
-                    _ => "Invalid /heartbeat usage. Expected `/heartbeat <interval> <message>` (e.g. `/heartbeat 10m check CI`).".into(),
+                    I::Poser { interval_ms, message } if interval_ms < MIN_HEARTBEAT_MS => format!(
+                        "L'utilisateur a demandé un réveil toutes les {} (« {message} »), mais le minimum est de {} s : rien n'a été installé. Dis-le-lui en une phrase et propose {} s.",
+                        decrire_duree(interval_ms), MIN_HEARTBEAT_MS / 1000, MIN_HEARTBEAT_MS / 1000
+                    ),
+                    I::Poser { interval_ms, message } => {
+                        match self.heartbeat_call(session, "heartbeat.set", json!({"interval_ms": interval_ms, "message": message})).await {
+                            Ok(_) => format!(
+                                "L'utilisateur a installé un réveil (heartbeat) toutes les {} : « {message} ». Il t'arrivera comme message <heartbeat>. (Demande d'origine : « /heartbeat {brut} » ; si cette lecture est fausse, corrige-la avec `heartbeat.set(intervalle, message)` ou `heartbeat.clear()`.)",
+                                decrire_duree(interval_ms)
+                            ),
+                            Err(e) => reveil_a_confier(brut, &e),
+                        }
+                    }
+                    I::Flou { raison } => reveil_a_confier(brut, &raison),
                 }
             }
             "refine" => {
@@ -653,6 +679,20 @@ pub fn parse_heartbeat_text(text: &str) -> Option<(String, Option<i64>)> {
 /// autocompletion list against it).
 pub const SLASH_COMMANDS: &[&str] = &["goal", "autonomous", "heartbeat", "refine", "compact"];
 
+/// axe:cmdnat — `/heartbeat` pas compris : la demande est confiée à l'agent.
+fn reveil_a_confier(brut: &str, raison: &str) -> String {
+    format!(
+        "La commande « /heartbeat {brut} » n'a pas été comprise automatiquement ({raison}). Interprète toi-même la demande de l'utilisateur : appelle `heartbeat.set(intervalle, message)` (intervalle « 30s », « 5m », « 1h » ; minimum 5 s ; message sans « dis »/« écris ») ou `heartbeat.clear()` pour l'arrêter. Si elle reste ambiguë, demande une précision à l'utilisateur en une phrase, en français. Ne réponds jamais « usage invalide »."
+    )
+}
+
+/// axe:cmdnat — `/goal` pas compris : la demande est confiée à l'agent.
+fn objectif_a_confier(brut: &str, raison: &str) -> String {
+    format!(
+        "La commande « /goal {brut} » n'a pas été comprise automatiquement ({raison}). Interprète toi-même la demande de l'utilisateur : `goal.set(text, budget_tokens=None)` pour fixer un objectif, `goal.pause()`, `goal.resume()`, `goal.complete(summary)` ou `goal.clear()`. Si elle reste ambiguë, demande une précision à l'utilisateur en une phrase, en français. Ne réponds jamais « usage invalide »."
+    )
+}
+
 fn describe_autonomous(a: &Autonomous) -> String {
     let mut parts = Vec::new();
     if let Some(v) = a.max_turns { parts.push(format!("max {v} turns")); }
@@ -664,18 +704,24 @@ fn describe_autonomous(a: &Autonomous) -> String {
 
 fn goal_reminder(state: &SessionState) -> Option<String> {
     let goal = state.goal.as_ref()?;
-    let mut out = format!("## Session goal ({})\n{}\n", goal.status, goal.text);
+    let statut = match goal.status.as_str() {
+        "active" => "en cours",
+        "paused" => "en pause",
+        "complete" => "atteint",
+        autre => autre,
+    };
+    let mut out = format!("## Objectif de la session ({statut})\n{}\n", goal.text);
     if let Some(b) = goal.budget_tokens {
-        out.push_str(&format!("Token budget: {} / {b} used.\n", goal.used_tokens));
+        out.push_str(&format!("Budget : {} / {b} jetons utilisés.\n", goal.used_tokens));
     }
     if !goal.progress.is_empty() {
-        out.push_str("Progress:\n");
+        out.push_str("Avancement :\n");
         for p in goal.progress.iter().rev().take(8).rev() {
             out.push_str(&format!("- {p}\n"));
         }
     }
     if let Some(s) = &goal.summary {
-        out.push_str(&format!("Completion summary: {s}\n"));
+        out.push_str(&format!("Résumé de fin : {s}\n"));
     }
     Some(out.trim_end().to_string())
 }
@@ -795,7 +841,7 @@ impl TurnHook for SessionCommandsHook {
         let mut blocks = Vec::new();
         if let Some(cmd) = user_text(request).as_deref().and_then(parse_slash) {
             if let Some(notice) = self.run_slash(session, &cmd).await {
-                blocks.push(format!("## Slash command `/{}`\n{notice}", cmd.name));
+                blocks.push(format!("## Commande `/{}`\n{notice}", cmd.name));
             }
         }
         // A ready /refine plan is applied at the start of the next turn.
@@ -836,7 +882,11 @@ impl TurnHook for SessionCommandsHook {
             ));
         }
         if let Some(hb) = &state.heartbeat {
-            blocks.push(format!("## Heartbeat\nEvery {}s: «{}» (`heartbeat.clear()` to stop).", hb.interval_ms / 1000, hb.message));
+            blocks.push(format!(
+                "## Réveil\nToutes les {} : « {} » (pour l'arrêter : /heartbeat stop, ou `heartbeat.clear()`).",
+                crate::commandes_naturelles::decrire_duree(hb.interval_ms),
+                hb.message
+            ));
         }
         blocks.extend(state.notices);
         (!blocks.is_empty()).then(|| blocks.join("\n\n"))
