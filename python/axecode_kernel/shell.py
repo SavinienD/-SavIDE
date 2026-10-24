@@ -6,6 +6,8 @@ bash/sh ailleurs) dans le dossier de travail et renvoie ``{"exit_code", "output"
 variables survivent d'un appel ``send`` à l'autre) — utile pour les longs
 enchaînements ; fermez-le avec ``close()`` à la fin.
 Processus longs ou en arrière-plan : ``start(cmd)`` puis ``poll(proc)``.
+Dans ces shells, ``python`` et ``pip`` sont le Python du noyau (en tête du
+PATH) : ``pip install x`` rend ``x`` importable dans le noyau.
 """
 
 from __future__ import annotations
