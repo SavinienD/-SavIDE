@@ -3,9 +3,12 @@
 ``refine.run(focus=None)`` demande à un planificateur en arrière-plan de lire
 la trajectoire actuelle et de proposer le *plus petit* changement utile du
 harnais (une mémoire, une note de prompt, un skill…). La planification ne vous
-bloque jamais ; le changement est appliqué au début du tour suivant et signalé
-dans le rappel système avec son identifiant. Chaque affinage est journalisé
-avec ses preuves et peut être annulé par ``refine.rollback(id)``.
+bloque jamais : le changement est appliqué en arrière-plan dès qu'il est prêt,
+journalisé (appliqué / rien à changer / échec avec sa raison / arrêté) et
+signalé dans le rappel système suivant avec son identifiant.
+``refine.cancel()`` arrête un affinage en cours.
+Chaque affinage est journalisé avec ses preuves et peut être annulé par
+``refine.rollback(id)``.
 
 À utiliser après avoir corrigé une erreur, appris une préférence de
 l'utilisateur ou écrit un utilitaire qui mérite d'être réutilisé.
@@ -17,7 +20,7 @@ from typing import Any
 
 from axecode_kernel import bridge
 
-__all__ = ["run", "status", "history", "rollback"]
+__all__ = ["run", "status", "history", "rollback", "cancel"]
 
 
 def run(focus: str | None = None) -> dict[str, Any]:
@@ -33,6 +36,11 @@ def status() -> dict[str, Any]:
 def history() -> list[dict[str, Any]]:
     """Tous les enregistrements d'affinage, du plus récent au plus ancien."""
     return bridge.call("refine.history", {}) or []
+
+
+def cancel(id: str | None = None) -> dict[str, Any]:  # noqa: A002
+    """Stop a running refinement (this session's one when ``id`` is omitted)."""
+    return bridge.call("refine.cancel", {"id": id})
 
 
 def rollback(id: str) -> dict[str, Any]:  # noqa: A002

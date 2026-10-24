@@ -144,6 +144,14 @@ pub(super) async fn harness_rollback(input: HarnessIdInput) -> IpcResult<Refinem
     refine::rollback(&store, &input.id).map_err(err)
 }
 
+/// axe:refine-run — stop a running refinement (aborts the local task if this
+/// process owns it; otherwise the owner sees the journal within a second).
+#[tauri::command]
+pub(super) async fn harness_refine_cancel(input: HarnessIdInput) -> IpcResult<RefinementRecord> {
+    let store = store_for(&input.workspace_path)?;
+    refine_runner().cancel(&store, &input.id).map_err(err)
+}
+
 #[tauri::command]
 pub(super) async fn harness_brain_detect(input: HarnessBrainInput) -> IpcResult<BrainDetection> {
     let root = workspace_root(&input.workspace_path)?;
@@ -197,7 +205,7 @@ pub(super) async fn harness_refine_start(
     let provider = crate::provider_from_registry(&state, &conversation.model.provider)?;
     let focus = input.focus.filter(|f| !f.trim().is_empty());
     // REPL mode: the session service owns the transcript, and turns never go
-    // through `turn_harness_layer`, so apply the plan as soon as it is ready.
+    // through `turn_harness_layer`: journal the outcome in the session once done.
     let repl = crate::daemon_client::repl_agent_enabled();
     let history = if repl {
         match crate::daemon_client::daemon_call_value(
@@ -227,7 +235,9 @@ pub(super) async fn harness_refine_start(
         let conversation_id = input.conversation_id;
         tauri::async_runtime::spawn(async move {
             let store = HarnessStore::open(&root);
-            for _ in 0..600 {
+            // The task always ends (timeout, cancel, panic caught): wait for it.
+            let ticks = (refine::PLANNING_TIMEOUT.as_millis() / 500) as usize + 240;
+            for _ in 0..ticks {
                 tokio::time::sleep(std::time::Duration::from_millis(500)).await;
                 let Some(result) = refine_runner().apply_pending(&store, &conversation_id) else {
                     continue;

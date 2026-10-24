@@ -424,6 +424,7 @@ pub fn run() {
             harness::harness_brain_import,
             harness::harness_refine_start,
             harness::harness_refine_status,
+            harness::harness_refine_cancel,
             harness::harness_cloud_sync,
             harness::harness_cloud_status,
             harness::harness_cloud_publish,

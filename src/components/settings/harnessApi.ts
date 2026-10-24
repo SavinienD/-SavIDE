@@ -47,7 +47,7 @@ export type HarnessNewEntry = {
 
 export type HarnessPatch = Partial<Omit<HarnessNewEntry, "source">> & { source?: string };
 
-export type RefineOutcome = "applied" | "noop" | "failed" | "rolled_back";
+export type RefineOutcome = "applied" | "noop" | "failed" | "rolled_back" | "running" | "cancelled";
 
 export type RefinementRecord = {
   id: string;
@@ -148,6 +148,12 @@ export const harnessApi = {
     if (conn) return cloudRpc<RefinementRecord>(conn, "harness.rollback", { id });
     return invoke<RefinementRecord>("harness_rollback", { input: { workspacePath, id } });
   },
+  // axe:refine-run — stop a running refinement.
+  refineCancel: (workspacePath: string, id: string) => {
+    const conn = cloudConnectionFromPath(workspacePath);
+    if (conn) return cloudRpc<RefinementRecord>(conn, "harness.refine_cancel", { id });
+    return invoke<RefinementRecord>("harness_refine_cancel", { input: { workspacePath, id } });
+  },
   brainDetect: (workspacePath: string, options: BrainImportOptions = {}) =>
     cloudUnsupported(workspacePath, "L'import du cerveau") ??
     invoke<BrainDetection>("harness_brain_detect", { input: { workspacePath, options } }),
@@ -164,7 +170,7 @@ export const harnessApi = {
     invoke<boolean>("harness_refine_start", { input: { workspacePath, conversationId, focus } }),
   refineStatus: (workspacePath: string, conversationId: string) =>
     cloudUnsupported(workspacePath, "/refine") ??
-    invoke<{ pending?: { state: "planning" | "ready" | "failed"; focus?: string; error?: string }; recent: RefinementRecord[] }>(
+    invoke<{ pending?: { recordId: string; state: "planning" | "done" | "failed"; focus?: string; error?: string; record?: RefinementRecord }; recent: RefinementRecord[] }>(
       "harness_refine_status",
       { input: { workspacePath, conversationId } },
     ),

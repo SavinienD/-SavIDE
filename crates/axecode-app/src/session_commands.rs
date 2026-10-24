@@ -463,7 +463,7 @@ impl SessionCommandsHook {
             "refine" => {
                 let focus = (!cmd.rest.is_empty()).then(|| cmd.rest.clone());
                 match self.start_refine(session, "user:/refine", focus).await {
-                    Ok(true) => "The user asked for a harness refinement; it is planning in the background and will be applied at the start of a later turn. Continue normally.".into(),
+                    Ok(true) => "The user asked for a harness refinement; it runs in the background and is applied as soon as it is ready (see `refine.status()`). Continue normally.".into(),
                     Ok(false) => "A harness refinement is already planning for this session.".into(),
                     Err(e) => format!("/refine could not start: {e}"),
                 }
@@ -755,7 +755,7 @@ impl TurnHook for SessionCommandsHook {
     }
 
     fn handles(&self, method: &str) -> bool {
-        method.starts_with("goal.") || method.starts_with("heartbeat.") || matches!(method, "refine.run" | "refine.status")
+        method.starts_with("goal.") || method.starts_with("heartbeat.") || matches!(method, "refine.run" | "refine.status" | "refine.cancel")
     }
 
     async fn host_call(&self, session: &SessionMeta, method: &str, params: Value) -> Result<Value, String> {
@@ -769,11 +769,18 @@ impl TurnHook for SessionCommandsHook {
             "refine.run" => {
                 let focus = params.get("focus").and_then(Value::as_str).map(str::to_string).filter(|f| !f.trim().is_empty());
                 let started = self.start_refine(session, "agent:refine.run", focus).await?;
-                Ok(json!({"started": started, "note": if started { "planning in the background; applied at the start of a later turn" } else { "a refinement is already planning" }}))
+                Ok(json!({"started": started, "note": if started { "running in the background; applied as soon as it is ready (refine.status() / refine.cancel())" } else { "a refinement is already running (refine.cancel() to stop it)" }}))
             }
             "refine.status" => {
                 let store = HarnessStore::open(&session.workspace_id);
                 refine::status_json(&self.inner.refine, &store, &session.id).map_err(|e| e.to_string())
+            }
+            // axe:refine-run — stop a running refinement (this session's one by default).
+            "refine.cancel" => {
+                let store = HarnessStore::open(&session.workspace_id);
+                let target = params.get("id").and_then(Value::as_str).filter(|v| !v.trim().is_empty()).unwrap_or(&session.id);
+                let record = self.inner.refine.cancel(&store, target).map_err(|e| format!("{e:#}"))?;
+                Ok(serde_json::to_value(record).map_err(|e| e.to_string())?)
             }
             other => Err(format!("unknown session command `{other}`")),
         }

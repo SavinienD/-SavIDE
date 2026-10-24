@@ -14,6 +14,7 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
+    time::Duration,
 };
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -100,6 +101,9 @@ pub enum RefineOutcome {
     Noop,
     Failed,
     RolledBack,
+    /// Planning in the background (`cancelled` / `failed` / `applied` follow).
+    Running,
+    Cancelled,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -377,8 +381,13 @@ pub struct ApplyInput<'a> {
 
 /// Apply a plan to the store, snapshotting every touched file first.
 pub fn apply(store: &HarnessStore, input: ApplyInput<'_>) -> Result<RefinementRecord> {
+    apply_with_id(store, input, &new_record_id())
+}
+
+/// [`apply`] under a known record id (the `running` record of the runner).
+pub fn apply_with_id(store: &HarnessStore, input: ApplyInput<'_>, id: &str) -> Result<RefinementRecord> {
     let plan = input.plan;
-    let id = format!("ref_{}", &uuid::Uuid::new_v4().simple().to_string()[..10]);
+    let id = id.to_string();
     let record_scope = dominant_scope(store, plan);
     let mut record = RefinementRecord {
         id: id.clone(),
@@ -680,13 +689,26 @@ pub fn history(store: &HarnessStore) -> Result<Vec<RefinementRecord>> {
             }
             match serde_json::from_str::<RefinementRecord>(line) {
                 Ok(record) => {
-                    by_id.insert(record.id.clone(), record);
+                    // A `running` marker never hides the outcome written later
+                    // (possibly in the other scope).
+                    let keep_old = record.outcome == RefineOutcome::Running
+                        && by_id.get(&record.id).is_some_and(|old| old.outcome != RefineOutcome::Running);
+                    if !keep_old {
+                        by_id.insert(record.id.clone(), record);
+                    }
                 }
                 Err(err) => tracing::warn!(error = %err, "skipping malformed refinement line"),
             }
         }
     }
     let mut out: Vec<RefinementRecord> = by_id.into_values().collect();
+    let now = now_ms();
+    for record in &mut out {
+        if record.outcome == RefineOutcome::Running && now - record.ts > STALE_RUNNING_MS {
+            record.outcome = RefineOutcome::Failed;
+            record.error = Some("interrompu : l'application a été fermée ou la tâche a disparu pendant l'affinage".into());
+        }
+    }
     out.sort_by(|a, b| b.ts.cmp(&a.ts));
     Ok(out)
 }
@@ -737,20 +759,33 @@ pub fn rollback(store: &HarnessStore, id: &str) -> Result<RefinementRecord> {
 }
 
 // ---------------------------------------------------------------------------
-// Runner: background planning + pending plans applied at the next turn
+// Runner: background planning + application, journaled, cancellable
 // ---------------------------------------------------------------------------
+
+/// Planning longer than this is abandoned and journaled as failed.
+pub const PLANNING_TIMEOUT: Duration = Duration::from_secs(10 * 60);
+/// A `running` record older than this (app closed during planning) is shown
+/// as failed by [`history`].
+const STALE_RUNNING_MS: i64 = 15 * 60 * 1000;
+/// How often the background task checks the journal for a cancellation
+/// (written by another process: settings window, daemon, kernel).
+const CANCEL_POLL: Duration = Duration::from_millis(1_000);
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum PendingState {
     Planning,
-    Ready,
+    /// Planned and applied (or noop); kept until the next turn mentions it.
+    Done,
     Failed,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PendingRefinement {
+    /// Id of the journal record (`running` until the task ends).
+    #[serde(default)]
+    pub record_id: String,
     pub conversation_id: String,
     pub trigger: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -758,7 +793,7 @@ pub struct PendingRefinement {
     pub started_at: i64,
     pub state: PendingState,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub plan: Option<RefinePlan>,
+    pub record: Option<RefinementRecord>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
 }
@@ -772,16 +807,84 @@ pub struct RefineStatus {
     pub recent: Vec<RefinementRecord>,
 }
 
-/// In-memory coordinator shared by the app. One pending refinement per
-/// conversation; planning runs on a tokio task.
-#[derive(Clone, Default)]
+fn new_record_id() -> String {
+    format!("ref_{}", &uuid::Uuid::new_v4().simple().to_string()[..10])
+}
+
+fn bare_record(id: &str, scope: Scope, trigger: &str, focus: Option<&str>, conversation_id: Option<&str>) -> RefinementRecord {
+    RefinementRecord {
+        id: id.to_string(),
+        ts: now_ms(),
+        scope,
+        trigger: trigger.to_string(),
+        focus: focus.map(str::to_string),
+        conversation_id: conversation_id.map(str::to_string),
+        summary: String::new(),
+        evidence: Vec::new(),
+        operations: Vec::new(),
+        diff: Vec::new(),
+        outcome: RefineOutcome::Running,
+        error: None,
+        touched_ids: Vec::new(),
+        snapshot: None,
+        rolled_back_at: None,
+    }
+}
+
+/// Cancel a refinement that is still running (any process: the task polls
+/// the journal). Returns the `cancelled` record.
+pub fn cancel(store: &HarnessStore, id: &str) -> Result<RefinementRecord> {
+    let mut record = history(store)?
+        .into_iter()
+        .find(|r| r.id == id)
+        .ok_or_else(|| anyhow!("affinage `{id}` introuvable"))?;
+    if record.outcome != RefineOutcome::Running {
+        bail!("l'affinage `{id}` n'est pas en cours (état : {:?})", record.outcome);
+    }
+    record.outcome = RefineOutcome::Cancelled;
+    record.error = Some("annulé par l'utilisateur".into());
+    append_record(store, &record)?;
+    Ok(record)
+}
+
+fn is_cancelled(store: &HarnessStore, id: &str) -> bool {
+    history(store)
+        .ok()
+        .and_then(|h| h.into_iter().find(|r| r.id == id))
+        .is_some_and(|r| r.outcome == RefineOutcome::Cancelled)
+}
+
+enum TaskEnd {
+    Planned(Result<RefinePlan>),
+    Cancelled,
+    TimedOut,
+}
+
+/// In-memory coordinator shared by the app. One running refinement per
+/// conversation; planning AND application run on a tokio task, and every
+/// outcome (applied, noop, failed, cancelled) is journaled in
+/// `refinements.jsonl`, so nothing waits for a next turn.
+#[derive(Clone)]
 pub struct RefineRunner {
     pending: Arc<Mutex<HashMap<String, PendingRefinement>>>,
+    tasks: Arc<Mutex<HashMap<String, tokio::task::AbortHandle>>>,
+    timeout: Duration,
+}
+
+impl Default for RefineRunner {
+    fn default() -> Self {
+        Self { pending: Arc::default(), tasks: Arc::default(), timeout: PLANNING_TIMEOUT }
+    }
 }
 
 impl RefineRunner {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn with_timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = timeout;
+        self
     }
 
     pub fn pending(&self, conversation_id: &str) -> Option<PendingRefinement> {
@@ -798,7 +901,8 @@ impl RefineRunner {
     }
 
     /// Start planning in the background. Returns `false` when a refinement is
-    /// already planning for this conversation.
+    /// already running for this conversation.
+    #[allow(clippy::too_many_arguments)]
     pub fn start(
         &self,
         provider: Arc<dyn Provider>,
@@ -809,44 +913,129 @@ impl RefineRunner {
         trigger: String,
         focus: Option<String>,
     ) -> bool {
+        let record_id = new_record_id();
         {
             let mut pending = match self.pending.lock() {
                 Ok(p) => p,
                 Err(_) => return false,
             };
-            if pending
-                .get(&conversation_id)
-                .is_some_and(|p| p.state == PendingState::Planning)
-            {
-                return false;
+            if let Some(current) = pending.get(&conversation_id).filter(|p| p.state == PendingState::Planning) {
+                // Still running unless it was cancelled from elsewhere.
+                if !is_cancelled(&store, &current.record_id) {
+                    return false;
+                }
             }
             pending.insert(
                 conversation_id.clone(),
                 PendingRefinement {
+                    record_id: record_id.clone(),
                     conversation_id: conversation_id.clone(),
                     trigger: trigger.clone(),
                     focus: focus.clone(),
                     started_at: now_ms(),
                     state: PendingState::Planning,
-                    plan: None,
+                    record: None,
                     error: None,
                 },
             );
         }
-        let pending = self.pending.clone();
-        tokio::spawn(async move {
-            let entries = store.load_all().unwrap_or_default();
-            let result = plan(provider.as_ref(), model, &history, &entries, focus.as_deref()).await;
-            if let Ok(mut map) = pending.lock() {
-                if let Some(slot) = map.get_mut(&conversation_id) {
-                    match result {
-                        Ok(plan) => {
-                            slot.state = PendingState::Ready;
-                            slot.plan = Some(plan);
+        // Journal « en cours » right away: the settings show it and can cancel it.
+        let running = bare_record(&record_id, Scope::Project, &trigger, focus.as_deref(), Some(&conversation_id));
+        if let Err(err) = append_record(&store, &running) {
+            tracing::warn!(error = %err, "refine: unable to journal the running record");
+        }
+
+        let timeout = self.timeout;
+        let work = {
+            let store = store.clone();
+            let record_id = record_id.clone();
+            let focus = focus.clone();
+            async move {
+                let entries = store.load_all().unwrap_or_default();
+                let planning = plan(provider.as_ref(), model, &history, &entries, focus.as_deref());
+                let watch = async {
+                    loop {
+                        tokio::time::sleep(CANCEL_POLL).await;
+                        if is_cancelled(&store, &record_id) {
+                            return;
                         }
-                        Err(err) => {
+                    }
+                };
+                tokio::select! {
+                    result = tokio::time::timeout(timeout, planning) => match result {
+                        Ok(planned) => TaskEnd::Planned(planned),
+                        Err(_) => TaskEnd::TimedOut,
+                    },
+                    () = watch => TaskEnd::Cancelled,
+                }
+            }
+        };
+        let inner = tokio::spawn(work);
+        if let Ok(mut tasks) = self.tasks.lock() {
+            tasks.insert(record_id.clone(), inner.abort_handle());
+        }
+        let pending = self.pending.clone();
+        let tasks = self.tasks.clone();
+        tokio::spawn(async move {
+            // `inner` may panic or be aborted: the join error is caught here.
+            let end = inner.await;
+            if let Ok(mut tasks) = tasks.lock() {
+                tasks.remove(&record_id);
+            }
+            let failed = |reason: String| {
+                let mut record = bare_record(&record_id, Scope::Project, &trigger, focus.as_deref(), Some(&conversation_id));
+                record.outcome = RefineOutcome::Failed;
+                record.summary = "L'affinage a échoué.".into();
+                record.error = Some(reason);
+                record
+            };
+            let result: Result<RefinementRecord, RefinementRecord> = match end {
+                Ok(TaskEnd::Planned(Ok(plan))) if is_cancelled(&store, &record_id) => {
+                    let _ = plan;
+                    Err(cancelled_record(&store, &record_id))
+                }
+                Ok(TaskEnd::Planned(Ok(plan))) => match apply_with_id(
+                    &store,
+                    ApplyInput {
+                        plan: &plan,
+                        trigger: &trigger,
+                        focus: focus.as_deref(),
+                        conversation_id: Some(&conversation_id),
+                    },
+                    &record_id,
+                ) {
+                    Ok(record) if record.outcome == RefineOutcome::Failed => Err(record),
+                    Ok(record) => Ok(record),
+                    Err(err) => Err(failed(format!("application impossible : {err:#}"))),
+                },
+                Ok(TaskEnd::Planned(Err(err))) => Err(failed(format!("préparation impossible : {err:#}"))),
+                Ok(TaskEnd::TimedOut) => Err(failed(format!(
+                    "délai dépassé : pas de réponse du modèle en {} min",
+                    timeout.as_secs().div_ceil(60)
+                ))),
+                Ok(TaskEnd::Cancelled) => Err(cancelled_record(&store, &record_id)),
+                Err(join) if join.is_cancelled() => Err(cancelled_record(&store, &record_id)),
+                Err(join) => Err(failed(format!("erreur interne (panique) : {}", panic_text(join)))),
+            };
+            // Journal terminal states that `apply` did not already write.
+            if let Err(record) = &result {
+                if record.outcome == RefineOutcome::Failed && record.operations.is_empty() {
+                    if let Err(err) = append_record(&store, record) {
+                        tracing::warn!(error = %err, "refine: unable to journal the failure");
+                    }
+                }
+            }
+            if let Ok(mut map) = pending.lock() {
+                if let Some(slot) = map.get_mut(&conversation_id).filter(|s| s.record_id == record_id) {
+                    match result {
+                        Ok(record) => {
+                            slot.state = PendingState::Done;
+                            slot.record = Some(record);
+                        }
+                        Err(record) => {
                             slot.state = PendingState::Failed;
-                            slot.error = Some(err.to_string());
+                            slot.error = record.error.clone();
+                            slot.record = Some(record);
                         }
                     }
                 }
@@ -855,12 +1044,26 @@ impl RefineRunner {
         true
     }
 
-    /// Called at the start of a turn: apply a ready plan (fast, filesystem
-    /// only) and return the record so the turn can mention it. Failed
-    /// plannings are also drained and reported.
+    /// Cancel the running refinement of a conversation (or a record id).
+    /// Aborts the local task and journals `cancelled`.
+    pub fn cancel(&self, store: &HarnessStore, conversation_or_record: &str) -> Result<RefinementRecord> {
+        let record_id = self
+            .pending(conversation_or_record)
+            .filter(|p| p.state == PendingState::Planning)
+            .map(|p| p.record_id)
+            .unwrap_or_else(|| conversation_or_record.to_string());
+        let record = cancel(store, &record_id)?;
+        if let Some(handle) = self.tasks.lock().ok().and_then(|mut t| t.remove(&record_id)) {
+            handle.abort();
+        }
+        Ok(record)
+    }
+
+    /// Called at the start of a turn: the refinement already ran in the
+    /// background; hand its record over once so the turn can mention it.
     pub fn apply_pending(
         &self,
-        store: &HarnessStore,
+        _store: &HarnessStore,
         conversation_id: &str,
     ) -> Option<Result<RefinementRecord>> {
         let pending = {
@@ -874,27 +1077,17 @@ impl RefineRunner {
             map.remove(conversation_id)?
         };
         match pending.state {
-            PendingState::Ready => {
-                let plan = pending.plan.unwrap_or_default();
-                Some(apply(
-                    store,
-                    ApplyInput {
-                        plan: &plan,
-                        trigger: &pending.trigger,
-                        focus: pending.focus.as_deref(),
-                        conversation_id: Some(conversation_id),
-                    },
-                ))
-            }
+            PendingState::Done => pending.record.map(Ok),
             PendingState::Failed => Some(Err(anyhow!(
-                "refinement planning failed: {}",
-                pending.error.unwrap_or_default()
+                "{}",
+                pending.error.unwrap_or_else(|| "raison inconnue".into())
             ))),
             PendingState::Planning => None,
         }
     }
 
     /// Plan and apply synchronously (used by `refine.run(..., wait=True)` and tests).
+    #[allow(clippy::too_many_arguments)]
     pub async fn run_now(
         &self,
         provider: Arc<dyn Provider>,
@@ -906,7 +1099,9 @@ impl RefineRunner {
         focus: Option<&str>,
     ) -> Result<RefinementRecord> {
         let entries = store.load_all()?;
-        let plan = plan(provider.as_ref(), model, history, &entries, focus).await?;
+        let plan = tokio::time::timeout(self.timeout, plan(provider.as_ref(), model, history, &entries, focus))
+            .await
+            .map_err(|_| anyhow!("délai dépassé : pas de réponse du modèle"))??;
         apply(
             store,
             ApplyInput {
@@ -916,6 +1111,29 @@ impl RefineRunner {
                 conversation_id: Some(conversation_id),
             },
         )
+    }
+}
+
+fn cancelled_record(store: &HarnessStore, id: &str) -> RefinementRecord {
+    history(store)
+        .ok()
+        .and_then(|h| h.into_iter().find(|r| r.id == id))
+        .unwrap_or_else(|| {
+            let mut r = bare_record(id, Scope::Project, "", None, None);
+            r.outcome = RefineOutcome::Cancelled;
+            r.error = Some("annulé par l'utilisateur".into());
+            r
+        })
+}
+
+fn panic_text(join: tokio::task::JoinError) -> String {
+    match join.try_into_panic() {
+        Ok(payload) => payload
+            .downcast_ref::<&str>()
+            .map(|s| (*s).to_string())
+            .or_else(|| payload.downcast_ref::<String>().cloned())
+            .unwrap_or_else(|| "panique".into()),
+        Err(err) => err.to_string(),
     }
 }
 
@@ -939,6 +1157,8 @@ pub fn render_applied_notice(record: &RefinementRecord) -> String {
             record.error.clone().unwrap_or_default()
         ),
         RefineOutcome::RolledBack => format!("Refinement `{}` was rolled back.", record.id),
+        RefineOutcome::Running => format!("Refinement `{}` is still running.", record.id),
+        RefineOutcome::Cancelled => format!("Refinement `{}` was cancelled.", record.id),
     }
 }
 
@@ -1144,5 +1364,162 @@ mod tests {
         .unwrap();
         assert_eq!(record.outcome, RefineOutcome::Failed);
         assert!(store.list(Some(EntryKind::PromptNote), None).unwrap().is_empty());
+    }
+
+    // axe:refine-run — the background task must finish on its own (no next
+    // turn needed), journal its outcome and never stay « planning ».
+    mod runner {
+        use super::*;
+        use axecode_core::{ModelCapabilities, ProviderStream, TokenEstimate};
+        use std::time::Duration;
+
+        enum Mode {
+            Plan(&'static str),
+            Hang,
+            Panic,
+            Error,
+        }
+        struct Fake(Mode);
+
+        #[async_trait::async_trait]
+        impl Provider for Fake {
+            fn name(&self) -> &str {
+                "fake"
+            }
+            fn capabilities(&self, _model: &ModelRef) -> Option<ModelCapabilities> {
+                None
+            }
+            async fn estimate_tokens(&self, _r: ProviderRequest) -> axecode_core::Result<TokenEstimate> {
+                Ok(TokenEstimate { input_tokens: 1, exact: true })
+            }
+            async fn stream(&self, _r: ProviderRequest) -> axecode_core::Result<ProviderStream> {
+                match self.0 {
+                    Mode::Plan(text) => Ok(Box::pin(futures::stream::iter(vec![Ok(StreamEvent::TextDelta {
+                        index: 0,
+                        delta: text.to_string(),
+                    })]))),
+                    Mode::Hang => Ok(Box::pin(futures::stream::pending())),
+                    Mode::Panic => panic!("fake provider panic"),
+                    Mode::Error => Err(axecode_core::AppError::ContextLength("trop long".into())),
+                }
+            }
+        }
+
+        const PLAN: &str = r#"{"summary":"note utile","evidence":["e"],"operations":[{"op":"create","kind":"memory","scope":"project","title":"Fait appris","body":"corps"}]}"#;
+
+        fn model() -> ModelRef {
+            ModelRef::new("fake", "m")
+        }
+
+        fn start(runner: &RefineRunner, store: &HarnessStore, mode: Mode) -> bool {
+            runner.start(Arc::new(Fake(mode)), model(), store.clone(), "conv".into(), vec![ChatMessage::user_text("salut")], "user:/refine".into(), None)
+        }
+
+        async fn settle(store: &HarnessStore) -> Vec<RefinementRecord> {
+            for _ in 0..100 {
+                let h = history(store).unwrap();
+                if h.first().is_some_and(|r| r.outcome != RefineOutcome::Running) {
+                    return h;
+                }
+                tokio::time::sleep(Duration::from_millis(50)).await;
+            }
+            history(store).unwrap()
+        }
+
+        #[tokio::test]
+        async fn plan_is_applied_without_a_next_turn() {
+            let dir = TempDir::new();
+            let store = store(&dir);
+            let runner = RefineRunner::new();
+            assert!(start(&runner, &store, Mode::Plan(PLAN)));
+            let hist = settle(&store).await;
+            assert_eq!(hist.len(), 1, "{hist:?}");
+            assert_eq!(hist[0].outcome, RefineOutcome::Applied);
+            assert_eq!(store.list(Some(EntryKind::Memory), None).unwrap().len(), 1);
+            assert!(runner.pending("conv").map_or(true, |p| p.state != PendingState::Planning));
+        }
+
+        #[tokio::test]
+        async fn provider_error_is_journaled_as_failed() {
+            let dir = TempDir::new();
+            let store = store(&dir);
+            let runner = RefineRunner::new();
+            assert!(start(&runner, &store, Mode::Error));
+            let hist = settle(&store).await;
+            assert_eq!(hist.len(), 1, "{hist:?}");
+            assert_eq!(hist[0].outcome, RefineOutcome::Failed);
+            assert!(hist[0].error.as_deref().unwrap_or("").contains("trop long"));
+        }
+
+        #[tokio::test]
+        async fn panic_does_not_leave_it_planning() {
+            let dir = TempDir::new();
+            let store = store(&dir);
+            let runner = RefineRunner::new();
+            assert!(start(&runner, &store, Mode::Panic));
+            let hist = settle(&store).await;
+            assert_eq!(hist.first().map(|r| r.outcome), Some(RefineOutcome::Failed), "{hist:?}");
+            assert!(start(&runner, &store, Mode::Plan(PLAN)), "un nouvel affinage doit pouvoir partir");
+        }
+
+        #[tokio::test]
+        async fn hanging_model_times_out_with_a_reason() {
+            let dir = TempDir::new();
+            let store = store(&dir);
+            let runner = RefineRunner::new().with_timeout(Duration::from_millis(300));
+            assert!(start(&runner, &store, Mode::Hang));
+            assert_eq!(history(&store).unwrap()[0].outcome, RefineOutcome::Running);
+            let hist = settle(&store).await;
+            assert_eq!(hist[0].outcome, RefineOutcome::Failed, "{hist:?}");
+            assert!(hist[0].error.as_deref().unwrap_or("").contains("délai dépassé"));
+        }
+
+        #[tokio::test]
+        async fn running_refinement_can_be_cancelled() {
+            let dir = TempDir::new();
+            let store = store(&dir);
+            let runner = RefineRunner::new();
+            assert!(start(&runner, &store, Mode::Hang));
+            assert!(!start(&runner, &store, Mode::Hang), "un seul affinage à la fois");
+            let record = runner.cancel(&store, "conv").unwrap();
+            assert_eq!(record.outcome, RefineOutcome::Cancelled);
+            let hist = settle(&store).await;
+            assert_eq!(hist.len(), 1);
+            assert_eq!(hist[0].outcome, RefineOutcome::Cancelled);
+            for _ in 0..40 {
+                if runner.pending("conv").is_some_and(|p| p.state != PendingState::Planning) { break; }
+                tokio::time::sleep(Duration::from_millis(50)).await;
+            }
+            assert!(cancel(&store, &record.id).is_err());
+            assert!(start(&runner, &store, Mode::Plan(PLAN)));
+        }
+
+        #[tokio::test]
+        async fn cancel_from_another_process_stops_the_task() {
+            let dir = TempDir::new();
+            let store = store(&dir);
+            let runner = RefineRunner::new();
+            assert!(start(&runner, &store, Mode::Hang));
+            let id = history(&store).unwrap()[0].id.clone();
+            // Another process only sees the journal.
+            cancel(&store, &id).unwrap();
+            for _ in 0..60 {
+                if runner.pending("conv").is_some_and(|p| p.state == PendingState::Failed) { break; }
+                tokio::time::sleep(Duration::from_millis(50)).await;
+            }
+            assert_eq!(runner.pending("conv").unwrap().state, PendingState::Failed);
+        }
+
+        #[test]
+        fn stale_running_record_reads_as_failed() {
+            let dir = TempDir::new();
+            let store = store(&dir);
+            let mut record = bare_record("ref_old", Scope::Project, "t", None, None);
+            record.ts -= STALE_RUNNING_MS + 1;
+            append_record(&store, &record).unwrap();
+            let hist = history(&store).unwrap();
+            assert_eq!(hist[0].outcome, RefineOutcome::Failed);
+            assert!(hist[0].error.as_deref().unwrap().contains("interrompu"));
+        }
     }
 }

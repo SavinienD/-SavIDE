@@ -283,6 +283,11 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
             Ok(serde_json::to_value(store.demote(&id).map_err(err)?)?)
         }
         "harness.refinements" => Ok(serde_json::to_value(refine::history(&store).map_err(err)?)?),
+        // axe:refine-run — stop a running refinement (the task polls the journal).
+        "harness.refine_cancel" => {
+            let id = id_of(p)?;
+            Ok(serde_json::to_value(refine::cancel(&store, &id).map_err(err)?)?)
+        }
         "harness.rollback" => {
             let id = id_of(p)?;
             Ok(serde_json::to_value(

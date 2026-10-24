@@ -75,8 +75,8 @@ export async function runClientSlashCommand(text: string, ctx: SlashContext): Pr
         const started = await harnessApi.refineStart(ctx.workspacePath, ctx.conversationId, parsed.rest || undefined);
         ctx.notify?.(
           started
-            ? "Affinage en préparation : il sera appliqué au prochain tour (Réglages > Harnais pour l'historique)."
-            : "Un affinage est déjà en préparation pour cette conversation.",
+            ? "Affinage lancé : il s'applique dès qu'il est prêt (suivi et arrêt dans Réglages > Harnais > Affinages)."
+            : "Un affinage est déjà en cours pour cette conversation (Réglages > Harnais > Affinages pour l'arrêter).",
         );
       } catch (error) {
         ctx.notify?.(`/refine impossible : ${String(error)}`);

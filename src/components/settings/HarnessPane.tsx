@@ -21,6 +21,8 @@ const OUTCOME_LABEL: Record<string, string> = {
   noop: "aucun changement",
   failed: "échec",
   rolled_back: "annulé",
+  running: "en cours",
+  cancelled: "arrêté",
 };
 
 function modelTag(tags: string[]): string {
@@ -234,6 +236,24 @@ export function HarnessPane({ workspacePath }: Props) {
     );
   };
 
+  // axe:refine-run — un affinage en cours se suit ici et peut être arrêté.
+  const hasRunning = records.some((record) => record.outcome === "running");
+  useEffect(() => {
+    if (!hasRunning) return;
+    const timer = window.setInterval(() => {
+      harnessApi
+        .refinements(workspacePath)
+        .then(setRecords)
+        .catch(() => undefined);
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, [hasRunning, workspacePath]);
+
+  const stopRefinement = (record: RefinementRecord) => {
+    if (!window.confirm(`Arrêter l'affinage en cours ${record.id} ?`)) return;
+    void run(`Affinage ${record.id} arrêté.`, () => harnessApi.refineCancel(workspacePath, record.id));
+  };
+
   const rollback = (record: RefinementRecord) => {
     if (!window.confirm(`Annuler l'affinage ${record.id} ?`)) return;
     void run(`Affinage ${record.id} annulé.`, () => harnessApi.rollback(workspacePath, record.id));
@@ -333,8 +353,24 @@ export function HarnessPane({ workspacePath }: Props) {
                     Annuler
                   </button>
                 ) : null}
+                {record.outcome === "running" ? (
+                  <button
+                    type="button"
+                    className="axe-harness__btn"
+                    disabled={busy}
+                    onClick={() => stopRefinement(record)}
+                  >
+                    Arrêter
+                  </button>
+                ) : null}
               </div>
-              <p>{record.summary}</p>
+              <p>
+                {record.outcome === "running"
+                  ? "Affinage en préparation par le modèle…"
+                  : record.outcome === "failed" && !record.summary
+                    ? "L'affinage a échoué."
+                    : record.summary}
+              </p>
               {record.evidence.length ? (
                 <details>
                   <summary>Preuves ({record.evidence.length})</summary>
