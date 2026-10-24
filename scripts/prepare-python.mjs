@@ -30,9 +30,12 @@ const PIP_PACKAGES = [
   "openpyxl>=3.1",
   "python-docx>=1.1",
   "pypdf>=4.2",
+  // axe:certificats — root CAs for ssl/urllib (the embedded Python has none):
+  // the kernel sets SSL_CERT_FILE to certifi.where() at startup.
+  "certifi>=2024.8.30",
 ];
 // Import names checked after installation (same order as above).
-const IMPORT_CHECK = "import IPython, dill, openpyxl, docx, pypdf";
+const IMPORT_CHECK = "import IPython, dill, openpyxl, docx, pypdf, certifi";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, "..");

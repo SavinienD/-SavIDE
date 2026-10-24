@@ -560,6 +560,12 @@ def _handle(kernel: Kernel, message: dict) -> bool:
 
 
 def main() -> int:
+    try:
+        from axecode_kernel import _env
+
+        _env.prepare()  # environnement utilisateur, certificats, PATH (voir _env.py)
+    except Exception:
+        traceback.print_exc()
     protocol_in = _setup_protocol_stream()
     pkg_parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if pkg_parent not in sys.path:
