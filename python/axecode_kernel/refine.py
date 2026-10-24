@@ -39,7 +39,7 @@ def history() -> list[dict[str, Any]]:
 
 
 def cancel(id: str | None = None) -> dict[str, Any]:  # noqa: A002
-    """Stop a running refinement (this session's one when ``id`` is omitted)."""
+    """Arrête un affinage en cours (celui de cette session quand ``id`` est omis)."""
     return bridge.call("refine.cancel", {"id": id})
 
 
