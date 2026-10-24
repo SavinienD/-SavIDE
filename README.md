@@ -5,7 +5,7 @@
 <h1 align="center">SavIDE</h1>
 
 <p align="center">
-  <b>IDE à agent IA, édition locale (Windows).</b><br/>
+  <b>IDE à agent IA, édition locale (Windows, Linux, macOS).</b><br/>
   Éditeur, terminal, chat et rollback ; REPL Python persistant, harness auto-évolutif<br/>
   et sessions qui survivent à la fermeture de l'IDE, inspirés de Prime Agent.
 </p>
@@ -121,11 +121,24 @@ d'accent. Un bouton « Revenir au défaut Axe » restaure le thème d'origine. L
 
 ## Installation
 
-Windows x64 uniquement. Téléchargez l'installeur `.exe` (NSIS) de la dernière release :
+Téléchargez le fichier de votre système dans la dernière release :
 https://github.com/SavinienD/-SavIDE/releases/latest
 
-L'installeur n'est pas signé : SmartScreen affiche « éditeur inconnu » (« Informations complémentaires » puis « Exécuter quand même »).
-L'application se met ensuite à jour seule depuis ces releases.
+| Système | Fichier |
+| --- | --- |
+| Windows x64 | `SavIDE_X.Y.Z_x64-setup.exe` (NSIS) |
+| Linux x64 | `SavIDE_X.Y.Z_amd64.deb` (Debian, Ubuntu) ou `SavIDE_X.Y.Z_amd64.AppImage` (`chmod +x` puis lancer) |
+| macOS (Intel et Apple Silicon) | `SavIDE_X.Y.Z_universal.dmg` |
+
+L'application n'est signée ni par Microsoft ni par Apple :
+
+- Windows : SmartScreen affiche « éditeur inconnu » (« Informations complémentaires » puis « Exécuter quand même »).
+- macOS : Gatekeeper refuse d'ouvrir une appli non notariée. Après l'avoir glissée dans Applications, faites
+  clic droit (ou Ctrl-clic) sur SavIDE > Ouvrir, puis Ouvrir, une seule fois. Si macOS dit que l'appli est
+  « endommagée », retirez l'attribut de quarantaine : `xattr -dr com.apple.quarantine /Applications/SavIDE.app`.
+
+L'application se met ensuite à jour seule depuis ces releases (installeur Windows, AppImage, appli macOS ;
+le paquet `.deb` se met à jour en réinstallant le nouveau `.deb`).
 
 ---
 
@@ -151,8 +164,9 @@ publique de ce même fichier (`plugins.updater.pubkey`). La clé privée n'est j
 elle est stockée dans les secrets GitHub du dépôt `TAURI_SIGNING_PRIVATE_KEY` et `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (vide).
 Si elle est perdue, les postes installés ne pourront plus se mettre à jour et devront réinstaller.
 
-Publication : poser la version puis pousser un tag `vX.Y.Z` ; le workflow `.github/workflows/release.yml` (runner Windows)
-construit l'installeur NSIS signé, génère `latest.json` et crée la release. Détails : [docs/publier.md](docs/publier.md).
+Publication : poser la version puis pousser un tag `vX.Y.Z` ; le workflow `.github/workflows/release.yml` construit
+Windows (NSIS), Linux (.deb, AppImage) et macOS (universal : .dmg, .app.tar.gz), signe les artefacts de mise à jour,
+fusionne `latest.json` (windows-x86_64, linux-x86_64, darwin-x86_64, darwin-aarch64) et crée la release. Détails : [docs/publier.md](docs/publier.md).
 
 ---
 

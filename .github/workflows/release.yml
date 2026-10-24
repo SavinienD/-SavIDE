@@ -11,6 +11,9 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  CUA_VERSION: "0.38.0"
+
 jobs:
   windows:
     runs-on: windows-latest
@@ -45,7 +48,6 @@ jobs:
           $tag = "${{ github.ref_name }}"; $v = $tag.TrimStart('v')
           $app = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
           if ($app -ne $v) { throw "Tag $tag mais tauri.conf.json = $app" }
-          "VERSION=$v" >> $env:GITHUB_ENV
 
       - name: cua-driver (release officielle, SHA256 vérifié)
         shell: pwsh
@@ -66,33 +68,207 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npx tauri build --bundles nsis --config src-tauri/tauri.sidecars.conf.json --config src-tauri/tauri.build-local.json
 
-      - name: latest.json
+      - name: Artefacts
         shell: pwsh
         run: |
           $exe = Get-ChildItem -Path target, src-tauri/target -Recurse -Filter *-setup.exe -ErrorAction SilentlyContinue | Where-Object { $_.FullName -match "bundle[\\/]nsis" } | Select-Object -First 1
           if (-not $exe) { throw "installeur NSIS introuvable" }
-          $dir = $exe.DirectoryName
-          $sig = "$($exe.FullName).sig"
-          if (-not (Test-Path $sig)) { throw "signature absente : $sig" }
+          if (-not (Test-Path "$($exe.FullName).sig")) { throw "signature absente" }
+          New-Item -ItemType Directory -Force out | Out-Null
           $name = $exe.Name -replace ' ', '.'
-          if ($name -ne $exe.Name) { Rename-Item $exe.FullName $name; Rename-Item $sig "$name.sig" }
-          $tag = "${{ github.ref_name }}"
-          $obj = [ordered]@{
-            version = $env:VERSION
-            notes = "SavIDE $tag"
-            pub_date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-            platforms = @{ "windows-x86_64" = [ordered]@{
-              signature = (Get-Content "$dir/$name.sig" -Raw).Trim()
-              url = "https://github.com/${{ github.repository }}/releases/download/$tag/$name" } }
-          }
-          $obj | ConvertTo-Json -Depth 5 | Set-Content "$dir/latest.json" -Encoding utf8NoBOM
-          "ASSET_DIR=$dir" >> $env:GITHUB_ENV
-          "ASSET_EXE=$name" >> $env:GITHUB_ENV
+          Copy-Item $exe.FullName "out/$name"
+          Copy-Item "$($exe.FullName).sig" "out/$name.sig"
+          "windows-x86_64 $name" | Set-Content out/updater-windows.txt -Encoding utf8NoBOM
+          Get-ChildItem out
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows
+          path: out/
+          if-no-files-found: error
+
+  linux:
+    runs-on: ubuntu-22.04
+    env:
+      CUA_URL: https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.38.0/cua-driver-rs-0.38.0-linux-x86_64-binary.tar.gz
+      CUA_SHA256: 31ab9709dd91ce73677e49b9f3e75c6f0d3e4d9625c286c9e58262bfbea698dd
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Dépendances système (webkit2gtk-4.1, GTK, AppImage)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config file patchelf \
+            libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev libgtk-3-dev \
+            libayatana-appindicator3-dev librsvg2-dev libssl-dev libxdo-dev libx11-dev libfuse2
+
+      - name: Rust stable
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Version du tag = version de l'appli
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          app=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          [ "$app" = "$v" ] || { echo "Tag $GITHUB_REF_NAME mais tauri.conf.json = $app"; exit 1; }
+
+      - name: cua-driver (release officielle, SHA256 vérifié)
+        run: |
+          curl -fsSL "$CUA_URL" -o cua.tgz
+          echo "$CUA_SHA256  cua.tgz" | sha256sum -c -
+          mkdir -p cua-x src-tauri/binaries/cua-driver
+          tar -xzf cua.tgz -C cua-x
+          find cua-x -maxdepth 1 -type f -exec cp {} src-tauri/binaries/cua-driver/ \;
+          chmod +x src-tauri/binaries/cua-driver/cua-driver
+          rm -rf cua.tgz cua-x
+          ls -la src-tauri/binaries/cua-driver
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: tauri build (.deb + AppImage signé)
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+          NO_STRIP: "1"
+        run: npx tauri build --bundles deb,appimage --config src-tauri/tauri.sidecars.conf.json --config src-tauri/tauri.build-local.json
+
+      - name: Artefacts
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          deb=$(find target src-tauri/target -path '*bundle/deb/*.deb' 2>/dev/null | head -1)
+          img=$(find target src-tauri/target -path '*bundle/appimage/*.AppImage' 2>/dev/null | head -1)
+          [ -n "$deb" ] && [ -n "$img" ] || { echo "deb ou AppImage introuvable"; exit 1; }
+          [ -f "$img.sig" ] || { echo "signature AppImage absente"; exit 1; }
+          name=$(basename "$img" | tr ' ' '.')
+          cp "$deb" "out/$(basename "$deb" | tr ' ' '.')"
+          cp "$img" "out/$name"; cp "$img.sig" "out/$name.sig"
+          echo "linux-x86_64 $name" > out/updater-linux.txt
+          ls -la out
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: linux
+          path: out/
+          if-no-files-found: error
+
+  macos:
+    runs-on: macos-latest
+    env:
+      CUA_URL: https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.38.0/cua-driver-rs-0.38.0-darwin-universal-binary.tar.gz
+      CUA_SHA256: 2bb8dc4a7e69185ffd04c4a9c0eab590bd2c54b72c2c1be13ab675be4f487732
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Rust stable (arm64 + x86_64)
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - name: Version du tag = version de l'appli
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          app=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          [ "$app" = "$v" ] || { echo "Tag $GITHUB_REF_NAME mais tauri.conf.json = $app"; exit 1; }
+
+      - name: cua-driver (release officielle universelle, SHA256 vérifié)
+        run: |
+          curl -fsSL "$CUA_URL" -o cua.tgz
+          echo "$CUA_SHA256  cua.tgz" | shasum -a 256 -c -
+          mkdir -p cua-x src-tauri/binaries/cua-driver
+          tar -xzf cua.tgz -C cua-x
+          find cua-x -maxdepth 1 -type f -exec cp {} src-tauri/binaries/cua-driver/ \;
+          chmod +x src-tauri/binaries/cua-driver/cua-driver
+          rm -rf cua.tgz cua-x
+          lipo -archs src-tauri/binaries/cua-driver/cua-driver
+
+      - name: Python embarqué universel (arm64 + x86_64)
+        run: bash scripts/ci/python-universal-macos.sh
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: "tauri build (universal, .app signé updater + .dmg)"
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npx tauri build --target universal-apple-darwin --bundles app,dmg --config src-tauri/tauri.sidecars.conf.json --config src-tauri/tauri.build-local.json
+
+      - name: Artefacts
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          tgz=$(find target src-tauri/target -path '*universal-apple-darwin/release/bundle/macos/*.app.tar.gz' 2>/dev/null | head -1)
+          dmg=$(find target src-tauri/target -path '*universal-apple-darwin/release/bundle/dmg/*.dmg' 2>/dev/null | head -1)
+          [ -n "$tgz" ] && [ -n "$dmg" ] || { echo ".app.tar.gz ou .dmg introuvable"; exit 1; }
+          [ -f "$tgz.sig" ] || { echo "signature .app.tar.gz absente"; exit 1; }
+          v="${GITHUB_REF_NAME#v}"
+          name="SavIDE_${v}_universal.app.tar.gz"
+          cp "$tgz" "out/$name"; cp "$tgz.sig" "out/$name.sig"
+          cp "$dmg" "out/$(basename "$dmg" | tr ' ' '.')"
+          echo "darwin-x86_64 $name" > out/updater-macos.txt
+          echo "darwin-aarch64 $name" >> out/updater-macos.txt
+          ls -la out
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: macos
+          path: out/
+          if-no-files-found: error
+
+  publier:
+    needs: [windows, linux, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: art
+
+      - name: latest.json (4 plateformes)
+        run: |
+          set -euo pipefail
+          mkdir -p pub
+          find art -type f ! -name 'updater-*.txt' -exec cp {} pub/ \;
+          cat art/*/updater-*.txt > plateformes.txt
+          cat plateformes.txt
+          python3 - <<'EOF'
+          import json, os, datetime
+          tag = os.environ["GITHUB_REF_NAME"]; repo = os.environ["GITHUB_REPOSITORY"]
+          plats = {}
+          for ligne in open("plateformes.txt", encoding="utf-8"):
+              if not ligne.strip():
+                  continue
+              plat, nom = ligne.split()
+              sig = open(f"pub/{nom}.sig", encoding="utf-8").read().strip()
+              plats[plat] = {"signature": sig, "url": f"https://github.com/{repo}/releases/download/{tag}/{nom}"}
+          attendu = {"windows-x86_64", "linux-x86_64", "darwin-x86_64", "darwin-aarch64"}
+          assert set(plats) == attendu, f"plateformes : {sorted(plats)}"
+          doc = {"version": tag.lstrip("v"), "notes": f"SavIDE {tag}",
+                 "pub_date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                 "platforms": plats}
+          json.dump(doc, open("pub/latest.json", "w", encoding="utf-8"), indent=2)
+          EOF
+          cat pub/latest.json
+          ls -la pub
 
       - name: Release GitHub
-        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $d = $env:ASSET_DIR
-          gh release create "${{ github.ref_name }}" "$d/$env:ASSET_EXE" "$d/$env:ASSET_EXE.sig" "$d/latest.json" --repo "${{ github.repository }}" --title "SavIDE ${{ github.ref_name }}" --generate-notes
+          gh release create "$GITHUB_REF_NAME" pub/* --repo "$GITHUB_REPOSITORY" --title "SavIDE $GITHUB_REF_NAME" --generate-notes

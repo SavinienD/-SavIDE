@@ -38,13 +38,16 @@ pub async fn run(input: Value) -> ToolRunResult {
     }
 }
 
-/// Binaire embarqué (ressource `cua-driver/` à côté de l'exe), sinon CUA_DRIVER_BIN, sinon PATH.
+/// Binaire embarqué (ressource `cua-driver/` de l'appli), sinon CUA_DRIVER_BIN, sinon PATH.
 pub fn binaire() -> String {
     if let Ok(b) = std::env::var("CUA_DRIVER_BIN") { return b; }
     if let Some(dir) = std::env::current_exe().ok().and_then(|e| e.parent().map(|p| p.to_path_buf())) {
         let nom = if cfg!(windows) { "cua-driver.exe" } else { "cua-driver" };
-        let p = dir.join("cua-driver").join(nom);
-        if p.is_file() { return p.to_string_lossy().into_owned(); }
+        // Windows : à côté de l'exe ; macOS : Contents/Resources ; Linux (.deb, AppImage) : usr/lib/SavIDE.
+        for base in [dir.clone(), dir.join("../Resources"), dir.join("../lib/SavIDE")] {
+            let p = base.join("cua-driver").join(nom);
+            if p.is_file() { return p.to_string_lossy().into_owned(); }
+        }
     }
     "cua-driver".into()
 }
