@@ -74,7 +74,7 @@ static INSTALLATION_LANCEE: AtomicBool = AtomicBool::new(false);
 /// Refuse la (re)connexion au démon pendant une installation.
 pub(crate) fn demon_autorise() -> Result<(), String> {
     if INSTALLATION_LANCEE.load(Ordering::SeqCst) {
-        Err("mise à jour en cours d'installation : démon arrêté".into())
+        Err("mise à jour en cours d'installation : démon arrêté".into())
     } else {
         Ok(())
     }
