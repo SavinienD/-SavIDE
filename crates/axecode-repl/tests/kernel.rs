@@ -122,3 +122,37 @@ fn running(pid: u32) -> bool {
         Err(_) => false,
     }
 }
+
+/// images.show / images.read attach a PNG to the exec result (the reply used
+/// to fail with "bad exec reply: missing field media_type").
+#[tokio::test(flavor = "multi_thread")]
+async fn images_show_and_read_attach_a_png() {
+    let Some(kernel) = start().await else { return };
+    let png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
+    let dir = tempfile_dir();
+    let path = dir.join("pixel.png");
+    std::fs::write(&path, base64_decode(png)).unwrap();
+    let code = format!(
+        "import base64\nfrom axecode_kernel import images\nimages.show(base64.b64decode('{png}'))\nimages.read({:?})",
+        path.display().to_string()
+    );
+    let result = kernel.exec("img", &code).await.expect("exec reply parses");
+    assert!(result.error.is_none(), "{result:?}");
+    assert_eq!(result.images.len(), 2, "{result:?}");
+    for image in &result.images {
+        assert_eq!(image.media_type, "image/png");
+        assert!(!image.data.is_empty());
+    }
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+fn tempfile_dir() -> std::path::PathBuf {
+    let dir = std::env::temp_dir().join(format!("axecode-img-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    dir
+}
+
+fn base64_decode(text: &str) -> Vec<u8> {
+    use base64::Engine;
+    base64::engine::general_purpose::STANDARD.decode(text).unwrap()
+}

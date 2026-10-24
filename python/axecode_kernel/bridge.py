@@ -126,7 +126,9 @@ def fail_all(reason: str) -> None:
 
 def emit_image(media_type: str, data_b64: str, path: Optional[str] = None) -> None:
     """Joint une image au résultat de l'exécution en cours."""
-    _images.append({"mediaType": media_type, "data": data_b64, "path": path})
+    # ``media_type`` is the field the host reads (ToolResultImage); it also
+    # accepts the old ``mediaType`` spelling, but never both at once.
+    _images.append({"media_type": media_type or "image/png", "data": data_b64, "path": path})
 
 
 def record_file_change(path: str, before: Optional[str], after: Optional[str]) -> None:

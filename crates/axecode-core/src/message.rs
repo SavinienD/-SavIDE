@@ -89,10 +89,35 @@ pub enum Part {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolResultImage {
+    /// The Python kernel historically sent `mediaType`: both spellings are
+    /// read, and a missing type falls back to PNG instead of failing the
+    /// whole exec reply ("missing field media_type").
+    #[serde(alias = "mediaType", default = "default_image_media_type")]
     pub media_type: String,
     pub data: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
+}
+
+fn default_image_media_type() -> String {
+    "image/png".into()
+}
+
+#[cfg(test)]
+mod tool_result_image_tests {
+    use super::ToolResultImage;
+
+    #[test]
+    fn reads_snake_camel_and_missing_media_type() {
+        let snake: ToolResultImage =
+            serde_json::from_str(r#"{"media_type":"image/jpeg","data":"AA=="}"#).unwrap();
+        assert_eq!(snake.media_type, "image/jpeg");
+        let camel: ToolResultImage =
+            serde_json::from_str(r#"{"mediaType":"image/gif","data":"AA==","path":null}"#).unwrap();
+        assert_eq!(camel.media_type, "image/gif");
+        let missing: ToolResultImage = serde_json::from_str(r#"{"data":"AA=="}"#).unwrap();
+        assert_eq!(missing.media_type, "image/png");
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
