@@ -83,6 +83,7 @@ export function installerSimulation(scene: Scene): void {
   const tourActif = scene.tour === "en_cours" || scene.tour === "erreur";
   const cloud = scene.cloud !== false;
   if (scene.accelerer) accelerer(900, 16_001, 25);
+  let mcp: any[] = ((scene.mcp as string[] | undefined) ?? []).map((nom) => ({ id: `cat_${nom}`, name: nom, command: "npx", args: ["-y", `@exemple/${nom}`], env: [], headers: [], enabled: true }));
   const statut = (connecte: boolean) => ({ connected: connecte, connectionState: connecte ? "connected" : "disconnected", email: connecte ? "utilisateur@exemple.invalid" : null, error: null });
   const h: Record<string, (a: any, brut: any) => unknown> = {
     updater_check: () => ({ available: false, currentVersion: "0.1.57", version: null, notes: null, date: null }),
@@ -163,7 +164,21 @@ export function installerSimulation(scene: Scene): void {
     harness_list: () => [],
     harness_paths: () => ({ globalRoot: "C:\\Users\\utilisateur\\.axecode", projectRoot: D.WS + "\\.axecode" }),
     harness_refinements: () => [],
-    list_mcp_settings: () => ({ servers: [] }),
+    // Serveurs MCP de la scène (« mcp » : noms) ; enregistrer / supprimer modifient la liste.
+    list_mcp_settings: () => ({ servers: mcp.map((s) => ({ ...s })) }),
+    save_mcp_settings: (a) => {
+      mcp = (a.settings?.servers ?? []).map((s: any) => ({ ...s }));
+      return { servers: mcp };
+    },
+    delete_mcp_server: (a) => {
+      // Comme le moteur : par identifiant, sinon par nom.
+      const cible = mcp.find((s) => s.id === a.serverId) ?? mcp.find((s) => s.name === a.serverName);
+      if (!cible) throw new Error(`Serveur MCP introuvable : ${a.serverName ?? a.serverId}`);
+      mcp = mcp.filter((s) => s !== cible);
+      return { servers: mcp.map((s) => ({ ...s })) };
+    },
+    probe_mcp_tools: () =>
+      mcp.map((s) => ({ serverId: s.id, serverName: s.name, enabled: s.enabled, ok: s.enabled, tools: s.enabled ? [{ toolName: "lire", description: "Lire" }] : [], transport: "stdio", authRequired: false, authenticated: false, error: null })),
     prime_term_open: () => "prime-1",
     prime_term_resize: () => null,
     prime_term_write: () => null,

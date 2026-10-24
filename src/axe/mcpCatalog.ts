@@ -446,3 +446,24 @@ export function restoreMcpSecrets(
     })),
   };
 }
+
+// axe:mcp-supprimer — Réglages > MCP « Supprimer » : liste sans le serveur, serveur
+// à sélectionner ensuite (le suivant, sinon le précédent, sinon aucun) et secrets
+// gardés pour ce serveur oubliés du coffre.
+export function retirerServeurMcp(
+  settings: { servers: McpServerConfig[] },
+  serverId: string,
+  vault?: McpSecretVault,
+): { servers: McpServerConfig[]; selection: string | null } {
+  const index = settings.servers.findIndex((server) => server.id === serverId);
+  if (index < 0) {
+    return { servers: settings.servers, selection: settings.servers[0]?.id ?? null };
+  }
+  const servers = settings.servers.filter((server) => server.id !== serverId);
+  if (vault) {
+    const prefixe = `${serverId}\u0000`;
+    for (const cle of [...vault.keys()]) if (cle.startsWith(prefixe)) vault.delete(cle);
+  }
+  const voisin = servers[index] ?? servers[index - 1] ?? null;
+  return { servers, selection: voisin ? voisin.id : null };
+}

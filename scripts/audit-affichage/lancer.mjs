@@ -288,6 +288,12 @@ async function preparerScene(page, si, sc) {
     await page.keyboard.up("Control");
     await page.waitForSelector(".settings-pane", { visible: true, timeout: 5000 }).catch(() => undefined);
   }
+  // Clics successifs par sélecteur (attend que chacun soit visible), ex. Réglages > MCP > Supprimer.
+  for (const sel of sc.clics ?? []) {
+    await page.waitForSelector(sel, { visible: true, timeout: 5000 }).catch(() => undefined);
+    await page.evaluate((s) => document.querySelector(s)?.click(), sel);
+    await pause(400);
+  }
   if (sc.arretForce) {
     const stop = "[data-focus=true] .composer__send[data-variant='stop']";
     await page.waitForSelector(stop, { visible: true, timeout: 6000 }).catch(() => undefined);
@@ -339,7 +345,9 @@ async function auditer(page, si, sc, journal, preparation) {
         return !!p && el.contains(p);
       });
     };
-    const manquants = temoins.filter((t) => (t.startsWith("sel:") ? !vu(t.slice(4)) : t.startsWith("clic:") ? !cliquable(t.slice(5)) : !texte.includes(t)));
+    // « absent: » : aucun élément visible pour ce sélecteur ; « appel: » : commande IPC reçue par la simulation.
+    const ok = (t) => (t.startsWith("sel:") ? vu(t.slice(4)) : t.startsWith("clic:") ? cliquable(t.slice(5)) : t.startsWith("absent:") ? !vu(t.slice(7)) : t.startsWith("appel:") ? (window.__bancAppels?.[t.slice(6)] ?? 0) > 0 : texte.includes(t));
+    const manquants = temoins.filter((t) => !ok(t));
     const disparus = attendus.filter((t) => !window.__texteVisible(t));
     const fil = document.querySelector(".colonne-chat[data-focus='true'] .chat-body")?.getBoundingClientRect();
     const polices = document.fonts.check('13px "Geist"') && document.fonts.check('12px "Geist Mono"');

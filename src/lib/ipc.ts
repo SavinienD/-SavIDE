@@ -1355,6 +1355,13 @@ export const api = {
       input: { serverId },
     });
   },
+  // axe:mcp-supprimer — retire le serveur de la config (jeton OAuth compris).
+  // Le nom sert de repli : l'identifiant affiché est recalculé depuis le JSON.
+  deleteMcpServer(serverId: string, serverName: string) {
+    return invoke<McpSettings>("delete_mcp_server", {
+      input: { serverId, serverName },
+    });
+  },
   disconnectMcpOAuth(serverId: string) {
     return invoke<McpOAuthStatus>("disconnect_mcp_oauth", {
       input: { serverId },

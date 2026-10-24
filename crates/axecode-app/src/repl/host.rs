@@ -25,18 +25,26 @@ fn tool_json(result: ToolRunResult) -> Result<Value, String> {
 }
 
 /// MCP registry of the session, connected lazily on first use.
+/// axe:mcp-supprimer — rebuilt when the stored MCP config changed (server
+/// deleted or disabled in Réglages > MCP): a deleted server is never relaunched.
 async fn mcp_registry(shared: &Arc<Shared>) -> Result<Arc<crate::McpToolRegistry>, String> {
-    let existing = lock(&shared.mcp).clone();
-    if let Some(registry) = existing {
-        return Ok(registry);
-    }
     let settings = AppStore::open_default()
         .and_then(|s| s.load_mcp_settings())
         .map_err(|e| e.to_string())?;
+    let existing = lock(&shared.mcp).clone();
+    if let Some(registry) = existing {
+        if same_mcp_settings(registry.settings(), &settings) {
+            return Ok(registry);
+        }
+    }
     let registry = Arc::new(crate::McpToolRegistry::new(settings));
     registry.refresh_catalog(&[]).await;
     *lock(&shared.mcp) = Some(registry.clone());
     Ok(registry)
+}
+
+fn same_mcp_settings(a: &crate::McpSettings, b: &crate::McpSettings) -> bool {
+    serde_json::to_value(a).ok() == serde_json::to_value(b).ok()
 }
 
 pub(crate) async fn dispatch(shared: &Arc<Shared>, method: &str, params: Value) -> Result<Value, String> {

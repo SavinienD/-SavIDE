@@ -310,6 +310,36 @@ pub(super) async fn save_mcp_settings(
     Ok(input.settings)
 }
 
+/// axe:mcp-supprimer — Réglages > MCP « Supprimer » : arrête la connexion OAuth
+/// en cours pour ce serveur, oublie son jeton, retire l'entrée de la config.
+/// Les serveurs stdio sont lancés à chaque appel (kill_on_drop) : retiré de la
+/// config, le serveur n'est plus relancé (les sessions REPL rechargent la config).
+#[tauri::command]
+pub(super) async fn delete_mcp_server(
+    state: State<'_, DesktopState>,
+    input: DeleteMcpServerInput,
+) -> std::result::Result<McpSettings, String> {
+    let settings = state.store.load_mcp_settings().map_err(error_to_string)?;
+    let (next, removed) =
+        remove_mcp_server(&settings, &input.server_id, input.server_name.as_deref())
+            .map_err(error_to_string)?;
+    {
+        let mut active_login = state.mcp_login.lock().await;
+        if active_login.as_ref().is_some_and(|attempt| {
+            attempt.server_id == input.server_id || attempt.server_id == removed.id
+        }) {
+            if let Some(attempt) = active_login.take() {
+                attempt.cancel.notify_one();
+            }
+        }
+    }
+    if let Err(err) = delete_mcp_oauth(&settings, &removed.id) {
+        tracing::warn!("jeton OAuth du serveur MCP {} non supprimé : {err}", removed.name);
+    }
+    state.store.save_mcp_settings(&next).map_err(error_to_string)?;
+    Ok(next)
+}
+
 #[tauri::command]
 pub(super) async fn list_tool_settings(
     state: State<'_, DesktopState>,

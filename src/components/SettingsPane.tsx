@@ -30,6 +30,7 @@ import {
   redactCommand,
   redactMcpSecrets,
   restoreMcpSecrets,
+  retirerServeurMcp,
   type McpSecretVault,
 } from "../axe/mcpCatalog"; // axe:e7
 // axe:cleanup — unified Skills tab (Markdown recipes + harness Python skills)
@@ -818,6 +819,46 @@ export function SettingsPane({ workspacePath }: Props) {
     [parseError, saving, settings],
   );
 
+  // axe:mcp-supprimer — « Supprimer » (confirmé dans le détail) : le moteur
+  // retire l'entrée de la config et arrête sa connexion ; la liste suit.
+  const [deletingServerId, setDeletingServerId] = useState<string | null>(null);
+  const deleteServer = useCallback(
+    async (id: string) => {
+      if (saving || deletingServerId) return;
+      const name = settings.servers.find((server) => server.id === id)?.name || id;
+      setDeletingServerId(id);
+      setStatus(null);
+      try {
+        const saved = normalizeSettings(await api.deleteMcpServer(id, name));
+        const { selection } = retirerServeurMcp(settings, id, secretVaultRef.current);
+        collectMcpSecrets(saved, secretVaultRef.current);
+        const nextJson = displayJson(saved.servers, secretVaultRef.current);
+        setSettings(saved);
+        setSavedJson(nextJson);
+        setJsonText(nextJson);
+        setParseError(null);
+        setSelectedServerId(
+          selection && saved.servers.some((server) => server.id === selection)
+            ? selection
+            : saved.servers[0]?.id ?? null,
+        );
+        setProbes((prev) => prev.filter((probe) => probe.serverId !== id));
+        setOauthStatuses((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+        setStatus(`Serveur « ${name} » supprimé`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        setStatus(message);
+      } finally {
+        setDeletingServerId(null);
+      }
+    },
+    [deletingServerId, saving, settings],
+  );
+
   // ---- MCP OAuth --------------------------------------------------------
   // Re-probe after auth changes so tool counts / errors reflect the new
   // credentials. Kept dependency-free so the polling effect can rely on it.
@@ -1409,6 +1450,8 @@ export function SettingsPane({ workspacePath }: Props) {
             onConnectOAuth={(id) => void connectMcpOAuth(id)}
             onCancelOAuth={(id) => void cancelMcpOAuth(id)}
             onDisconnectOAuth={(id) => void disconnectMcpOAuth(id)}
+            deletingServerId={deletingServerId}
+            onDeleteServer={(id) => void deleteServer(id)}
             onMount={handleEditorMount}
             catalogOpen={adding}
             onOpenCatalog={() => {
@@ -2145,6 +2188,8 @@ type McpSectionProps = {
   onConnectOAuth: (id: string) => void;
   onCancelOAuth: (id: string) => void;
   onDisconnectOAuth: (id: string) => void;
+  deletingServerId: string | null;
+  onDeleteServer: (id: string) => void;
   onMount: OnMount;
   // axe:e7 — catalogue d'ajout (formulaire minimal, cle API masquee).
   catalogOpen: boolean;
@@ -2177,6 +2222,8 @@ function McpSection({
   onConnectOAuth,
   onCancelOAuth,
   onDisconnectOAuth,
+  deletingServerId,
+  onDeleteServer,
   onMount,
   catalogOpen,
   onOpenCatalog,
@@ -2287,6 +2334,7 @@ function McpSection({
                 <div
                   key={server.id}
                   className="settings-pane__nav-list-item"
+                  data-server={server.name}
                   data-active={isActive ? "true" : "false"}
                   data-on={server.enabled ? "true" : "false"}
                 >
@@ -2411,6 +2459,9 @@ function McpSection({
               onConnectOAuth={onConnectOAuth}
               onCancelOAuth={onCancelOAuth}
               onDisconnectOAuth={onDisconnectOAuth}
+              deleting={deletingServerId === selectedServer.id}
+              deleteDisabled={saving || loading || deletingServerId !== null}
+              onDelete={onDeleteServer}
             />
           ) : (
             <div className="settings-pane__empty-state">
@@ -2440,6 +2491,9 @@ type ServerDetailProps = {
   onConnectOAuth: (id: string) => void;
   onCancelOAuth: (id: string) => void;
   onDisconnectOAuth: (id: string) => void;
+  deleting: boolean;
+  deleteDisabled: boolean;
+  onDelete: (id: string) => void;
 };
 
 function ServerDetail({
@@ -2452,7 +2506,17 @@ function ServerDetail({
   onConnectOAuth,
   onCancelOAuth,
   onDisconnectOAuth,
+  deleting,
+  deleteDisabled,
+  onDelete,
 }: ServerDetailProps) {
+  // axe:mcp-supprimer — un premier clic arme, le second (dans les 3 s) supprime.
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  useEffect(() => {
+    if (!confirmDelete) return;
+    const id = window.setTimeout(() => setConfirmDelete(false), 3000);
+    return () => window.clearTimeout(id);
+  }, [confirmDelete]);
   const [expandedTools, setExpandedTools] = useState<Set<string>>(
     () => new Set<string>(),
   );
@@ -2513,9 +2577,49 @@ function ServerDetail({
     <div className="settings-pane__detail">
       <div className="settings-pane__detail-head">
         <span className="settings-pane__detail-title">{server.name}</span>
-        <span className="settings-pane__chip" data-tone={tone}>
-          <span className="settings-pane__chip-dot" />
-          {statusLabel}
+        <span className="settings-pane__detail-head-actions">
+          <span className="settings-pane__chip" data-tone={tone}>
+            <span className="settings-pane__chip-dot" />
+            {statusLabel}
+          </span>
+          <button
+            type="button"
+            className="settings-pane__skill-doc-action settings-pane__mcp-delete"
+            data-danger="true"
+            data-confirm={confirmDelete ? "true" : "false"}
+            disabled={deleteDisabled}
+            title={
+              confirmDelete
+                ? "Cliquer encore pour confirmer"
+                : "Retirer ce serveur de la configuration et l'arrêter"
+            }
+            aria-label={
+              confirmDelete
+                ? `Confirmer la suppression de ${server.name}`
+                : `Supprimer ${server.name}`
+            }
+            onClick={() => {
+              if (confirmDelete) {
+                setConfirmDelete(false);
+                onDelete(server.id);
+              } else {
+                setConfirmDelete(true);
+              }
+            }}
+          >
+            <Icon
+              icon={deleting ? "solar:refresh-linear" : "solar:trash-bin-trash-linear"}
+              width={13}
+              height={13}
+            />
+            <span>
+              {deleting
+                ? "Suppression…"
+                : confirmDelete
+                  ? "Confirmer la suppression"
+                  : "Supprimer"}
+            </span>
+          </button>
         </span>
       </div>
 

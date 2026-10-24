@@ -107,6 +107,12 @@ export const SCENES = [
   { id: "ide-login", sim: {}, stockage: () => colonnes([ids(3)]), ecrire: "/login", temoins: ["sel:.settings-pane .settings-pane__nav-item[data-section='providers'][data-active='true']"] },
   { id: "ide-barre", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["clic:.titlebar__btn[data-action='accueil']", "clic:.titlebar__btn[data-action='reglages']"] },
   { id: "reglages", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, temoins: ["sel:.settings-pane"] },
+  // Réglages > MCP : « Supprimer » sur le serveur « github » (un clic arme, le second confirme) :
+  // l'entrée quitte la liste (le moteur la retire de la config), « postgres » reste. Identifiants
+  // enregistrés (« cat_github ») ≠ identifiants de l'interface (« mcp_github », recalculés du JSON).
+  { id: "mcp-supprimer", sim: { mcp: ["github", "postgres"] }, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__nav-list-item[data-server='github'] .settings-pane__nav-list-item-main", ".settings-pane__mcp-delete", ".settings-pane__mcp-delete[data-confirm='true']"],
+    temoins: ["appel:delete_mcp_server", "absent:.settings-pane__nav-list-item[data-server='github']", "sel:.settings-pane__nav-list-item[data-server='postgres']"] },
   // Parcours d'un collègue (Camille) : connecté à Axe Cloud, aucun fournisseur sur son PC,
   // son espace a le fournisseur axe-cloud. Il ouvre son espace, crée « test » (« + »), écrit et envoie.
   { id: "collegue", sim: { fournisseur: false, collegue: true, espaceVide: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, creer: "test", sansFournisseur: true, ecrire: "Bonjour, peux-tu résumer le dossier clients ?", temoins: ["sel:.conv-row"] },

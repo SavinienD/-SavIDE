@@ -222,6 +222,11 @@ impl McpToolRegistry {
         }
     }
 
+    /// Configuration avec laquelle le registre a été construit.
+    pub fn settings(&self) -> &McpSettings {
+        &self.settings
+    }
+
     pub async fn refresh_catalog(&self, history: &[ChatMessage]) -> Vec<ToolDescriptor> {
         let mut next_bindings = HashMap::new();
 
@@ -1548,6 +1553,29 @@ pub fn delete_mcp_oauth(settings: &McpSettings, server_id: &str) -> Result<()> {
     save_mcp_auth_file(&file)
 }
 
+/// Réglages > MCP « Supprimer » : `(config sans le serveur, serveur retiré)`.
+/// Le serveur est cherché par identifiant, sinon par nom : l'interface recalcule
+/// les identifiants depuis le JSON affiché (`mcp_<nom>`), qui peuvent différer
+/// de ceux enregistrés (ajout par le catalogue). Le nom est unique (clé du JSON).
+pub fn remove_mcp_server(
+    settings: &McpSettings,
+    server_id: &str,
+    server_name: Option<&str>,
+) -> Result<(McpSettings, McpServerConfig)> {
+    let index = settings
+        .servers
+        .iter()
+        .position(|server| server.id == server_id)
+        .or_else(|| {
+            let name = server_name.map(str::trim).filter(|name| !name.is_empty())?;
+            settings.servers.iter().position(|server| server.name == name)
+        })
+        .ok_or_else(|| anyhow!("Serveur MCP introuvable : {}", server_name.unwrap_or(server_id)))?;
+    let mut next = settings.clone();
+    let removed = next.servers.remove(index);
+    Ok((next, removed))
+}
+
 fn find_mcp_server<'a>(settings: &'a McpSettings, server_id: &str) -> Result<&'a McpServerConfig> {
     settings
         .servers
@@ -2588,4 +2616,58 @@ fn clip_output(value: String) -> String {
     let mut clipped = value.chars().take(TOOL_OUTPUT_LIMIT).collect::<String>();
     clipped.push_str("\n\n[Output truncated]");
     clipped
+}
+
+#[cfg(test)]
+mod suppression_tests {
+    use super::*;
+
+    fn serveur(id: &str) -> McpServerConfig {
+        McpServerConfig {
+            id: id.into(),
+            name: id.into(),
+            command: "npx".into(),
+            url: None,
+            args: Vec::new(),
+            env: Vec::new(),
+            headers: Vec::new(),
+            auth: None,
+            cwd: None,
+            enabled: true,
+        }
+    }
+
+    #[test]
+    fn supprimer_retire_seulement_le_serveur_demande() {
+        let settings = McpSettings { servers: vec![serveur("a"), serveur("b"), serveur("c")] };
+        let (next, removed) = remove_mcp_server(&settings, "b", Some("b")).unwrap();
+        let ids: Vec<_> = next.servers.iter().map(|s| s.id.as_str()).collect();
+        assert_eq!(ids, ["a", "c"]);
+        assert_eq!(removed.id, "b");
+        // Le serveur retiré n'est plus lancé : il n'est plus parmi les serveurs actifs.
+        assert!(enabled_servers(&next).all(|s| s.id != "b"));
+    }
+
+    #[test]
+    fn supprimer_un_serveur_inconnu_est_une_erreur() {
+        let settings = McpSettings { servers: vec![serveur("a")] };
+        let err = remove_mcp_server(&settings, "zz", Some("zz")).unwrap_err().to_string();
+        assert!(err.contains("introuvable"), "{err}");
+    }
+
+    #[test]
+    fn supprimer_par_le_nom_quand_l_identifiant_de_l_interface_differe() {
+        // Ajout par le catalogue : enregistré « mcp_postgres », l'interface affiche
+        // « mcp_postgresql » (identifiant recalculé depuis le nom « PostgreSQL »).
+        let mut pg = serveur("mcp_postgres");
+        pg.name = "PostgreSQL".into();
+        let settings = McpSettings { servers: vec![serveur("a"), pg] };
+        let (next, removed) =
+            remove_mcp_server(&settings, "mcp_postgresql", Some("PostgreSQL")).unwrap();
+        assert_eq!(removed.id, "mcp_postgres");
+        assert_eq!(next.servers.len(), 1);
+        // L'identifiant prime sur le nom.
+        let (_, removed) = remove_mcp_server(&settings, "a", Some("PostgreSQL")).unwrap();
+        assert_eq!(removed.id, "a");
+    }
 }
