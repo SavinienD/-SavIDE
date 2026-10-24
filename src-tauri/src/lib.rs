@@ -265,6 +265,7 @@ pub fn run() {
             }
         })
         .setup(|app| {
+            updater::nettoyer_au_demarrage(app.handle()); // marqueur d'une version déjà installée
             daemon_client::attach_on_startup(app.handle()); // axe:daemon
             #[cfg(target_os = "windows")]
             let _ = app;

@@ -152,6 +152,8 @@ fn data_dir() -> std::result::Result<PathBuf, String> {
 }
 
 async fn connect(app: &AppHandle) -> std::result::Result<DaemonClient, String> {
+    // Pendant une installation, ne jamais relancer le démon (ni son python.exe).
+    crate::updater::demon_autorise()?;
     let state = app.state::<DaemonState>();
     let mut slot = state.client.lock().await;
     if let Some(client) = slot.as_ref().filter(|c| !c.is_closed()) {
