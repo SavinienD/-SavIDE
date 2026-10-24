@@ -11,6 +11,7 @@ import type {
 } from "../../types";
 import { canonicalToolName, isToolName } from "../../lib/tools";
 import { resumeOutilEnFrancais } from "./resumesOutils";
+import { lireReveil } from "./indicateursSession"; // axe:commandes
 
 const MIN_VISIBLE_TURN_DURATION_MS = 90_000;
 const CLEANED_TOOL_OUTPUT =
@@ -94,7 +95,9 @@ export type ChatBlock =
       kind: "turn-duration";
       id: string;
       durationMs: number;
-    };
+    }
+  // axe:commandes — message injecté par un /heartbeat (bulle discrète « réveil : … »).
+  | { kind: "wake"; id: string; message: string; atMs: number | null };
 
 export type SubAgentBlock = {
   id: string;
@@ -317,6 +320,12 @@ function blocksFromHistory(history: ChatMessage[]): ChatBlock[] {
         if (isHiddenUserText(part)) continue;
         const trimmed = part.text.trim();
         if (!trimmed) continue;
+        // axe:commandes — réveil /heartbeat : bulle discrète, pas un message de l'utilisateur.
+        const reveil = lireReveil(trimmed);
+        if (reveil) {
+          blocks.push({ kind: "wake", id: id("w"), message: reveil.message, atMs: reveil.atMs });
+          continue;
+        }
         blocks.push({
           kind: "user-text",
           id: id("u"),
@@ -1617,6 +1626,21 @@ export function applyEvent(
 
     case "peer_message_received":
       return state;
+
+    // axe:commandes — un /heartbeat a réveillé la session : bulle « réveil : … ».
+    case "heartbeat_received": {
+      const last = state.blocks[state.blocks.length - 1];
+      if (last?.kind === "wake" && last.message === event.message && last.atMs === event.at_ms) {
+        return state;
+      }
+      return {
+        ...state,
+        blocks: [
+          ...state.blocks,
+          { kind: "wake", id: `s-w-${event.at_ms}`, message: event.message, atMs: event.at_ms || null },
+        ],
+      };
+    }
 
     case "sub_agent_event":
       return state;

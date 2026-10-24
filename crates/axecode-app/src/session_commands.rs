@@ -79,7 +79,37 @@ pub struct Autonomous {
 pub struct Heartbeat {
     pub interval_ms: u64,
     pub message: String,
+    /// Next slot of the fixed wall-clock grid (`set time + k × interval`).
     pub next_at_ms: i64,
+    /// Last delivered wake-up (shown in the IDE indicator).
+    #[serde(default)]
+    pub last_at_ms: Option<i64>,
+    /// Slots reached but not delivered yet (turn running, PC asleep).
+    #[serde(default)]
+    pub pending: u32,
+}
+
+/// One tick of the heartbeat clock (pure, tested). Slots follow a fixed grid
+/// (`next = previous slot + interval`, never « last message + interval »); a slot
+/// reached while the session is busy waits and is delivered as soon as it is idle;
+/// several slots missed (long turn, sleep of the PC) give ONE wake-up. Returns the
+/// number of slots covered by the wake-up to deliver now (`None` = nothing).
+pub fn heartbeat_tick(hb: &mut Heartbeat, now: i64, busy: bool) -> Option<u32> {
+    let interval = hb.interval_ms.max(1) as i64;
+    if now >= hb.next_at_ms {
+        let slots = (now - hb.next_at_ms) / interval + 1;
+        hb.pending = hb.pending.saturating_add(slots.min(u32::MAX as i64) as u32);
+        hb.next_at_ms += slots * interval;
+    }
+    // Never two wake-ups in a row: at least half an interval between deliveries.
+    let too_soon = hb.last_at_ms.is_some_and(|last| now - last < interval / 2);
+    if hb.pending > 0 && !busy && !too_soon {
+        let n = hb.pending;
+        hb.pending = 0;
+        hb.last_at_ms = Some(now);
+        return Some(n);
+    }
+    None
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -289,17 +319,23 @@ impl Inner {
         lock(&self.data_dir).as_ref().map(|d| d.join("session_state").join(format!("{id}.json")))
     }
 
+    /// The state file is the source of truth: the IDE changes it too (« Arrêter le
+    /// heartbeat », « Mettre le goal en pause » : `sessions.commands_set` du démon),
+    /// so it is re-read every time; the memory copy only serves without data dir.
     fn load(&self, id: &str) -> SessionState {
+        if let Some(path) = self.state_path(id) {
+            if let Some(state) = std::fs::read_to_string(&path)
+                .ok()
+                .and_then(|t| serde_json::from_str::<SessionState>(&t).ok())
+            {
+                lock(&self.states).insert(id.to_string(), state.clone());
+                return state;
+            }
+        }
         if let Some(s) = lock(&self.states).get(id) {
             return s.clone();
         }
-        let state: SessionState = self
-            .state_path(id)
-            .and_then(|p| std::fs::read_to_string(p).ok())
-            .and_then(|t| serde_json::from_str(&t).ok())
-            .unwrap_or_default();
-        lock(&self.states).insert(id.to_string(), state.clone());
-        state
+        SessionState::default()
     }
 
     fn save(&self, id: &str, state: SessionState) {
@@ -355,25 +391,31 @@ impl Inner {
         let handle = tokio::spawn(async move {
             loop {
                 let Some(hb) = me.load(&sid).heartbeat else { return };
-                let wait = (hb.next_at_ms - now_ms()).max(0) as u64;
-                tokio::time::sleep(Duration::from_millis(wait.max(250))).await;
-                let Some(hb) = me.load(&sid).heartbeat else { return };
-                if now_ms() < hb.next_at_ms {
-                    continue;
+                let host = me.host(&sid);
+                // No host yet / turn running: the slot waits (delivered at the end of the turn).
+                let busy = match &host {
+                    Some(h) => h.get_session(&sid).await.map_or(true, |m| m.status == SessionStatus::Running),
+                    None => true,
+                };
+                let now = now_ms();
+                let mut next = hb.clone();
+                let fire = heartbeat_tick(&mut next, now, busy);
+                if next.next_at_ms != hb.next_at_ms || next.pending != hb.pending || fire.is_some() {
+                    me.update(&sid, |s| {
+                        if let Some(h) = s.heartbeat.as_mut().filter(|h| h.message == hb.message && h.interval_ms == hb.interval_ms) {
+                            *h = next.clone();
+                        }
+                    });
                 }
-                me.update(&sid, |s| {
-                    if let Some(h) = s.heartbeat.as_mut() {
-                        h.next_at_ms = now_ms() + h.interval_ms as i64;
-                    }
-                });
-                let Some(host) = me.host(&sid) else { continue };
-                // Skip a beat while the session is busy.
-                if host.get_session(&sid).await.is_ok_and(|m| m.status == SessionStatus::Running) {
-                    continue;
+                if let (Some(n), Some(host)) = (fire, host.as_ref()) {
+                    let _ = host
+                        .send_user_message(&sid, heartbeat_text_missed(&hb.message, now, n.saturating_sub(1)))
+                        .await;
                 }
-                let _ = host
-                    .send_user_message(&sid, format!("<heartbeat>\n{}\n</heartbeat>", hb.message))
-                    .await;
+                // Short waits on the WALL clock: a monotonic sleep does not count the
+                // PC's sleep (Windows), which delayed a 5 min heartbeat by hours.
+                let wait = if next.pending > 0 { 1_000 } else { (next.next_at_ms - now_ms()).clamp(250, 5_000) };
+                tokio::time::sleep(Duration::from_millis(wait as u64)).await;
             }
         });
         lock(&self.heartbeats).insert(id.to_string(), handle);
@@ -408,9 +450,13 @@ impl SessionCommandsHook {
                 let text = words.join(" ");
                 match text.as_str() {
                     "" => return Some(goal_reminder(&inner.load(id)).unwrap_or_else(|| "No goal is set.".into())),
-                    "clear" => { self.goal_call(session, "goal.clear", json!({})).await.ok(); "The user cleared the goal.".into() }
+                    "clear" | "off" | "stop" => { self.goal_call(session, "goal.clear", json!({})).await.ok(); "The user cleared the goal.".into() }
                     "pause" => { self.goal_call(session, "goal.pause", json!({})).await.ok(); "The user paused the goal.".into() }
                     "resume" => { self.goal_call(session, "goal.resume", json!({})).await.ok(); "The user resumed the goal.".into() }
+                    "done" | "complete" | "fini" | "terminé" => {
+                        self.goal_call(session, "goal.complete", json!({"summary": "marqué atteint par l'utilisateur (/goal done)"})).await.ok();
+                        "The user marked the goal as reached (/goal done). Do not keep working on it.".into()
+                    }
                     _ => {
                         let budget = flags.get("budget").and_then(|b| b.replace(['_', ' '], "").parse::<u64>().ok());
                         let _ = self.goal_call(session, "goal.set", json!({"text": text, "budget_tokens": budget})).await;
@@ -447,7 +493,7 @@ impl SessionCommandsHook {
             }
             "heartbeat" => {
                 let first = cmd.args.first().cloned().unwrap_or_default();
-                if first.is_empty() || first == "clear" || first == "off" {
+                if first.is_empty() || matches!(first.as_str(), "clear" | "off" | "stop") {
                     let _ = self.heartbeat_call(session, "heartbeat.clear", json!({})).await;
                     return Some("The user cleared the heartbeat.".into());
                 }
@@ -551,8 +597,18 @@ impl SessionCommandsHook {
                 if message.is_empty() {
                     return Err("heartbeat.set: message is required".into());
                 }
-                let hb = Heartbeat { interval_ms, message, next_at_ms: now_ms() + interval_ms as i64 };
-                inner.update(id, |s| s.heartbeat = Some(hb.clone()));
+                // Same heartbeat set again (agents often re-run `heartbeat.set`): keep its
+                // grid, otherwise every call pushed the next wake-up back.
+                let hb = inner.update(id, |s| {
+                    match s.heartbeat.as_ref().filter(|h| h.interval_ms == interval_ms && h.message == message) {
+                        Some(existing) => existing.clone(),
+                        None => {
+                            let hb = Heartbeat { interval_ms, message, next_at_ms: now_ms() + interval_ms as i64, ..Default::default() };
+                            s.heartbeat = Some(hb.clone());
+                            hb
+                        }
+                    }
+                });
                 serde_json::to_value(hb).unwrap_or(Value::Null)
             }
             other => return Err(format!("unknown heartbeat call `{other}`")),
@@ -564,6 +620,38 @@ impl SessionCommandsHook {
         Ok(result)
     }
 }
+
+/// Message injected by a heartbeat (shown in the IDE as « réveil : … » with its time).
+pub fn heartbeat_text(message: &str, at_ms: i64) -> String {
+    heartbeat_text_missed(message, at_ms, 0)
+}
+
+/// Same, with the number of wake-ups merged into this one (turn running, PC asleep).
+pub fn heartbeat_text_missed(message: &str, at_ms: i64, missed: u32) -> String {
+    if missed == 0 {
+        return format!("<heartbeat at_ms=\"{at_ms}\">\n{message}\n</heartbeat>");
+    }
+    let s = if missed > 1 { "s" } else { "" };
+    format!("<heartbeat at_ms=\"{at_ms}\" missed=\"{missed}\">\n{message}\n({missed} réveil{s} manqué{s})\n</heartbeat>")
+}
+
+/// Inverse of [`heartbeat_text`]: `(message, at_ms)` of an injected heartbeat
+/// (also accepts the bare `<heartbeat>` form of `TurnInput::Heartbeat`).
+pub fn parse_heartbeat_text(text: &str) -> Option<(String, Option<i64>)> {
+    let rest = text.trim().strip_prefix("<heartbeat")?;
+    let (attrs, body) = rest.split_once('>')?;
+    let body = body.strip_suffix("</heartbeat>")?;
+    let at_ms = attrs
+        .split("at_ms=\"")
+        .nth(1)
+        .and_then(|v| v.split('"').next())
+        .and_then(|v| v.parse().ok());
+    Some((body.trim().to_string(), at_ms))
+}
+
+/// Commands served by [`SessionCommandsHook::run_slash`] (the IDE checks its
+/// autocompletion list against it).
+pub const SLASH_COMMANDS: &[&str] = &["goal", "autonomous", "heartbeat", "refine", "compact"];
 
 fn describe_autonomous(a: &Autonomous) -> String {
     let mut parts = Vec::new();
@@ -813,6 +901,54 @@ mod tests {
         assert_eq!(parse_interval("2m"), Some(120_000));
         assert_eq!(parse_interval("90"), Some(90_000));
         assert_eq!(parse_interval("x"), None);
+    }
+
+    /// 30 min of continuous activity (turns of 2 min 50 s, 10 s idle between them, a
+    /// delivered wake-up starts a turn), heartbeat every 5 min: the 6 slots (5, 10, …,
+    /// 30 min) give exactly 6 wake-ups, each at the end of the running turn (the last
+    /// one at 32 min 50 s), never two at once, grid unchanged.
+    #[test]
+    fn heartbeat_fixed_grid_under_activity() {
+        let min = 60_000i64;
+        let mut hb = Heartbeat { interval_ms: 5 * min as u64, message: "x".into(), next_at_ms: 5 * min, ..Default::default() };
+        let mut deliveries = Vec::new();
+        let mut busy_until = 0i64;
+        let mut now = 0i64;
+        while now < 33 * min {
+            let in_cycle = now % (3 * min);
+            let busy = in_cycle < 3 * min - 10_000 || now < busy_until;
+            if let Some(n) = heartbeat_tick(&mut hb, now, busy) {
+                deliveries.push((now, n));
+                busy_until = now + 30_000;
+            }
+            now += 1_000;
+        }
+        assert_eq!(deliveries.len(), 6, "{deliveries:?}");
+        assert!(deliveries.iter().all(|&(_, n)| n == 1), "no merged slot: {deliveries:?}");
+        assert!(deliveries.windows(2).all(|w| w[1].0 - w[0].0 >= 150_000), "never two at once: {deliveries:?}");
+        assert_eq!(hb.next_at_ms, 35 * min, "grid unchanged by the delays");
+    }
+
+    /// PC asleep 2 h: ONE catch-up wake-up carrying the 24 missed slots.
+    #[test]
+    fn heartbeat_one_catch_up_after_sleep() {
+        let min = 60_000i64;
+        let mut hb = Heartbeat { interval_ms: 5 * min as u64, message: "x".into(), next_at_ms: 5 * min, ..Default::default() };
+        assert_eq!(heartbeat_tick(&mut hb, 5 * min, false), Some(1));
+        assert_eq!(heartbeat_tick(&mut hb, 125 * min + 7_000, false), Some(24));
+        assert_eq!(heartbeat_tick(&mut hb, 125 * min + 8_000, false), None, "no second one");
+        assert_eq!(hb.next_at_ms, 130 * min);
+        assert!(heartbeat_text_missed("x", 1, 23).contains("23 réveils manqués"));
+        assert_eq!(parse_heartbeat_text(&heartbeat_text_missed("x", 7, 2)).map(|p| p.1), Some(Some(7)));
+    }
+
+    #[test]
+    fn heartbeat_round_trip() {
+        let t = heartbeat_text("coucou", 1_792_000_000_000);
+        assert_eq!(parse_heartbeat_text(&t), Some(("coucou".into(), Some(1_792_000_000_000))));
+        assert_eq!(parse_heartbeat_text("<heartbeat>\nx\n</heartbeat>"), Some(("x".into(), None)));
+        assert_eq!(parse_heartbeat_text("<heartbeats>"), None);
+        assert_eq!(parse_heartbeat_text("bonjour"), None);
     }
 
     #[test]

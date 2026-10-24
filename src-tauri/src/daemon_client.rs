@@ -360,6 +360,39 @@ pub(crate) struct BridgeTurn {
 #[derive(Default)]
 pub(crate) struct Bridge {
     turns: StdMutex<HashMap<String, BridgeTurn>>,
+    /// axe:commandes — conversation -> dossier, pour suivre les tours lancés par le
+    /// service lui-même (réveil /heartbeat, /autonomous) : avant, ils étaient ignorés.
+    known: StdMutex<HashMap<String, String>>,
+}
+
+/// axe:commandes — `(message, at_ms)` si l'entrée de journal est un réveil /heartbeat.
+pub(crate) fn heartbeat_from_entry(data: &Value) -> Option<(String, i64)> {
+    if data.get("kind").and_then(Value::as_str) != Some("message") {
+        return None;
+    }
+    let message = data.get("message")?;
+    if message.get("role").and_then(Value::as_str) != Some("user") {
+        return None;
+    }
+    let text: String = message
+        .get("parts")?
+        .as_array()?
+        .iter()
+        .filter(|p| p.get("type").and_then(Value::as_str) == Some("text"))
+        .filter_map(|p| p.get("text").and_then(Value::as_str))
+        .collect();
+    let (body, at_ms) = axecode_app::session_commands::parse_heartbeat_text(&text)?;
+    Some((body, at_ms.or_else(|| data.get("ts").and_then(Value::as_i64)).unwrap_or(0)))
+}
+
+/// axe:commandes — un tour que l'IDE n'a pas lancé commence (réveil, continuation) :
+/// il faut le suivre si la conversation est connue de ce poste.
+fn adopts_turn(event: &DaemonEvent) -> bool {
+    match event.event.as_str() {
+        "entry" => heartbeat_from_entry(&event.data).is_some(),
+        "status" => event.data.get("status").and_then(Value::as_str) == Some("running"),
+        _ => false,
+    }
 }
 
 fn bridge(app: &AppHandle) -> tauri::State<'_, Bridge> {
@@ -513,6 +546,9 @@ pub(crate) async fn send_repl_message(
             .call("sessions.set_model", json!({"sessionId": conversation.id, "model": model}))
             .await?;
     }
+    if let Ok(mut known) = bridge(&app).known.lock() {
+        known.insert(conversation.id.clone(), workspace_id.clone());
+    }
     if let Ok(mut turns) = bridge(&app).turns.lock() {
         turns.insert(
             conversation.id.clone(),
@@ -630,6 +666,17 @@ pub(crate) fn bridge_event(app: &AppHandle, event: &DaemonEvent) {
     let workspace_id = {
         let bridge = bridge(app);
         let Ok(mut turns) = bridge.turns.lock() else { return };
+        // axe:commandes — tour lancé par le service (réveil /heartbeat, /autonomous).
+        if !turns.contains_key(session_id) && adopts_turn(event) {
+            let known = bridge.known.lock().ok().and_then(|k| k.get(session_id).cloned());
+            let workspace = known.or_else(|| {
+                app.state::<DesktopState>().store.conversation_workspace_by_id(session_id).ok().flatten()
+            });
+            if let Some(workspace_id) = workspace {
+                turns.insert(session_id.to_string(), BridgeTurn { workspace_id, ..Default::default() });
+                events.push(AgentEvent::TurnStarted);
+            }
+        }
         let Some(turn) = turns.get_mut(session_id) else { return };
         match event.event.as_str() {
             "stream" => {
@@ -713,6 +760,9 @@ pub(crate) fn bridge_event(app: &AppHandle, event: &DaemonEvent) {
             // l'espace, moteur Python arrêté, worker relancé trop souvent : daemon worker.rs) :
             // avant, le tour se terminait sans rien afficher.
             "entry" => {
+                if let Some((message, at_ms)) = heartbeat_from_entry(&event.data) {
+                    events.push(AgentEvent::HeartbeatReceived { message, at_ms });
+                }
                 if let Some(message) = journal_turn_error(&event.data) {
                     if let Some(message) = first_turn_error(turn, message) {
                         events.push(AgentEvent::Error { message });
@@ -809,6 +859,20 @@ mod bridge_turn_error_tests {
     fn entree(error: &str) -> Value {
         json!({"id": "a8950def", "parent": "bcf21100", "ts": 1792666695889u64,
                "kind": "extension", "name": "turn_error", "payload": {"error": error}})
+    }
+
+    #[test]
+    fn reveil_heartbeat_reconnu_dans_le_journal() {
+        let entry = json!({"kind": "message", "ts": 5, "message": {"role": "user", "parts": [
+            {"type": "text", "text": axecode_app::session_commands::heartbeat_text("coucou", 42)}]}});
+        assert_eq!(heartbeat_from_entry(&entry), Some(("coucou".to_string(), 42)));
+        let nu = json!({"kind": "message", "ts": 5, "message": {"role": "user", "parts": [
+            {"type": "text", "text": "<heartbeat>\ncoucou\n</heartbeat>"}]}});
+        assert_eq!(heartbeat_from_entry(&nu), Some(("coucou".to_string(), 5)));
+        let normal = json!({"kind": "message", "message": {"role": "user", "parts": [{"type": "text", "text": "bonjour"}]}});
+        assert_eq!(heartbeat_from_entry(&normal), None);
+        let assistant = json!({"kind": "message", "message": {"role": "assistant", "parts": [{"type": "text", "text": "<heartbeat>\nx\n</heartbeat>"}]}});
+        assert_eq!(heartbeat_from_entry(&assistant), None);
     }
 
     #[test]

@@ -659,7 +659,7 @@ mod tests {
             role: Role::User,
             parts: vec![Part::ToolResult {
                 tool_call_id: "call_read".into(),
-                content: "path: image.png\n\n[Image attached visually.]".into(),
+                content: "path: image.png\n\n[Image jointe en visuel.]".into(),
                 images: vec![ToolResultImage {
                     media_type: "image/png".into(),
                     data: "iVBORw0KGgo=".into(),
@@ -682,7 +682,7 @@ mod tests {
                     "output": [
                         {
                             "type": "input_text",
-                            "text": "path: image.png\n\n[Image attached visually.]"
+                            "text": "path: image.png\n\n[Image jointe en visuel.]"
                         },
                         {
                             "type": "input_image",

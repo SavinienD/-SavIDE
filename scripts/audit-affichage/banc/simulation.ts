@@ -102,6 +102,17 @@ export function installerSimulation(scene: Scene): void {
           return { agents: [] };
         case "sessions.history":
           return [];
+        // axe:commandes — indicateurs /heartbeat et /goal (scène « commandes »).
+        case "sessions.commands_state":
+          return scene.commandes ?? { goal: null, heartbeat: null, autonomous: null };
+        case "sessions.commands_set": {
+          const etat: any = { ...((scene.commandes as any) ?? {}) };
+          if (a.params?.op === "heartbeat_off") etat.heartbeat = null;
+          if (a.params?.op === "goal_clear") etat.goal = null;
+          if (a.params?.op === "goal_pause" && etat.goal) etat.goal = { ...etat.goal, status: "paused" };
+          scene.commandes = etat;
+          return etat;
+        }
         default:
           return null;
       }

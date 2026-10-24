@@ -99,6 +99,30 @@ export const SCENES = [
     temoins: ["sel:.chat-body"],
     attendus: [FIN_TOUR_PRECEDENT],
   },
+  // axe:commandes — « /heartbeat 1m coucou » et « /goal … » : icônes à côté du modèle,
+  // réveil visible dans la conversation (« réveil : coucou » avec l'heure), détail au clic.
+  {
+    id: "commandes",
+    sim: {
+      commandes: {
+        heartbeat: { interval_ms: 60_000, message: "coucou", next_at_ms: Date.UTC(2026, 9, 23, 12, 33) },
+        goal: { text: "Finir le lot 3 de la recette", status: "active" },
+        autonomous: null,
+      },
+    },
+    stockage: () => colonnes([ids(1)]),
+    evenements: [
+      { type: "turn_started" },
+      { type: "heartbeat_received", message: "coucou", at_ms: Date.UTC(2026, 9, 23, 12, 32) },
+      { type: "text_started" },
+      { type: "text_chunk", delta: "Réveil reçu." },
+      { type: "text_finished" },
+      { type: "turn_finished" },
+    ],
+    cliquer: ".axe-indicateur[data-kind='heartbeat']",
+    temoins: ["sel:.axe-indicateur[data-kind='heartbeat']", "sel:.axe-indicateur[data-kind='goal']", "sel:.axe-reveil", "sel:.axe-indicateurs__detail"],
+    attendus: ["coucou", "Arrêter le réveil", "Toutes les 1 min"],
+  },
   { id: "agents", sim: { sousAgents: 3 }, stockage: () => colonnes([ids(3)]), agents: true, temoins: ["sel:.axe-agents"] },
   // Bugs SavIDE 0.1.58 : dans une conversation sans dossier, Accueil / Ouvrir un dossier /
   // Réglages étaient rognés (barre d'actions de largeur 0) ; /login ouvrait « À propos » ou rien.

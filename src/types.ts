@@ -633,6 +633,8 @@ export type AgentEvent =
   // axe:reprise — stream cut, request sent again: the live reply starts over.
   | { type: "stream_retry" }
   | { type: "error"; message: string }
+  // axe:commandes — réveil /heartbeat (le service a injecté son message).
+  | { type: "heartbeat_received"; message: string; at_ms: number }
   | {
       type: "peer_message_received";
       id: string;

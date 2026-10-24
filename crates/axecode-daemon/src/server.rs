@@ -336,6 +336,12 @@ impl Daemon {
                 )?;
                 ok(serde_json::to_value(meta)?)
             }
+            // axe:commandes — indicateurs /goal et /heartbeat (lecture, arrêt)
+            methods::SESSIONS_COMMANDS_STATE => ok(crate::commandes_rpc::state(self, &sid(&params)?)?),
+            methods::SESSIONS_COMMANDS_SET => {
+                let op = opt_str(&params, "op").unwrap_or_default();
+                ok(crate::commandes_rpc::set(self, &sid(&params)?, &op)?)
+            }
             methods::SESSIONS_SET_MODEL => {
                 let id = sid(&params)?;
                 let model: ModelRef = parse(params.get("model").cloned().unwrap_or_default())?;

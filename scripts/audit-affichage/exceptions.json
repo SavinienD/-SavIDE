@@ -14,6 +14,11 @@
     },
     {
       "regle": "chevauchement",
+      "selecteur": ".axe-indicateurs__detail",
+      "raison": "Détail du réveil /heartbeat ou de l'objectif /goal : petite fenêtre ouverte par un clic sur son icône, qui passe devant la zone de saisie par conception (se ferme au clic ailleurs)."
+    },
+    {
+      "regle": "chevauchement",
       "selecteur": ".volet-flottant",
       "raison": "Volet détaché (explorateur, panneau bas…) : fenêtre flottante interne qui passe devant le reste par conception ; on la déplace ou on la réancre."
     },

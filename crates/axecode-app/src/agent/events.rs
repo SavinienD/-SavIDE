@@ -81,6 +81,11 @@ pub enum AgentEvent {
         event: Box<AgentEvent>,
     },
     AgentSlept,
+    /// axe:commandes — a `/heartbeat` woke the session up (shown as « réveil : … »).
+    HeartbeatReceived {
+        message: String,
+        at_ms: i64,
+    },
     TurnFinished {
         #[serde(skip_serializing_if = "Option::is_none")]
         duration_ms: Option<i64>,

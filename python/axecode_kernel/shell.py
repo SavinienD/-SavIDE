@@ -48,7 +48,7 @@ def _clip(text: str) -> str:
     if len(text) <= MAX_OUTPUT:
         return text
     half = MAX_OUTPUT // 2
-    return f"{text[:half]}\n[... {len(text) - MAX_OUTPUT} caractères omis ...]\n{text[-half:]}"
+    return f"{text[:half]}\n[… {len(text) - MAX_OUTPUT} caractères omis …]\n{text[-half:]}"
 
 
 def _creationflags() -> int:

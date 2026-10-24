@@ -120,7 +120,7 @@ impl ReadTool {
         if let Some(media_type) = image_media_type {
             return Ok(ToolRunResult::ok_with_images(
                 format!(
-                    "path: {display_path}\ntype: {media_type}\nsize: {} bytes\n\n[Image attached visually.]",
+                    "path: {display_path}\ntype: {media_type}\nsize: {} bytes\n\n[Image jointe en visuel.]",
                     bytes.len()
                 ),
                 vec![ToolRunImage {
@@ -429,7 +429,7 @@ mod tests {
             .expect("image should read without limit");
 
         assert!(!result.is_error);
-        assert!(result.content.contains("[Image attached visually.]"));
+        assert!(result.content.contains("[Image jointe en visuel.]"));
         assert_eq!(result.images.len(), 1);
         assert_eq!(result.images[0].media_type, "image/gif");
         assert_eq!(result.images[0].data, BASE64_STANDARD.encode(image_bytes));
@@ -451,7 +451,7 @@ mod tests {
             .expect("image should ignore text-only ranges");
 
         assert!(!result.is_error);
-        assert!(result.content.contains("[Image attached visually.]"));
+        assert!(result.content.contains("[Image jointe en visuel.]"));
         assert_eq!(result.images.len(), 1);
         assert_eq!(result.images[0].media_type, "image/gif");
         assert_eq!(result.images[0].data, BASE64_STANDARD.encode(image_bytes));

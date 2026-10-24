@@ -340,7 +340,7 @@ impl CreateImageTool {
             output.push_str("\n\nrevised_prompt:\n");
             output.push_str(&revised_prompts.join("\n\n---\n\n"));
         }
-        output.push_str("\n\n[Image attached visually.]");
+        output.push_str("\n\n[Image jointe en visuel.]");
 
         Ok(ToolRunResult::ok_with_images(output, images, file_changes))
     }
@@ -455,7 +455,7 @@ impl CreateImageTool {
             output.push_str("\n\nrevised_prompt:\n");
             output.push_str(&revised_prompts.join("\n\n---\n\n"));
         }
-        output.push_str("\n\n[Image attached visually.]");
+        output.push_str("\n\n[Image jointe en visuel.]");
 
         Ok(ToolRunResult::ok_with_images(output, images, file_changes))
     }
@@ -669,7 +669,7 @@ impl CreateImageTool {
             output.push_str("\n\nnotes:\n");
             output.push_str(&notes.join("\n\n---\n\n"));
         }
-        output.push_str("\n\n[Image attached visually.]");
+        output.push_str("\n\n[Image jointe en visuel.]");
 
         Ok(ToolRunResult::ok_with_images(output, images, file_changes))
     }

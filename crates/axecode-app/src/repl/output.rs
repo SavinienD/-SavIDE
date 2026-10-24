@@ -13,7 +13,7 @@ pub fn clip(text: &str, cap: usize) -> String {
     let start: String = text.chars().take(head).collect();
     let end: String = text.chars().skip(total - tail).collect();
     format!(
-        "{start}\n[... {} chars omitted of {total} ...]\n{end}",
+        "{start}\n[… {} caractères omis sur {total} …]\n{end}",
         total - head - tail
     )
 }
@@ -82,6 +82,6 @@ mod tests {
         let out = clip(&text, 30);
         assert!(out.starts_with("aaaa"));
         assert!(out.ends_with("bbbb"));
-        assert!(out.contains("170 chars omitted of 200"));
+        assert!(out.contains("170 caractères omis sur 200"));
     }
 }

@@ -307,6 +307,12 @@ async function preparerScene(page, si, sc) {
       await pause(150);
     }
   }
+  // axe:commandes — clic sur un élément (ex. icône du heartbeat) pour ouvrir son détail.
+  if (sc.cliquer) {
+    await pause(600);
+    await page.evaluate((s) => document.querySelector(s)?.click(), sc.cliquer);
+    await pause(400);
+  }
   await pause(900);
 }
 

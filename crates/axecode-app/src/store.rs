@@ -1393,6 +1393,18 @@ impl AppStore {
         Ok(())
     }
 
+    /// axe:commandes — dossier (workspace) d'une conversation connue par son seul id.
+    pub fn conversation_workspace_by_id(&self, id: &str) -> Result<Option<String>> {
+        let conn = self.connection()?;
+        conn.query_row(
+            "select workspace_id from conversations where id = ?1",
+            params![id],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()
+        .context("unable to load conversation workspace")
+    }
+
     pub fn load_conversation_model_by_id(&self, id: &str) -> Result<Option<ModelRef>> {
         let conn = self.connection()?;
         conn.query_row(

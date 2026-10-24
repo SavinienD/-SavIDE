@@ -131,4 +131,7 @@ pub mod methods {
     pub const SESSIONS_ARCHIVE: &str = "sessions.archive";
     pub const SESSIONS_DELETE: &str = "sessions.delete";
     pub const SESSIONS_RESTORE: &str = "sessions.restore";
+    // axe:commandes — indicateurs /goal et /heartbeat de l'IDE
+    pub const SESSIONS_COMMANDS_STATE: &str = "sessions.commands_state";
+    pub const SESSIONS_COMMANDS_SET: &str = "sessions.commands_set";
 }

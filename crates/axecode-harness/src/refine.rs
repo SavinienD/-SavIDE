@@ -264,7 +264,7 @@ fn truncate_middle(text: &str, max_chars: usize) -> String {
     let half = max_chars / 2;
     let head: String = text.chars().take(half).collect();
     let tail: String = text.chars().skip(count - half).collect();
-    format!("{head}\n[… {} chars omitted …]\n{tail}", count - max_chars)
+    format!("{head}\n[… {} caractères omis …]\n{tail}", count - max_chars)
 }
 
 pub fn render_harness_state(entries: &[Entry]) -> String {

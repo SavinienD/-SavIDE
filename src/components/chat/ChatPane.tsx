@@ -55,6 +55,8 @@ import {
 } from "../../lib/models";
 import { customModelEntries, providerApi, type ProviderSettingsView } from "../../axe/providers"; // axe:providers
 import { runClientSlashCommand, useSlashCommandMenu } from "./SlashCommands"; // axe:slash
+import { IndicateursSession } from "./IndicateursSession"; // axe:commandes
+import { texteReveil } from "./indicateursSession"; // axe:commandes
 import type {
   AgentMode,
   AttachmentInput,
@@ -3875,6 +3877,13 @@ export function ChatPane({
               ) : (
                 <>
               {/* axe:cleanup — Act/Plan/Goal mode picker removed: every turn is a REPL session. */}
+              {/* axe:commandes — icônes /heartbeat et /goal à côté du sélecteur de modèle. */}
+              <IndicateursSession
+                workspacePath={workspacePath}
+                conversationId={conversationId}
+                signal={view.status}
+                dernierReveil={dernierReveilId(view.blocks)}
+              />
               <div className="composer__picker" data-kind="model" ref={modelRef}>
                 <button
                   type="button"
@@ -6427,6 +6436,16 @@ function BlockView({
           </div>
         </div>
       );
+    // axe:commandes — réveil /heartbeat : bulle discrète avec l'heure.
+    case "wake":
+      return (
+        <div className="msg" data-role="assistant">
+          <div className="axe-reveil" title="Message du réveil périodique injecté dans la session">
+            <Icon icon="solar:heart-pulse-linear" width={12} height={12} />
+            <span>{texteReveil(block.message, block.atMs)}</span>
+          </div>
+        </div>
+      );
     case "agent-status":
       return (
         <div className="msg" data-role="assistant">
@@ -6437,6 +6456,14 @@ function BlockView({
         </div>
       );
   }
+}
+
+// axe:commandes — identifiant du dernier réveil affiché (fait clignoter l'icône heartbeat).
+function dernierReveilId(blocks: ChatBlock[]): string | null {
+  for (let i = blocks.length - 1; i >= 0; i -= 1) {
+    if (blocks[i].kind === "wake") return blocks[i].id;
+  }
+  return null;
 }
 
 type PlanImplementMode = "continue" | "fresh";
