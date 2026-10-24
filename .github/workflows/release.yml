@@ -145,8 +145,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p out
-          deb=$(find target src-tauri/target -path '*bundle/deb/*.deb' 2>/dev/null | head -1)
-          img=$(find target src-tauri/target -path '*bundle/appimage/*.AppImage' 2>/dev/null | head -1)
+          deb=$(find target -path '*bundle/deb/*.deb' -print 2>/dev/null | head -1 || true)
+          img=$(find target -path '*bundle/appimage/*.AppImage' -print 2>/dev/null | head -1 || true)
           [ -n "$deb" ] && [ -n "$img" ] || { echo "deb ou AppImage introuvable"; exit 1; }
           [ -f "$img.sig" ] || { echo "signature AppImage absente"; exit 1; }
           name=$(basename "$img" | tr ' ' '.')
@@ -214,8 +214,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p out
-          tgz=$(find target src-tauri/target -path '*universal-apple-darwin/release/bundle/macos/*.app.tar.gz' 2>/dev/null | head -1)
-          dmg=$(find target src-tauri/target -path '*universal-apple-darwin/release/bundle/dmg/*.dmg' 2>/dev/null | head -1)
+          tgz=$(find target -path '*universal-apple-darwin/release/bundle/macos/*.app.tar.gz' -print 2>/dev/null | head -1 || true)
+          dmg=$(find target -path '*universal-apple-darwin/release/bundle/dmg/*.dmg' -print 2>/dev/null | head -1 || true)
           [ -n "$tgz" ] && [ -n "$dmg" ] || { echo ".app.tar.gz ou .dmg introuvable"; exit 1; }
           [ -f "$tgz.sig" ] || { echo "signature .app.tar.gz absente"; exit 1; }
           v="${GITHUB_REF_NAME#v}"
