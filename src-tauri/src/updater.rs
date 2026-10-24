@@ -64,6 +64,36 @@ const MARQUEUR: &str = "maj-en-cours.json";
 /// un échec : on autorise un nouvel essai (sur clic seulement).
 const MARQUEUR_VALIDITE_S: u64 = 15 * 60;
 
+/// Installation lancée dans CE processus : à partir de là plus aucun démon (ni
+/// noyau Python) ne doit être relancé depuis le dossier de l'appli. Bug du 24/10 :
+/// après `arreter_noyaux`, le moindre appel de l'interface repassait par
+/// `daemon_client::connect` → `ensure_daemon` relançait le démon et son python.exe
+/// juste avant l'installeur, qui butait sur « python-runtime\DLLs\_bz2.pyd ».
+static INSTALLATION_LANCEE: AtomicBool = AtomicBool::new(false);
+
+/// Refuse la (re)connexion au démon pendant une installation.
+pub(crate) fn demon_autorise() -> Result<(), String> {
+    if INSTALLATION_LANCEE.load(Ordering::SeqCst) {
+        Err("mise à jour en cours d'installation : démon arrêté".into())
+    } else {
+        Ok(())
+    }
+}
+
+/// Ordre d'arrêt (pur, testé) des processus lancés depuis le dossier de l'appli :
+/// d'abord les démons / autres exe (qui relanceraient leurs noyaux), python.exe
+/// ensuite ; jamais nous-mêmes.
+#[cfg_attr(not(windows), allow(dead_code))]
+pub(crate) fn ordre_arret(procs: &[(u32, String)], moi: u32) -> Vec<u32> {
+    let est_python = |n: &str| {
+        let n = n.to_ascii_lowercase();
+        n == "python" || n == "python.exe" || n == "pythonw" || n == "pythonw.exe"
+    };
+    let mut v: Vec<&(u32, String)> = procs.iter().filter(|(pid, _)| *pid != moi).collect();
+    v.sort_by_key(|(_, n)| est_python(n));
+    v.into_iter().map(|(pid, _)| *pid).collect()
+}
+
 fn version(v: &str) -> Option<semver::Version> {
     semver::Version::parse(v.trim().trim_start_matches('v')).ok()
 }
@@ -152,23 +182,71 @@ async fn arreter_noyaux(app: &AppHandle) {
         )
         .await;
     }
+    // Windows : on tue (démons d'abord, python.exe ensuite) et on ATTEND qu'il ne
+    // reste plus rien dans le dossier, jusqu'à 15 s.
     #[cfg(windows)]
     {
         if let Some(dir) = std::env::current_exe().ok().and_then(|e| e.parent().map(|p| p.to_path_buf())) {
-            let dossier = dir.to_string_lossy().replace('\'', "''");
-            let script = format!(
-                "$d='{dossier}\\'; Get-Process | Where-Object {{ $_.Id -ne {pid} -and $_.Path -and $_.Path.StartsWith($d, [System.StringComparison]::OrdinalIgnoreCase) }} | Stop-Process -Force -ErrorAction SilentlyContinue",
-                pid = std::process::id()
-            );
-            use std::os::windows::process::CommandExt;
-            let _ = std::process::Command::new("powershell")
-                .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", &script])
-                .stdin(std::process::Stdio::null())
-                .creation_flags(0x0800_0000) // CREATE_NO_WINDOW
-                .status();
+            for _ in 0..30 {
+                let restants = processus_du_dossier(&dir);
+                let ordre = ordre_arret(&restants, std::process::id());
+                if ordre.is_empty() {
+                    break;
+                }
+                for pid in ordre {
+                    tuer(pid);
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            }
         }
     }
     tokio::time::sleep(std::time::Duration::from_millis(800)).await;
+}
+
+#[cfg(windows)]
+fn powershell(script: &str) -> String {
+    use std::os::windows::process::CommandExt;
+    std::process::Command::new("powershell")
+        .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script])
+        .stdin(std::process::Stdio::null())
+        .creation_flags(0x0800_0000) // CREATE_NO_WINDOW
+        .output()
+        .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
+        .unwrap_or_default()
+}
+
+/// (pid, nom) des processus dont l'exe est dans `dir`.
+#[cfg(windows)]
+fn processus_du_dossier(dir: &std::path::Path) -> Vec<(u32, String)> {
+    let d = dir.to_string_lossy().replace('\'', "''");
+    let script = format!(
+        "$d='{d}\\'; Get-Process | Where-Object {{ $_.Path -and $_.Path.StartsWith($d, [System.StringComparison]::OrdinalIgnoreCase) }} | ForEach-Object {{ \"$($_.Id) $($_.ProcessName)\" }}"
+    );
+    powershell(&script)
+        .lines()
+        .filter_map(|l| {
+            let (pid, nom) = l.trim().split_once(' ')?;
+            Some((pid.parse().ok()?, nom.to_string()))
+        })
+        .collect()
+}
+
+#[cfg(windows)]
+fn tuer(pid: u32) {
+    use std::os::windows::process::CommandExt;
+    let _ = std::process::Command::new("taskkill")
+        .args(["/F", "/T", "/PID", &pid.to_string()])
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .creation_flags(0x0800_0000)
+        .status();
+}
+
+/// Au démarrage : efface le marqueur d'une version déjà installée (la version
+/// comparée est celle de l'exe qui tourne, relue à chaque lancement).
+pub(crate) fn nettoyer_au_demarrage(app: &AppHandle) {
+    nettoyer_marqueur(app, &app.package_info().version.to_string());
 }
 
 const PROGRESS_EVENT: &str = "updater://progress";
@@ -330,6 +408,7 @@ pub async fn updater_download_and_install(
 
         // Rien ne doit rester ouvert dans le dossier de l'appli pendant l'installation.
         ecrire_marqueur(&app, &update.version);
+        INSTALLATION_LANCEE.store(true, Ordering::SeqCst);
         arreter_noyaux(&app).await;
 
         match update.install(bytes) {
@@ -339,6 +418,7 @@ pub async fn updater_download_and_install(
             }
             Err(err) => {
                 installing.store(false, Ordering::SeqCst);
+                INSTALLATION_LANCEE.store(false, Ordering::SeqCst);
                 if let Some(p) = chemin_marqueur(&app) {
                     let _ = std::fs::remove_file(p);
                 }
@@ -386,6 +466,26 @@ mod tests {
         assert!(refus_installation("0.1.61", "0.1.63", Some(("0.1.62", 900)), 1000, false).is_none());
         assert!(refus_installation("0.1.61", "0.1.62", None, 1000, false).is_none());
         assert!(refus_installation("0.1.61", "pas-une-version", None, 1000, false).is_some());
+    }
+
+    #[test]
+    fn demon_refuse_pendant_installation() {
+        assert!(demon_autorise().is_ok());
+        INSTALLATION_LANCEE.store(true, Ordering::SeqCst);
+        assert!(demon_autorise().is_err());
+        INSTALLATION_LANCEE.store(false, Ordering::SeqCst);
+    }
+
+    #[test]
+    fn demons_tues_avant_python_jamais_soi() {
+        let procs = vec![
+            (10, "python".to_string()),
+            (11, "SavIDE".to_string()),
+            (12, "SavIDE".to_string()),
+            (13, "pythonw".to_string()),
+        ];
+        assert_eq!(ordre_arret(&procs, 12), vec![11, 10, 13]);
+        assert!(ordre_arret(&[(5, "SavIDE".into())], 5).is_empty());
     }
 
     #[test]
