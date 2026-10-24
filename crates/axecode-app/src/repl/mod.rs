@@ -35,6 +35,11 @@ pub trait TurnHook: Send + Sync {
     async fn reminder(&self, _session: &SessionMeta, _request: &TurnRequest) -> Option<String> {
         None
     }
+    /// axe:goal165 — block re-computed for every request of the turn (live state:
+    /// goal, autonomous, heartbeat), after the `reminder` blocks.
+    async fn live_reminder(&self, _session: &SessionMeta) -> Option<String> {
+        None
+    }
     /// Whether this hook serves `method`.
     fn handles(&self, _method: &str) -> bool {
         false

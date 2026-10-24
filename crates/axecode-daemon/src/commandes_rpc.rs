@@ -22,15 +22,6 @@ fn state_path(data_dir: &Path, id: &str) -> SessionResult<PathBuf> {
     Ok(data_dir.join("session_state").join(format!("{id}.json")))
 }
 
-fn read(data_dir: &Path, id: &str) -> SessionResult<Value> {
-    let path = state_path(data_dir, id)?;
-    Ok(std::fs::read_to_string(path)
-        .ok()
-        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
-        .filter(Value::is_object)
-        .unwrap_or_else(|| json!({})))
-}
-
 /// Vue renvoyée à l'IDE (champs absents = `null`).
 pub fn view(state: &Value) -> Value {
     let get = |k: &str| state.get(k).cloned().unwrap_or(Value::Null);
@@ -69,19 +60,39 @@ pub fn apply(state: &mut Value, op: &str) -> SessionResult<()> {
     Ok(())
 }
 
+// axe:goal165 — same store, same lock and atomic write as the session hook
+// (`axecode_app::session_commands`): one source of truth for the objective.
 pub fn state(daemon: &Daemon, id: &str) -> SessionResult<Value> {
-    Ok(view(&read(daemon.data_dir(), id)?))
+    state_path(daemon.data_dir(), id)?;
+    Ok(view(&axecode_app::session_commands::read_state(daemon.data_dir(), id)))
+}
+
+/// One-shot notice for the agent's next request: it learns that the user acted
+/// from the IDE (before: the objective vanished without a word).
+fn notice(op: &str) -> Option<&'static str> {
+    Some(match op {
+        "goal_clear" => "L'utilisateur a arrêté l'objectif depuis l'interface : il n'y en a plus, n'y travaille plus.",
+        "goal_pause" => "L'utilisateur a mis l'objectif en pause depuis l'interface : plus de poursuite automatique tant qu'il ne l'a pas repris.",
+        "goal_resume" => "L'utilisateur a repris l'objectif depuis l'interface : continue d'y travailler.",
+        "goal_done" => "L'utilisateur a marqué l'objectif comme atteint depuis l'interface. N'y travaille plus.",
+        "heartbeat_off" => "L'utilisateur a arrêté le réveil (heartbeat) depuis l'interface.",
+        _ => return None,
+    })
 }
 
 pub fn set(daemon: &Daemon, id: &str, op: &str) -> SessionResult<Value> {
-    let mut state = read(daemon.data_dir(), id)?;
-    apply(&mut state, op)?;
-    let path = state_path(daemon.data_dir(), id)?;
-    if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir).map_err(|e| SessionError::Io(e.to_string()))?;
-    }
-    let bytes = serde_json::to_vec_pretty(&state).map_err(|e| SessionError::Io(e.to_string()))?;
-    std::fs::write(&path, bytes).map_err(|e| SessionError::Io(e.to_string()))?;
+    state_path(daemon.data_dir(), id)?;
+    let ((), state) = axecode_app::session_commands::update_state_value(daemon.data_dir(), id, |state| {
+        apply(state, op).map_err(|e| e.to_string())?;
+        if let (Some(text), Some(obj)) = (notice(op), state.as_object_mut()) {
+            let notices = obj.entry("notices").or_insert_with(|| json!([]));
+            if let Some(list) = notices.as_array_mut() {
+                list.push(json!(text));
+            }
+        }
+        Ok(())
+    })
+    .map_err(SessionError::Runtime)?;
     let (name, payload) = match op {
         "heartbeat_off" => ("heartbeat", json!({"op": "clear", "by": "ide"})),
         _ => ("goal", json!({"op": op.trim_start_matches("goal_"), "by": "ide", "goal": state.get("goal")})),

@@ -44,6 +44,94 @@ pub struct Goal {
     #[serde(default)]
     pub summary: Option<String>,
     pub created_ms: i64,
+    // axe:goal165 — automatic pursuit: while the goal is `active`, the hook
+    // relaunches the agent after each turn (no heartbeat needed).
+    /// Automatic relaunches delivered so far.
+    #[serde(default)]
+    pub relaunches: u32,
+    /// Consecutive relaunch turns without progress (pause at [`GOAL_MAX_IDLE_RELAUNCHES`]).
+    #[serde(default)]
+    pub idle_relaunches: u32,
+    /// Next planned relaunch (shown by the IDE indicator).
+    #[serde(default)]
+    pub next_relaunch_ms: Option<i64>,
+    /// End of the turn after which the relaunch was planned (a message journaled
+    /// after it = someone spoke: no relaunch).
+    #[serde(default)]
+    pub relaunch_after_ms: Option<i64>,
+    /// Reason of an automatic pause (no progress), shown to the user and the agent.
+    #[serde(default)]
+    pub auto_pause: Option<String>,
+    /// State at the start of the running turn (progress detection).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub turn_mark: Option<TurnMark>,
+}
+
+/// axe:goal165 — goal state at the start of a turn.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct TurnMark {
+    pub progress: usize,
+    #[serde(default)]
+    pub hash: Option<String>,
+    /// The turn was an automatic relaunch.
+    #[serde(default)]
+    pub relaunch: bool,
+    pub started_ms: i64,
+}
+
+/// Pause before an automatic relaunch (doubled for each relaunch without progress).
+pub const GOAL_PURSUIT_DELAY_MS: u64 = 20_000;
+/// Relaunch turns in a row without `goal.progress` nor change in the workspace → pause.
+pub const GOAL_MAX_IDLE_RELAUNCHES: u32 = 3;
+
+/// What to do after a turn while the goal is active (pure, tested).
+#[derive(Debug, Clone, PartialEq)]
+pub enum Pursuit {
+    /// Relaunch at this time.
+    Relaunch { at_ms: i64 },
+    /// Paused automatically (reason).
+    Pause(String),
+}
+
+/// Decide the pursuit after a turn: `progressed` = new `goal.progress` note,
+/// change in the workspace, or goal (re)set during the turn.
+pub fn pursuit_after_turn(goal: &mut Goal, progressed: bool, now: i64, delay_ms: u64) -> Option<Pursuit> {
+    if goal.status != "active" {
+        goal.next_relaunch_ms = None;
+        return None;
+    }
+    let relaunch = goal.turn_mark.take().is_some_and(|m| m.relaunch);
+    if progressed {
+        goal.idle_relaunches = 0;
+    } else if relaunch {
+        goal.idle_relaunches += 1;
+    }
+    if goal.idle_relaunches >= GOAL_MAX_IDLE_RELAUNCHES {
+        let reason = format!(
+            "pause automatique : {} relances de suite sans avancement (ni goal.progress ni changement de fichiers)",
+            goal.idle_relaunches
+        );
+        goal.status = "paused".into();
+        goal.next_relaunch_ms = None;
+        goal.relaunch_after_ms = None;
+        goal.auto_pause = Some(reason.clone());
+        goal.progress.push(format!("paused: {reason}"));
+        return Some(Pursuit::Pause(reason));
+    }
+    let wait = delay_ms.saturating_mul(1u64 << goal.idle_relaunches.min(6));
+    let at_ms = now + wait as i64;
+    goal.next_relaunch_ms = Some(at_ms);
+    goal.relaunch_after_ms = Some(now);
+    Some(Pursuit::Relaunch { at_ms })
+}
+
+/// Message of an automatic relaunch (shown in the IDE as « objectif : poursuite automatique »).
+pub fn goal_continue_text(goal_text: &str, at_ms: i64, n: u32) -> String {
+    format!("<goal_continue at_ms=\"{at_ms}\" n=\"{n}\">\nPoursuis l'objectif : {goal_text}\n</goal_continue>")
+}
+
+pub fn is_goal_continue(text: &str) -> bool {
+    text.trim_start().starts_with("<goal_continue")
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -130,6 +218,61 @@ pub fn now_ms() -> i64 {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis() as i64)
         .unwrap_or(0)
+}
+
+// axe:goal165 — ONE store for the session commands state (goal, heartbeat,
+// autonomous): `<data_dir>/session_state/<id>.json`, shared by this hook (goal.*,
+// /goal, state block of every request) and by the daemon RPC of the IDE
+// (`sessions.commands_state` / `sessions.commands_set`). Every read-modify-write
+// holds the same process lock and writes atomically (temporary file + rename):
+// a concurrent reader never sees a half-written file, a concurrent writer never
+// loses the other's change.
+static STATE_LOCK: Mutex<()> = Mutex::new(());
+
+pub fn state_file(data_dir: &Path, id: &str) -> PathBuf {
+    data_dir.join("session_state").join(format!("{id}.json"))
+}
+
+fn read_state_value(path: &Path) -> Option<Value> {
+    std::fs::read_to_string(path)
+        .ok()
+        .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+        .filter(Value::is_object)
+}
+
+fn write_state_atomic(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir)?;
+    }
+    let tmp = path.with_extension(format!("json.{}.tmp", std::process::id()));
+    std::fs::write(&tmp, bytes)?;
+    std::fs::rename(&tmp, path).or_else(|_| {
+        // Windows: target held open by an antivirus a few ms → plain write.
+        let r = std::fs::write(path, bytes);
+        let _ = std::fs::remove_file(&tmp);
+        r
+    })
+}
+
+/// Read-modify-write of the raw JSON state under the shared lock (daemon RPC).
+pub fn update_state_value<R>(
+    data_dir: &Path,
+    id: &str,
+    f: impl FnOnce(&mut Value) -> Result<R, String>,
+) -> Result<(R, Value), String> {
+    let _guard = lock(&STATE_LOCK);
+    let path = state_file(data_dir, id);
+    let mut value = read_state_value(&path).unwrap_or_else(|| json!({}));
+    let out = f(&mut value)?;
+    let bytes = serde_json::to_vec_pretty(&value).map_err(|e| e.to_string())?;
+    write_state_atomic(&path, &bytes).map_err(|e| e.to_string())?;
+    Ok((out, value))
+}
+
+/// Raw JSON state (empty object when absent), under the shared lock.
+pub fn read_state(data_dir: &Path, id: &str) -> Value {
+    let _guard = lock(&STATE_LOCK);
+    read_state_value(&state_file(data_dir, id)).unwrap_or_else(|| json!({}))
 }
 
 /// Parsed `/command args` typed in the composer.
@@ -307,6 +450,9 @@ struct Inner {
     hosts: Mutex<HashMap<String, Arc<dyn SessionHost>>>,
     states: Mutex<HashMap<String, SessionState>>,
     heartbeats: Mutex<HashMap<String, tokio::task::JoinHandle<()>>>,
+    /// axe:goal165 — planned automatic relaunch of each session.
+    pursuits: Mutex<HashMap<String, tokio::task::JoinHandle<()>>>,
+    pursuit_delay_ms: std::sync::atomic::AtomicU64,
     refine: refine::RefineRunner,
 }
 
@@ -316,18 +462,15 @@ fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
 
 impl Inner {
     fn state_path(&self, id: &str) -> Option<PathBuf> {
-        lock(&self.data_dir).as_ref().map(|d| d.join("session_state").join(format!("{id}.json")))
+        lock(&self.data_dir).as_ref().map(|d| state_file(d, id))
     }
 
-    /// The state file is the source of truth: the IDE changes it too (« Arrêter le
-    /// heartbeat », « Mettre le goal en pause » : `sessions.commands_set` du démon),
-    /// so it is re-read every time; the memory copy only serves without data dir.
-    fn load(&self, id: &str) -> SessionState {
+    /// The state file is the ONLY source of truth (goal.get, the state block of
+    /// each request, the IDE indicator all read it); the memory copy only serves
+    /// without data dir (tests) or if the file cannot be read.
+    fn load_unlocked(&self, id: &str) -> SessionState {
         if let Some(path) = self.state_path(id) {
-            if let Some(state) = std::fs::read_to_string(&path)
-                .ok()
-                .and_then(|t| serde_json::from_str::<SessionState>(&t).ok())
-            {
+            if let Some(state) = read_state_value(&path).and_then(|v| serde_json::from_value::<SessionState>(v).ok()) {
                 lock(&self.states).insert(id.to_string(), state.clone());
                 return state;
             }
@@ -338,22 +481,27 @@ impl Inner {
         SessionState::default()
     }
 
-    fn save(&self, id: &str, state: SessionState) {
+    fn load(&self, id: &str) -> SessionState {
+        let _guard = lock(&STATE_LOCK);
+        self.load_unlocked(id)
+    }
+
+    fn save_unlocked(&self, id: &str, state: SessionState) {
         if let Some(path) = self.state_path(id) {
-            if let Some(dir) = path.parent() {
-                let _ = std::fs::create_dir_all(dir);
-            }
             if let Ok(bytes) = serde_json::to_vec_pretty(&state) {
-                let _ = std::fs::write(path, bytes);
+                if let Err(e) = write_state_atomic(&path, &bytes) {
+                    tracing::warn!(session = %id, error = %e, "session state not saved");
+                }
             }
         }
         lock(&self.states).insert(id.to_string(), state);
     }
 
     fn update<R>(&self, id: &str, f: impl FnOnce(&mut SessionState) -> R) -> R {
-        let mut state = self.load(id);
+        let _guard = lock(&STATE_LOCK);
+        let mut state = self.load_unlocked(id);
         let out = f(&mut state);
-        self.save(id, state);
+        self.save_unlocked(id, state);
         out
     }
 
@@ -376,6 +524,55 @@ impl Inner {
             .lines()
             .filter_map(|l| serde_json::from_str(l).ok())
             .collect()
+    }
+
+    fn cancel_pursuit(&self, id: &str) {
+        if let Some(old) = lock(&self.pursuits).remove(id) {
+            old.abort();
+        }
+    }
+
+    /// axe:goal165 — plan the automatic relaunch of `id` at `at_ms`. At that time it
+    /// is delivered only if the goal is still active with this same plan, no turn
+    /// is running, and nothing was journaled since the end of the turn (user,
+    /// heartbeat or peer message: they start their own turn).
+    fn arm_pursuit(self: &Arc<Self>, id: &str, at_ms: i64) {
+        self.cancel_pursuit(id);
+        let me = self.clone();
+        let sid = id.to_string();
+        let handle = tokio::spawn(async move {
+            // Wall clock in short steps (the PC's sleep is not counted by a monotonic sleep).
+            loop {
+                let left = at_ms - now_ms();
+                if left <= 0 {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(left.clamp(20, 5_000) as u64)).await;
+            }
+            lock(&me.pursuits).remove(&sid);
+            let state = me.load(&sid);
+            let Some(goal) = state.goal.as_ref().filter(|g| g.status == "active" && g.next_relaunch_ms == Some(at_ms)) else { return };
+            let after = goal.relaunch_after_ms.unwrap_or(at_ms);
+            let autonomous = state.autonomous.as_ref().is_some_and(|a| a.status == "running");
+            let Some(host) = me.host(&sid) else { return };
+            let running = host.get_session(&sid).await.map_or(true, |m| m.status == SessionStatus::Running);
+            let spoke = me.journal_entries(&sid).iter().rev().take_while(|e| e.ts > after).any(|e| matches!(e.kind, JournalEntryKind::Message { .. }));
+            if autonomous || running || spoke {
+                // The other turn plans the next relaunch when it ends.
+                me.update(&sid, |s| if let Some(g) = s.goal.as_mut().filter(|g| g.next_relaunch_ms == Some(at_ms)) { g.next_relaunch_ms = None; });
+                return;
+            }
+            let now = now_ms();
+            let Some((text, n)) = me.update(&sid, |s| {
+                let g = s.goal.as_mut().filter(|g| g.status == "active" && g.next_relaunch_ms == Some(at_ms))?;
+                g.next_relaunch_ms = None;
+                g.relaunches += 1;
+                Some((g.text.clone(), g.relaunches))
+            }) else { return };
+            me.journal(&sid, "goal", json!({"op": "relaunch", "n": n, "at_ms": now})).await;
+            let _ = host.send_user_message(&sid, goal_continue_text(&text, now, n)).await;
+        });
+        lock(&self.pursuits).insert(id.to_string(), handle);
     }
 
     /// (Re)start the heartbeat timer of a session.
@@ -431,9 +628,16 @@ impl SessionCommandsHook {
                 hosts: Mutex::new(HashMap::new()),
                 states: Mutex::new(HashMap::new()),
                 heartbeats: Mutex::new(HashMap::new()),
+                pursuits: Mutex::new(HashMap::new()),
+                pursuit_delay_ms: std::sync::atomic::AtomicU64::new(GOAL_PURSUIT_DELAY_MS),
                 refine: refine::RefineRunner::new(),
             }),
         })
+    }
+
+    /// axe:goal165 — pause before an automatic relaunch (tests: a few ms).
+    pub fn set_pursuit_delay(&self, delay: Duration) {
+        self.inner.pursuit_delay_ms.store(delay.as_millis() as u64, std::sync::atomic::Ordering::Relaxed);
     }
 
     pub fn state(&self, session_id: &str) -> SessionState {
@@ -592,13 +796,21 @@ impl SessionCommandsHook {
                             goal.status = "paused".into();
                             if let Some(r) = s("reason") { goal.progress.push(format!("paused: {r}")); }
                         }
-                        "goal.resume" => goal.status = "active".into(),
+                        "goal.resume" => {
+                            goal.status = "active".into();
+                            goal.idle_relaunches = 0;
+                            goal.auto_pause = None;
+                        }
                         other => return Err(format!("unknown goal call `{other}`")),
                     }
                 }
             }
             Ok(serde_json::to_value(&state.goal).unwrap_or(Value::Null))
         })?;
+        if matches!(method, "goal.pause" | "goal.complete" | "goal.clear" | "goal.set") {
+            inner.cancel_pursuit(id);
+            inner.update(id, |s| if let Some(g) = s.goal.as_mut() { g.next_relaunch_ms = None; });
+        }
         if method != "goal.get" {
             inner.journal(id, "goal", json!({"op": method.trim_start_matches("goal."), "goal": result})).await;
         }
@@ -723,6 +935,11 @@ fn goal_reminder(state: &SessionState) -> Option<String> {
     if let Some(s) = &goal.summary {
         out.push_str(&format!("Résumé de fin : {s}\n"));
     }
+    if goal.status == "active" {
+        out.push_str("Poursuite automatique : tant qu'il est en cours, tu es relancé tout seul peu après chaque fin de tour (pas besoin de heartbeat) ; `goal.pause(raison)` l'arrête, `goal.complete(summary)` le termine.\n");
+    } else if let Some(r) = goal.auto_pause.as_ref().filter(|_| goal.status == "paused") {
+        out.push_str(&format!("Poursuite automatique arrêtée ({r}) ; `goal.resume()` pour reprendre.\n"));
+    }
     Some(out.trim_end().to_string())
 }
 
@@ -758,6 +975,9 @@ impl SessionCommandsHook {
             }
         }
         let Some(auto) = state.autonomous.clone().filter(|a| a.status == "running") else {
+            // axe:goal165 — no /autonomous: an active goal relaunches the agent
+            // after a short pause (no heartbeat needed).
+            self.goal_pursuit(session).await;
             return false;
         };
         let goal_done = state.goal.as_ref().is_some_and(|g| g.status == "complete");
@@ -811,6 +1031,38 @@ impl SessionCommandsHook {
         true
     }
 
+    /// axe:goal165 — after a turn, with an active goal and no /autonomous: plan the
+    /// relaunch, or pause after too many relaunches without progress.
+    async fn goal_pursuit(&self, session: &SessionMeta) {
+        let id = session.id.as_str();
+        let inner = &self.inner;
+        if !inner.load(id).goal.is_some_and(|g| g.status == "active") {
+            return;
+        }
+        let hash = workspace_change_hash(Path::new(&session.workspace_id));
+        let delay = inner.pursuit_delay_ms.load(std::sync::atomic::Ordering::Relaxed);
+        let decision = inner.update(id, |s| {
+            let g = s.goal.as_mut()?;
+            let progressed = match &g.turn_mark {
+                Some(m) => g.progress.len() > m.progress || hash != m.hash || g.created_ms >= m.started_ms,
+                None => false,
+            };
+            let d = pursuit_after_turn(g, progressed, now_ms(), delay);
+            if let Some(Pursuit::Pause(reason)) = &d {
+                s.notices.push(format!("Objectif mis en pause automatiquement ({reason}). Dis-le à l'utilisateur ; `goal.resume()` pour reprendre."));
+            }
+            d
+        });
+        match decision {
+            Some(Pursuit::Relaunch { at_ms }) => inner.arm_pursuit(id, at_ms),
+            Some(Pursuit::Pause(reason)) => {
+                inner.cancel_pursuit(id);
+                inner.journal(id, "goal", json!({"op": "pause", "by": "auto", "reason": reason, "goal": serde_json::to_value(inner.load(id).goal).unwrap_or(Value::Null)})).await;
+            }
+            None => {}
+        }
+    }
+
     async fn stop_autonomous(&self, id: &str, status: &str, note: &str) {
         let inner = &self.inner;
         inner.update(id, |s| {
@@ -829,6 +1081,12 @@ impl TurnHook for SessionCommandsHook {
     fn bind(&self, context: &RuntimeContext) {
         *lock(&self.inner.data_dir) = Some(context.data_dir.clone());
         lock(&self.inner.hosts).insert(context.session.id.clone(), context.host.clone());
+        // axe:goal165 — a relaunch planned before a restart of the service is re-armed.
+        if let Some(at) = self.inner.load(&context.session.id).goal.filter(|g| g.status == "active").and_then(|g| g.next_relaunch_ms) {
+            if tokio::runtime::Handle::try_current().is_ok() {
+                self.inner.arm_pursuit(&context.session.id, at);
+            }
+        }
         if self.inner.load(&context.session.id).heartbeat.is_some() {
             if tokio::runtime::Handle::try_current().is_ok() {
                 self.inner.arm_heartbeat(&context.session.id);
@@ -867,11 +1125,47 @@ impl TurnHook for SessionCommandsHook {
             Some(Err(e)) => blocks.push(format!("## Harness refinement\nBackground refinement failed: {e:#}")),
             None => {}
         }
-        let state = self.inner.update(id, |s| {
-            let snapshot = s.clone();
-            s.notices.clear();
-            snapshot
-        });
+        // axe:goal165 — goal state at the start of the turn (progress detection);
+        // a turn starting cancels the planned relaunch; the user speaking resets
+        // the count of relaunches without progress.
+        let input = user_text(request);
+        let relaunch = input.as_deref().is_some_and(is_goal_continue);
+        let by_user = input.is_some() && !relaunch && !input.as_deref().is_some_and(|t| t.trim_start().starts_with("<heartbeat") || t.trim_start().starts_with("<system_reminder"));
+        let active = self.inner.load(id).goal.is_some_and(|g| g.status == "active");
+        if active {
+            self.inner.cancel_pursuit(id);
+            let hash = workspace_change_hash(Path::new(&session.workspace_id));
+            self.inner.update(id, |s| {
+                if let Some(g) = s.goal.as_mut() {
+                    g.next_relaunch_ms = None;
+                    if by_user {
+                        g.idle_relaunches = 0;
+                    }
+                    g.turn_mark = Some(TurnMark { progress: g.progress.len(), hash: hash.clone(), relaunch, started_ms: now_ms() });
+                }
+            });
+        }
+        if relaunch {
+            if let Some(g) = self.inner.load(id).goal.filter(|g| g.status == "active") {
+                blocks.push(format!(
+                    "## Poursuite automatique de l'objectif\nCe tour a été lancé tout seul (relance n° {}, {} de suite sans avancement sur {GOAL_MAX_IDLE_RELAUNCHES} avant la pause automatique). Avance d'une étape vers l'objectif et note-la avec `goal.progress(note)`. Si tu attends quelque chose (sous-agent, construction), vérifie-le puis termine ton tour : tu seras relancé. Si plus rien ne peut avancer sans l'utilisateur, appelle `goal.pause(raison)` ; quand tout est fait, `goal.complete(summary)`.",
+                    g.relaunches, g.idle_relaunches
+                ));
+            }
+        }
+        // Notices are one-shot: consumed by the turn that shows them.
+        let notices = self.inner.update(id, |s| std::mem::take(&mut s.notices));
+        blocks.extend(notices);
+        (!blocks.is_empty()).then(|| blocks.join("\n\n"))
+    }
+
+    // axe:goal165 — goal / autonomous / heartbeat re-read from the state file for
+    // EVERY request of the turn (before: frozen at the start of the turn, so an
+    // objective cleared from the IDE during a long turn was still shown « en cours »
+    // while `goal.get()` already returned None).
+    async fn live_reminder(&self, session: &SessionMeta) -> Option<String> {
+        let state = self.inner.load(&session.id);
+        let mut blocks = Vec::new();
         if let Some(goal) = goal_reminder(&state) {
             blocks.push(goal);
         }
@@ -888,7 +1182,6 @@ impl TurnHook for SessionCommandsHook {
                 hb.message
             ));
         }
-        blocks.extend(state.notices);
         (!blocks.is_empty()).then(|| blocks.join("\n\n"))
     }
 
@@ -999,6 +1292,29 @@ mod tests {
         assert_eq!(parse_heartbeat_text("<heartbeat>\nx\n</heartbeat>"), Some(("x".into(), None)));
         assert_eq!(parse_heartbeat_text("<heartbeats>"), None);
         assert_eq!(parse_heartbeat_text("bonjour"), None);
+    }
+
+    /// axe:goal165 — relaunch after each turn, backoff, pause after 3 idle relaunches.
+    #[test]
+    fn poursuite_de_l_objectif() {
+        let mut g = Goal { text: "lot 3".into(), status: "active".into(), ..Default::default() };
+        let mark = |relaunch| Some(TurnMark { progress: 0, hash: None, relaunch, started_ms: 0 });
+        g.turn_mark = mark(false);
+        assert_eq!(pursuit_after_turn(&mut g, false, 1_000, 20_000), Some(Pursuit::Relaunch { at_ms: 21_000 }));
+        assert_eq!(g.idle_relaunches, 0, "un tour de l'utilisateur ne compte pas");
+        g.turn_mark = mark(true);
+        assert_eq!(pursuit_after_turn(&mut g, true, 1_000, 20_000), Some(Pursuit::Relaunch { at_ms: 21_000 }));
+        for (i, at) in [(1, 41_000), (2, 81_000)] {
+            g.turn_mark = mark(true);
+            assert_eq!(pursuit_after_turn(&mut g, false, 1_000, 20_000), Some(Pursuit::Relaunch { at_ms: at }));
+            assert_eq!(g.idle_relaunches, i);
+        }
+        g.turn_mark = mark(true);
+        assert!(matches!(pursuit_after_turn(&mut g, false, 1_000, 20_000), Some(Pursuit::Pause(_))));
+        assert_eq!((g.status.as_str(), g.next_relaunch_ms), ("paused", None));
+        assert!(g.auto_pause.is_some());
+        assert_eq!(pursuit_after_turn(&mut g, false, 1_000, 20_000), None, "en pause : plus de relance");
+        assert!(is_goal_continue(&goal_continue_text("x", 1, 1)));
     }
 
     #[test]

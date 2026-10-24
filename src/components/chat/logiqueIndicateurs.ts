@@ -2,7 +2,16 @@
 // (logique pure, testée par tests/commandesSlash.test.cjs).
 
 export type HeartbeatEtat = { interval_ms: number; message: string; next_at_ms: number; last_at_ms?: number | null };
-export type GoalEtat = { text: string; status: string; summary?: string | null };
+export type GoalEtat = {
+  text: string;
+  status: string;
+  summary?: string | null;
+  /** axe:goal165 — prochaine relance automatique prévue (ms), sinon null. */
+  next_relaunch_ms?: number | null;
+  relaunches?: number;
+  /** Raison d'une pause automatique (aucun avancement). */
+  auto_pause?: string | null;
+};
 export type EtatCommandes = { goal: GoalEtat | null; heartbeat: HeartbeatEtat | null };
 
 export const ETAT_VIDE: EtatCommandes = { goal: null, heartbeat: null };
@@ -28,6 +37,9 @@ export function normaliserEtat(brut: unknown): EtatCommandes {
             text: g.text,
             status: typeof g.status === "string" ? g.status : "active",
             summary: typeof g.summary === "string" ? g.summary : null,
+            next_relaunch_ms: typeof g.next_relaunch_ms === "number" ? g.next_relaunch_ms : null,
+            relaunches: typeof g.relaunches === "number" ? g.relaunches : 0,
+            auto_pause: typeof g.auto_pause === "string" ? g.auto_pause : null,
           }
         : null,
   };
@@ -85,11 +97,32 @@ export function vientDeSeDeclencher(avant: EtatCommandes, apres: EtatCommandes):
   );
 }
 
+/** axe:goal165 — ligne « objectif : poursuite automatique » de l'indicateur. */
+export function textePoursuite(goal: GoalEtat): string | null {
+  if (goal.status === "active") {
+    return goal.next_relaunch_ms
+      ? `objectif\u00a0: poursuite automatique · prochaine relance ${formatHeure(goal.next_relaunch_ms, true)}`
+      : "objectif\u00a0: poursuite automatique";
+  }
+  if (goal.status === "paused" && goal.auto_pause) return `poursuite automatique arrêtée\u00a0: ${goal.auto_pause}`;
+  return null;
+}
+
+/** Relance automatique de l'objectif : `<goal_continue at_ms="…" n="…">\n…\n</goal_continue>`. */
+export function lirePoursuite(texte: string): { message: string; atMs: number | null } | null {
+  const m = /^<goal_continue((?:\s+[a-z_]+="[^"]*")*)\s*>\n?([\s\S]*?)\n?<\/goal_continue>$/.exec(texte.trim());
+  if (!m) return null;
+  const at = /at_ms="(\d+)"/.exec(m[1]);
+  return { message: m[2].trim(), atMs: at ? Number(at[1]) : null };
+}
+
 /** Message injecté par un réveil : `<heartbeat at_ms="…">\nmessage\n</heartbeat>`. */
 export function lireReveil(texte: string): { message: string; atMs: number | null } | null {
-  const m = /^<heartbeat(?:\s+at_ms="(\d+)")?\s*>\n?([\s\S]*?)\n?<\/heartbeat>$/.exec(texte.trim());
+  // Attributs supplémentaires acceptés (missed="2" : réveils manqués fusionnés).
+  const m = /^<heartbeat((?:\s+[a-z_]+="[^"]*")*)\s*>\n?([\s\S]*?)\n?<\/heartbeat>$/.exec(texte.trim());
   if (!m) return null;
-  return { message: m[2].trim(), atMs: m[1] ? Number(m[1]) : null };
+  const at = /at_ms="(\d+)"/.exec(m[1]);
+  return { message: m[2].trim(), atMs: at ? Number(at[1]) : null };
 }
 
 /** Texte de la bulle discrète : « réveil : coucou · 14:32 ». */

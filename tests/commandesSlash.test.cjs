@@ -92,6 +92,15 @@ test("réveil : lecture du message injecté et texte de la bulle avec l'heure", 
   assert.deepEqual(ind.lireReveil(`<heartbeat at_ms="${at}">\ncoucou\n</heartbeat>`), { message: "coucou", atMs: at });
   assert.deepEqual(ind.lireReveil("<heartbeat>\ncoucou\n</heartbeat>"), { message: "coucou", atMs: null });
   assert.equal(ind.lireReveil("bonjour"), null);
+  // axe:goal165 — réveils fusionnés (missed) et relance automatique de l'objectif.
+  assert.deepEqual(ind.lireReveil(`<heartbeat at_ms="${at}" missed="2">\ncoucou\n</heartbeat>`), { message: "coucou", atMs: at });
+  assert.deepEqual(ind.lirePoursuite(`<goal_continue at_ms="${at}" n="2">\nPoursuis l'objectif : lot 3\n</goal_continue>`), { message: "Poursuis l'objectif : lot 3", atMs: at });
+  assert.equal(ind.lirePoursuite("bonjour"), null);
+  const g = ind.normaliserEtat({ goal: { text: "lot 3", status: "active", next_relaunch_ms: at, relaunches: 2 } }).goal;
+  assert.equal(g.next_relaunch_ms, at);
+  assert.match(ind.textePoursuite(g), /^objectif\u00a0: poursuite automatique · prochaine relance \d\d:\d\d:\d\d$/);
+  assert.equal(ind.textePoursuite({ text: "x", status: "complete" }), null);
+  assert.match(ind.textePoursuite({ text: "x", status: "paused", auto_pause: "3 relances sans avancement" }), /arrêtée/);
   assert.equal(ind.texteReveil("coucou", at), "réveil\u00a0: coucou · 14:32");
   assert.equal(ind.texteReveil("coucou", null), "réveil\u00a0: coucou");
 });

@@ -59,7 +59,7 @@ import { customModelEntries, providerApi, type ProviderSettingsView } from "../.
 import { runClientSlashCommand, SLASH_COMMANDS, useSlashCommandMenu } from "./SlashCommands"; // axe:slash
 import { classeJeton, decouperJetons } from "./jetonsMessage"; // axe:couleurs
 import { IndicateursSession } from "./IndicateursSession"; // axe:commandes
-import { texteReveil } from "./logiqueIndicateurs"; // axe:commandes
+import { formatHeure, texteReveil } from "./logiqueIndicateurs"; // axe:commandes
 import type {
   AgentMode,
   AttachmentInput,
@@ -6470,6 +6470,16 @@ function BlockView({
           <div className="axe-reveil" title="Message du réveil périodique injecté dans la session">
             <Icon icon="solar:heart-pulse-linear" width={12} height={12} />
             <span>{texteReveil(block.message, block.atMs)}</span>
+          </div>
+        </div>
+      );
+    // axe:goal165 — relance automatique de l'objectif : bulle discrète avec l'heure.
+    case "goal-continue":
+      return (
+        <div className="msg" data-role="assistant">
+          <div className="axe-reveil" data-kind="goal" title={block.message}>
+            <Icon icon="solar:target-linear" width={12} height={12} />
+            <span>{`objectif\u00a0: poursuite automatique${block.atMs ? ` · ${formatHeure(block.atMs)}` : ""}`}</span>
           </div>
         </div>
       );

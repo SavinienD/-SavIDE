@@ -59,7 +59,7 @@ const explorateurFerme = (largeur, hauteur) => ({
 });
 
 export const SCENES = [
-  { id: "accueil", sim: { cloud: true }, espace: false, temoins: ["sel:button.welcome__cta"] },
+  { id: "accueil", sim: { cloud: true }, espace: false, temoins: ["sel:button.welcome__cta", "absent:svg linearGradient"] },
   { id: "c1", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["sel:.thinking-block", "sel:.tool-card__err-dot", "sel:.composer__send"] },
   { id: "c1-terminal", sim: {}, stockage: () => colonnes([ids(3)]), terminal: true, temoins: ["sel:.terminal-shell .terminal-tabs"] },
   { id: "explorateur-hauteur", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["sel:.sidebar__section .tree-row"] },
@@ -149,13 +149,18 @@ export const SCENES = [
   { id: "libre-barre", sim: {}, libre: true, temoins: ["sel:.axe-freechat", "clic:.axe-freechat .titlebar__actions .titlebar__btn"] },
   { id: "libre-login", sim: {}, libre: true, ecrire: "/login", temoins: ["sel:.axe-freechat", "sel:.settings-pane .settings-pane__nav-item[data-section='providers'][data-active='true']"] },
   { id: "ide-login", sim: {}, stockage: () => colonnes([ids(3)]), ecrire: "/login", temoins: ["sel:.settings-pane .settings-pane__nav-item[data-section='providers'][data-active='true']"] },
-  { id: "ide-barre", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["clic:.titlebar__btn[data-action='accueil']", "clic:.titlebar__btn[data-action='reglages']"] },
+  { id: "ide-barre", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["clic:.titlebar__btn[data-action='accueil']", "clic:.titlebar__btn[data-action='reglages']",
+    "sel:.titlebar__brand-mark svg[data-logo='wordmark'] rect.logo__fond", "absent:svg linearGradient"] },
   { id: "reglages", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, temoins: ["sel:.settings-pane"] },
-  // Réglages > À propos : version lue à l'exécution (getVersion, simulée 0.1.61) sous le titre ; la
-  // version lancée avant était la 0.1.60, donc la date de mise à jour est connue et affichée.
-  { id: "apropos", sim: {}, stockage: () => ({ ...colonnes([ids(3)]), "axe:version-lancee": { version: "0.1.60", majLe: null } }), reglages: true,
+  // Réglages > À propos : version lue à l'exécution (getVersion, simulée 0.1.62) sous le titre ; la
+  // version lancée avant était la 0.1.61, donc la date de mise à jour est connue et affichée.
+  // Lien du site : https://www.axe-international.com (sans « www. » le site ne répond pas).
+  { id: "apropos", sim: {}, stockage: () => ({ ...colonnes([ids(3)]), "axe:version-lancee": { version: "0.1.61", majLe: null } }), reglages: true,
     clics: [".settings-pane__nav-item[data-section='about']"],
-    temoins: ["sel:.settings-pane__about-version[data-version='0.1.61']", "sel:.settings-pane__about-maj"] },
+    temoins: ["sel:.settings-pane__about-version[data-version='0.1.62']", "sel:.settings-pane__about-maj",
+      "sel:a.settings-pane__about-link[href='https://www.axe-international.com']", "www.axe-international.com",
+      "absent:a[href='https://axe-international.com']",
+      "sel:.settings-pane__about-mark svg[data-logo='mark'] rect.logo__fond", "absent:svg linearGradient"] },
   // Réglages > MCP : « Supprimer » sur le serveur « github » (un clic arme, le second confirme) :
   // l'entrée quitte la liste (le moteur la retire de la config), « postgres » reste. Identifiants
   // enregistrés (« cat_github ») ≠ identifiants de l'interface (« mcp_github », recalculés du JSON).

@@ -156,6 +156,12 @@ async fn run_inner(
         }
         let todo_block = lock(&shared.todo).system_block();
         let mut blocks = volatile.clone();
+        // axe:goal165 — live session state (goal…) read again for each request.
+        for hook in &shared.deps.hooks {
+            if let Some(block) = hook.live_reminder(&meta).await {
+                blocks.push(block);
+            }
+        }
         if let Some(block) = &subagents_block {
             blocks.push(block.clone());
         }

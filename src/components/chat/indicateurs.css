@@ -98,3 +98,11 @@
   line-height: 1.3;
   color: var(--text-3);
 }
+
+/* axe:goal165 — objectif en poursuite automatique : point discret animé. */
+.axe-indicateur[data-kind="goal"][data-auto="true"] {
+  color: var(--accent, #e5484d);
+}
+.axe-indicateurs__poursuite {
+  color: var(--text-1);
+}

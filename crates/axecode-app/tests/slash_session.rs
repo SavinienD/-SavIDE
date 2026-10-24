@@ -63,20 +63,29 @@ struct Banc {
     provider: Arc<Echo>,
     id: String,
     base: std::path::PathBuf,
+    /// axe:goal165 — garder le dossier (rechargement simulé par un 2e banc).
+    keep: bool,
 }
 
 impl Drop for Banc {
     fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.base).ok();
+        if !self.keep {
+            std::fs::remove_dir_all(&self.base).ok();
+        }
     }
 }
 
 fn banc() -> Option<Banc> {
+    let base = std::env::temp_dir().join(format!("axecode-slash-{}", uuid::Uuid::new_v4()));
+    banc_sur(base, None)
+}
+
+/// Banc sur un dossier donné ; `session` = reprendre une session existante.
+fn banc_sur(base: std::path::PathBuf, session: Option<String>) -> Option<Banc> {
     if axecode_repl::python::find_python(&[]).is_none() {
         eprintln!("skipping: no Python with IPython");
         return None;
     }
-    let base = std::env::temp_dir().join(format!("axecode-slash-{}", uuid::Uuid::new_v4()));
     let ws = base.join("ws");
     std::fs::create_dir_all(&ws).unwrap();
     let provider = Arc::new(Echo { systems: Mutex::new(VecDeque::new()) });
@@ -86,6 +95,9 @@ fn banc() -> Option<Banc> {
     let mut config = DaemonConfig::new(base.join("data"));
     config.auto_shutdown = false;
     let daemon = Daemon::new(config, Arc::new(ReplFactory { deps }));
+    if let Some(id) = session {
+        return Some(Banc { daemon, hook, provider, id, base, keep: false });
+    }
     let id = daemon
         .create(CreateSessionRequest {
             name: "t".into(),
@@ -97,7 +109,7 @@ fn banc() -> Option<Banc> {
         })
         .unwrap()
         .id;
-    Some(Banc { daemon, hook, provider, id, base })
+    Some(Banc { daemon, hook, provider, id, base, keep: false })
 }
 
 impl Banc {
@@ -237,4 +249,78 @@ async fn l_ide_arrete_heartbeat_et_goal() {
     assert_eq!(b.hook.state(&b.id).goal.unwrap().status, "paused");
     tokio::time::sleep(Duration::from_millis(6_500)).await;
     assert!(!b.journal_has("\ncoucou\n</heartbeat>"), "plus aucun réveil après l'arrêt");
+}
+
+/// axe:goal165 — une seule source : l'objectif survit au rechargement (nouveau
+/// démon, nouveau crochet, même dossier de données) ; un arrêt depuis l'IDE est vu
+/// tout de suite par `goal.get`, par le bloc d'état et par l'indicateur.
+#[tokio::test(flavor = "multi_thread")]
+async fn objectif_source_unique_et_rechargement() {
+    let Some(mut b) = banc() else { return };
+    b.send("/goal finir le lot 3").await;
+    let (base, id) = (b.base.clone(), b.id.clone());
+    b.keep = true;
+    drop(b);
+    let b = banc_sur(base, Some(id)).expect("banc rechargé");
+    let vue = b.daemon.dispatch(0, "sessions.commands_state", serde_json::json!({"sessionId": b.id})).await.unwrap();
+    assert_eq!((vue["goal"]["text"].as_str(), vue["goal"]["status"].as_str()), (Some("finir le lot 3"), Some("active")));
+    b.send("bonjour").await;
+    assert!(b.last_prompt().contains("## Objectif de la session (en cours)\nfinir le lot 3"), "bloc d'état après rechargement");
+    assert_eq!(b.hook.state(&b.id).goal.unwrap().text, "finir le lot 3");
+    b.daemon.dispatch(0, "sessions.commands_set", serde_json::json!({"sessionId": b.id, "op": "goal_clear"})).await.unwrap();
+    assert!(b.hook.state(&b.id).goal.is_none());
+    b.send("et maintenant ?").await;
+    let p = b.last_prompt();
+    assert!(!p.contains("## Objectif de la session"), "plus d'objectif dans le bloc d'état : {p}");
+    assert!(p.contains("a arrêté l'objectif depuis l'interface"), "l'agent est prévenu");
+}
+
+/// axe:goal165 — objectif actif, AUCUN heartbeat : à la fin du tour l'agent est
+/// relancé tout seul ; 3 relances de suite sans avancement => pause automatique.
+#[tokio::test(flavor = "multi_thread")]
+async fn objectif_relance_seul_puis_pause_sans_avancement() {
+    let Some(b) = banc() else { return };
+    b.hook.set_pursuit_delay(Duration::from_millis(100));
+    b.send("/goal finir le lot 3").await;
+    assert!(b.hook.state(&b.id).heartbeat.is_none(), "pas de heartbeat");
+    let mut paused = false;
+    for _ in 0..400 {
+        let g = b.hook.state(&b.id).goal.unwrap();
+        if g.status == "paused" && b.idle() {
+            paused = true;
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    let g = b.hook.state(&b.id).goal.unwrap();
+    assert!(paused, "pause automatique attendue : {g:?}");
+    assert_eq!(g.relaunches, 3, "3 relances avant la pause : {g:?}");
+    assert!(g.auto_pause.as_deref().unwrap_or("").contains("sans avancement"));
+    assert!(b.journal_has("<goal_continue"), "relance journalisée comme message balisé");
+    assert!(b.last_prompt().contains("Poursuite automatique de l'objectif"), "le tour relancé le sait");
+    // En pause : plus aucune relance.
+    let n = b.provider.systems.lock().unwrap().len();
+    tokio::time::sleep(Duration::from_millis(1_500)).await;
+    assert_eq!(b.provider.systems.lock().unwrap().len(), n, "aucun tour après la pause");
+    // L'utilisateur reprend : la poursuite repart, compteur remis à zéro.
+    b.send("/goal reprends").await;
+    let g = b.hook.state(&b.id).goal.unwrap();
+    assert_eq!(g.status, "active");
+    assert!(g.auto_pause.is_none());
+    assert!(g.next_relaunch_ms.is_some() || g.relaunches > 3, "relance replanifiée : {g:?}");
+}
+
+/// Un message de l'utilisateur pendant la pause annule la relance prévue.
+#[tokio::test(flavor = "multi_thread")]
+async fn pas_de_relance_si_l_utilisateur_ecrit() {
+    let Some(b) = banc() else { return };
+    b.hook.set_pursuit_delay(Duration::from_millis(1_500));
+    b.send("/goal finir le lot 3").await;
+    assert!(b.hook.state(&b.id).goal.unwrap().next_relaunch_ms.is_some(), "relance planifiée");
+    b.hook.set_pursuit_delay(Duration::from_secs(3600));
+    b.send("autre chose").await; // le tour de l'utilisateur annule la relance prévue
+    tokio::time::sleep(Duration::from_millis(2_500)).await;
+    assert!(!b.journal_has("<goal_continue"), "aucune relance : l'utilisateur a parlé");
+    b.daemon.dispatch(0, "sessions.commands_set", serde_json::json!({"sessionId": b.id, "op": "goal_pause"})).await.unwrap();
+    assert!(b.hook.state(&b.id).goal.unwrap().status == "paused");
 }

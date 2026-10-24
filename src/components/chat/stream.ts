@@ -11,7 +11,7 @@ import type {
 } from "../../types";
 import { canonicalToolName, isToolName } from "../../lib/tools";
 import { resumeOutilEnFrancais } from "./resumesOutils";
-import { lireReveil } from "./logiqueIndicateurs"; // axe:commandes
+import { lirePoursuite, lireReveil } from "./logiqueIndicateurs"; // axe:commandes
 
 const MIN_VISIBLE_TURN_DURATION_MS = 90_000;
 const CLEANED_TOOL_OUTPUT =
@@ -97,7 +97,9 @@ export type ChatBlock =
       durationMs: number;
     }
   // axe:commandes — message injecté par un /heartbeat (bulle discrète « réveil : … »).
-  | { kind: "wake"; id: string; message: string; atMs: number | null };
+  | { kind: "wake"; id: string; message: string; atMs: number | null }
+  // axe:goal165 — relance automatique de l'objectif (bulle discrète).
+  | { kind: "goal-continue"; id: string; message: string; atMs: number | null };
 
 export type SubAgentBlock = {
   id: string;
@@ -321,6 +323,11 @@ function blocksFromHistory(history: ChatMessage[]): ChatBlock[] {
         const trimmed = part.text.trim();
         if (!trimmed) continue;
         // axe:commandes — réveil /heartbeat : bulle discrète, pas un message de l'utilisateur.
+        const relance = lirePoursuite(trimmed);
+        if (relance) {
+          blocks.push({ kind: "goal-continue", id: id("g"), message: relance.message, atMs: relance.atMs });
+          continue;
+        }
         const reveil = lireReveil(trimmed);
         if (reveil) {
           blocks.push({ kind: "wake", id: id("w"), message: reveil.message, atMs: reveil.atMs });

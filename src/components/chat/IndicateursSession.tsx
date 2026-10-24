@@ -12,6 +12,7 @@ import {
   formatIntervalle,
   libelleStatutGoal,
   normaliserEtat,
+  textePoursuite,
   vientDeSeDeclencher,
   type EtatCommandes,
 } from "./logiqueIndicateurs";
@@ -128,6 +129,7 @@ export function IndicateursSession({ workspacePath, conversationId, signal, dern
 
   const { heartbeat, goal } = etat;
   if (!heartbeat && !goal) return null;
+  const poursuite = goal ? textePoursuite(goal) : null;
   return (
     <div className="axe-indicateurs" ref={racine}>
       {heartbeat && (
@@ -178,6 +180,7 @@ export function IndicateursSession({ workspacePath, conversationId, signal, dern
         <div className="axe-indicateurs__detail" role="dialog" aria-label="Objectif" ref={detail} style={place}>
           <div className="axe-indicateurs__titre">Objectif : {libelleStatutGoal(goal.status)}</div>
           <div className="axe-indicateurs__message">{goal.text}</div>
+          {poursuite && <div className="axe-indicateurs__poursuite">{poursuite}</div>}
           {goal.summary && <div className="axe-indicateurs__resume">{goal.summary}</div>}
           <div className="axe-indicateurs__actions">
             {goal.status === "active" && (
