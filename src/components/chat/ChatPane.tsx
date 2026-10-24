@@ -56,7 +56,7 @@ import {
 import { customModelEntries, providerApi, type ProviderSettingsView } from "../../axe/providers"; // axe:providers
 import { runClientSlashCommand, useSlashCommandMenu } from "./SlashCommands"; // axe:slash
 import { IndicateursSession } from "./IndicateursSession"; // axe:commandes
-import { texteReveil } from "./indicateursSession"; // axe:commandes
+import { texteReveil } from "./logiqueIndicateurs"; // axe:commandes
 import type {
   AgentMode,
   AttachmentInput,

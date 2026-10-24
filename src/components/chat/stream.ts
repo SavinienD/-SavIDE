@@ -11,7 +11,7 @@ import type {
 } from "../../types";
 import { canonicalToolName, isToolName } from "../../lib/tools";
 import { resumeOutilEnFrancais } from "./resumesOutils";
-import { lireReveil } from "./indicateursSession"; // axe:commandes
+import { lireReveil } from "./logiqueIndicateurs"; // axe:commandes
 
 const MIN_VISIBLE_TURN_DURATION_MS = 90_000;
 const CLEANED_TOOL_OUTPUT =

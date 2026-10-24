@@ -59,7 +59,7 @@ test("/goal et /heartbeat acceptent les formes annoncées (service)", () => {
   assert.match(usage, /\/heartbeat <intervalle> <message> \| off/);
 });
 
-const ind = require(path.join(racine, "src/components/chat/indicateursSession.ts"));
+const ind = require(path.join(racine, "src/components/chat/logiqueIndicateurs.ts"));
 
 test("indicateurs : intervalle, statut, déclenchement, état normalisé", () => {
   assert.equal(ind.formatIntervalle(60_000), "1 min");

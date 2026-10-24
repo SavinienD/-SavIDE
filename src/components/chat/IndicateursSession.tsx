@@ -14,7 +14,7 @@ import {
   normaliserEtat,
   vientDeSeDeclencher,
   type EtatCommandes,
-} from "./indicateursSession";
+} from "./logiqueIndicateurs";
 import "./indicateurs.css";
 
 const LECTURE_MS = 5_000;

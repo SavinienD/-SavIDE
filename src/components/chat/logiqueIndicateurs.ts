@@ -1,5 +1,5 @@
 // axe:commandes — indicateurs /heartbeat et /goal à côté du sélecteur de modèle
-// (logique pure, testée par tests/indicateursSession.test.cjs).
+// (logique pure, testée par tests/commandesSlash.test.cjs).
 
 export type HeartbeatEtat = { interval_ms: number; message: string; next_at_ms: number; last_at_ms?: number | null };
 export type GoalEtat = { text: string; status: string; summary?: string | null };
