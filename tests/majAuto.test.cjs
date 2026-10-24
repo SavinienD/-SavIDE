@@ -45,7 +45,7 @@ test("installeur : hook NSIS qui ferme les processus du dossier de l'appli", () 
   const hook = lire("src-tauri/windows/hooks.nsh");
   assert.match(hook, /!macro NSIS_HOOK_PREINSTALL/);
   assert.match(hook, /\$INSTDIR/);
-  assert.match(hook, /Stop-Process -Force/);
+  assert.match(hook, /taskkill \/F \/T/);
 });
 
 test("configuration : mise à jour depuis le dépôt GitHub public de SavIDE", () => {
