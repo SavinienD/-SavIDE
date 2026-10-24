@@ -8268,6 +8268,17 @@ textarea {
   border-radius: 3px;
 }
 
+/* axe:couleurs — commande slash (accent) et skills (violet), dans le calque du
+   compositeur ET dans la bulle du message envoyé. Couleur seulement (pas de
+   graisse ni de marge) : le calque doit rester aligné sous la saisie. */
+.jeton-commande { color: var(--accent); }
+.jeton-skill { color: var(--skill, #a78bfa); }
+.composer__overlay .jeton-commande { color: var(--accent); }
+.composer__overlay .jeton-skill { color: var(--skill, #a78bfa); }
+/* Bulle envoyée : jamais coupé à son tiret (le calque, lui, suit la saisie). */
+.user-text .jeton-commande,
+.user-text .jeton-skill { white-space: nowrap; }
+
 .composer__input {
   position: relative;
   display: block;

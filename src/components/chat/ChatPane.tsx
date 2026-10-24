@@ -1,5 +1,7 @@
 import {
   Fragment, // axe:providers
+  createContext, // axe:couleurs
+  useContext, // axe:couleurs
   useCallback,
   useDeferredValue,
   useEffect,
@@ -54,7 +56,8 @@ import {
   type ModelId,
 } from "../../lib/models";
 import { customModelEntries, providerApi, type ProviderSettingsView } from "../../axe/providers"; // axe:providers
-import { runClientSlashCommand, useSlashCommandMenu } from "./SlashCommands"; // axe:slash
+import { runClientSlashCommand, SLASH_COMMANDS, useSlashCommandMenu } from "./SlashCommands"; // axe:slash
+import { classeJeton, decouperJetons } from "./jetonsMessage"; // axe:couleurs
 import { IndicateursSession } from "./IndicateursSession"; // axe:commandes
 import { texteReveil } from "./logiqueIndicateurs"; // axe:commandes
 import type {
@@ -3489,36 +3492,38 @@ export function ChatPane({
           ) : (
             <>
               {displayView.blocks.length > 0 && (
-                <ChatBlocks
-                  blocks={displayView.blocks}
-                  onPreviewImage={setPreviewImage}
-                  onRewindMessage={viewingSubAgent ? () => {} : handleRewindToMessage}
-                  rewindDisabled={viewingSubAgent || view.status === "streaming" || !actionsDuPc(espaceCloud).reecriture /* axe:parcours-collegue (D10) */}
-                  rewriteHistoryIndex={
-                    viewingSubAgent ? null : rewriteState?.historyIndex ?? null
-                  }
-                  onOpenFile={onOpenFile}
-                  onAnswerQuestion={viewingSubAgent ? () => {} : handleQuestionAnswer}
-                  answerQuestionDisabled={viewingSubAgent}
-                  allowStopQuestions={!viewingSubAgent && effectiveMode === "plan"}
-                  onPlanKeepUpdating={viewingSubAgent ? () => {} : handlePlanKeepUpdating}
-                  onPlanImplement={viewingSubAgent ? () => {} : handlePlanImplement}
-                  onPlanImplementWithSwarm={
-                    viewingSubAgent ? () => {} : handlePlanImplementWithSwarm
-                  }
-                  onPlanImplementFresh={viewingSubAgent ? () => {} : handlePlanImplementFresh}
-                  onPlanImplementFreshWithSwarm={
-                    viewingSubAgent ? () => {} : handlePlanImplementFreshWithSwarm
-                  }
-                  planActionDisabled={viewingSubAgent || view.status === "streaming"}
-                  agentTeamsEnabled={!viewingSubAgent && agentTeamsEnabled}
-                  onOpenSubAgent={viewingSubAgent ? () => {} : handleOpenSubAgent}
-                  onStopAgentSwarm={viewingSubAgent ? undefined : handleStopAgentSwarm}
-                  teamAgents={activeTeamAgentRoster}
-                  teamCompletionByTeam={teamCompletionByTeam}
-                  activeTeamNames={activeTeamNames}
-                  activeAgentName={viewingSubAgent ? activeSubAgent?.name : undefined}
-                />
+                <SkillsActifsContext.Provider value={enabledSkillNames}>
+                  <ChatBlocks
+                    blocks={displayView.blocks}
+                    onPreviewImage={setPreviewImage}
+                    onRewindMessage={viewingSubAgent ? () => {} : handleRewindToMessage}
+                    rewindDisabled={viewingSubAgent || view.status === "streaming" || !actionsDuPc(espaceCloud).reecriture /* axe:parcours-collegue (D10) */}
+                    rewriteHistoryIndex={
+                      viewingSubAgent ? null : rewriteState?.historyIndex ?? null
+                    }
+                    onOpenFile={onOpenFile}
+                    onAnswerQuestion={viewingSubAgent ? () => {} : handleQuestionAnswer}
+                    answerQuestionDisabled={viewingSubAgent}
+                    allowStopQuestions={!viewingSubAgent && effectiveMode === "plan"}
+                    onPlanKeepUpdating={viewingSubAgent ? () => {} : handlePlanKeepUpdating}
+                    onPlanImplement={viewingSubAgent ? () => {} : handlePlanImplement}
+                    onPlanImplementWithSwarm={
+                      viewingSubAgent ? () => {} : handlePlanImplementWithSwarm
+                    }
+                    onPlanImplementFresh={viewingSubAgent ? () => {} : handlePlanImplementFresh}
+                    onPlanImplementFreshWithSwarm={
+                      viewingSubAgent ? () => {} : handlePlanImplementFreshWithSwarm
+                    }
+                    planActionDisabled={viewingSubAgent || view.status === "streaming"}
+                    agentTeamsEnabled={!viewingSubAgent && agentTeamsEnabled}
+                    onOpenSubAgent={viewingSubAgent ? () => {} : handleOpenSubAgent}
+                    onStopAgentSwarm={viewingSubAgent ? undefined : handleStopAgentSwarm}
+                    teamAgents={activeTeamAgentRoster}
+                    teamCompletionByTeam={teamCompletionByTeam}
+                    activeTeamNames={activeTeamNames}
+                    activeAgentName={viewingSubAgent ? activeSubAgent?.name : undefined}
+                  />
+                </SkillsActifsContext.Provider>
               )}
               {showPlanningNextMove && (
                 <div className="msg" data-role="assistant">
@@ -6279,7 +6284,7 @@ function BlockView({
                 onOpenFile={onOpenFile}
               />
             ) : (
-              <FileLinkedText text={block.text} onOpenFile={onOpenFile} />
+              <TexteUtilisateur text={block.text} onOpenFile={onOpenFile} />
             )}
           </div>
           {block.attachments && block.attachments.length > 0 && (
@@ -6836,67 +6841,69 @@ function relativizePath(workspacePath: string, candidate: string): string | null
   return null;
 }
 
+// axe:couleurs — calque du compositeur : commande slash en tête (accent), skills
+// (violet), fichiers mentionnés. Couleur seulement : aucune largeur ne change.
+const NOMS_COMMANDES_SLASH = SLASH_COMMANDS.map((c) => c.name);
+
 function renderMentionHighlights(
   text: string,
   mentions: { path: string }[],
   skillNames: string[] = [],
 ): ReactNode {
-  if (mentions.length === 0 && skillNames.length === 0) {
-    return text + "\u200B";
-  }
-  const regions: { start: number; end: number }[] = [];
-  for (const m of mentions) {
-    if (!m.path) continue;
-    const needle = `@${m.path}`;
-    let idx = 0;
-    while (idx < text.length) {
-      const found = text.indexOf(needle, idx);
-      if (found < 0) break;
-      const after = text[found + needle.length] ?? "";
-      const isBoundary = after === "" || /[\s.,;:!?)\]}'"`]/.test(after);
-      if (isBoundary) {
-        regions.push({ start: found, end: found + needle.length });
-      }
-      idx = found + needle.length;
-    }
-  }
-  for (const name of skillNames) {
-    if (!name) continue;
-    const needle = `/${name}`;
-    let idx = 0;
-    while (idx < text.length) {
-      const found = text.indexOf(needle, idx);
-      if (found < 0) break;
-      const before = found === 0 ? "" : text[found - 1];
-      const after = text[found + needle.length] ?? "";
-      const startsToken = before === "" || /\s/.test(before);
-      const isBoundary = after === "" || /[\s.,;:!?)\]}'"`]/.test(after);
-      if (startsToken && isBoundary) {
-        regions.push({ start: found, end: found + needle.length });
-      }
-      idx = found + needle.length;
-    }
-  }
-  if (regions.length === 0) return text + "\u200B";
-  regions.sort((a, b) => a.start - b.start);
-  const merged: typeof regions = [];
-  for (const r of regions) {
-    if (merged.length === 0 || r.start >= merged[merged.length - 1].end) {
-      merged.push(r);
-    }
-  }
+  const segments = decouperJetons(
+    text,
+    NOMS_COMMANDES_SLASH,
+    skillNames,
+    mentions.map((m) => m.path),
+  );
   const parts: ReactNode[] = [];
-  let cursor = 0;
-  for (const r of merged) {
-    if (r.start > cursor) parts.push(text.slice(cursor, r.start));
+  let position = 0;
+  for (const s of segments) {
+    const classe = classeJeton(s.genre);
     parts.push(
-      <span className="mention-pill" key={`m-${r.start}`}>
-        {text.slice(r.start, r.end)}
-      </span>,
+      classe ? (
+        <span className={classe} data-jeton={s.genre} key={`m-${position}`}>
+          {s.texte}
+        </span>
+      ) : (
+        s.texte
+      ),
     );
-    cursor = r.end;
+    position += s.texte.length;
   }
-  if (cursor < text.length) parts.push(text.slice(cursor));
   parts.push("\u200B");
   return parts;
+}
+
+/** Skills activés de l'espace, pour colorer les bulles des messages envoyés. */
+const SkillsActifsContext = createContext<string[]>([]);
+
+/** axe:couleurs — texte d'une bulle utilisateur : commande et skills colorés, le
+ *  reste garde les liens de fichiers (FileLinkedText). */
+function TexteUtilisateur({
+  text,
+  onOpenFile,
+}: {
+  text: string;
+  onOpenFile: (path: string) => void;
+}) {
+  const skills = useContext(SkillsActifsContext);
+  const segments = decouperJetons(text, NOMS_COMMANDES_SLASH, skills);
+  if (!segments.some((s) => s.genre !== "texte")) {
+    return <FileLinkedText text={text} onOpenFile={onOpenFile} />;
+  }
+  return (
+    <>
+      {segments.map((s, i) => {
+        const classe = classeJeton(s.genre);
+        return classe ? (
+          <span key={i} className={classe} data-jeton={s.genre}>
+            {s.texte}
+          </span>
+        ) : (
+          <FileLinkedText key={i} text={s.texte} onOpenFile={onOpenFile} />
+        );
+      })}
+    </>
+  );
 }

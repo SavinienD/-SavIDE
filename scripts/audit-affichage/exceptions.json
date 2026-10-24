@@ -2,6 +2,11 @@
   "_lisez-moi": "Exceptions justifiees du banc d'affichage. Chaque entree : regle (ou *), selecteur CSS (l'element ou un de ses ancetres), raison ; situation = expression reguliere facultative sur « taille@echelle/scene ».",
   "exceptions": [
     {
+      "regle": "libelle-2-lignes",
+      "selecteur": ".composer__overlay .jeton-commande, .composer__overlay .jeton-skill",
+      "raison": "Commande ou skill coloré dans le calque du compositeur : il doit se replier exactement comme le texte de la zone de saisie (sinon le curseur ne tombe plus sous les lettres), donc il peut passer à la ligne à son tiret."
+    },
+    {
       "regle": "defilement-horizontal",
       "selecteur": ".md pre, .md .md-table-wrap",
       "raison": "Bloc de code ou tableau dans un message : le code n'est jamais replié, il défile horizontalement (comme dans un éditeur)."

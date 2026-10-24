@@ -123,6 +123,22 @@ export const SCENES = [
     temoins: ["sel:.axe-indicateur[data-kind='heartbeat']", "sel:.axe-indicateur[data-kind='goal']", "sel:.axe-reveil", "sel:.axe-indicateurs__detail"],
     attendus: ["coucou", "Arrêter le réveil", "Toutes les 1 min"],
   },
+  // axe:couleurs — commande slash en orange (accent) et skill en violet : dans la bulle du
+  // message envoyé (« /goal … /revue-code ») et dans le compositeur (« /heartbeat 5s coucou … »).
+  {
+    id: "couleurs",
+    sim: { skills: ["revue-code"] },
+    stockage: () => colonnes([ids(1)]),
+    ecrire: "/goal finir le lot 3 avec /revue-code",
+    saisir: "/heartbeat 5s coucou /revue-code",
+    temoins: [
+      "couleur:.composer__overlay .jeton-commande[data-jeton='commande']=rgb(252, 97, 11)",
+      "couleur:.composer__overlay .jeton-skill[data-jeton='skill']=rgb(167, 139, 250)",
+      "couleur:.msg[data-role='user'] .user-text .jeton-commande=rgb(252, 97, 11)",
+      "couleur:.msg[data-role='user'] .user-text .jeton-skill=rgb(167, 139, 250)",
+    ],
+    attendus: ["finir le lot 3 avec"],
+  },
   // Clic sur « N agent(s) au travail » : ouvre la conversation (journal) de l'agent, comme la vue Agents.
   { id: "bandeau-agents-clic", sim: { tour: "en_cours", sousAgents: 2 }, stockage: () => colonnes([ids(3)]), clicBandeau: true, temoins: ["sel:.axe-journal", "sel:.axe-agents"] },
   // Bug : après le chat d'un agent, un clic sur une conversation de la liste doit l'afficher (plus le journal de l'agent).

@@ -201,7 +201,12 @@ export function installerSimulation(scene: Scene): void {
       planModePrompt: "", defaultPlanModePrompt: "", imageProvider: "gptImage2", openaiImageUseSubscription: true,
       openaiImageApiKey: "", nanoBananaApiKey: "", webSearchProvider: "classic", linkupApiKey: "",
     }),
-    list_installed_skills_command: () => [],
+    // axe:couleurs — skills activés de l'espace (scène « couleurs »).
+    list_installed_skills_command: () =>
+      ((scene.skills as string[] | undefined) ?? []).map((name) => ({
+        name, description: "Skill du banc", source: "workspace", rootLabel: "Espace",
+        absolutePath: `/banc/.axecode/skills/${name}/SKILL.md`, content: "", enabled: true,
+      })),
     list_archived_local: () => D.conversations(3).map((c) => ({ ...c, id: "arch-" + c.id, archived: true })),
     watch_workspace_command: () => true,
     unwatch_workspace_command: () => true,

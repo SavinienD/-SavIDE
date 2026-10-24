@@ -11,6 +11,7 @@
   --accent-deep: #b34307;
   --accent-glow: rgba(252, 97, 11, 0.35);
   --accent-soft: rgba(252, 97, 11, 0.12);
+  --skill:       #a78bfa; /* axe:couleurs — skills dans le compositeur et les bulles */
 }
 
 /* Settings > Apparence */

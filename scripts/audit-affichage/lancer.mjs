@@ -272,6 +272,13 @@ async function preparerScene(page, si, sc) {
     });
     await pause(600);
   }
+  // axe:couleurs — « saisir » : texte tapé dans le compositeur SANS l'envoyer (menus refermés par Échap).
+  if (sc.saisir) {
+    await page.click(".colonne-chat[data-focus='true'] .composer textarea, .composer textarea").catch(() => undefined);
+    await page.keyboard.type(sc.saisir);
+    await page.keyboard.press("Escape");
+    await pause(400);
+  }
   for (const ev of sc.evenementsTour ?? []) {
     await page.evaluate((e) => window.__bancEmettre?.("agent-event", e), ev);
     await pause(150);
@@ -365,7 +372,13 @@ async function auditer(page, si, sc, journal, preparation) {
       });
     };
     // « absent: » : aucun élément visible pour ce sélecteur ; « appel: » : commande IPC reçue par la simulation.
-    const ok = (t) => (t.startsWith("sel:") ? vu(t.slice(4)) : t.startsWith("clic:") ? cliquable(t.slice(5)) : t.startsWith("absent:") ? !vu(t.slice(7)) : t.startsWith("appel:") ? (window.__bancAppels?.[t.slice(6)] ?? 0) > 0 : texte.includes(t));
+    // « couleur:<sélecteur>=<rgb(…)> » : le premier élément visible du sélecteur a cette couleur de texte.
+    const couleur = (spec) => {
+      const i = spec.lastIndexOf("=");
+      const el = [...document.querySelectorAll(spec.slice(0, i))].find((e) => e.getClientRects().length > 0);
+      return !!el && getComputedStyle(el).color.replace(/\s/g, "") === spec.slice(i + 1).replace(/\s/g, "");
+    };
+    const ok = (t) => (t.startsWith("couleur:") ? couleur(t.slice(8)) : t.startsWith("sel:") ? vu(t.slice(4)) : t.startsWith("clic:") ? cliquable(t.slice(5)) : t.startsWith("absent:") ? !vu(t.slice(7)) : t.startsWith("appel:") ? (window.__bancAppels?.[t.slice(6)] ?? 0) > 0 : texte.includes(t));
     const manquants = temoins.filter((t) => !ok(t));
     const disparus = attendus.filter((t) => !window.__texteVisible(t));
     const fil = document.querySelector(".colonne-chat[data-focus='true'] .chat-body")?.getBoundingClientRect();
