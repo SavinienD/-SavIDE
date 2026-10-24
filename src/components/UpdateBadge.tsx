@@ -3,21 +3,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { api } from "../lib/ipc";
-import { activiteEnCours, doitInstallerMaintenant } from "../lib/activite";
+import { libelleMaj, statutApresVerification, type StatutMaj } from "../lib/majBadge";
 import type { UpdateInfo, UpdateProgress } from "../types";
 
-type Status =
-  | { kind: "idle" }
-  | { kind: "checking" }
-  | { kind: "available"; info: UpdateInfo }
-  | { kind: "downloading"; info: UpdateInfo; downloaded: number; total: number | null }
-  | { kind: "ready"; info: UpdateInfo }
-  | { kind: "error"; message: string };
+type Status = StatutMaj;
 
 /// Background check cadence once the app has booted.
 const CHECK_INTERVAL_MS = 60 * 60 * 1000; // toutes les heures
-/// Une mise à jour trouvée pendant un tour : on réessaie l'installation toutes les 30 s.
-const ATTENTE_ACTIVITE_MS = 30 * 1000;
 
 /// Tauri events emitted by `src-tauri/src/updater.rs`.
 const PROGRESS_EVENT = "updater://progress";
@@ -54,15 +46,7 @@ function UpdateBadgeCloud() {
       try {
         const info = await api.checkForUpdate();
         lastInfoRef.current = info;
-        setStatus((current) => {
-          if (current.kind === "downloading" || current.kind === "ready") {
-            return current;
-          }
-          if (info.available && info.version) {
-            return { kind: "available", info };
-          }
-          return { kind: "idle" };
-        });
+        setStatus((current) => statutApresVerification(current, info));
       } catch (err) {
         // Silent failures (background poll) shouldn't surface; only manual
         // checks should turn into a visible error pill.
@@ -142,32 +126,19 @@ function UpdateBadgeCloud() {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [open]);
 
+  // L'installation ne démarre QUE sur clic (« Installer maintenant ») : plus
+  // d'installation automatique ni d'écran bloquant. Le backend refuse une
+  // seconde installation (verrou, version déjà installée, marqueur).
   const onInstall = useCallback(async () => {
     const info = lastInfoRef.current;
-    if (!info) return;
-    // Hand off to the global <UpdaterLockScreen />: <App /> listens for
-    // this event, swaps the whole window to the lock screen, and the
-    // lock screen auto-starts the install. We don't kick the local
-    // `downloading` state — by the next frame this <UpdateBadge /> is
-    // unmounted along with the Workspace.
-    window.dispatchEvent(
-      new CustomEvent<{ info: UpdateInfo }>("axecode:install-update", {
-        detail: { info },
-      }),
-    );
-    setOpen(false);
+    if (!info || !info.available || !info.version) return;
+    setStatus({ kind: "downloading", info, downloaded: 0, total: null });
+    try {
+      await api.installUpdate();
+    } catch (err) {
+      setStatus({ kind: "error", message: String(err) });
+    }
   }, []);
-
-  // Installation automatique, sans rien demander, dès qu'aucun tour ni agent ne tourne.
-  useEffect(() => {
-    if (status.kind !== "available") return;
-    const essayer = () => {
-      if (doitInstallerMaintenant(lastInfoRef.current, activiteEnCours())) void onInstall();
-    };
-    essayer();
-    const id = window.setInterval(essayer, ATTENTE_ACTIVITE_MS);
-    return () => window.clearInterval(id);
-  }, [status.kind, onInstall]);
 
   const onRestart = useCallback(async () => {
     try {
@@ -271,7 +242,7 @@ function UpdatePopover({
     <div className="titlebar__update-popover" role="dialog" aria-label="Mise à jour de l'appli">
       <div className="titlebar__update-popover-head">
         <span className="titlebar__update-popover-title">
-          Nouvelle version {info.version}
+          {libelleMaj(info.version)}
         </span>
         <span className="titlebar__update-popover-sub">
           Version actuelle : {info.currentVersion}
@@ -299,7 +270,7 @@ function UpdatePopover({
           onClick={onInstall}
           disabled={isDownloading}
         >
-          {isDownloading ? "Téléchargement…" : "Installer et redémarrer"}
+          {isDownloading ? "Téléchargement…" : "Installer maintenant"}
         </button>
       </div>
     </div>
@@ -330,7 +301,7 @@ function pillIcon(status: Status): string {
 function pillLabel(status: Status, percent: number | null): string {
   switch (status.kind) {
     case "available":
-      return `Nouvelle version ${status.info.version ?? ""}`.trim();
+      return libelleMaj(status.info.version);
     case "downloading":
       return percent !== null ? `Téléchargement ${percent} %` : "Téléchargement…";
     case "ready":

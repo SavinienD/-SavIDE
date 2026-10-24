@@ -10652,3 +10652,11 @@ textarea {
   white-space: nowrap;
 }
 .settings-pane__about-title { flex: 1 1 auto; }
+
+/* Badge de mise à jour : sur une fenêtre étroite, l'icône seule dans la barre de titre
+   (le libellé reste dans l'infobulle et dans la fenêtre ouverte au clic). */
+@media (max-width: 900px) {
+  .titlebar .titlebar__update-label {
+    display: none;
+  }
+}

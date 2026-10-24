@@ -59,6 +59,11 @@ const explorateurFerme = (largeur, hauteur) => ({
 });
 
 export const SCENES = [
+  // Mise à jour disponible (demande de Savinien, 23/10) : badge discret en haut à droite, jamais d'écran bloquant ;
+  // au clic, fenêtre avec les notes et « Installer maintenant » / « Plus tard ».
+  { id: "maj-badge", sim: { majDispo: "0.1.66" }, stockage: () => colonnes([ids(3)]), temoins: ["clic:.titlebar__update[data-state='available'] .titlebar__update-pill", "absent:.updater-lock"] },
+  { id: "maj-badge-fenetre", sim: { majDispo: "0.1.66" }, stockage: () => colonnes([ids(3)]), cliquer: ".titlebar__update-pill", temoins: ["sel:.titlebar__update-popover .titlebar__update-popover-notes", "clic:.titlebar__update-popover-btn--primary", "clic:.titlebar__update-popover-btn--ghost", "absent:.updater-lock"] },
+  { id: "maj-badge-accueil", sim: { majDispo: "0.1.66" }, espace: false, temoins: ["clic:.welcome__maj .titlebar__update-pill"] },
   { id: "accueil", sim: { cloud: true }, espace: false, temoins: ["sel:button.welcome__cta", "absent:svg linearGradient"] },
   { id: "c1", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["sel:.thinking-block", "sel:.tool-card__err-dot", "sel:.composer__send"] },
   { id: "c1-terminal", sim: {}, stockage: () => colonnes([ids(3)]), terminal: true, temoins: ["sel:.terminal-shell .terminal-tabs"] },

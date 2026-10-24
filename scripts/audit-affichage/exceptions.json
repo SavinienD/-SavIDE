@@ -2,6 +2,16 @@
   "_lisez-moi": "Exceptions justifiees du banc d'affichage. Chaque entree : regle (ou *), selecteur CSS (l'element ou un de ses ancetres), raison ; situation = expression reguliere facultative sur « taille@echelle/scene ».",
   "exceptions": [
     {
+      "regle": "chevauchement",
+      "selecteur": ".titlebar__update-popover",
+      "raison": "Fenêtre de la mise à jour, ouverte au clic sur le badge : elle flotte au-dessus du contenu (comme tout menu déroulant) et se ferme par « Plus tard » ou un clic à côté."
+    },
+    {
+      "regle": "libelle-2-lignes",
+      "selecteur": ".titlebar__update-popover-notes",
+      "raison": "Notes de version : des phrases, qui passent normalement à la ligne dans la fenêtre de 320 px."
+    },
+    {
       "regle": "libelle-2-lignes",
       "selecteur": ".composer__overlay .jeton-commande, .composer__overlay .jeton-skill",
       "raison": "Commande ou skill coloré dans le calque du compositeur : il doit se replier exactement comme le texte de la zone de saisie (sinon le curseur ne tombe plus sous les lettres), donc il peut passer à la ligne à son tiret."

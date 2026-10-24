@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Welcome } from "./components/Welcome";
 import { Workspace } from "./components/Workspace";
-import { UpdaterLockScreen } from "./components/UpdaterLockScreen";
+import { UpdateBadge } from "./components/UpdateBadge";
 import { recordRecent, deriveName } from "./lib/recents";
 import { api } from "./lib/ipc";
 import { freechatApi } from "./components/freechat/freechatApi"; // axe:freechat
@@ -13,12 +13,11 @@ import { CLOUD_CONNECTION, cloudApi, saveMode, type CloudState } from "./compone
 import { LOCAL_CONNECTION, connectionsApi } from "./components/settings/connectionsApi"; // axe:v2-l2.3
 import "./components/cloud/cloud.css"; // axe:cloud
 import "./components/cloud/connected-screen.css"; // axe:v2-l1
-import { EDITION_LOCALE, MAJ_AUTO } from "./lib/edition";
-import type { UpdateInfo, WorkspaceBootstrap } from "./types";
+import { EDITION_LOCALE } from "./lib/edition";
+import type { WorkspaceBootstrap } from "./types";
 
 type AppState =
   | { kind: "boot" }
-  | { kind: "update_required"; info: UpdateInfo; autoInstall: boolean }
   // axe:cloud — cloud mode (default): sign-in screen, then the cloud shell.
   | { kind: "cloud_login"; notice: string | null }
   | { kind: "cloud"; cloud: CloudState }
@@ -26,11 +25,6 @@ type AppState =
   // axe:freechat — `chat` is the free conversation view (no project folder).
   | { kind: "workspace"; bootstrap: WorkspaceBootstrap; layout: "ide" | "chat" };
 
-
-/// Maximum time we wait on the boot updater check before falling through to
-/// the normal flow. Keeps the app responsive on flaky networks — if the
-/// update endpoint is unreachable we don't trap the user on a black canvas.
-const BOOT_CHECK_TIMEOUT_MS = 4000;
 
 export default function App() {
   const [state, setState] = useState<AppState>({ kind: "boot" });
@@ -75,38 +69,13 @@ export default function App() {
     [],
   );
 
-  // Boot sequence, in order:
-  //   1. Updater gate — race the check against a short timeout. If an
-  //      update is available we render <UpdaterLockScreen /> and stop;
-  //      the user can only install or quit (no "Later", no "Skip").
-  //   2. Home screen (axe:freechat): the last folder is no longer reopened
-  //      automatically; the user picks a free conversation or a folder.
-  // The whole thing runs once at mount; the in-session <UpdateBadge />
-  // still handles mid-session checks via its own 30 min interval.
+  // Démarrage : directement l'accueil. Les mises à jour ne sont plus forcées
+  // (demande de Savinien, 23/10) : <UpdateBadge /> affiche « Mise à jour X
+  // disponible » en haut à droite et n'installe que sur clic.
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      // 1. Updater gate (coupée dans l'édition locale).
-      if (MAJ_AUTO) try {
-        const info = await Promise.race<UpdateInfo | null>([
-          api.checkForUpdate(),
-          new Promise<null>((resolve) =>
-            window.setTimeout(() => resolve(null), BOOT_CHECK_TIMEOUT_MS),
-          ),
-        ]);
-        if (cancelled) return;
-        if (info && info.available && info.version) {
-          // Au démarrage rien ne tourne encore : installation automatique.
-          setState({ kind: "update_required", info, autoInstall: true });
-          return;
-        }
-      } catch {
-        // Silent: a failed check (offline, server down, manifest 5xx)
-        // shouldn't prevent the app from booting. The mid-session badge
-        // will retry later, and the next launch will re-gate cleanly.
-      }
-
       // 2. Accueil. axe:v2-e12d — l'application s'ouvre toujours sur
       //    l'interface classique du poste (dossiers recents, conversations
       //    libres, ouvrir un dossier). L'espace Axe Cloud n'est plus l'ecran
@@ -119,24 +88,6 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  // Mid-session escalation: when the <UpdateBadge /> in Workspace fires
-  // "axecode:install-update" (user clicked "Install & restart" in the
-  // popover), we swap the whole window to the lock screen with
-  // `autoInstall` enabled. From there the screen runs the same download
-  // → install → auto-restart flow as the boot gate. This means the
-  // policy is identical regardless of entry point: once the user
-  // commits to installing, SavIDE becomes uninteractive until the update
-  // is applied or they quit.
-  useEffect(() => {
-    const handler = (event: WindowEventMap["axecode:install-update"]) => {
-      const info = event.detail?.info;
-      if (!info || !info.available || !info.version) return;
-      setState({ kind: "update_required", info, autoInstall: true });
-    };
-    window.addEventListener("axecode:install-update", handler);
-    return () => window.removeEventListener("axecode:install-update", handler);
   }, []);
 
   const backToWelcome = useCallback(() => {
@@ -260,12 +211,6 @@ export default function App() {
     return <div className="app-boot" aria-hidden="true" />;
   }
 
-  if (state.kind === "update_required") {
-    return (
-      <UpdaterLockScreen info={state.info} autoInstall={state.autoInstall} />
-    );
-  }
-
   if (state.kind === "welcome") {
     return (
       <>
@@ -279,6 +224,10 @@ export default function App() {
         {/* axe:cloud — way back to the cloud mode from the local home screen. */}
         {/* axe:un-seul-espace - plus de « Revenir a Axe Cloud » : un seul espace, sur la VM. */}
         {/* axe:accueil-compte - sous Windows, à gauche des boutons Réduire/Agrandir/Fermer (138 px) : il était posé dessus. */}
+        {/* Mise à jour disponible : badge discret en haut à droite (rien si MAJ_AUTO est coupé). */}
+        <div className="welcome__maj" style={{ position: "fixed", top: EDITION_LOCALE ? 12 : 52, right: isWindowsPlatform() ? 150 : 16, zIndex: 50 }}>
+          <UpdateBadge />
+        </div>
         {EDITION_LOCALE ? null : (
           <>
             <CloudLoginButton className="axc-btn" style={{ position: "fixed", top: 12, right: isWindowsPlatform() ? 150 : 16, zIndex: 50 }} />

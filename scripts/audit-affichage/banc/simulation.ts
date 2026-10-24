@@ -86,7 +86,11 @@ export function installerSimulation(scene: Scene): void {
   let mcp: any[] = ((scene.mcp as string[] | undefined) ?? []).map((nom) => ({ id: `cat_${nom}`, name: nom, command: "npx", args: ["-y", `@exemple/${nom}`], env: [], headers: [], enabled: true }));
   const statut = (connecte: boolean) => ({ connected: connecte, connectionState: connecte ? "connected" : "disconnected", email: connecte ? "utilisateur@exemple.invalid" : null, error: null });
   const h: Record<string, (a: any, brut: any) => unknown> = {
-    updater_check: () => ({ available: false, currentVersion: "0.1.57", version: null, notes: null, date: null }),
+    // Scène « maj-badge » : une version disponible (badge discret, installation sur clic seulement).
+    updater_check: () =>
+      scene.majDispo
+        ? { available: true, currentVersion: "0.1.65", version: String(scene.majDispo), notes: "Badge de mise à jour discret : plus d'installation forcée.\nCorrection de l'installeur relancé après une mise à jour réussie.", date: null }
+        : { available: false, currentVersion: "0.1.57", version: null, notes: null, date: null },
     updater_current_version: () => "0.1.57",
     // API Tauri getVersion (Réglages > À propos).
     "plugin:app|version": () => "0.1.62",
