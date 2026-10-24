@@ -1,6 +1,7 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
-use eventsource_stream::Eventsource;
+use eventsource_stream::{EventStreamError, Eventsource};
 use futures::{stream::Stream, StreamExt};
 use serde_json::{json, Value};
 
@@ -10,17 +11,107 @@ use axecode_core::{
 
 use crate::wire::{self, ChatChunk};
 
-pub fn map_stream<S, E>(body: S, model: String) -> ProviderStream
+/// axe:ollama — silence allowed between two pieces of a streamed answer.
+pub const DEFAULT_IDLE_TIMEOUT: Duration = Duration::from_secs(120);
+
+/// axe:ollama — limits applied while reading a streamed answer.
+#[derive(Debug, Clone)]
+pub struct StreamLimits {
+    /// Longest silence (no byte at all) before the turn is abandoned.
+    pub idle_timeout: Duration,
+    /// Name shown in errors ("Ollama", "LM Studio", "OpenRouter"...).
+    pub label: String,
+}
+
+impl Default for StreamLimits {
+    fn default() -> Self {
+        Self {
+            idle_timeout: DEFAULT_IDLE_TIMEOUT,
+            label: "Le fournisseur".into(),
+        }
+    }
+}
+
+/// Error of the raw body stream: transport failure or too long a silence.
+#[derive(Debug)]
+pub enum BodyError {
+    Transport(String),
+    Idle { secs: u64 },
+}
+
+impl std::fmt::Display for BodyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Transport(message) => f.write_str(message),
+            Self::Idle { secs } => write!(f, "no data for {secs} s"),
+        }
+    }
+}
+
+impl std::error::Error for BodyError {}
+
+/// French, non-retryable error for a silent server (a retry would only make
+/// the user wait as long again).
+pub fn idle_error(label: &str, secs: u64) -> AppError {
+    AppError::Provider(format!(
+        "{label} n'a rien envoyé depuis {secs} s : réponse abandonnée. Le modèle est \
+         peut-être trop lourd pour cet ordinateur, encore en chargement ou bloqué. \
+         Réessayez, choisissez un modèle plus petit ou vérifiez le serveur."
+    ))
+}
+
+/// Wraps a body so that a silence longer than `idle` ends it with
+/// [`BodyError::Idle`] (then nothing more is read).
+pub fn idle_guard<S, E>(
+    body: S,
+    idle: Duration,
+) -> impl Stream<Item = std::result::Result<bytes::Bytes, BodyError>> + Send + 'static
 where
     S: Stream<Item = std::result::Result<bytes::Bytes, E>> + Send + 'static,
     E: std::error::Error + Send + Sync + 'static,
 {
-    let source = Box::pin(body.eventsource());
+    futures::stream::unfold((Box::pin(body), false), move |(mut body, over)| async move {
+        if over {
+            return None;
+        }
+        match tokio::time::timeout(idle, body.next()).await {
+            Ok(Some(Ok(bytes))) => Some((Ok(bytes), (body, false))),
+            Ok(Some(Err(err))) => Some((Err(BodyError::Transport(err.to_string())), (body, true))),
+            Ok(None) => None,
+            Err(_) => Some((
+                Err(BodyError::Idle {
+                    secs: idle.as_secs().max(1),
+                }),
+                (body, true),
+            )),
+        }
+    })
+}
+
+/// Message of an `error` field: an object (`{"message": ...}`, OpenAI/OpenRouter)
+/// or a plain string (Ollama).
+pub fn error_field_message(error: &Value) -> Option<String> {
+    let message = match error {
+        Value::String(text) => text.clone(),
+        other => other.get("message").and_then(Value::as_str)?.to_string(),
+    };
+    (!message.trim().is_empty()).then_some(message)
+}
+
+pub fn map_stream_with<S, E>(body: S, model: String, limits: StreamLimits) -> ProviderStream
+where
+    S: Stream<Item = std::result::Result<bytes::Bytes, E>> + Send + 'static,
+    E: std::error::Error + Send + Sync + 'static,
+{
+    let source = Box::pin(idle_guard(body, limits.idle_timeout).eventsource());
     let parser = EventParser::new(model);
+    let label = limits.label;
 
     futures::stream::unfold(
         (source, parser, Vec::<StreamEvent>::new(), false, false),
-        |(mut source, mut parser, mut pending, done, mut saw_any_event)| async move {
+        move |(mut source, mut parser, mut pending, done, mut saw_any_event)| {
+            let label = label.clone();
+            async move {
             loop {
                 if let Some(next) = pending.pop() {
                     return Some((Ok(next), (source, parser, pending, done, saw_any_event)));
@@ -47,13 +138,11 @@ where
                         }
 
                         if let Ok(value) = serde_json::from_str::<Value>(data) {
-                            if let Some(error) = value.get("error") {
-                                let message = error
-                                    .get("message")
-                                    .and_then(Value::as_str)
-                                    .unwrap_or("openrouter stream error");
+                            if let Some(error) = value.get("error").filter(|e| !e.is_null()) {
+                                let message = error_field_message(error)
+                                    .unwrap_or_else(|| "openrouter stream error".to_string());
                                 return Some((
-                                    Err(AppError::Provider(message.to_string())),
+                                    Err(AppError::Provider(message)),
                                     (source, parser, pending, true, saw_any_event),
                                 ));
                             }
@@ -79,6 +168,12 @@ where
                                 ));
                             }
                         }
+                    }
+                    Some(Err(EventStreamError::Transport(BodyError::Idle { secs }))) => {
+                        return Some((
+                            Err(idle_error(&label, secs)),
+                            (source, parser, pending, true, saw_any_event),
+                        ));
                     }
                     Some(Err(err)) => {
                         return Some((
@@ -106,6 +201,7 @@ where
                     }
                 }
             }
+            }
         },
     )
     .boxed()
@@ -119,7 +215,7 @@ struct ToolState {
     pending_args: String,
 }
 
-struct EventParser {
+pub(crate) struct EventParser {
     model: String,
     started: bool,
     next_index: usize,
@@ -132,7 +228,7 @@ struct EventParser {
 }
 
 impl EventParser {
-    fn new(model: String) -> Self {
+    pub(crate) fn new(model: String) -> Self {
         Self {
             model,
             started: false,
@@ -146,7 +242,7 @@ impl EventParser {
         }
     }
 
-    fn push(&mut self, chunk: ChatChunk) -> Vec<StreamEvent> {
+    pub(crate) fn push(&mut self, chunk: ChatChunk) -> Vec<StreamEvent> {
         if self.done {
             return Vec::new();
         }
@@ -284,7 +380,7 @@ impl EventParser {
         index
     }
 
-    fn finish(&mut self) -> Vec<StreamEvent> {
+    pub(crate) fn finish(&mut self) -> Vec<StreamEvent> {
         if self.done {
             return Vec::new();
         }

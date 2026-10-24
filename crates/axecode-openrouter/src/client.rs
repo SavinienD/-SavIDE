@@ -11,7 +11,8 @@ use axecode_core::{
 use crate::{
     auth::Credential,
     model_info::{self, PROVIDER_ID},
-    stream::map_stream,
+    ollama,
+    stream::{error_field_message, map_stream_with, StreamLimits, DEFAULT_IDLE_TIMEOUT},
     wire,
 };
 
@@ -20,6 +21,19 @@ const USER_AGENT: &str = "SavIDE/0.1";
 const APP_REFERER: &str = "https://github.com/AxeInternational/axecode";
 const APP_TITLE: &str = "SavIDE";
 const CACHE_BREAKPOINTS: usize = 4;
+// axe:ollama — wait for the first byte of an answer.
+const LOCAL_FIRST_RESPONSE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(600);
+const REMOTE_FIRST_RESPONSE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(300);
+
+fn is_local_url(url: &str) -> bool {
+    let rest = url.split_once("://").map(|(_, rest)| rest).unwrap_or(url);
+    let host = rest.split('/').next().unwrap_or("");
+    let host = host.rsplit_once('@').map(|(_, h)| h).unwrap_or(host);
+    host.starts_with("localhost")
+        || host.starts_with("127.")
+        || host.starts_with("[::1]")
+        || host.starts_with("0.0.0.0")
+}
 
 // axe:providers — wire dialect. This crate doubles as the shared adapter for
 // every OpenAI-compatible endpoint (custom instances, Mistral, DeepSeek, xAI,
@@ -48,6 +62,14 @@ pub struct OpenRouterConfig {
     pub dialect: Dialect,
     /// Whether `stream_options.include_usage` is accepted by the server.
     pub stream_usage: bool,
+    // axe:ollama
+    /// Talk to Ollama's native `/api/chat` (NDJSON, `num_ctx`) instead of `/v1`.
+    pub ollama_native: bool,
+    /// Longest silence while an answer streams.
+    pub idle_timeout: std::time::Duration,
+    /// Longest wait for the server to start answering (a local model on a
+    /// CPU reads a long prompt before its first word). `None`: automatic.
+    pub first_response_timeout: Option<std::time::Duration>,
 }
 
 impl OpenRouterConfig {
@@ -61,6 +83,9 @@ impl OpenRouterConfig {
             provider_id: PROVIDER_ID.into(),
             dialect: Dialect::OpenRouter,
             stream_usage: true,
+            ollama_native: false,
+            idle_timeout: DEFAULT_IDLE_TIMEOUT,
+            first_response_timeout: None,
         }
     }
 
@@ -81,6 +106,46 @@ impl OpenRouterConfig {
             provider_id: provider_id.into(),
             dialect,
             stream_usage: true,
+            ollama_native: false,
+            idle_timeout: DEFAULT_IDLE_TIMEOUT,
+            first_response_timeout: None,
+        }
+    }
+
+    // axe:ollama — native Ollama route (see `ollama.rs`).
+    pub fn with_ollama_native(mut self) -> Self {
+        self.ollama_native = true;
+        self
+    }
+
+    /// Name of the server in user-facing messages.
+    pub fn label(&self) -> String {
+        match self.provider_id.as_str() {
+            "ollama" => "Ollama".into(),
+            "lmstudio" => "LM Studio".into(),
+            "openrouter" => "OpenRouter".into(),
+            other if self.ollama_native || other.is_empty() => "Ollama".into(),
+            other => other.to_string(),
+        }
+    }
+
+    /// True for a server on this computer (Ollama, LM Studio...).
+    pub fn is_local(&self) -> bool {
+        is_local_url(&self.base_url)
+    }
+
+    fn first_response_timeout(&self) -> std::time::Duration {
+        self.first_response_timeout.unwrap_or(if self.is_local() {
+            LOCAL_FIRST_RESPONSE_TIMEOUT
+        } else {
+            REMOTE_FIRST_RESPONSE_TIMEOUT
+        })
+    }
+
+    fn limits(&self) -> StreamLimits {
+        StreamLimits {
+            idle_timeout: self.idle_timeout,
+            label: self.label(),
         }
     }
 
@@ -121,6 +186,54 @@ impl OpenRouterProvider {
 
     pub fn from_default_sources(models: Vec<ModelCapabilities>) -> Result<Self> {
         Self::new(OpenRouterConfig::from_default_sources(models)?)
+    }
+
+    // axe:ollama — send with a bounded wait for the first answer; a local
+    // server that is not running fails at once (no silent retries).
+    async fn send(&self, builder: reqwest::RequestBuilder, url: &str) -> Result<reqwest::Response> {
+        let limit = self.config.first_response_timeout();
+        let label = self.config.label();
+        match tokio::time::timeout(limit, builder.send()).await {
+            Err(_) => Err(AppError::Provider(format!(
+                "{label} n'a pas commencé à répondre en {} s : réponse abandonnée. Le modèle est \
+                 peut-être trop lourd pour cet ordinateur ou la demande trop longue. Réessayez \
+                 ou choisissez un modèle plus petit.",
+                limit.as_secs()
+            ))),
+            Ok(Err(err)) if err.is_connect() && self.config.is_local() => {
+                Err(AppError::Provider(format!(
+                    "{label} ne répond pas à l'adresse {url}. Vérifiez qu'il est lancé \
+                     (par exemple `ollama serve`) et l'adresse dans Réglages > Fournisseurs."
+                )))
+            }
+            Ok(Err(err)) => Err(AppError::Network(err.to_string())),
+            Ok(Ok(response)) => Ok(response),
+        }
+    }
+
+    /// HTTP error of a local server, in French; never retried.
+    async fn local_http_error(&self, response: reqwest::Response, model: &str) -> AppError {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        let message = serde_json::from_str::<Value>(&body)
+            .ok()
+            .and_then(|value| value.get("error").and_then(error_field_message))
+            .unwrap_or_else(|| {
+                if body.trim().is_empty() {
+                    format!("HTTP {status}")
+                } else {
+                    body.trim().to_string()
+                }
+            });
+        let text = ollama::humanize_local_error(&self.config.label(), model, &message);
+        let lower = message.to_ascii_lowercase();
+        if lower.contains("context") && (lower.contains("length") || lower.contains("exceed")) {
+            AppError::ContextLength(text)
+        } else if status.is_client_error() {
+            AppError::InvalidRequest(text)
+        } else {
+            AppError::Provider(text)
+        }
     }
 
     fn post(&self, route: &str) -> reqwest::RequestBuilder {
@@ -200,17 +313,45 @@ impl Provider for OpenRouterProvider {
             body.stream_options = None;
         }
 
-        let response = self
-            .post("/chat/completions")
-            .json(&body)
-            .send()
-            .await
-            .map_err(|err| AppError::Network(err.to_string()))?;
+        // axe:ollama — native route: the whole prompt fits (`num_ctx`).
+        if self.config.ollama_native {
+            let openai = serde_json::to_value(&body)?;
+            let native = ollama::native_body(openai, ollama::num_ctx_for(caps.context_window));
+            let root = self.config.base_url.trim_end_matches('/').trim_end_matches("/v1");
+            let builder = compat_request(
+                &self.http,
+                reqwest::Method::POST,
+                root,
+                "/api/chat",
+                self.config.credential.api_key(),
+            )
+            .header("content-type", "application/json")
+            .json(&native);
+            let response = self.send(builder, &format!("{root}/api/chat")).await?;
+            if !response.status().is_success() {
+                return Err(self.local_http_error(response, &request.model.name).await);
+            }
+            return Ok(ollama::map_ndjson_stream(
+                response.bytes_stream(),
+                request.model.name,
+                self.config.limits(),
+            ));
+        }
+
+        let url = format!("{}/chat/completions", self.config.base_url);
+        let response = self.send(self.post("/chat/completions").json(&body), &url).await?;
         if !response.status().is_success() {
+            if self.config.is_local() {
+                return Err(self.local_http_error(response, &request.model.name).await);
+            }
             return Err(read_http_error(response).await);
         }
 
-        Ok(map_stream(response.bytes_stream(), request.model.name))
+        Ok(map_stream_with(
+            response.bytes_stream(),
+            request.model.name,
+            self.config.limits(),
+        ))
     }
 }
 
@@ -1046,6 +1187,10 @@ async fn read_http_error(response: reqwest::Response) -> AppError {
     let status = response.status();
     let body = response.text().await.unwrap_or_default();
     let parsed: std::result::Result<wire::ApiErrorEnvelope, _> = serde_json::from_str(&body);
+    // axe:ollama — `{"error": "text"}` (Ollama and a few servers).
+    let plain = serde_json::from_str::<Value>(&body)
+        .ok()
+        .and_then(|value| value.get("error").and_then(Value::as_str).map(str::to_string));
     let message = parsed
         .ok()
         .and_then(|payload| {
@@ -1058,6 +1203,7 @@ async fn read_http_error(response: reqwest::Response) -> AppError {
             }
         })
         .filter(|value| !value.trim().is_empty())
+        .or(plain)
         .unwrap_or(body);
 
     if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {

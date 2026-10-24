@@ -244,13 +244,18 @@ fn build_provider(
         let anthropic = AnthropicConfig::compatible(&config.id, &config.base_url, key, caps);
         Arc::new(AnthropicProvider::new(anthropic).map_err(error_to_string)?)
     } else {
-        let openai = OpenRouterConfig::compatible(
+        let mut openai = OpenRouterConfig::compatible(
             &config.id,
             openai_base_url(config),
             key,
             caps,
             dialect_for(config.kind),
         );
+        // axe:ollama — native /api/chat: Ollama's /v1 route cannot raise the
+        // context size, so it cut Axecode's prompt to its default 2-4k tokens.
+        if config.kind == ProviderKind::Ollama {
+            openai = openai.with_ollama_native();
+        }
         Arc::new(OpenRouterProvider::new(openai).map_err(error_to_string)?)
     };
     Ok(Some(provider))
