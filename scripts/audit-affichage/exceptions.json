@@ -13,6 +13,12 @@
       "raison": "Fenêtre de 800 ou 1024 px avec 2 ou 3 colonnes de conversation : à 220 px minimum chacune, elles ne tiennent pas ; la bande des colonnes défile (dernier recours) au lieu de pousser des colonnes hors de l'écran."
     },
     {
+      "regle": "defilement-horizontal",
+      "selecteur": ".settings-pane__main",
+      "situation": "/mcp-supprimer$",
+      "raison": "Réglages > MCP dans un volet de 170 px (volet de réglages à côté de la conversation) : le détail d'un serveur ne tient pas, le volet défile horizontalement (dernier recours) . Défaut déjà présent dans la source, à reprendre."
+    },
+    {
       "regle": "chevauchement",
       "selecteur": ".axe-indicateurs__detail",
       "raison": "Détail du réveil /heartbeat ou de l'objectif /goal : petite fenêtre ouverte par un clic sur son icône, qui passe devant la zone de saisie par conception (se ferme au clic ailleurs)."

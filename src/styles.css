@@ -3780,6 +3780,26 @@ textarea {
   grid-template-rows: minmax(0, 1fr);
 }
 
+/* Volet de réglages étroit : liste et détail des serveurs MCP l'un sous l'autre,
+   en-tête du détail qui passe à la ligne au lieu de déborder. */
+.settings-pane__main { container-type: inline-size; }
+@container (max-width: 640px) {
+  .settings-pane__body--mcp {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+  }
+  .settings-pane__body--mcp .settings-pane__detail-head { flex-wrap: wrap; }
+  .settings-pane__body--mcp .settings-pane__detail-head-actions { flex-wrap: wrap; flex: 1 1 auto; }
+  .settings-pane__title { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+
+/* Interrupteur des serveurs MCP : zone cliquable de 36x24 px (bord transparent), même dessin. */
+.settings-pane__nav-list-item > .settings-pane__switch {
+  box-sizing: content-box;
+  border: 4px solid transparent;
+  background-clip: padding-box;
+}
+
 .settings-pane__mcp-overview {
   flex: 1 1 0;
   min-height: 0;
