@@ -2,7 +2,10 @@
 //! compact, web, images, question, session info. Harness / rlm / messages and
 //! hook methods are routed before reaching this module.
 
-use std::sync::Arc;
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use serde_json::{json, Value};
 use axecode_core::{JournalEntryKind, Part};
@@ -11,6 +14,89 @@ use super::runtime::{lock, Shared};
 use crate::{
     tool_run::ToolRunResult, AppStore, CreateImageTool, TodoListState, WebFetchTool, WebSearchTool,
 };
+
+/// Moves the images saved by the image tool to the path asked by
+/// `images.generate(path=...)` (relative to the workspace, or absolute). With
+/// several images, `name.png` becomes `name-1.png`, `name-2.png`... The
+/// result (paths, text, file changes) then names the new location.
+fn place_generated_images(result: &mut ToolRunResult, workspace: &Path, requested: &str) -> Result<(), String> {
+    let requested = PathBuf::from(requested);
+    let target = if requested.is_absolute() { requested } else { workspace.join(requested) };
+    let count = result.images.iter().filter(|i| i.path.is_some()).count();
+    let mut index = 0;
+    for image in result.images.iter_mut() {
+        let Some(source) = image.path.clone().map(PathBuf::from) else { continue };
+        index += 1;
+        let mut dest = target.clone();
+        if dest.extension().is_none() {
+            if let Some(ext) = source.extension() {
+                dest.set_extension(ext);
+            }
+        }
+        if count > 1 {
+            let stem = dest.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+            let name = match dest.extension() {
+                Some(ext) => format!("{stem}-{index}.{}", ext.to_string_lossy()),
+                None => format!("{stem}-{index}"),
+            };
+            dest.set_file_name(name);
+        }
+        if let Some(parent) = dest.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| format!("{}: {e}", parent.display()))?;
+        }
+        if std::fs::rename(&source, &dest).is_err() {
+            std::fs::copy(&source, &dest).map_err(|e| format!("{}: {e}", dest.display()))?;
+            let _ = std::fs::remove_file(&source);
+        }
+        let rel = |p: &Path| p.strip_prefix(workspace).unwrap_or(p).to_string_lossy().replace('\\', "/");
+        let (old_rel, new_rel) = (rel(&source), rel(&dest));
+        result.content = result.content.replace(&old_rel, &new_rel);
+        for change in result.file_changes.iter_mut() {
+            if change.relative_path.replace('\\', "/") == old_rel {
+                change.relative_path = new_rel.clone();
+            }
+        }
+        image.path = Some(dest.display().to_string());
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod place_tests {
+    use super::*;
+    use crate::tool_run::ToolRunImage;
+
+    fn generated(workspace: &Path, names: &[&str]) -> ToolRunResult {
+        let dir = workspace.join(".axecode/images");
+        std::fs::create_dir_all(&dir).unwrap();
+        let images = names
+            .iter()
+            .map(|name| {
+                std::fs::write(dir.join(name), b"png").unwrap();
+                ToolRunImage { media_type: "image/png".into(), data: String::new(), path: Some(dir.join(name).display().to_string()) }
+            })
+            .collect();
+        let content = names.iter().map(|n| format!("- .axecode/images/{n}")).collect::<Vec<_>>().join("\n");
+        ToolRunResult::ok_with_images(content, images, Vec::new())
+    }
+
+    #[test]
+    fn generate_respects_the_requested_path() {
+        let ws = std::env::temp_dir().join(format!("axecode-place-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&ws);
+        let mut one = generated(&ws, &["1-1.png"]);
+        place_generated_images(&mut one, &ws, "sorties/logo").unwrap();
+        assert!(ws.join("sorties/logo.png").exists());
+        assert!(!ws.join(".axecode/images/1-1.png").exists());
+        assert!(one.content.contains("sorties/logo.png"), "{}", one.content);
+        assert_eq!(one.images[0].path.as_deref(), Some(ws.join("sorties/logo.png").display().to_string().as_str()));
+
+        let mut two = generated(&ws, &["2-1.png", "2-2.png"]);
+        place_generated_images(&mut two, &ws, "b.png").unwrap();
+        assert!(ws.join("b-1.png").exists() && ws.join("b-2.png").exists());
+        let _ = std::fs::remove_dir_all(&ws);
+    }
+}
 
 fn tool_json(result: ToolRunResult) -> Result<Value, String> {
     if result.is_error {
@@ -115,7 +201,19 @@ pub(crate) async fn dispatch(shared: &Arc<Shared>, method: &str, params: Value) 
                 settings.openai_image_api_key(),
                 settings.nano_banana_api_key(),
             );
-            tool_json(tool.run(params).await)
+            // `path` is a kernel-side option (images.generate(path=...)): the
+            // tool always saves under .axecode/images, the file is then moved.
+            let mut params = params;
+            let requested = params
+                .as_object_mut()
+                .and_then(|p| p.remove("path"))
+                .and_then(|p| p.as_str().map(str::to_string))
+                .filter(|p| !p.trim().is_empty());
+            let mut result = tool.run(params).await;
+            if let Some(requested) = requested.filter(|_| !result.is_error) {
+                place_generated_images(&mut result, &shared.workspace(), &requested)?;
+            }
+            tool_json(result)
         }
         "question.ask" => {
             // Questions are asked through the chat: the turn ends with the

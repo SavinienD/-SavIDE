@@ -3,7 +3,9 @@
 ``read(path)`` joint une image au résultat de la cellule en cours pour que
 vous puissiez la voir (réduite à 1600 px au plus, réencodée en JPEG si elle
 est lourde). ``generate(prompt, path=None)`` crée une image avec le
-fournisseur d'images configuré et l'enregistre dans le dossier de travail.
+fournisseur d'images configuré et l'enregistre à ``path`` (relatif au dossier
+de travail, ou absolu ; l'extension est ajoutée si besoin, ``-1``, ``-2``…
+s'il y a plusieurs images), sinon dans ``.axecode/images/``.
 """
 
 from __future__ import annotations
