@@ -1,18 +1,19 @@
-"""files — read, write, edit and search files in the workspace.
+"""files — lire, écrire, modifier et chercher des fichiers dans le dossier de travail.
 
-Paths are relative to the workspace root (or absolute). Safety rules:
-``write`` and ``edit`` refuse to overwrite an existing file that changed on
-disk since you last ``read`` it (or that you never read): re-read it first.
-``edit`` applies exact, ordered replacements; each ``old`` must match once
-(unless ``all=True``).
+Les chemins sont relatifs à la racine du dossier de travail (ou absolus).
+Règles de sécurité : ``write`` et ``edit`` refusent d'écraser un fichier
+existant modifié sur le disque depuis votre dernier ``read`` (ou jamais lu) :
+relisez-le d'abord. ``edit`` applique des remplacements exacts, dans l'ordre ;
+chaque ``old`` doit apparaître une seule fois (sauf avec ``all=True``).
 
-``read`` also returns the text of documents: Excel ``.xlsx`` (one
-``## Sheet: name`` block per sheet, tab-separated cells, computed values),
-Word ``.docx`` (Markdown-like headings, lists, ``|`` tables), PDF (one
-``## Page n`` block per page), PowerPoint ``.pptx`` (``## Slide n`` + notes),
-OpenDocument ``.odt/.ods/.odp`` and ``.epub``. This text is read-only:
-``edit`` refuses these files (generate a new file with python instead).
-Other binary files raise an error instead of returning garbage.
+``read`` renvoie aussi le texte des documents : Excel ``.xlsx`` (un bloc
+``## Feuille : nom`` par feuille, cellules séparées par des tabulations,
+valeurs calculées), Word ``.docx`` (titres façon Markdown, listes, tableaux
+``|``), PDF (un bloc ``## Page n`` par page), PowerPoint ``.pptx``
+(``## Diapositive n`` + notes), OpenDocument ``.odt/.ods/.odp`` et ``.epub``.
+Ce texte est en lecture seule : ``edit`` refuse ces fichiers (générez plutôt
+un nouveau fichier avec Python). Les autres fichiers binaires lèvent une
+erreur au lieu de renvoyer du charabia.
 """
 
 from __future__ import annotations
@@ -84,36 +85,37 @@ def _document_text(path: str, full: str, data: bytes) -> Optional[str]:
         except ImportError:
             raise
         except Exception as err:  # noqa: BLE001 - one clear message per format
-            raise ValueError(f"{path}: cannot extract the text of this document ({err})") from err
+            raise ValueError(f"{path} : impossible d'extraire le texte de ce document ({err})") from err
     if not _documents.looks_binary(data):
         return None
     legacy = _documents.legacy_format(full)
     if legacy:
         raise ValueError(
-            f"{path} is an old {legacy} binary file: files.read cannot extract it. "
-            "Convert it first (e.g. LibreOffice: soffice --headless --convert-to docx/xlsx/pptx)"
+            f"{path} est un ancien fichier binaire {legacy} : files.read ne sait pas l'extraire. "
+            "Convertissez-le d'abord (par ex. LibreOffice : soffice --headless --convert-to docx/xlsx/pptx)"
         )
     size = len(data)
     raise ValueError(
-        f"{path} is a binary file ({size} bytes): files.read only returns text. "
-        "Open it with open(path, 'rb') or a dedicated library"
+        f"{path} est un fichier binaire ({size} octets) : files.read ne renvoie que du texte. "
+        "Ouvrez-le avec open(path, 'rb') ou une bibliothèque dédiée"
     )
 
 
 def read(path: str, offset: int = 0, limit: Optional[int] = None, numbered: bool = False) -> str:
-    """Return the text of a file (optionally lines ``offset``..``offset+limit``).
+    """Renvoie le texte d'un fichier (si besoin les lignes ``offset``..``offset+limit``).
 
-    Records a fingerprint so that later ``write``/``edit`` can detect external
-    changes. ``numbered=True`` prefixes each line with its 1-based number.
-    Documents (xlsx, docx, pdf, pptx, odt/ods/odp, epub) return their
-    extracted text; ``offset``/``limit`` then apply to that text.
+    Enregistre une empreinte pour que ``write``/``edit`` détectent ensuite les
+    modifications extérieures. ``numbered=True`` préfixe chaque ligne de son
+    numéro (à partir de 1). Les documents (xlsx, docx, pdf, pptx, odt/ods/odp,
+    epub) renvoient leur texte extrait ; ``offset``/``limit`` s'appliquent alors
+    à ce texte.
     """
     full = _abs(path)
     if os.path.isdir(full):
-        raise IsADirectoryError(f"{path} is a directory (use files.ls)")
+        raise IsADirectoryError(f"{path} est un dossier (utilisez files.ls)")
     data = _read_bytes(full)
     if data is None:
-        raise FileNotFoundError(f"{path}: no such file")
+        raise FileNotFoundError(f"{path} : fichier introuvable")
     _fingerprints[full] = _digest(data)
     text = _document_text(path, full, data)  # axe:viewers
     if text is None:
@@ -135,11 +137,11 @@ def _check_fresh(full: str, current: Optional[bytes]) -> None:
     known = _fingerprints.get(full)
     if known is None:
         raise PermissionError(
-            f"{_rel(full)} exists but was not read in this session: call files.read() first"
+            f"{_rel(full)} existe mais n'a pas été lu dans cette session : appelez d'abord files.read()"
         )
     if known != _digest(current):
         raise PermissionError(
-            f"{_rel(full)} changed on disk since it was read: call files.read() again"
+            f"{_rel(full)} a changé sur le disque depuis sa lecture : rappelez files.read()"
         )
 
 
@@ -153,41 +155,42 @@ def _store(full: str, before: Optional[bytes], text: str) -> None:
 
 
 def write(path: str, content: str, force: bool = False) -> str:
-    """Create or overwrite a file with ``content``.
+    """Crée ou écrase un fichier avec ``content``.
 
-    Overwriting requires a prior ``read`` with an unchanged file, unless
-    ``force=True``. Returns a short confirmation.
+    Pour écraser, il faut un ``read`` préalable et un fichier inchangé depuis,
+    sauf avec ``force=True``. Renvoie une courte confirmation.
     """
     full = _abs(path)
     before = _read_bytes(full)
     if _documents.extractor_for(full) and not force:  # axe:viewers
         raise ValueError(
-            f"{path} is a document format: writing plain text would corrupt it. "
-            "Build it with python (openpyxl, python-docx, ...) or pass force=True"
+            f"{path} est un format de document : y écrire du texte brut le corromprait. "
+            "Construisez-le avec Python (openpyxl, python-docx…) ou passez force=True"
         )
     if not force:
         _check_fresh(full, before)
     _store(full, before, content)
     lines = content.count("\n") + (0 if content.endswith("\n") or not content else 1)
-    return f"{'updated' if before is not None else 'created'} {_rel(full)} ({lines} lines)"
+    return f"{_rel(full)} {'mis à jour' if before is not None else 'créé'} ({lines} ligne{'s' if lines > 1 else ''})"
 
 
 def edit(path: str, edits: Union[list, tuple], force: bool = False) -> str:
-    """Apply ordered exact replacements to a file.
+    """Applique à un fichier des remplacements exacts, dans l'ordre.
 
-    ``edits`` is a list of ``(old, new)`` pairs or dicts
-    ``{"old": ..., "new": ..., "all": False}``. Each ``old`` must occur exactly
-    once at the time it is applied (or at least once with ``all=True``).
-    The whole edit is atomic: nothing is written if one replacement fails.
+    ``edits`` est une liste de paires ``(old, new)`` ou de dicts
+    ``{"old": ..., "new": ..., "all": False}``. Chaque ``old`` doit apparaître
+    exactement une fois au moment où il est appliqué (au moins une fois avec
+    ``all=True``). La modification est atomique : rien n'est écrit si un
+    remplacement échoue.
     """
     full = _abs(path)
     before = _read_bytes(full)
     if before is None:
-        raise FileNotFoundError(f"{path}: no such file (use files.write to create it)")
+        raise FileNotFoundError(f"{path} : fichier introuvable (utilisez files.write pour le créer)")
     if _documents.extractor_for(full) or _documents.looks_binary(before):  # axe:viewers
         raise ValueError(
-            f"{path} is a binary document: edit cannot change it. Generate a new "
-            "file with python (openpyxl, python-docx, ...) and files.write/shell instead"
+            f"{path} est un document binaire : edit ne peut pas le modifier. Générez plutôt un "
+            "nouveau fichier avec Python (openpyxl, python-docx…) et files.write/shell"
         )
     if not force:
         _check_fresh(full, before)
@@ -201,20 +204,20 @@ def edit(path: str, edits: Union[list, tuple], force: bool = False) -> str:
             old, new = item[0], item[1]
             replace_all = bool(item[2]) if len(item) > 2 else False
         if not old:
-            raise ValueError(f"edit #{index + 1}: empty `old`")
+            raise ValueError(f"modification n° {index + 1} : `old` est vide")
         if crlf and "\r\n" not in old and old not in text:
             old, new = old.replace("\n", "\r\n"), new.replace("\n", "\r\n")
         count = text.count(old)
         if count == 0:
-            raise ValueError(f"edit #{index + 1}: `old` not found in {path}")
+            raise ValueError(f"modification n° {index + 1} : `old` introuvable dans {path}")
         if count > 1 and not replace_all:
             raise ValueError(
-                f"edit #{index + 1}: `old` matches {count} times in {path}; add context or pass all=True"
+                f"modification n° {index + 1} : `old` apparaît {count} fois dans {path} ; ajoutez du contexte ou passez all=True"
             )
         text = text.replace(old, new) if replace_all else text.replace(old, new, 1)
         applied += count if replace_all else 1
     _store(full, before, text)
-    return f"edited {_rel(full)} ({applied} replacement{'s' if applied != 1 else ''})"
+    return f"{_rel(full)} modifié ({applied} remplacement{'s' if applied > 1 else ''})"
 
 
 _IGNORED_DIRS = {".git", "node_modules", "target", "dist", "__pycache__", ".venv", "venv"}
@@ -228,9 +231,9 @@ def _walk(base: str) -> Iterable[str]:
 
 
 def glob(pattern: str, path: str = ".", limit: int = 500) -> list[str]:
-    """List files matching a glob ``pattern`` (``**`` supported), newest first.
+    """Liste les fichiers qui correspondent au motif glob ``pattern`` (``**`` accepté), les plus récents d'abord.
 
-    Skips .git, node_modules, target, dist and virtualenvs.
+    Ignore .git, node_modules, target, dist et les environnements virtuels.
     """
     base = _abs(path)
     simple = "/" not in pattern
@@ -265,9 +268,9 @@ def grep(
     context: int = 0,
     limit: int = 200,
 ) -> list[dict]:
-    """Search file contents with a regex (ripgrep when available).
+    """Cherche une expression régulière dans le contenu des fichiers (avec ripgrep s'il est présent).
 
-    Returns ``[{"path", "line", "text"}]`` (context lines have ``"context": True``).
+    Renvoie ``[{"path", "line", "text"}]`` (les lignes de contexte ont ``"context": True``).
     """
     base = _abs(path)
     rg = _rg()
@@ -321,7 +324,7 @@ def grep(
 
 
 def ls(path: str = ".") -> list[str]:
-    """List a directory (directories end with ``/``)."""
+    """Liste un dossier (les sous-dossiers finissent par ``/``)."""
     full = _abs(path)
     entries = []
     for name in sorted(os.listdir(full)):
@@ -330,27 +333,27 @@ def ls(path: str = ".") -> list[str]:
 
 
 def exists(path: str) -> bool:
-    """True if the path exists."""
+    """Vrai si le chemin existe."""
     return os.path.exists(_abs(path))
 
 
 def delete(path: str) -> str:
-    """Delete a file (directories are refused; use shell for that)."""
+    """Supprime un fichier (les dossiers sont refusés : utilisez shell pour cela)."""
     full = _abs(path)
     if os.path.isdir(full):
-        raise IsADirectoryError(f"{path} is a directory")
+        raise IsADirectoryError(f"{path} est un dossier")
     before = _read_bytes(full)
     os.remove(full)
     _fingerprints.pop(full, None)
     bridge.record_file_change(_rel(full), None if before is None else _decode(before), None)
-    return f"deleted {_rel(full)}"
+    return f"{_rel(full)} supprimé"
 
 
 def move(src: str, dst: str) -> str:
-    """Rename or move a file or directory."""
+    """Renomme ou déplace un fichier ou un dossier."""
     source, target = _abs(src), _abs(dst)
     os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
     shutil.move(source, target)
     if source in _fingerprints:
         _fingerprints[target] = _fingerprints.pop(source)
-    return f"moved {_rel(source)} -> {_rel(target)}"
+    return f"{_rel(source)} déplacé vers {_rel(target)}"

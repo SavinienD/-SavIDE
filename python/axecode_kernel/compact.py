@@ -1,9 +1,10 @@
-"""compact — compact this session's context.
+"""compact — compacter le contexte de cette session.
 
-``run(directive=None)`` asks for a compaction before the next model call:
-the history is summarised (honouring the optional ``directive``), the full
-journal stays available through ``context``, and kernel variables are kept.
-Use it when the context grows large or before a long new phase of work.
+``run(directive=None)`` demande une compaction avant le prochain appel du
+modèle : l'historique est résumé (en suivant la ``directive`` facultative), le
+journal complet reste accessible par ``context`` et les variables du noyau
+sont gardées. À utiliser quand le contexte devient gros ou avant une longue
+nouvelle phase de travail.
 """
 
 from __future__ import annotations
@@ -16,6 +17,6 @@ __all__ = ["run"]
 
 
 def run(directive: Optional[str] = None) -> str:
-    """Schedule a compaction (applied before the next model call)."""
+    """Programme une compaction (appliquée avant le prochain appel du modèle)."""
     result = bridge.call("compact.request", {"directive": directive})
-    return result.get("note", "compaction scheduled")
+    return result.get("note", "compaction programmée")

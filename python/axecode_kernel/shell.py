@@ -1,10 +1,11 @@
-"""shell — run commands and keep persistent shell sessions.
+"""shell — lancer des commandes et garder des sessions shell persistantes.
 
-``run(cmd)`` executes one command (PowerShell 7 on Windows when available,
-bash/sh elsewhere) in the workspace and returns ``{"exit_code", "output"}``.
-``session()`` opens a persistent shell (cwd, env and variables survive between
-``send`` calls) — useful for long workflows; ``close()`` it when done.
-Background/long-running processes: ``start(cmd)`` then ``poll(proc)``.
+``run(cmd)`` exécute une commande (PowerShell 7 sous Windows s'il est présent,
+bash/sh ailleurs) dans le dossier de travail et renvoie ``{"exit_code", "output"}``.
+``session()`` ouvre un shell persistant (dossier courant, environnement et
+variables survivent d'un appel ``send`` à l'autre) — utile pour les longs
+enchaînements ; fermez-le avec ``close()`` à la fin.
+Processus longs ou en arrière-plan : ``start(cmd)`` puis ``poll(proc)``.
 """
 
 from __future__ import annotations
@@ -27,7 +28,7 @@ IS_WINDOWS = sys.platform == "win32"
 
 
 def default_shell() -> list[str]:
-    """The shell used by ``run`` / ``session`` as an argv prefix."""
+    """Le shell utilisé par ``run`` / ``session``, sous forme de début d'argv."""
     explicit = os.environ.get("AXECODE_SHELL")
     if explicit:
         return [explicit]
@@ -47,7 +48,7 @@ def _clip(text: str) -> str:
     if len(text) <= MAX_OUTPUT:
         return text
     half = MAX_OUTPUT // 2
-    return f"{text[:half]}\n[... {len(text) - MAX_OUTPUT} chars omitted ...]\n{text[-half:]}"
+    return f"{text[:half]}\n[... {len(text) - MAX_OUTPUT} caractères omis ...]\n{text[-half:]}"
 
 
 def _creationflags() -> int:
@@ -56,10 +57,10 @@ def _creationflags() -> int:
 
 def run(cmd: str, timeout: Optional[float] = 120, cwd: Optional[str] = None, env: Optional[dict] = None,
         echo: bool = False) -> dict:
-    """Run one shell command and return ``{"exit_code", "output", "timed_out"}``.
+    """Exécute une commande shell et renvoie ``{"exit_code", "output", "timed_out"}``.
 
-    stdout and stderr are merged. ``timeout`` in seconds (None = no limit).
-    ``echo=True`` also prints the output (streamed in the chat card).
+    stdout et stderr sont fusionnés. ``timeout`` en secondes (``None`` = sans limite).
+    ``echo=True`` affiche aussi la sortie (diffusée dans la carte de la conversation).
     """
     argv = default_shell()
     if _is_powershell(argv):
@@ -86,13 +87,14 @@ def run(cmd: str, timeout: Optional[float] = 120, cwd: Optional[str] = None, env
 
 
 _NOT_PICKLABLE = (
-    "shell.Session is a live shell process: it cannot be pickled or copied "
-    "(the end-of-turn snapshot leaves it out; open a new session after a kernel restart)"
+    "shell.Session est un processus shell vivant : il ne peut être ni sérialisé ni copié "
+    "(l'instantané de fin de tour le laisse de côté ; ouvrez une nouvelle session après "
+    "un redémarrage du noyau)"
 )
 
 
 class Session:
-    """A persistent shell process; state survives between ``send`` calls."""
+    """Un processus shell persistant ; son état survit d'un appel ``send`` à l'autre."""
 
     def __init__(self, cwd: Optional[str] = None):
         self.argv = default_shell()
@@ -128,9 +130,9 @@ class Session:
         return self.proc.poll() is None
 
     def send(self, cmd: str, timeout: Optional[float] = 120) -> dict:
-        """Run ``cmd`` in the session; returns ``{"exit_code", "output", "timed_out"}``."""
+        """Exécute ``cmd`` dans la session ; renvoie ``{"exit_code", "output", "timed_out"}``."""
         if not self.alive:
-            raise RuntimeError("shell session has exited")
+            raise RuntimeError("la session shell est terminée")
         marker = f"__AXECODE_DONE_{uuid.uuid4().hex}__"
         if self.powershell:
             script = (f"{cmd}\n$__c = if ($?) {{ if ($LASTEXITCODE) {{ $LASTEXITCODE }} else {{ 0 }} }} else {{ 1 }}\n"
@@ -164,11 +166,11 @@ class Session:
             time.sleep(0.02)
 
     def read(self) -> str:
-        """Return output produced since the last call (for timed-out commands)."""
+        """Renvoie la sortie produite depuis le dernier appel (pour les commandes qui ont dépassé leur délai)."""
         return _clip(self._take())
 
     def close(self) -> None:
-        """Terminate the session."""
+        """Termine la session."""
         if self.alive:
             try:
                 self.proc.kill()
@@ -194,12 +196,12 @@ class Session:
 
 
 def session(cwd: Optional[str] = None) -> Session:
-    """Open a persistent shell session (PowerShell on Windows, bash elsewhere)."""
+    """Ouvre une session shell persistante (PowerShell sous Windows, bash ailleurs)."""
     return Session(cwd)
 
 
 def start(cmd: str, cwd: Optional[str] = None) -> Session:
-    """Start a long-running command in its own session; check it with ``poll``."""
+    """Lance une commande longue dans sa propre session ; suivez-la avec ``poll``."""
     sess = Session(cwd)
     assert sess.proc.stdin is not None
     sess.proc.stdin.write((cmd + ("\r\n" if IS_WINDOWS else "\n")).encode("utf-8"))
@@ -208,10 +210,10 @@ def start(cmd: str, cwd: Optional[str] = None) -> Session:
 
 
 def poll(proc: Session) -> dict:
-    """New output of a background command and whether it is still running."""
+    """Nouvelle sortie d'une commande en arrière-plan, et si elle tourne encore."""
     return {"alive": proc.alive, "output": proc.read()}
 
 
 def stop(proc: Session) -> None:
-    """Stop a background command started with ``start``."""
+    """Arrête une commande en arrière-plan lancée avec ``start``."""
     proc.close()

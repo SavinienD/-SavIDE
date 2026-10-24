@@ -1,15 +1,16 @@
-"""goal — persistent objective of the session.
+"""goal — objectif persistant de la session.
 
-The user sets a goal with ``/goal <text> [--budget N]``; it is stored in the
-journal and re-injected at the start of every turn with its progress and the
-remaining token budget. You decide when it is reached.
+L'utilisateur fixe un objectif avec ``/goal <texte> [--budget N]`` ; il est
+enregistré dans le journal et réinjecté au début de chaque tour avec son
+avancement et le budget de jetons restant. C'est vous qui décidez quand il est
+atteint.
 
-``goal.get()``                 – current goal (or ``None``).
-``goal.progress("step 2/5 …")`` – update the progress note shown each turn.
-``goal.complete(summary)``     – declare the goal reached (ends /autonomous).
-``goal.pause(reason)``         – keep the goal but stop auto-continuation.
-``goal.clear()``               – forget the goal.
-``goal.set(text, budget)``     – set a goal programmatically (same as /goal).
+``goal.get()``                  – objectif actuel (ou ``None``).
+``goal.progress("étape 2/5 …")`` – met à jour la note d'avancement montrée à chaque tour.
+``goal.complete(summary)``      – déclare l'objectif atteint (arrête /autonomous).
+``goal.pause(reason)``          – garde l'objectif mais arrête la poursuite automatique.
+``goal.clear()``                – oublie l'objectif.
+``goal.set(text, budget)``      – fixe un objectif depuis le code (comme /goal).
 """
 
 from __future__ import annotations
@@ -22,14 +23,14 @@ __all__ = ["get", "set", "progress", "complete", "pause", "resume", "clear"]
 
 
 def get() -> dict[str, Any] | None:
-    """Return the current goal: ``{text, status, progress, budget_tokens, used_tokens, ...}``."""
+    """Renvoie l'objectif actuel : ``{text, status, progress, budget_tokens, used_tokens, ...}``."""
     return bridge.call("goal.get")
 
 
 def set(text: str, budget_tokens: int | None = None) -> dict[str, Any]:  # noqa: A001
-    """Set (or replace) the session goal. Optional token budget."""
+    """Fixe (ou remplace) l'objectif de la session. Budget de jetons facultatif."""
     if not isinstance(text, str) or not text.strip():
-        raise ValueError("goal.set: text must be a non-empty string")
+        raise ValueError("goal.set : `text` doit être une chaîne non vide")
     payload: dict[str, Any] = {"text": text}
     if budget_tokens is not None:
         payload["budget_tokens"] = int(budget_tokens)
@@ -37,25 +38,25 @@ def set(text: str, budget_tokens: int | None = None) -> dict[str, Any]:  # noqa:
 
 
 def progress(note: str) -> dict[str, Any]:
-    """Record a short progress note, shown with the goal at every turn."""
+    """Enregistre une courte note d'avancement, montrée avec l'objectif à chaque tour."""
     return bridge.call("goal.progress", {"note": str(note)})
 
 
 def complete(summary: str = "") -> dict[str, Any]:
-    """Declare the goal reached. Stops any /autonomous continuation."""
+    """Déclare l'objectif atteint. Arrête toute poursuite /autonomous."""
     return bridge.call("goal.complete", {"summary": str(summary)})
 
 
 def pause(reason: str = "") -> dict[str, Any]:
-    """Pause the goal: it stays visible but no auto-continuation happens."""
+    """Met l'objectif en pause : il reste visible mais rien ne se poursuit automatiquement."""
     return bridge.call("goal.pause", {"reason": str(reason)})
 
 
 def resume() -> dict[str, Any]:
-    """Resume a paused goal."""
+    """Reprend un objectif en pause."""
     return bridge.call("goal.resume")
 
 
 def clear() -> dict[str, Any]:
-    """Remove the goal entirely."""
+    """Supprime complètement l'objectif."""
     return bridge.call("goal.clear")

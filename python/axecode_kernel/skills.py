@@ -1,13 +1,13 @@
-"""skills — reusable know-how.
+"""skills — savoir-faire réutilisable.
 
-Two kinds of skills exist:
-* Python skills from the harness (``<scope>/skills/<name>/``): importable
-  packages, e.g. ``import my_skill`` — already on ``sys.path``.
-* Markdown skills (``.agents/skills``, ``.axecode/skills``, ``~/.agents/skills``):
-  instructions to read with ``load(name)`` before doing the related task.
+Il existe deux sortes de skills :
+* les skills Python du harnais (``<scope>/skills/<name>/``) : paquets
+  importables, par ex. ``import mon_skill`` — déjà dans ``sys.path`` ;
+* les skills Markdown (``.agents/skills``, ``.axecode/skills``, ``~/.agents/skills``) :
+  instructions à lire avec ``load(name)`` avant de faire la tâche concernée.
 
-``list()`` shows both; ``load(name)`` returns a Markdown skill's content;
-``refresh()`` picks up skills created during the session.
+``list()`` montre les deux ; ``load(name)`` renvoie le contenu d'un skill
+Markdown ; ``refresh()`` prend en compte les skills créés pendant la session.
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ def _python_skill_dirs() -> list[str]:
 
 
 def refresh() -> list[str]:
-    """Add harness skill directories to sys.path and invalidate import caches."""
+    """Ajoute les dossiers de skills du harnais à sys.path et vide les caches d'import."""
     paths = _python_skill_dirs()
     for path in paths:
         if path not in sys.path:
@@ -39,7 +39,7 @@ def refresh() -> list[str]:
 
 
 def list() -> list[dict]:  # noqa: A001 - module API
-    """Available skills: ``[{"name", "description", "kind"}]``."""
+    """Skills disponibles : ``[{"name", "description", "kind"}]``."""
     out = []
     for path in refresh():
         for name in sorted(os.listdir(path)):
@@ -65,5 +65,5 @@ def list() -> list[dict]:  # noqa: A001 - module API
 
 
 def load(name: str) -> str:
-    """Return the instructions of a Markdown skill."""
+    """Renvoie les instructions d'un skill Markdown."""
     return bridge.call("skills.load", {"name": name})["content"]

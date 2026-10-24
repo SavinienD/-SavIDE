@@ -1,8 +1,8 @@
-"""question — ask the user something.
+"""question — poser une question à l'utilisateur.
 
-``ask(text, options=None)`` shows the question in the chat. End your turn
-right after with the question as your final message; the answer arrives as
-the next user message.
+``ask(text, options=None)`` affiche la question dans la conversation.
+Terminez votre tour juste après, avec la question comme message final ; la
+réponse arrive comme prochain message de l'utilisateur.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ __all__ = ["ask"]
 
 
 def ask(text: str, options: Optional[Sequence[str]] = None, multiple: bool = False) -> str:
-    """Ask the user a question (optionally with choices)."""
+    """Pose une question à l'utilisateur (avec des choix, si besoin)."""
     params = {"question": text, "options": list(options or []), "multiple": bool(multiple)}
     result = bridge.call("question.ask", params)
-    return result.get("instruction", "Question delivered; end your turn.")
+    return result.get("instruction", "Question transmise ; terminez votre tour.")

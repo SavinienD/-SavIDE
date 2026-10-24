@@ -1,19 +1,20 @@
-"""rlm — persistent sub-agents.
+"""rlm — sous-agents persistants.
 
-Create a sub-agent with ``rlm(prompt)`` (or ``rlm.spawn``). The call returns
-immediately with a handle ``{"id": ..., "session_name": ...}``; the sub-agent
-runs in its own session (own kernel, own journal, own model) and its final
-report is delivered to you as a peer message at the start of a later turn
-(see the ``<queued_peer_messages>`` block of the system reminder).
+Créez un sous-agent avec ``rlm(prompt)`` (ou ``rlm.spawn``). L'appel rend la
+main tout de suite avec une poignée ``{"id": ..., "session_name": ...}`` ; le
+sous-agent travaille dans sa propre session (son noyau, son journal, son
+modèle) et son rapport final vous est remis comme message de pair au début
+d'un tour suivant (voir le bloc ``<queued_peer_messages>`` du rappel système).
 
-Sub-agents are persistent: after their first task you can send a follow-up
-with ``rlm.follow_up(handle, text)``, list them with ``rlm.list_subagents()``
-and read their last result with ``rlm.result(handle)``.
+Les sous-agents sont persistants : après leur première tâche, vous pouvez
+leur envoyer une suite avec ``rlm.follow_up(handle, text)``, les lister avec
+``rlm.list_subagents()`` et lire leur dernier résultat avec
+``rlm.result(handle)``.
 
-Before fanning out more than two children in a single turn, check the
-subscription quota with ``rlm.quota()``: the spawn result contains a
-``warning`` field when the window is almost exhausted. An explicit user
-instruction always wins over that warning — never block on it.
+Avant de lancer plus de deux enfants dans un même tour, vérifiez le quota de
+l'abonnement avec ``rlm.quota()`` : le résultat de ``spawn`` contient un champ
+``warning`` quand la fenêtre est presque épuisée. Une consigne explicite de
+l'utilisateur passe toujours avant cet avertissement : ne bloquez jamais dessus.
 """
 
 from __future__ import annotations
@@ -34,7 +35,7 @@ __all__ = [
 
 
 class SubAgentHandle(dict):
-    """Lightweight handle returned by ``spawn``: ``{"id", "session_name"}``."""
+    """Poignée légère renvoyée par ``spawn`` : ``{"id", "session_name"}``."""
 
     @property
     def id(self) -> str:  # noqa: A003 - mirrors the wire field
@@ -54,19 +55,19 @@ def spawn(
     model: str | None = None,
     profile: str | None = None,
 ) -> SubAgentHandle:
-    """Create a persistent sub-agent session and return its handle immediately.
+    """Crée une session de sous-agent persistante et renvoie tout de suite sa poignée.
 
-    ``prompt``  – the task description (full, self-contained).
-    ``name``    – optional human-readable session name (unique among siblings).
-    ``model``   – optional ``"provider/model"`` override.
-    ``profile`` – optional sub-agent profile id from Settings or the harness.
+    ``prompt``  – la description de la tâche (complète, autonome).
+    ``name``    – nom de session lisible, facultatif (unique parmi les frères et sœurs).
+    ``model``   – ``"fournisseur/modèle"`` à utiliser à la place, facultatif.
+    ``profile`` – identifiant d'un profil de sous-agent des Réglages ou du harnais, facultatif.
 
-    The result is NOT returned here: it arrives later as a peer message
-    from the child. The returned dict may carry a ``warning`` when the
-    subscription quota is low.
+    Le résultat n'est PAS renvoyé ici : il arrive plus tard comme message de
+    pair venant de l'enfant. Le dict renvoyé peut porter un ``warning`` quand
+    le quota de l'abonnement est bas.
     """
     if not isinstance(prompt, str) or not prompt.strip():
-        raise ValueError("rlm.spawn: prompt must be a non-empty string")
+        raise ValueError("rlm.spawn : `prompt` doit être une chaîne non vide")
     payload: dict[str, Any] = {"prompt": prompt}
     if name:
         payload["name"] = name
@@ -78,38 +79,39 @@ def spawn(
     handle = SubAgentHandle(reply)
     warning = reply.get("warning")
     if warning:
-        print(f"[rlm] warning: {warning}", file=sys.stderr)
+        print(f"[rlm] avertissement : {warning}", file=sys.stderr)
     return handle
 
 
 def follow_up(handle: SubAgentHandle | str | dict, text: str) -> dict[str, Any]:
-    """Send a follow-up message to an existing sub-agent (continues its session)."""
+    """Envoie un message de suite à un sous-agent existant (poursuit sa session)."""
     if not isinstance(text, str) or not text.strip():
-        raise ValueError("rlm.follow_up: text must be a non-empty string")
+        raise ValueError("rlm.follow_up : `text` doit être une chaîne non vide")
     return bridge.call("rlm.follow_up", {"id": _session_id(handle), "text": text})
 
 
 def list_subagents() -> list[dict[str, Any]]:
-    """List this session's sub-agents: id, session_name, status, model, last_result.
+    """Liste les sous-agents de cette session : ``id``, ``session_name``, ``status``, ``model``, ``last_result``.
 
-    ``status`` is ``"error"`` when the last task stopped on an error.
+    ``status`` vaut ``"error"`` quand la dernière tâche s'est arrêtée sur une erreur.
     """
     return list(bridge.call("rlm.list") or [])
 
 
 def result(handle: SubAgentHandle | str | dict) -> dict[str, Any] | None:
-    """Return the last known result of a sub-agent without waiting for it."""
+    """Renvoie le dernier résultat connu d'un sous-agent, sans l'attendre."""
     return bridge.call("rlm.result", {"id": _session_id(handle)})
 
 
 def wait(handle: SubAgentHandle | str | dict, timeout: float | None = 600) -> dict[str, Any] | None:
-    """Block until the sub-agent finishes its current task, at most ``timeout``
-    seconds (``None``: no limit). Returns its result, with ``error`` true when
-    the task stopped on an error, or ``None`` when the time is up (the result
-    still arrives later as a peer message).
+    """Attend que le sous-agent finisse sa tâche en cours, ``timeout`` secondes
+    au plus (``None`` : sans limite). Renvoie son résultat, avec ``error`` vrai
+    quand la tâche s'est arrêtée sur une erreur, ou ``None`` quand le temps est
+    écoulé (le résultat arrive quand même plus tard comme message de pair).
 
-    Prefer letting the result arrive as a peer message; use ``wait`` only when
-    the rest of your work strictly depends on it right now.
+    Laissez de préférence le résultat arriver comme message de pair ;
+    n'utilisez ``wait`` que si la suite de votre travail en dépend strictement
+    tout de suite.
     """
     payload: dict[str, Any] = {"id": _session_id(handle)}
     if timeout is not None:
@@ -118,10 +120,10 @@ def wait(handle: SubAgentHandle | str | dict, timeout: float | None = 600) -> di
 
 
 def quota() -> dict[str, Any] | None:
-    """Return the subscription quota of the current provider if it is known.
+    """Renvoie le quota de l'abonnement du fournisseur actuel, s'il est connu.
 
-    ``None`` means the provider does not expose a quota; never treat that as
-    an error.
+    ``None`` signifie que le fournisseur n'expose pas de quota ; ne le traitez
+    jamais comme une erreur.
     """
     try:
         return bridge.call("rlm.quota")
@@ -136,7 +138,7 @@ def _session_id(handle: Any) -> str:
 
 
 class _Callable(sys.modules[__name__].__class__):
-    """Make ``rlm(prompt, ...)`` an alias of ``rlm.spawn``."""
+    """Fait de ``rlm(prompt, ...)`` un alias de ``rlm.spawn``."""
 
     def __call__(self, *args: Any, **kwargs: Any) -> SubAgentHandle:
         return spawn(*args, **kwargs)

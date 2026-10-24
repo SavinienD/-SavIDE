@@ -58,4 +58,4 @@ def test_session_refuses_pickling_at_once(workspace):
         worker.start()
         worker.join(5)
         assert not worker.is_alive(), "pickling a shell.Session hangs"
-        assert len(errors) == 2 and all("live shell process" in e for e in errors), errors
+        assert len(errors) == 2 and all("processus shell vivant" in e for e in errors), errors

@@ -115,9 +115,9 @@ def test_snapshot_leaves_out_live_resources(kernel):
     snapshot, _ = _snapshot(kernel, "s", 5)
     reasons = {item["name"]: item["reason"] for item in snapshot["skipped"]}
     assert "shell.Session" in reasons["s"]
-    assert reasons["holder"].startswith("live resource")
+    assert reasons["holder"].startswith("ressource vivante")
     assert "Thread" in reasons["t"]
-    assert "file" in reasons["f"]
+    assert "fichier" in reasons["f"]
     assert "buf" not in reasons and "keep" not in reasons
     kernel.send({"type": "restore", "id": "r", "data": snapshot["data"]})
     restored = kernel.wait(lambda m: m.get("id") == "r")
@@ -140,7 +140,7 @@ def test_snapshot_gives_up_on_a_variable_that_blocks(kernel):
     assert kernel.run("a", STUCK + "stuck = Stuck()\nkeep = 1\n")["error"] is None
     snapshot, elapsed = _snapshot(kernel, "s", 5)
     reasons = {item["name"]: item["reason"] for item in snapshot["skipped"]}
-    assert reasons["stuck"] == "timeout"
+    assert reasons["stuck"] == "délai dépassé"
     assert elapsed >= 1.5
     assert "keep" not in reasons
     kernel.run("b", "_gate.set()")
@@ -153,8 +153,8 @@ def test_snapshot_total_budget(tmp_path):
         assert k.run("a", STUCK + "a1 = Stuck()\na2 = Stuck()\na3 = Stuck()\n")["error"] is None
         snapshot, elapsed = _snapshot(k, "s", 4)
         reasons = {item["name"]: item["reason"] for item in snapshot["skipped"]}
-        assert reasons["a1"] == "timeout" and reasons["a2"] == "timeout"
-        assert reasons["a3"].startswith("timeout: snapshot budget")
+        assert reasons["a1"] == "délai dépassé" and reasons["a2"] == "délai dépassé"
+        assert reasons["a3"].startswith("délai dépassé : budget")
         k.run("b", "_gate.set()")
     finally:
         k.close()

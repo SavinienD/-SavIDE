@@ -1,10 +1,10 @@
-"""context — programmatic access to this session's full history.
+"""context — accès programmatique à tout l'historique de cette session.
 
-The journal keeps everything, including what was compacted out of your
-context window. ``entries(kinds)`` returns raw journal entries
-(kinds: message, repl_call, repl_result, compaction, peer_message, ...);
-``messages()`` returns ``[{"role", "text", "ts"}]``; ``search(text)`` finds
-past messages and REPL calls containing ``text``.
+Le journal garde tout, y compris ce que la compaction a retiré de votre
+fenêtre de contexte. ``entries(kinds)`` renvoie les entrées brutes du journal
+(types : message, repl_call, repl_result, compaction, peer_message…) ;
+``messages()`` renvoie ``[{"role", "text", "ts"}]`` ; ``search(text)`` trouve
+les messages et appels REPL passés qui contiennent ``text``.
 """
 
 from __future__ import annotations
@@ -17,23 +17,23 @@ __all__ = ["entries", "messages", "search", "info"]
 
 
 def info() -> dict:
-    """Session id, name, workspace and current model."""
+    """Identifiant, nom, dossier de travail et modèle actuel de la session."""
     return bridge.call("session.info")
 
 
 def entries(kinds: Optional[Iterable[str]] = None) -> list[dict]:
-    """Raw journal entries, oldest first (optionally filtered by kind)."""
+    """Entrées brutes du journal, des plus anciennes aux plus récentes (filtrables par type)."""
     params = {"kinds": list(kinds)} if kinds else {}
     return bridge.call("context.entries", params)
 
 
 def messages() -> list[dict]:
-    """User/assistant text messages of the whole session, oldest first."""
+    """Messages texte utilisateur/assistant de toute la session, des plus anciens aux plus récents."""
     return bridge.call("session.history")
 
 
 def search(text: str, limit: int = 20) -> list[dict]:
-    """Past messages and REPL code/results containing ``text`` (case-insensitive)."""
+    """Messages et code/résultats REPL passés qui contiennent ``text`` (sans tenir compte de la casse)."""
     needle = text.lower()
     hits = []
     for entry in entries(["message", "repl_call", "repl_result"]):

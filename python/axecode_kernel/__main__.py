@@ -1,6 +1,6 @@
-"""Entry point: ``python -m axecode_kernel``.
+"""Point d'entrée : ``python -m axecode_kernel``.
 
-Host → kernel commands (one JSON object per line on stdin)::
+Commandes hôte → noyau (un objet JSON par ligne sur stdin) ::
 
     {"type": "init", "workspace": str, "modules": {name: {"enabled": bool,
         "functions": {fn: {"enabled": bool, "description": str}}}},
@@ -8,17 +8,17 @@ Host → kernel commands (one JSON object per line on stdin)::
     {"type": "exec", "id": str, "code": str}
     {"type": "interrupt"}
     {"type": "snapshot", "id": str}            -> snapshot_result {data: b64,
-        skipped: [{name, reason}]}  (never hangs: see Kernel.snapshot)
+        skipped: [{name, reason}]}  (ne bloque jamais : voir Kernel.snapshot)
     {"type": "restore", "id": str, "data": b64} -> restore_result {restored, failed,
         skipped: [{name, reason}]}
     {"type": "catalog", "id": str, "all": bool} -> catalog_result {modules}
     {"type": "configure", "id": str, "modules": {...}, "sys_path": [...]}
     {"type": "gc", "id": str, "keep": [str]}    -> gc_result {removed}
     {"type": "shutdown"}
-    {"type": "host_result", ...}                 (see bridge.py)
+    {"type": "host_result", ...}                 (voir bridge.py)
 
-Kernel → host: ``ready``, ``stream``, ``file_change``, ``host_call``,
-``done`` (exec result) and the ``*_result`` replies.
+Noyau → hôte : ``ready``, ``stream``, ``file_change``, ``host_call``,
+``done`` (résultat d'un exec) et les réponses ``*_result``.
 """
 
 from __future__ import annotations
@@ -58,13 +58,13 @@ MODULES = [
 
 
 def _setup_protocol_stream():
-    """Keeps private handles on the real stdin/stdout, points fd 1 to stderr
-    and fd 0 to the null device.
+    """Garde des poignées privées sur les vrais stdin/stdout, dirige le fd 1
+    vers stderr et le fd 0 vers le périphérique nul.
 
-    Child processes inherit fd 0: on Windows a child that inherits the
-    protocol pipe blocks while the reader thread waits on it (git, npm...),
-    and anywhere a child or ``input()`` reading it would steal protocol lines.
-    Returns the private protocol input stream."""
+    Les processus enfants héritent du fd 0 : sous Windows, un enfant qui
+    hérite du tube du protocole bloque pendant que le fil de lecture l'attend
+    (git, npm…), et partout un enfant ou un ``input()`` qui le lirait volerait
+    des lignes du protocole. Renvoie le flux d'entrée privé du protocole."""
     fd = os.dup(1)
     out = io.TextIOWrapper(os.fdopen(fd, "wb", buffering=0), encoding="utf-8",
                            newline="\n", write_through=True)
@@ -83,7 +83,7 @@ def _setup_protocol_stream():
 
 
 class _Capture(io.TextIOBase):
-    """stdout/stderr replacement: streams to the host and accumulates."""
+    """Remplaçant de stdout/stderr : diffuse vers l'hôte et accumule."""
 
     def __init__(self, name: str):
         self.name = name
@@ -119,16 +119,18 @@ class _Capture(io.TextIOBase):
 
 
 class _LiveResource(BaseException):
-    """Met while pickling a variable (directly or nested): leave it out.
-    BaseException so that no ``except Exception`` of the pickler swallows it."""
+    """Rencontrée en sérialisant une variable (directement ou imbriquée) : on
+    la laisse de côté. BaseException pour qu'aucun ``except Exception`` du
+    sérialiseur ne l'avale."""
 
 
 class _LiveTypes:
-    """Objects that hold an OS resource: process, thread, file, pipe, socket,
-    event loop, executor. Pickling them is meaningless and can block for good:
-    dill flushes and seeks open files and pipes, and the reader thread of a
-    ``shell.Session`` holds the lock of its pipe while it waits for output
-    (SCRAPPING, 20/10/2026: the end-of-turn snapshot never returned)."""
+    """Objets qui tiennent une ressource du système : processus, fil, fichier,
+    tube, socket, boucle d'événements, exécuteur. Les sérialiser n'a pas de
+    sens et peut bloquer pour de bon : dill vide et repositionne les fichiers
+    et tubes ouverts, et le fil de lecture d'une ``shell.Session`` garde le
+    verrou de son tube pendant qu'il attend la sortie (SCRAPPING, 20/10/2026 :
+    l'instantané de fin de tour ne revenait jamais)."""
 
     IN_MEMORY = (io.StringIO, io.BytesIO)
 
@@ -139,24 +141,24 @@ class _LiveTypes:
         import subprocess
 
         labels = [
-            (subprocess.Popen, "subprocess.Popen (live process)"),
+            (subprocess.Popen, "subprocess.Popen (processus vivant)"),
             (threading.Thread, "threading.Thread"),
             (socket.socket, "socket"),
-            (asyncio.AbstractEventLoop, "asyncio event loop"),
-            (concurrent.futures.Executor, "concurrent.futures executor"),
-            (io.IOBase, "open file or pipe"),
+            (asyncio.AbstractEventLoop, "boucle d'événements asyncio"),
+            (concurrent.futures.Executor, "exécuteur concurrent.futures"),
+            (io.IOBase, "fichier ou tube ouvert"),
         ]
         try:
             from axecode_kernel import shell
 
-            labels.insert(0, (shell.Session, "shell.Session (live shell process)"))
+            labels.insert(0, (shell.Session, "shell.Session (processus shell vivant)"))
         except Exception:  # pragma: no cover - broken shell module
             pass
         self.labels = labels
         self.types = tuple(kind for kind, _ in labels)
 
     def reason(self, value) -> "str | None":
-        """Why ``value`` must not be pickled, or None."""
+        """Pourquoi ``value`` ne doit pas être sérialisée, ou None."""
         try:
             if not isinstance(value, self.types) or isinstance(value, self.IN_MEMORY):
                 return None
@@ -177,10 +179,10 @@ def _budget(name: str, default: float) -> float:
 
 
 def _pickle_variable(dill, value, live: _LiveTypes, timeout: float):
-    """Pickles ``value`` (dill, recurse) in a daemon thread; returns
-    ``(blob, None)`` or ``(None, reason)``. Gives up after ``timeout`` seconds:
-    the thread is abandoned (it may wait for good on a lock held by another
-    thread) and the snapshot goes on without the variable."""
+    """Sérialise ``value`` (dill, recurse) dans un fil démon ; renvoie
+    ``(blob, None)`` ou ``(None, raison)``. Abandonne après ``timeout``
+    secondes : le fil est délaissé (il peut attendre pour toujours un verrou
+    tenu par un autre fil) et l'instantané continue sans la variable."""
     box: dict = {}
 
     def refuse_live(obj):
@@ -198,18 +200,18 @@ def _pickle_variable(dill, value, live: _LiveTypes, timeout: float):
             pickler.dump(value)
             box["blob"] = buffer.getvalue()
         except _LiveResource as exc:
-            box["reason"] = f"live resource: {exc}"
+            box["reason"] = f"ressource vivante : {exc}"
         except BaseException as exc:
-            box["reason"] = f"not picklable: {type(exc).__name__}: {exc}"[:300]
+            box["reason"] = f"non sérialisable : {type(exc).__name__} : {exc}"[:300]
 
     worker = threading.Thread(target=work, name="axecode-snapshot", daemon=True)
     worker.start()
     worker.join(timeout)
     if worker.is_alive():
-        return None, "timeout"
+        return None, "délai dépassé"
     if "blob" in box:
         return box["blob"], None
-    return None, box.get("reason") or "not picklable"
+    return None, box.get("reason") or "non sérialisable"
 
 
 class Kernel:
@@ -264,7 +266,7 @@ class Kernel:
             try:
                 module = importlib.import_module(f"axecode_kernel.{name}")
             except Exception as exc:  # module missing or broken: skip, report
-                sys.stderr.write(f"[axecode_kernel] cannot load {name}: {exc}\n")
+                sys.stderr.write(f"[axecode_kernel] impossible de charger {name} : {exc}\n")
                 continue
             functions = self._module_conf(name).get("functions") or {}
             for fn_name, fn_conf in functions.items():
@@ -305,11 +307,11 @@ class Kernel:
             exc = result.error_before_exec or result.error_in_exec
             if exc is not None:
                 if isinstance(exc, KeyboardInterrupt):
-                    error = "KeyboardInterrupt: execution interrupted"
+                    error = "KeyboardInterrupt : exécution interrompue"
                 else:
                     error = f"{type(exc).__name__}: {exc}"
         except KeyboardInterrupt:
-            error = "KeyboardInterrupt: execution interrupted"
+            error = "KeyboardInterrupt : exécution interrompue"
         except BaseException as exc:  # never let the kernel die on user code
             error = f"{type(exc).__name__}: {exc}"
             err.write(traceback.format_exc())
@@ -396,10 +398,11 @@ class Kernel:
             yield key, value
 
     def snapshot(self) -> dict:
-        """Pickles the user variables and never hangs: live resources are left
-        out, each variable gets SNAPSHOT_VARIABLE_SECONDS and the whole
-        snapshot SNAPSHOT_TOTAL_SECONDS. Returns ``{"data": b64, "skipped":
-        [{"name", "reason"}]}``; ``skipped`` is also kept in the payload."""
+        """Sérialise les variables de l'utilisateur sans jamais bloquer : les
+        ressources vivantes sont laissées de côté, chaque variable a
+        SNAPSHOT_VARIABLE_SECONDS et l'instantané entier SNAPSHOT_TOTAL_SECONDS.
+        Renvoie ``{"data": b64, "skipped": [{"name", "reason"}]}`` ; ``skipped``
+        est aussi gardé dans la charge utile."""
         import dill
 
         live = _LiveTypes()
@@ -410,19 +413,19 @@ class Kernel:
         for key, value in self._user_items():
             blob, reason = None, live.reason(value)
             if reason:
-                reason = f"live resource: {reason}"
+                reason = f"ressource vivante : {reason}"
             else:
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
-                    reason = f"timeout: snapshot budget of {total_budget:g} s spent"
+                    reason = f"délai dépassé : budget de {total_budget:g} s de l'instantané épuisé"
                 else:
                     blob, reason = _pickle_variable(dill, value, live, min(per_variable, remaining))
             if blob is not None and len(blob) > SNAPSHOT_MAX_VARIABLE_BYTES:
-                blob, reason = None, f"too large ({len(blob)} bytes pickled)"
+                blob, reason = None, f"trop gros ({len(blob)} octets sérialisés)"
             elif blob is not None and total + len(blob) > SNAPSHOT_MAX_BYTES:
-                blob, reason = None, "snapshot size limit reached"
+                blob, reason = None, "taille maximale de l'instantané atteinte"
             if blob is None:
-                skipped.append({"name": key, "reason": reason or "not picklable"})
+                skipped.append({"name": key, "reason": reason or "non sérialisable"})
                 continue
             saved[key] = blob
             total += len(blob)
@@ -432,7 +435,7 @@ class Kernel:
             and type(value).__name__ == "module"
         )
         for item in skipped:
-            sys.stderr.write(f"[axecode_kernel] snapshot leaves out {item['name']}: {item['reason']}\n")
+            sys.stderr.write(f"[axecode_kernel] l'instantané laisse de côté {item['name']} : {item['reason']}\n")
         payload = {"vars": saved, "modules": {k: self.shell.user_ns[k].__name__ for k in modules},
                    "skipped": skipped}
         return {"data": base64.b64encode(dill.dumps(payload)).decode("ascii"), "skipped": skipped}
@@ -465,11 +468,11 @@ class Kernel:
                 name, reason = item, None
             if name:
                 failed.append(str(name))
-                skipped.append({"name": str(name), "reason": reason or "not saved"})
+                skipped.append({"name": str(name), "reason": reason or "non enregistré"})
         return {"restored": restored, "failed": failed, "skipped": skipped}
 
     def collect(self, keep) -> list[str]:
-        """Drops user variables not listed in ``keep`` (compaction collector)."""
+        """Supprime les variables de l'utilisateur absentes de ``keep`` (ramasse-miettes de la compaction)."""
         keep = set(keep or [])
         removed = []
         for key, _ in list(self._user_items()):
@@ -486,8 +489,9 @@ class Kernel:
 
 
 def _reader(kernel: Kernel, stream) -> None:
-    """Reads host lines; host results and interrupts are handled inline so
-    that they work while the main thread is executing user code."""
+    """Lit les lignes de l'hôte ; les résultats de l'hôte et les interruptions
+    sont traités sur place pour fonctionner pendant que le fil principal
+    exécute le code de l'utilisateur."""
     for raw in stream:
         raw = raw.strip()
         if not raw:
@@ -504,7 +508,7 @@ def _reader(kernel: Kernel, stream) -> None:
                 _thread.interrupt_main()
         else:
             kernel.commands.put(message)
-    bridge.fail_all("host closed the connection")
+    bridge.fail_all("l'hôte a fermé la connexion")
     kernel.commands.put({"type": "shutdown"})
 
 
@@ -547,9 +551,9 @@ def _handle(kernel: Kernel, message: dict) -> bool:
         elif kind == "shutdown":
             return False
         else:
-            _reply("error", message, ok=False, error=f"unknown command {kind}")
+            _reply("error", message, ok=False, error=f"commande inconnue {kind}")
     except KeyboardInterrupt:
-        _reply(f"{kind}_result", message, ok=False, error="interrupted")
+        _reply(f"{kind}_result", message, ok=False, error="interrompu")
     except BaseException as exc:
         _reply(f"{kind}_result", message, ok=False, error=f"{type(exc).__name__}: {exc}")
     return True

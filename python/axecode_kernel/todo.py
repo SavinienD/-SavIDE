@@ -1,9 +1,9 @@
-"""todo — the task list shown to the user and re-injected every turn.
+"""todo — la liste des tâches montrée à l'utilisateur et réinjectée à chaque tour.
 
-``set(["step 1", "step 2"])`` replaces the list (all pending);
-``start(i)`` / ``done(i)`` update a task by index (0-based) or text;
-``add(text)``, ``clear()`` and ``get()`` complete the API. Keep exactly one
-task in progress while working.
+``set(["étape 1", "étape 2"])`` remplace la liste (tout en attente) ;
+``start(i)`` / ``done(i)`` mettent à jour une tâche par indice (à partir de 0)
+ou par texte ; ``add(text)``, ``clear()`` et ``get()`` complètent l'API.
+Gardez exactement une tâche en cours pendant le travail.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ def _push() -> dict:
 
 
 def get() -> list[dict]:
-    """Current tasks: ``[{"id", "text", "status"}]``."""
+    """Tâches actuelles : ``[{"id", "text", "status"}]``."""
     global _state
     if not bridge.standalone():
         try:
@@ -39,14 +39,14 @@ def get() -> list[dict]:
 
 
 def set(tasks: Iterable[str]) -> list[dict]:  # noqa: A001 - module API
-    """Replace the list with new pending tasks."""
+    """Remplace la liste par de nouvelles tâches en attente."""
     _state["tasks"] = [{"id": str(i + 1), "text": str(t), "status": "pending"} for i, t in enumerate(tasks)]
     _state["active"] = bool(_state["tasks"])
     return _push().get("tasks", [])
 
 
 def add(text: str) -> list[dict]:
-    """Append a pending task."""
+    """Ajoute une tâche en attente."""
     tasks = get()
     tasks.append({"id": str(len(tasks) + 1), "text": text, "status": "pending"})
     _state["tasks"], _state["active"] = tasks, True
@@ -59,7 +59,7 @@ def _find(ref: Union[int, str], tasks: list[dict]) -> dict:
     for task in tasks:
         if task.get("id") == ref or ref.lower() in str(task.get("text", "")).lower():
             return task
-    raise KeyError(f"no task matching {ref!r}")
+    raise KeyError(f"aucune tâche ne correspond à {ref!r}")
 
 
 def _status(ref: Union[int, str], status: str) -> list[dict]:
@@ -71,16 +71,16 @@ def _status(ref: Union[int, str], status: str) -> list[dict]:
 
 
 def start(ref: Union[int, str]) -> list[dict]:
-    """Mark a task in progress (by index or text)."""
+    """Marque une tâche en cours (par indice ou par texte)."""
     return _status(ref, "in_progress")
 
 
 def done(ref: Union[int, str]) -> list[dict]:
-    """Mark a task done (by index or text)."""
+    """Marque une tâche terminée (par indice ou par texte)."""
     return _status(ref, "done")
 
 
 def clear() -> list[dict]:
-    """Remove every task."""
+    """Supprime toutes les tâches."""
     _state["tasks"], _state["active"] = [], False
     return _push().get("tasks", [])

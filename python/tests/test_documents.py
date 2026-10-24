@@ -15,10 +15,10 @@ def test_xlsx_is_read_as_text(workspace):
     book.create_sheet("Vide")
     book.save(workspace / "data.xlsx")
     text = files.read("data.xlsx")
-    assert "## Sheet: Ventes" in text
+    assert "## Feuille : Ventes" in text
     assert "Produit\tPrix" in text
     assert "Café\t2.5" in text
-    assert "## Sheet: Vide" in text
+    assert "## Feuille : Vide" in text
 
 
 def test_docx_is_read_as_text(workspace):
@@ -44,7 +44,7 @@ def test_pdf_is_read_as_text(workspace):
         writer.write(handle)
     text = files.read("blank.pdf")
     assert "## Page 1" in text
-    assert "no extractable text" in text
+    assert "aucun texte extractible" in text
 
 
 def test_pptx_text_with_stdlib(workspace):
@@ -58,7 +58,7 @@ def test_pptx_text_with_stdlib(workspace):
         archive.writestr("ppt/slides/slide2.xml", slide.replace("Titre", "Autre"))
         archive.writestr("ppt/slides/slide1.xml", slide)
     text = files.read("deck.pptx")
-    assert text.index("## Slide 1") < text.index("## Slide 2")
+    assert text.index("## Diapositive 1") < text.index("## Diapositive 2")
     assert "Titre & sous-titre\nDeuxième ligne" in text
 
 
@@ -80,7 +80,7 @@ def test_epub_text_with_stdlib(workspace):
 
 def test_binary_files_raise_instead_of_garbage(workspace):
     (workspace / "blob.bin").write_bytes(b"\x89PNG\r\n\x1a\n\x00\x00\x00\x0dIHDR")
-    with pytest.raises(ValueError, match="binary file"):
+    with pytest.raises(ValueError, match="fichier binaire"):
         files.read("blob.bin")
     (workspace / "old.doc").write_bytes(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1\x00\x00")
     with pytest.raises(ValueError, match="Word 97-2003"):
@@ -91,9 +91,9 @@ def test_documents_cannot_be_edited_or_overwritten_as_text(workspace):
     with zipfile.ZipFile(workspace / "deck.pptx", "w") as archive:
         archive.writestr("ppt/slides/slide1.xml", "<a:t>x</a:t>")
     files.read("deck.pptx")
-    with pytest.raises(ValueError, match="binary document"):
+    with pytest.raises(ValueError, match="document binaire"):
         files.edit("deck.pptx", [("x", "y")])
-    with pytest.raises(ValueError, match="document format"):
+    with pytest.raises(ValueError, match="format de document"):
         files.write("deck.pptx", "plain text")
 
 

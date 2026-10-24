@@ -4,7 +4,7 @@ from axecode_kernel import files
 
 
 def test_write_read_roundtrip(workspace):
-    assert "created" in files.write("a/b.txt", "hello\nworld\n")
+    assert "créé" in files.write("a/b.txt", "hello\nworld\n")
     assert files.read("a/b.txt") == "hello\nworld\n"
     assert files.read("a/b.txt", offset=1, limit=1) == "world\n"
     assert files.read("a/b.txt", numbered=True).startswith("1 | hello")

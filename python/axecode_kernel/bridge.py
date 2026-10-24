@@ -1,21 +1,22 @@
-"""bridge — the kernel's channel to the Rust host (internal).
+"""bridge — le canal du noyau vers l'hôte Rust (interne).
 
-Protocol (JSON-lines). The kernel writes on a private copy of the original
-stdout file descriptor; the real fd 1 is redirected to stderr so that stray
-prints from child processes can never corrupt the protocol.
+Protocole (JSON, une ligne par message). Le noyau écrit sur une copie privée
+du descripteur stdout d'origine ; le vrai fd 1 est redirigé vers stderr pour
+que les affichages parasites des processus enfants ne puissent jamais
+corrompre le protocole.
 
-kernel → host::
+noyau → hôte ::
 
     {"type": "host_call", "call_id": "...", "method": "files.x", "params": {...}}
     {"type": "stream", "id": exec_id, "name": "stdout"|"stderr", "text": "..."}
-    {"type": "done", "id": exec_id, ...}            # see __main__.py
+    {"type": "done", "id": exec_id, ...}            # voir __main__.py
 
-host → kernel::
+hôte → noyau ::
 
     {"type": "host_result", "call_id": "...", "ok": true, "result": ...}
     {"type": "host_result", "call_id": "...", "ok": false, "error": "..."}
 
-``call(method, params)`` blocks the calling thread until the host replies.
+``call(method, params)`` bloque le fil appelant jusqu'à la réponse de l'hôte.
 """
 
 from __future__ import annotations
@@ -31,7 +32,7 @@ __all__ = ["call", "HostError", "emit", "emit_image", "current_exec_id"]
 
 
 class HostError(RuntimeError):
-    """Raised when the host reports an error for a ``call``."""
+    """Levée quand l'hôte signale une erreur pour un ``call``."""
 
 
 _write_lock = threading.Lock()
@@ -45,18 +46,18 @@ _standalone = False
 
 
 def install(stream) -> None:
-    """Sets the protocol output stream (called by ``__main__``)."""
+    """Fixe le flux de sortie du protocole (appelé par ``__main__``)."""
     global _out
     _out = stream
 
 
 def standalone() -> bool:
-    """True when the package is used outside a kernel (tests, plain python)."""
+    """Vrai quand le paquet est utilisé hors d'un noyau (tests, Python seul)."""
     return _out is None
 
 
 def emit(message: dict[str, Any]) -> None:
-    """Writes one protocol line."""
+    """Écrit une ligne du protocole."""
     if _out is None:
         return
     line = json.dumps(message, ensure_ascii=False, default=str)
@@ -78,9 +79,9 @@ def set_exec_id(exec_id: Optional[str]) -> None:
 
 
 def call(method: str, params: Optional[dict[str, Any]] = None, timeout: Optional[float] = None) -> Any:
-    """Calls a host (Rust) method and waits for its result."""
+    """Appelle une méthode de l'hôte (Rust) et attend son résultat."""
     if _out is None:
-        raise HostError(f"{method}: no host attached (standalone kernel)")
+        raise HostError(f"{method} : aucun hôte relié (noyau autonome)")
     call_id = uuid.uuid4().hex
     slot: dict[str, Any] = {"event": threading.Event()}
     with _pending_lock:
@@ -95,14 +96,14 @@ def call(method: str, params: Optional[dict[str, Any]] = None, timeout: Optional
     if not slot["event"].wait(timeout):
         with _pending_lock:
             _pending.pop(call_id, None)
-        raise HostError(f"{method}: host call timed out")
+        raise HostError(f"{method} : délai dépassé pour l'appel à l'hôte")
     if not slot.get("ok"):
-        raise HostError(f"{method}: {slot.get('error') or 'host error'}")
+        raise HostError(f"{method} : {slot.get('error') or 'erreur de l’hôte'}")
     return slot.get("result")
 
 
 def resolve(message: dict[str, Any]) -> None:
-    """Delivers a ``host_result`` line to the waiting caller (reader thread)."""
+    """Remet une ligne ``host_result`` à l'appelant qui attend (fil de lecture)."""
     with _pending_lock:
         slot = _pending.pop(str(message.get("call_id")), None)
     if slot is None:
@@ -124,12 +125,12 @@ def fail_all(reason: str) -> None:
 
 
 def emit_image(media_type: str, data_b64: str, path: Optional[str] = None) -> None:
-    """Attaches an image to the result of the current execution."""
+    """Joint une image au résultat de l'exécution en cours."""
     _images.append({"mediaType": media_type, "data": data_b64, "path": path})
 
 
 def record_file_change(path: str, before: Optional[str], after: Optional[str]) -> None:
-    """Reports a file modification (shown as a diff card by the IDE)."""
+    """Signale la modification d'un fichier (affichée en carte de différences par l'IDE)."""
     _file_changes.append({"path": path, "before": before, "after": after})
     emit({"type": "file_change", "id": current_exec_id(), "path": path,
           "before": before, "after": after})
@@ -144,5 +145,5 @@ def take_attachments() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
 
 
 def workspace_root() -> str:
-    """Workspace root of the session (cwd of the kernel by default)."""
+    """Racine du dossier de travail de la session (dossier courant du noyau par défaut)."""
     return os.environ.get("AXECODE_WORKSPACE") or os.getcwd()

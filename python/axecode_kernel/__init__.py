@@ -1,17 +1,17 @@
-"""axecode_kernel — the persistent Python REPL that powers Axecode's agent.
+"""axecode_kernel — le REPL Python persistant qui fait tourner l'agent d'Axecode.
 
-The package is started as ``python -m axecode_kernel`` by the Rust worker
-(``crates/axecode-repl``). It hosts an IPython ``InteractiveShell`` driven by a
-JSON-lines protocol on stdin/stdout:
+Le paquet est lancé en ``python -m axecode_kernel`` par le processus Rust
+(``crates/axecode-repl``). Il héberge un ``InteractiveShell`` IPython piloté
+par un protocole JSON (une ligne par message) sur stdin/stdout :
 
-* Rust → kernel: ``init``, ``exec``, ``interrupt``, ``snapshot``, ``restore``,
-  ``catalog``, ``configure``, ``gc``, ``shutdown`` and ``host_result``.
-* kernel → Rust: ``ready``, ``stream``, ``file_change``, ``image``, ``done``,
-  ``host_call`` and the ``*_result`` replies.
+* Rust → noyau : ``init``, ``exec``, ``interrupt``, ``snapshot``, ``restore``,
+  ``catalog``, ``configure``, ``gc``, ``shutdown`` et ``host_result`` ;
+* noyau → Rust : ``ready``, ``stream``, ``file_change``, ``image``, ``done``,
+  ``host_call`` et les réponses ``*_result``.
 
-Every public module in this package (``files``, ``shell``, ``web``, ...) is a
-tool exposed to the model inside the kernel namespace. Their docstrings are
-the documentation shown to the model, so keep them short and precise.
+Chaque module public de ce paquet (``files``, ``shell``, ``web``…) est un
+outil exposé au modèle dans l'espace de noms du noyau. Leurs docstrings sont
+la documentation montrée au modèle : gardez-les courtes et précises.
 """
 
 __version__ = "0.1.0"

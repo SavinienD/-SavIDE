@@ -1,12 +1,13 @@
-"""heartbeat — periodic message injected into the session.
+"""heartbeat — message périodique injecté dans la session.
 
-Use it to poll a sub-agent, a long process or a build without busy-waiting:
-``heartbeat.set("30s", "check whether the tests sub-agent finished")`` makes
-the host inject that message as a user turn every 30 seconds while the
-session is otherwise idle. ``heartbeat.clear()`` stops it.
+Sert à surveiller un sous-agent, un long processus ou une compilation sans
+attente active : ``heartbeat.set("30s", "vérifie si le sous-agent des tests a
+fini")`` fait injecter ce message comme tour utilisateur toutes les 30
+secondes tant que la session n'a rien d'autre à faire. ``heartbeat.clear()``
+l'arrête.
 
-Intervals accept ``"45s"``, ``"2m"``, ``"1h"`` or a number of seconds.
-Equivalent slash command: ``/heartbeat <interval> <message>``.
+Intervalles acceptés : ``"45s"``, ``"2m"``, ``"1h"`` ou un nombre de secondes.
+Commande équivalente : ``/heartbeat <intervalle> <message>``.
 """
 
 from __future__ import annotations
@@ -33,24 +34,24 @@ MIN_INTERVAL_MS = 5_000
 
 
 def parse_interval(value: str | int | float) -> int:
-    """Convert ``"30s"`` / ``"2m"`` / ``90`` into milliseconds (minimum 5 s)."""
+    """Convertit ``"30s"`` / ``"2m"`` / ``90`` en millisecondes (minimum 5 s)."""
     if isinstance(value, (int, float)):
         ms = int(value * 1000)
     else:
         match = _INTERVAL_RE.match(str(value))
         if not match:
-            raise ValueError(f"heartbeat: invalid interval {value!r} (use e.g. '30s', '2m', '1h')")
+            raise ValueError(f"heartbeat : intervalle invalide {value!r} (par exemple '30s', '2m', '1h')")
         amount, unit = match.groups()
         ms = int(float(amount) * _UNIT_MS[(unit or "").lower() or None])
     if ms < MIN_INTERVAL_MS:
-        raise ValueError(f"heartbeat: interval must be at least {MIN_INTERVAL_MS // 1000}s")
+        raise ValueError(f"heartbeat : l'intervalle doit être d'au moins {MIN_INTERVAL_MS // 1000} s")
     return ms
 
 
 def set(interval: str | int | float, message: str) -> dict[str, Any]:  # noqa: A001
-    """Install (or replace) the heartbeat: ``message`` is injected every ``interval``."""
+    """Installe (ou remplace) le heartbeat : ``message`` est injecté tous les ``interval``."""
     if not isinstance(message, str) or not message.strip():
-        raise ValueError("heartbeat.set: message must be a non-empty string")
+        raise ValueError("heartbeat.set : `message` doit être une chaîne non vide")
     return bridge.call(
         "heartbeat.set",
         {"interval_ms": parse_interval(interval), "message": message},
@@ -58,10 +59,10 @@ def set(interval: str | int | float, message: str) -> dict[str, Any]:  # noqa: A
 
 
 def get() -> dict[str, Any] | None:
-    """Return the active heartbeat ``{interval_ms, message, next_at_ms}`` or ``None``."""
+    """Renvoie le heartbeat actif ``{interval_ms, message, next_at_ms}`` ou ``None``."""
     return bridge.call("heartbeat.get")
 
 
 def clear() -> dict[str, Any]:
-    """Remove the heartbeat."""
+    """Supprime le heartbeat."""
     return bridge.call("heartbeat.clear")

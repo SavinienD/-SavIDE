@@ -1,9 +1,9 @@
-"""images — generate images and look at image files.
+"""images — générer des images et regarder des fichiers image.
 
-``read(path)`` attaches an image to the result of the current cell so that
-you can see it (downscaled to at most 1600 px, re-encoded as JPEG when large).
-``generate(prompt, path=None)`` creates an image with the configured image
-provider and saves it in the workspace.
+``read(path)`` joint une image au résultat de la cellule en cours pour que
+vous puissiez la voir (réduite à 1600 px au plus, réencodée en JPEG si elle
+est lourde). ``generate(prompt, path=None)`` crée une image avec le
+fournisseur d'images configuré et l'enregistre dans le dossier de travail.
 """
 
 from __future__ import annotations
@@ -42,25 +42,25 @@ def _shrink(data: bytes, media_type: str) -> tuple[bytes, str]:
 
 
 def read(path: str) -> str:
-    """Attach the image at ``path`` to this cell's result (you will see it)."""
+    """Joint l'image ``path`` au résultat de cette cellule (vous la verrez)."""
     full = path if os.path.isabs(path) else os.path.join(bridge.workspace_root(), path)
     with open(full, "rb") as handle:
         data = handle.read()
     media_type = mimetypes.guess_type(full)[0] or "image/png"
     data, media_type = _shrink(data, media_type)
     bridge.emit_image(media_type, base64.b64encode(data).decode("ascii"), path)
-    return f"attached {path} ({len(data)} bytes, {media_type})"
+    return f"{path} joint ({len(data)} octets, {media_type})"
 
 
 def show(data: bytes, media_type: str = "image/png") -> str:
-    """Attach raw image bytes (e.g. a matplotlib PNG) to this cell's result."""
+    """Joint les octets bruts d'une image (par ex. un PNG matplotlib) au résultat de cette cellule."""
     data, media_type = _shrink(data, media_type)
     bridge.emit_image(media_type, base64.b64encode(data).decode("ascii"), None)
-    return f"attached image ({len(data)} bytes)"
+    return f"image jointe ({len(data)} octets)"
 
 
 def generate(prompt: str, path: Optional[str] = None, size: Optional[str] = None) -> dict:
-    """Generate an image from ``prompt``; returns ``{"content", "images"}``."""
+    """Génère une image d'après ``prompt`` ; renvoie ``{"content", "images"}``."""
     params = {"prompt": prompt}
     if path:
         params["path"] = path

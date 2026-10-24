@@ -1,10 +1,10 @@
-"""Text extraction of binary documents for ``files.read`` (private helper).
+"""Extraction du texte des documents binaires pour ``files.read`` (outil interne).
 
-Supported: Excel workbooks (``.xlsx``/``.xlsm``, openpyxl), Word documents
-(``.docx``, python-docx), PDF (pypdf), PowerPoint (``.pptx``), OpenDocument
-text/spreadsheet/presentation (``.odt``/``.ods``/``.odp``) and epub through the
-standard library. Libraries are imported lazily; when one is missing the
-error says which package to install with ``shell``.
+Formats pris en charge : classeurs Excel (``.xlsx``/``.xlsm``, openpyxl),
+documents Word (``.docx``, python-docx), PDF (pypdf), PowerPoint (``.pptx``),
+texte/tableur/présentation OpenDocument (``.odt``/``.ods``/``.odp``) et epub
+avec la bibliothèque standard. Les bibliothèques sont importées à la demande ;
+quand l'une manque, l'erreur dit quel paquet installer avec ``shell``.
 """
 
 from __future__ import annotations
@@ -22,9 +22,9 @@ MAX_CELL_CHARS = 500
 
 def _missing(package: str, module: str) -> ImportError:
     return ImportError(
-        f"reading this format needs the `{package}` package "
-        f"(import name `{module}`): install it with "
-        f"shell.run('python -m pip install {package}') and retry"
+        f"lire ce format demande le paquet `{package}` "
+        f"(nom d'import `{module}`) : installez-le avec "
+        f"shell.run('python -m pip install {package}') puis réessayez"
     )
 
 
@@ -44,7 +44,7 @@ def _xlsx(path: str) -> str:
     out: list[str] = []
     try:
         for sheet in book.worksheets:
-            out.append(f"## Sheet: {sheet.title}")
+            out.append(f"## Feuille : {sheet.title}")
             rows = 0
             for row in sheet.iter_rows(values_only=True):
                 cells = [_cell(value) for value in row]
@@ -53,7 +53,7 @@ def _xlsx(path: str) -> str:
                 if not cells:
                     continue
                 if rows >= MAX_SHEET_ROWS:
-                    out.append(f"… (sheet truncated after {MAX_SHEET_ROWS} non-empty rows)")
+                    out.append(f"… (feuille tronquée après {MAX_SHEET_ROWS} lignes non vides)")
                     break
                 out.append("\t".join(cells))
                 rows += 1
@@ -107,12 +107,12 @@ def _pdf(path: str) -> str:
         try:
             reader.decrypt("")
         except Exception as err:  # noqa: BLE001 - surface a clear message
-            raise PermissionError(f"{os.path.basename(path)} is password-protected") from err
+            raise PermissionError(f"{os.path.basename(path)} est protégé par un mot de passe") from err
     out: list[str] = []
     for number, page in enumerate(reader.pages, start=1):
         text = (page.extract_text() or "").strip()
         out.append(f"## Page {number}")
-        out.append(text or "(no extractable text on this page: scanned image?)")
+        out.append(text or "(aucun texte extractible sur cette page : image numérisée ?)")
         out.append("")
     return "\n".join(out)
 
@@ -122,7 +122,7 @@ _BLOCK_END = re.compile(r"</(a:p|text:p|text:h|p|h[1-6]|li|tr|div|br)\s*>|<br\s*
 
 
 def _xml_text(xml: str) -> str:
-    """Rough text of an XML/HTML part: one line per paragraph-like block."""
+    """Texte approximatif d'une partie XML/HTML : une ligne par bloc de type paragraphe."""
     xml = re.sub(r"<(script|style)\b.*?</\1>", "", xml, flags=re.S | re.I)
     xml = re.sub(r"<text:tab/>|<a:tab/>", "\t", xml)
     xml = _BLOCK_END.sub("\n", xml)
@@ -144,13 +144,13 @@ def _pptx(path: str) -> str:
             key=_slide_key,
         )
         for name in slides:
-            out.append(f"## Slide {_slide_key(name)}")
+            out.append(f"## Diapositive {_slide_key(name)}")
             out.append(_xml_text(archive.read(name).decode("utf-8", "replace")))
             notes = f"ppt/notesSlides/notesSlide{_slide_key(name)}.xml"
             if notes in archive.namelist():
                 text = _xml_text(archive.read(notes).decode("utf-8", "replace"))
                 if text:
-                    out.append(f"Notes: {text}")
+                    out.append(f"Notes : {text}")
             out.append("")
     return "\n".join(out)
 
@@ -166,7 +166,7 @@ def _epub(path: str) -> str:
         container = archive.read("META-INF/container.xml").decode("utf-8", "replace")
         opf_path = re.search(r'full-path="([^"]+)"', container)
         if not opf_path:
-            raise ValueError("invalid epub: no OPF package")
+            raise ValueError("epub invalide : pas de paquet OPF")
         opf_name = opf_path.group(1)
         opf = archive.read(opf_name).decode("utf-8", "replace")
         base = opf_name.rsplit("/", 1)[0] + "/" if "/" in opf_name else ""
@@ -223,7 +223,7 @@ def legacy_format(path: str) -> Optional[str]:
 
 
 def looks_binary(data: bytes) -> bool:
-    """True for content that is not text (NUL bytes in the first 8 KiB)."""
+    """Vrai pour un contenu qui n'est pas du texte (octets NUL dans les 8 premiers Kio)."""
     head = data[:8192]
     if head.startswith((b"\xff\xfe", b"\xfe\xff")):
         return False

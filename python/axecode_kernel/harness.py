@@ -1,23 +1,24 @@
-"""harness — your continual harness (persistent memory across sessions).
+"""harness — votre harnais continu (mémoire persistante d'une session à l'autre).
 
-Four kinds of entries, each in two scopes (``"global"`` follows the user
-everywhere, ``"project"`` lives in ``<workspace>/.axecode/harness``):
+Quatre sortes d'entrées, chacune dans deux portées (``"global"`` suit
+l'utilisateur partout, ``"project"`` vit dans ``<workspace>/.axecode/harness``) :
 
-* prompt notes  – standing instructions injected every turn
-* memories      – facts learned about the user / project, injected every turn
-* skills        – importable Python packages (``import <skill_name>``) + SKILL.md
-* subagent specs – reusable sub-agent profiles for ``rlm(profile=...)``
+* notes de prompt    – consignes permanentes injectées à chaque tour
+* mémoires           – faits appris sur l'utilisateur / le projet, injectés à chaque tour
+* skills             – paquets Python importables (``import <nom_du_skill>``) + SKILL.md
+* specs de sous-agent – profils de sous-agent réutilisables pour ``rlm(profile=...)``
 
-Keep entries small and specific. Always pass ``evidence`` (what in the
-trajectory justifies the entry). Prefer updating an existing entry over
-creating a near-duplicate; ids are shown in the system reminder.
+Gardez les entrées petites et précises. Passez toujours ``evidence`` (ce qui,
+dans la trajectoire, justifie l'entrée). Mettez à jour une entrée existante
+plutôt que d'en créer une quasi-copie ; les identifiants sont affichés dans le
+rappel système.
 
-Examples::
+Exemples ::
 
-    harness.create_memory("User prefers French UI strings", "UI text is in French.",
-                          scope="global", evidence=["turn 4: user correction"])
+    harness.create_memory("Textes d'interface en français", "L'interface est en français.",
+                          scope="global", evidence=["tour 4 : correction de l'utilisateur"])
     harness.list("memory")
-    harness.promote("mem_1a2b3c4d")      # project -> global
+    harness.promote("mem_1a2b3c4d")      # projet -> global
 """
 
 from __future__ import annotations
@@ -76,96 +77,96 @@ def _delete(kind: str, id: str) -> dict[str, Any]:  # noqa: A002
 
 
 def create_prompt_note(title: str, body: str, scope: str = "project", evidence=None, tags=None) -> dict:
-    """Create a standing instruction injected every turn. Returns the entry (with ``id``)."""
+    """Crée une consigne permanente injectée à chaque tour. Renvoie l'entrée (avec son ``id``)."""
     return _create("prompt_note", title, body, scope, evidence, tags)
 
 
 def create_memory(title: str, body: str, scope: str = "project", evidence=None, tags=None) -> dict:
-    """Record a durable fact (user preference, project convention, past mistake)."""
+    """Enregistre un fait durable (préférence de l'utilisateur, convention du projet, erreur passée)."""
     return _create("memory", title, body, scope, evidence, tags)
 
 
 def create_skill(name: str, description: str, code: str | None = None, scope: str = "project",
                  evidence=None, tags=None) -> dict:
-    """Create an importable skill package ``name`` (slugified) with SKILL.md = ``description``.
+    """Crée un paquet de skill importable ``name`` (nom normalisé) avec SKILL.md = ``description``.
 
-    ``code`` is the package ``__init__.py``. Usable immediately: ``import <slug>``.
+    ``code`` est le ``__init__.py`` du paquet. Utilisable tout de suite : ``import <slug>``.
     """
     return _create("skill", name, description, scope, evidence, tags, code=code)
 
 
 def create_subagent(name: str, prompt: str, scope: str = "project", evidence=None, tags=None) -> dict:
-    """Create a sub-agent spec usable with ``rlm(task, profile=<id>)``."""
+    """Crée une spec de sous-agent utilisable avec ``rlm(task, profile=<id>)``."""
     return _create("subagent_spec", name, prompt, scope, evidence, tags)
 
 
 def update_prompt_note(id: str, title=None, body=None, evidence=None, tags=None) -> dict:  # noqa: A002
-    """Patch a prompt note; ``None`` fields are left untouched."""
+    """Modifie une note de prompt ; les champs à ``None`` restent inchangés."""
     return _update("prompt_note", id, title=title, body=body, evidence=evidence, tags=tags)
 
 
 def update_memory(id: str, title=None, body=None, evidence=None, tags=None) -> dict:  # noqa: A002
-    """Patch a memory; ``None`` fields are left untouched."""
+    """Modifie une mémoire ; les champs à ``None`` restent inchangés."""
     return _update("memory", id, title=title, body=body, evidence=evidence, tags=tags)
 
 
 def update_skill(id: str, title=None, description=None, code=None, evidence=None, tags=None) -> dict:  # noqa: A002
-    """Patch a skill (SKILL.md body via ``description``, ``__init__.py`` via ``code``)."""
+    """Modifie un skill (corps de SKILL.md par ``description``, ``__init__.py`` par ``code``)."""
     return _update("skill", id, title=title, body=description, code=code, evidence=evidence, tags=tags)
 
 
 def update_subagent(id: str, title=None, prompt=None, evidence=None, tags=None) -> dict:  # noqa: A002
-    """Patch a sub-agent spec."""
+    """Modifie une spec de sous-agent."""
     return _update("subagent_spec", id, title=title, body=prompt, evidence=evidence, tags=tags)
 
 
 def delete_prompt_note(id: str) -> dict:  # noqa: A002
-    """Delete a prompt note."""
+    """Supprime une note de prompt."""
     return _delete("prompt_note", id)
 
 
 def delete_memory(id: str) -> dict:  # noqa: A002
-    """Delete a memory."""
+    """Supprime une mémoire."""
     return _delete("memory", id)
 
 
 def delete_skill(id: str) -> dict:  # noqa: A002
-    """Delete a skill and its package."""
+    """Supprime un skill et son paquet."""
     return _delete("skill", id)
 
 
 def delete_subagent(id: str) -> dict:  # noqa: A002
-    """Delete a sub-agent spec."""
+    """Supprime une spec de sous-agent."""
     return _delete("subagent_spec", id)
 
 
 def list(kind: str | None = None, scope: str | None = None) -> "list[dict]":  # noqa: A001
-    """List entries (metadata + excerpt). ``kind`` in prompt_note/memory/skill/subagent_spec."""
+    """Liste les entrées (métadonnées + extrait). ``kind`` parmi ``prompt_note``/``memory``/``skill``/``subagent_spec``."""
     return bridge.call("harness.list", {"kind": kind, "scope": scope}) or []
 
 
 def get(kind: str, id: str) -> dict | None:  # noqa: A002
-    """Full entry (body included) or ``None``."""
+    """Entrée complète (corps compris) ou ``None``."""
     return bridge.call("harness.get", {"kind": kind, "id": id})
 
 
 def promote(id: str) -> dict:  # noqa: A002
-    """Move a project entry to the global scope."""
+    """Déplace une entrée du projet vers la portée globale."""
     return bridge.call("harness.promote", {"id": id})
 
 
 def demote(id: str) -> dict:  # noqa: A002
-    """Move a global entry to the project scope."""
+    """Déplace une entrée globale vers la portée du projet."""
     return bridge.call("harness.demote", {"id": id})
 
 
 def archive_plan(title: str, body: str, perimeter: str = "", decisions=None, status: str = "draft",
                  deviations=None) -> dict:
-    """Archive a plan you produced in the project harness (or update the plan with the same title).
+    """Archive un plan que vous avez produit dans le harnais du projet (ou met à jour le plan de même titre).
 
-    A header is added: date, ``perimeter``, ``status`` (draft/in_progress/done/abandoned),
-    ``decisions`` and ``deviations`` (gaps between the plan and what was built).
-    Call it again with the same title to update status/deviations as work progresses.
+    Un en-tête est ajouté : date, ``perimeter``, ``status`` (``draft``/``in_progress``/``done``/``abandoned``),
+    ``decisions`` et ``deviations`` (écarts entre le plan et ce qui a été construit).
+    Rappelez-la avec le même titre pour mettre à jour ``status``/``deviations`` au fil du travail.
     """
     return bridge.call("harness.archive_plan", {
         "title": title,

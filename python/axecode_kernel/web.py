@@ -1,8 +1,8 @@
-"""web — search the web and fetch pages.
+"""web — chercher sur le web et récupérer des pages.
 
-``search(query)`` returns ranked results (title, url, snippet) as text;
-``fetch(url)`` returns the readable content of a page (HTML converted to
-text/markdown). Both go through the IDE's configured web provider.
+``search(query)`` renvoie les résultats classés (titre, url, extrait) en
+texte ; ``fetch(url)`` renvoie le contenu lisible d'une page (HTML converti en
+texte/Markdown). Les deux passent par le fournisseur web configuré dans l'IDE.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ __all__ = ["search", "fetch"]
 
 
 def search(query: str, max_results: Optional[int] = None) -> str:
-    """Search the web; returns the provider's formatted results."""
+    """Cherche sur le web ; renvoie les résultats mis en forme par le fournisseur."""
     params = {"query": query}
     if max_results:
         params["max_results"] = int(max_results)
@@ -23,7 +23,7 @@ def search(query: str, max_results: Optional[int] = None) -> str:
 
 
 def fetch(url: str, prompt: Optional[str] = None) -> str:
-    """Fetch a URL and return its readable content."""
+    """Récupère une URL et renvoie son contenu lisible."""
     params = {"url": url}
     if prompt:
         params["prompt"] = prompt
