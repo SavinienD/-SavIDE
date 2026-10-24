@@ -144,7 +144,7 @@ fn daemon_hooks() -> Vec<Arc<dyn axecode_app::repl::TurnHook>> {
 
 #[derive(Default)]
 pub(crate) struct DaemonState {
-    client: Mutex<Option<DaemonClient>>,
+    pub(crate) client: Mutex<Option<DaemonClient>>,
 }
 
 fn data_dir() -> std::result::Result<PathBuf, String> {

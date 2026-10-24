@@ -65,7 +65,8 @@
         "sidebarImage": "icons/nsis-sidebar.bmp",
         "languages": [
           "French"
-        ]
+        ],
+        "installerHooks": "windows/hooks.nsh"
       }
     }
   },
