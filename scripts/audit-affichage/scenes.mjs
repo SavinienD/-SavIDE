@@ -263,12 +263,12 @@ export const SCENES = [
   { id: "ide-barre", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["clic:.titlebar__btn[data-action='accueil']", "clic:.titlebar__btn[data-action='reglages']",
     "sel:.titlebar__brand-mark svg[data-logo='wordmark'] rect.logo__fond", "absent:svg linearGradient"] },
   { id: "reglages", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, temoins: ["sel:.settings-pane"] },
-  // Réglages > À propos : version lue à l'exécution (getVersion, simulée 0.1.62) sous le titre ; la
-  // version lancée avant était la 0.1.61, donc la date de mise à jour est connue et affichée.
+  // Réglages > À propos : version lue à l'exécution (getVersion, simulée 0.1.65) sous le titre ; la
+  // version lancée avant était la 0.1.64, donc la date de mise à jour est connue et affichée.
   // Lien du site : https://www.axe-international.com (sans « www. » le site ne répond pas).
-  { id: "apropos", sim: {}, stockage: () => ({ ...colonnes([ids(3)]), "axe:version-lancee": { version: "0.1.61", majLe: null } }), reglages: true,
+  { id: "apropos", sim: {}, stockage: () => ({ ...colonnes([ids(3)]), "axe:version-lancee": { version: "0.1.64", majLe: null } }), reglages: true,
     clics: [".settings-pane__nav-item[data-section='about']"],
-    temoins: ["sel:.settings-pane__about-version[data-version='0.1.62']", "sel:.settings-pane__about-maj",
+    temoins: ["sel:.settings-pane__about-version[data-version='0.1.65']", "sel:.settings-pane__about-maj",
       "sel:a.settings-pane__about-link[href='https://www.axe-international.com']", "www.axe-international.com",
       "absent:a[href='https://axe-international.com']",
       "sel:.settings-pane__about-mark svg[data-logo='mark'] rect.logo__fond", "absent:svg linearGradient"] },

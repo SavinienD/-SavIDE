@@ -93,7 +93,7 @@ export function installerSimulation(scene: Scene): void {
         : { available: false, currentVersion: "0.1.57", version: null, notes: null, date: null },
     updater_current_version: () => "0.1.57",
     // API Tauri getVersion (Réglages > À propos).
-    "plugin:app|version": () => "0.1.62",
+    "plugin:app|version": () => "0.1.65",
     cloud_state: () =>
       cloud
         ? { connected: true, base: "https://cloud.exemple.invalid", email: "utilisateur@exemple.invalid", role: "admin", expireLe: "2026-11-21T08:00:00Z", poste: "PC-POSTE", connectionId: "cloud" }
