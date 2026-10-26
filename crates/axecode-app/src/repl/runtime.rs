@@ -91,6 +91,8 @@ pub(crate) struct Shared {
     pub sink: Mutex<Option<Arc<dyn TurnSink>>>,
     /// Set by `compact.run()` from the kernel; consumed by the loop.
     pub compact_request: Mutex<Option<Option<String>>>,
+    /// axe:compact169 — `compact.run()` calls in the current turn (a 2nd one is ignored).
+    pub compact_calls: Mutex<u32>,
     /// Input tokens of the last model call (auto-compaction trigger).
     pub last_input_tokens: Mutex<u32>,
     /// axe:compaction — (tokens billed, characters sent) of the last call:
@@ -215,6 +217,7 @@ impl ReplRuntime {
             todo: Mutex::new(TodoListState::default()),
             sink: Mutex::new(None),
             compact_request: Mutex::new(None),
+            compact_calls: Mutex::new(0),
             last_input_tokens: Mutex::new(0),
             last_call_size: Mutex::new(None),
             mcp: Mutex::new(None),

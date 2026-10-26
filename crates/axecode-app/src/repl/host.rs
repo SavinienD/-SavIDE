@@ -11,6 +11,10 @@ use serde_json::{json, Value};
 use axecode_core::{JournalEntryKind, Part};
 
 use super::runtime::{lock, Shared};
+
+/// axe:compact169 — réponses de `compact.run()` (en français, sans ambiguïté).
+pub const COMPACT_PROGRAMME: &str = "Compaction programmée : elle sera faite avant la prochaine requête. N'appelle plus compact.run() dans ce tour : termine ton tour maintenant (réponse courte, sans autre outil).";
+pub const COMPACT_IGNORE: &str = "compact.run() a déjà été appelé dans ce tour : appel ignoré. La compaction est faite ou programmée ; termine ton tour maintenant sans rappeler compact.run().";
 use crate::{
     tool_run::ToolRunResult, AppStore, CreateImageTool, TodoListState, WebFetchTool, WebSearchTool,
 };
@@ -197,8 +201,18 @@ pub(crate) async fn dispatch(shared: &Arc<Shared>, method: &str, params: Value) 
                 .and_then(Value::as_str)
                 .map(str::to_string)
                 .filter(|d| !d.trim().is_empty());
+            // axe:compact169 — un seul compact.run() par tour : sinon une IA qui relit
+            // la consigne boucle (capture du 26/10 : 9 appels, tour sans fin).
+            let deja = {
+                let mut n = lock(&shared.compact_calls);
+                *n += 1;
+                *n > 1
+            };
+            if deja {
+                return Ok(json!({"scheduled": false, "ignored": true, "note": COMPACT_IGNORE}));
+            }
             *lock(&shared.compact_request) = Some(directive);
-            Ok(json!({"scheduled": true, "note": "Compaction runs before the next model call of this turn."}))
+            Ok(json!({"scheduled": true, "note": COMPACT_PROGRAMME}))
         }
         "web.search" => {
             let settings = AppStore::open_default()

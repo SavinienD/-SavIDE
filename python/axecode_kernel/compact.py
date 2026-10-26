@@ -17,6 +17,10 @@ __all__ = ["run"]
 
 
 def run(directive: Optional[str] = None) -> str:
-    """Programme une compaction (appliquée avant le prochain appel du modèle)."""
+    """Programme une compaction (appliquée avant le prochain appel du modèle).
+
+    Un seul appel par tour : les suivants sont ignorés. Après l'appel, terminez
+    votre tour.
+    """
     result = bridge.call("compact.request", {"directive": directive})
-    return result.get("note", "compaction programmée")
+    return result.get("note", "Compaction programmée : terminez votre tour maintenant.")
