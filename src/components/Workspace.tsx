@@ -1178,7 +1178,9 @@ export function Workspace({
         }
         const cleaned = cleanChatFilePath(rawPath).replace(/\\/g, "/");
         if (!cleaned || cleaned.includes("://")) return;
-        if (/^[a-zA-Z]:\//.test(cleaned) || cleaned.startsWith("//")) {
+        // axe:liens — chemin absolu hors de l'espace (Windows « C:/… », réseau « //… »,
+        // Linux/macOS « /… ») : ouvert en lecture dans l'éditeur.
+        if (/^[a-zA-Z]:\//.test(cleaned) || cleaned.startsWith("/")) {
           if (await openExternalFile(cleaned)) return;
           const match = await findWorkspaceFileByPath(cleaned);
           if (match && (await openFile(match))) {

@@ -11,6 +11,7 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { api } from "../../lib/ipc";
 import { MermaidDiagram } from "./MermaidDiagram";
+import { decouperLiens, estFichier, estUrl, raccourcirUrl } from "./liensChat";
 
 type Props = {
   text: string;
@@ -21,9 +22,6 @@ type LinkifyOptions = {
   onOpenFile: (path: string) => void;
 };
 
-const FILE_TOKEN =
-  /((?:\.{1,2}\/)?(?:[A-Za-z0-9_.+-]+\/)+[A-Za-z0-9_.+-]+\.[A-Za-z0-9]+(?::\d+(?::\d+)?)?|[A-Za-z0-9_.+-]+\.(?:tsx?|jsx?|rs|toml|json|md|css|scss|html|ya?ml|lock|sh|zsh|bash|py|go|java|kt|swift|sql|env|mjs|cjs|config)(?::\d+(?::\d+)?)?)/g;
-
 function isMermaidLanguage(className?: string): boolean {
   if (!className) return false;
   return className
@@ -31,10 +29,26 @@ function isMermaidLanguage(className?: string): boolean {
     .some((name) => name === "mermaid" || name === "language-mermaid");
 }
 
-function isFileToken(value: string): boolean {
-  FILE_TOKEN.lastIndex = 0;
-  const match = FILE_TOKEN.exec(value.trim());
-  return match?.[0] === value.trim();
+const isFileToken = estFichier;
+
+/** axe:liens — lien web : gras, surligné, ouvre le navigateur par défaut (Windows, macOS, Linux). */
+function UrlLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <a
+      href={href}
+      className="chat-link"
+      target="_blank"
+      rel="noreferrer"
+      title={href}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        void api.openExternalUrl(href);
+      }}
+    >
+      {children}
+    </a>
+  );
 }
 
 function FileLink({
@@ -53,7 +67,7 @@ function FileLink({
       type="button"
       className="chat-file-link"
       data-variant={variant}
-      title="Ouvrir le fichier"
+      title={`Ouvrir ${path}`}
       onClick={(event) => {
         event.stopPropagation();
         onOpenFile(path);
@@ -65,29 +79,23 @@ function FileLink({
 }
 
 function linkifyText(text: string, { onOpenFile }: LinkifyOptions): ReactNode[] {
-  const nodes: ReactNode[] = [];
-  let lastIndex = 0;
-
-  FILE_TOKEN.lastIndex = 0;
-  for (const match of text.matchAll(FILE_TOKEN)) {
-    const index = match.index ?? 0;
-    const value = match[0];
-    if (index > lastIndex) {
-      nodes.push(text.slice(lastIndex, index));
+  return decouperLiens(text).map((s, i) => {
+    if (s.genre === "url") {
+      return (
+        <UrlLink key={`${s.texte}-${i}`} href={s.texte}>
+          {raccourcirUrl(s.texte)}
+        </UrlLink>
+      );
     }
-    nodes.push(
-      <FileLink key={`${value}-${index}`} path={value} onOpenFile={onOpenFile}>
-        {value}
-      </FileLink>,
-    );
-    lastIndex = index + value.length;
-  }
-
-  if (lastIndex < text.length) {
-    nodes.push(text.slice(lastIndex));
-  }
-
-  return nodes;
+    if (s.genre === "fichier") {
+      return (
+        <FileLink key={`${s.texte}-${i}`} path={s.texte} onOpenFile={onOpenFile}>
+          {s.texte}
+        </FileLink>
+      );
+    }
+    return s.texte;
+  });
 }
 
 function childrenToString(children: ReactNode): string {
@@ -106,7 +114,17 @@ function linkifyChildren(children: ReactNode, options: LinkifyOptions): ReactNod
   return Children.map(children, (child) => {
     if (typeof child === "string") return linkifyText(child, options);
     if (!isValidElement(child)) return child;
-    if (child.type === "a" || child.type === "code" || child.type === "pre") {
+    // axe:liens — les éléments rendus par nos composants (a, code, pre) ont pour type la
+    // fonction du composant : on les reconnaît à leur nœud HAST, sinon lien dans lien.
+    const tag = (child.props as { node?: { tagName?: string } }).node?.tagName;
+    if (
+      child.type === "a" ||
+      child.type === "code" ||
+      child.type === "pre" ||
+      tag === "a" ||
+      tag === "code" ||
+      tag === "pre"
+    ) {
       return child;
     }
 
@@ -206,27 +224,20 @@ export const Markdown = memo(function Markdown({ text, onOpenFile }: Props) {
           },
           a({ href, children }) {
             const value = href ?? childrenToString(children);
-            if (isFileToken(value)) {
+            if (!estUrl(value) && isFileToken(value)) {
               return (
                 <FileLink path={value} onOpenFile={onOpenFile}>
                   {children}
                 </FileLink>
               );
             }
+            if (!href) return <>{children}</>;
+            // URL nue (autolien GFM) : libellé raccourci ; [texte](url) garde son texte.
+            const libelle = childrenToString(children);
             return (
-              <a
-                href={href}
-                target="_blank"
-                rel="noreferrer"
-                onClick={(event) => {
-                  if (!href) return;
-                  event.preventDefault();
-                  event.stopPropagation();
-                  void api.openExternalUrl(href);
-                }}
-              >
-                {children}
-              </a>
+              <UrlLink href={href}>
+                {libelle === href ? raccourcirUrl(href) : children}
+              </UrlLink>
             );
           },
         }}

@@ -176,6 +176,33 @@ export const SCENES = [
     clics: [".xv-html .xv-btn--text"],
     temoins: ["sel:iframe.xv-html__frame[sandbox*='allow-scripts']", "sel:iframe.xv-html__frame[srcdoc*=\"connect-src 'none'\"]", "sel:.xv-html__status[data-on='true']"],
   },
+  // axe:liens — liens bien visibles (gras + fond d'accent) et cliquables, dans le message de
+  // l'utilisateur (URL nue, chemin) et dans la réponse (URL nue raccourcie, [texte](url), chemins
+  // Linux et Windows) : le clic ouvre le navigateur (open_external_url) ou le fichier dans l'éditeur.
+  {
+    id: "liens",
+    sim: {},
+    stockage: () => colonnes([ids(1)]),
+    ecrire: "regarde https://exemple.fr/doc et src/main.ts",
+    evenements: [
+      { type: "turn_started" },
+      { type: "text_started" },
+      { type: "text_chunk", delta: "Voir [la notice](https://docs.exemple.fr/notice), https://github.com/exemple/projet/actions/runs/123456789/job/987654321 et `src/lib/ipc.ts`, puis src/components/chat/Markdown.tsx ou C:\\Users\\sav\\notes.txt." },
+      { type: "text_finished" },
+      { type: "turn_finished" },
+    ],
+    cliquer: [".msg[data-role='user'] .chat-link", ".md .chat-file-link"],
+    temoins: [
+      "sel:.msg[data-role='user'] .chat-link",
+      "sel:.msg[data-role='user'] .chat-file-link",
+      "gras:.chat-link", "surligne:.chat-link",
+      "gras:.chat-file-link", "surligne:.chat-file-link",
+      "clic:.md .chat-link", "clic:.md .chat-file-link",
+      "appel:open_external_url_command",
+      "appel:read_workspace_file_command|remote_workspace_read",
+    ],
+    attendus: ["la notice", "github.com/exemple/projet/actions", "src/lib/ipc.ts", "notes.txt"],
+  },
   // axe:couleurs — commande slash en orange (accent) et skill en violet : dans la bulle du
   // message envoyé (« /goal … /revue-code ») et dans le compositeur (« /heartbeat 5s coucou … »).
   {

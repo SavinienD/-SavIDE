@@ -6568,33 +6568,47 @@ textarea {
 .md h2 { font-size: calc(14px * var(--text-scale, 1)); }
 .md h3 { font-size: calc(13px * var(--text-scale, 1)); }
 .md h4 { font-size: var(--fs-sm); }
-.md a {
-  color: var(--text-0);
-  text-decoration: none;
-  border-bottom: 1px solid rgba(232, 233, 236, 0.32);
-  transition: border-color 150ms ease;
-}
-.md a:hover { border-bottom-color: var(--text-0); }
+.md a,
+.chat-link,
 .chat-file-link {
-  display: inline;
-  padding: 1px 0; /* axe:cibles — boîte de 20 px, la ligne ne bouge pas (élément en ligne) */
+  /* axe:liens — liens bien visibles : gras + fond léger de la couleur d'accent. */
+  /* Une seule ligne, coupée par « … » si trop longue (chemin complet dans l'infobulle). */
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+  padding: 1px 3px; /* axe:cibles — boîte de 20 px, la ligne ne bouge pas (élément en ligne) */
+  margin: 0;
   border: 0;
-  background: transparent;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
   color: inherit;
   font: inherit;
+  font-weight: 600;
   letter-spacing: inherit;
   text-align: inherit;
   cursor: pointer;
   text-decoration: none;
+  transition: background-color 150ms ease;
 }
+.md a:hover,
+.chat-link:hover,
 .chat-file-link:hover {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+.md a:focus-visible,
+.chat-link:focus-visible,
+.chat-file-link:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
 }
 .chat-file-link[data-variant="code"] {
   font-family: var(--font-mono);
   font-size: var(--fs-mono);
-  color: var(--text-1);
 }
 .md ul, .md ol { margin: 0 0 8px; padding-left: 20px; }
 .md li { margin-bottom: 2px; }

@@ -338,8 +338,11 @@ async function preparerScene(page, si, sc) {
   // axe:commandes — clic sur un élément (ex. icône du heartbeat) pour ouvrir son détail.
   if (sc.cliquer) {
     await pause(600);
-    await page.evaluate((s) => document.querySelector(s)?.click(), sc.cliquer);
-    await pause(400);
+    // axe:liens — « cliquer » accepte une liste : clics successifs.
+    for (const sel of [sc.cliquer].flat()) {
+      await page.evaluate((s) => document.querySelector(s)?.click(), sel);
+      await pause(400);
+    }
   }
   await pause(900);
 }
@@ -381,12 +384,17 @@ async function auditer(page, si, sc, journal, preparation) {
     };
     // « absent: » : aucun élément visible pour ce sélecteur ; « appel: » : commande IPC reçue par la simulation.
     // « couleur:<sélecteur>=<rgb(…)> » : le premier élément visible du sélecteur a cette couleur de texte.
+    // axe:liens — « gras: » / « surligne: » : TOUS les éléments visibles du sélecteur sont en gras (>= 600)
+    // et ont un fond non transparent.
+    const visibles = (sel) => [...document.querySelectorAll(sel)].filter((e) => e.getClientRects().length > 0);
+    const gras = (sel) => { const els = visibles(sel); return els.length > 0 && els.every((e) => Number(getComputedStyle(e).fontWeight) >= 600); };
+    const surligne = (sel) => { const els = visibles(sel); return els.length > 0 && els.every((e) => !/^(transparent|rgba\(0, 0, 0, 0\))$/.test(getComputedStyle(e).backgroundColor)); };
     const couleur = (spec) => {
       const i = spec.lastIndexOf("=");
       const el = [...document.querySelectorAll(spec.slice(0, i))].find((e) => e.getClientRects().length > 0);
       return !!el && getComputedStyle(el).color.replace(/\s/g, "") === spec.slice(i + 1).replace(/\s/g, "");
     };
-    const ok = (t) => (t.startsWith("couleur:") ? couleur(t.slice(8)) : t.startsWith("sel:") ? vu(t.slice(4)) : t.startsWith("clic:") ? cliquable(t.slice(5)) : t.startsWith("absent:") ? !vu(t.slice(7)) : t.startsWith("appel:") ? (window.__bancAppels?.[t.slice(6)] ?? 0) > 0 : texte.includes(t));
+    const ok = (t) => (t.startsWith("couleur:") ? couleur(t.slice(8)) : t.startsWith("sel:") ? vu(t.slice(4)) : t.startsWith("clic:") ? cliquable(t.slice(5)) : t.startsWith("absent:") ? !vu(t.slice(7)) : t.startsWith("appel:") ? t.slice(6).split("|").some((c) => (window.__bancAppels?.[c] ?? 0) > 0) : t.startsWith("gras:") ? gras(t.slice(5)) : t.startsWith("surligne:") ? surligne(t.slice(9)) : texte.includes(t));
     const manquants = temoins.filter((t) => !ok(t));
     const disparus = attendus.filter((t) => !window.__texteVisible(t));
     const fil = document.querySelector(".colonne-chat[data-focus='true'] .chat-body")?.getBoundingClientRect();
