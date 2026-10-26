@@ -308,6 +308,14 @@ async function preparerScene(page, si, sc) {
     await page.keyboard.up("Control");
     await page.waitForSelector(".settings-pane", { visible: true, timeout: 5000 }).catch(() => undefined);
   }
+  // axe:html — ouvre un fichier de l'arbre (clic sur sa ligne) dans l'éditeur.
+  if (sc.ouvrirFichier) {
+    const ligne = `.tree-row[data-entry-path='${sc.ouvrirFichier}']`;
+    await page.waitForSelector(ligne, { visible: true, timeout: 6000 }).catch(() => undefined);
+    await page.click(ligne).catch(() => undefined);
+    await page.waitForSelector(".editor-text-stack", { timeout: 8000 }).catch(() => undefined);
+    await pause(800);
+  }
   // Clics successifs par sélecteur (attend que chacun soit visible), ex. Réglages > MCP > Supprimer.
   for (const sel of sc.clics ?? []) {
     await page.waitForSelector(sel, { visible: true, timeout: 5000 }).catch(() => undefined);

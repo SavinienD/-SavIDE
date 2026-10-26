@@ -170,7 +170,18 @@ export function installerSimulation(scene: Scene): void {
     get_kimi_provider_status: () => statut(false),
     get_openrouter_provider_status: () => ({ ...statut(false), hasApiKey: false }),
     daemon_sessions: () => sessions(scene),
-    list_workspace_entries_command: (a) => D.entrees(a.relativePath ?? a.input?.relativePath ?? ""),
+    list_workspace_entries_command: (a) => {
+      const dossier = a.relativePath ?? a.input?.relativePath ?? "";
+      const liste = D.entrees(dossier);
+      // axe:html — scènes « html-* » : une page HTML à la racine de l'espace.
+      if (scene.fichierHtml && !dossier) liste.push({ name: "page.html", relativePath: "page.html", absolutePath: D.WS + "\\page.html", kind: "file", hasChildren: false });
+      return liste;
+    },
+    read_workspace_file_command: (a) => {
+      const rel = a.input?.relativePath ?? a.relativePath ?? "";
+      const content = rel === "page.html" ? D.PAGE_HTML : "";
+      return { name: rel.split("/").pop(), relativePath: rel, absolutePath: D.WS + "\\" + rel.replace(/\//g, "\\"), editable: true, content, reason: null, size: content.length, lastModifiedMs: D.T0, imageMediaType: null, imageData: null };
+    },
     list_workspace_files_command: () => D.entrees(""),
     git_repository_snapshot_command: () => D.git(),
     provider_quota: () => ({

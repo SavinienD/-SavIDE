@@ -156,6 +156,26 @@ export const SCENES = [
     temoins: ["sel:.axe-indicateur[data-kind='guet']", "sel:.axe-reveil[data-kind='guet']", "sel:.axe-indicateurs__detail", "sel:.axe-indicateurs__guet"],
     attendus: ["gh run view 4242 --exit-status", "cargo test --workspace", "Annuler", "Tout annuler", "Prochain essai", "guet g9a8b7c"],
   },
+  // axe:html — page .html : Code par défaut ; le bouton de bascule (le même que le
+  // Markdown) passe au rendu, dans une iframe sandbox sans scripts ni réseau (CSP).
+  {
+    id: "html-rendu",
+    sim: { fichierHtml: true },
+    stockage: () => colonnes([ids(1)]),
+    ouvrirFichier: "page.html",
+    clics: [".editor-preview-toggle"],
+    temoins: ["sel:iframe.xv-html__frame[sandbox='']", "sel:iframe.xv-html__frame[srcdoc*=\"connect-src 'none'\"]", "sel:iframe.xv-html__frame[srcdoc*=\"script-src 'none'\"]", "sel:.xv-html__status[data-on='false']", "sel:.editor-preview-toggle"],
+  },
+  // … le choix est mémorisé par fichier : rouverte, la page s'affiche directement en rendu ;
+  // « Autoriser les scripts » recharge l'iframe avec allow-scripts (toujours sans réseau).
+  {
+    id: "html-memorise",
+    sim: { fichierHtml: true },
+    stockage: () => ({ ...colonnes([ids(1)]), "axecode.vueFichiers": { "C:\\Users\\utilisateur\\Documents\\Projets\\axecode\\page.html": true } }),
+    ouvrirFichier: "page.html",
+    clics: [".xv-html .xv-btn--text"],
+    temoins: ["sel:iframe.xv-html__frame[sandbox*='allow-scripts']", "sel:iframe.xv-html__frame[srcdoc*=\"connect-src 'none'\"]", "sel:.xv-html__status[data-on='true']"],
+  },
   // axe:couleurs — commande slash en orange (accent) et skill en violet : dans la bulle du
   // message envoyé (« /goal … /revue-code ») et dans le compositeur (« /heartbeat 5s coucou … »).
   {

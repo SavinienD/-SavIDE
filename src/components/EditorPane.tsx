@@ -12,6 +12,7 @@ import { Icon } from "@iconify/react";
 import { languageForPath } from "../lib/language";
 import { fileIcon } from "../lib/fileIcon";
 import { Markdown } from "./chat/Markdown";
+import { memoriserVue, vueMemorisee } from "../lib/vueFichier"; // axe:html
 import type { EditorRevealTarget, EditorTab } from "../types";
 import { ImageContextMenu } from "./ImageContextMenu";
 import { onThemeChange } from "../axe/theme"; // axe:theme
@@ -136,7 +137,9 @@ export function EditorPane({
     ? isMarkdownPath(activeTab.relativePath)
     : false;
   const activePreview = activeTab
-    ? markdownPreview[activeTab.relativePath] ?? isPlanMarkdownPath(activeTab.relativePath)
+    ? markdownPreview[activeTab.relativePath] ??
+      vueMemorisee(activeTab.doc.absolutePath) ?? // axe:html
+      isPlanMarkdownPath(activeTab.relativePath)
     : false;
   // axe:viewers — route the tab by extension. File viewers (PDF, workbooks,
   // undecodable CSV) replace Monaco; overlay viewers (CSV table, HTML
@@ -148,15 +151,19 @@ export function EditorPane({
   const activeOverlay = Boolean(
     activeTab &&
       overlaySpec &&
-      (viewerPreview[activeTab.relativePath] ?? overlaySpec.previewByDefault),
+      (viewerPreview[activeTab.relativePath] ??
+        vueMemorisee(activeTab.doc.absolutePath) ?? // axe:html
+        overlaySpec.previewByDefault),
   );
   const toggleViewerPreview = useCallback(() => {
     if (!activeTab || !overlaySpec) return;
     const path = activeTab.relativePath;
-    setViewerPreview((prev) => ({
-      ...prev,
-      [path]: !(prev[path] ?? overlaySpec.previewByDefault),
-    }));
+    const absolu = activeTab.doc.absolutePath;
+    setViewerPreview((prev) => {
+      const rendu = !(prev[path] ?? vueMemorisee(absolu) ?? overlaySpec.previewByDefault);
+      memoriserVue(absolu, rendu); // axe:html
+      return { ...prev, [path]: rendu };
+    });
   }, [activeTab, overlaySpec]);
   // axe:viewers end
   // External files are tabs whose path lives outside of the active
@@ -176,10 +183,12 @@ export function EditorPane({
   const toggleMarkdownPreview = useCallback(() => {
     if (!activeTab) return;
     const path = activeTab.relativePath;
-    setMarkdownPreview((prev) => ({
-      ...prev,
-      [path]: !(prev[path] ?? isPlanMarkdownPath(path)),
-    }));
+    const absolu = activeTab.doc.absolutePath;
+    setMarkdownPreview((prev) => {
+      const rendu = !(prev[path] ?? vueMemorisee(absolu) ?? isPlanMarkdownPath(path));
+      memoriserVue(absolu, rendu); // axe:html
+      return { ...prev, [path]: rendu };
+    });
   }, [activeTab]);
 
   const handleOpenFileLink = useCallback(

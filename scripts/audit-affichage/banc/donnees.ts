@@ -175,7 +175,7 @@ export function entrees(dossier: string) {
   const base = dossier ? dossier + "/" : "";
   const noms = dossier
     ? ["Workspace.tsx", "ChatPane.tsx", "stream.ts", "colonnes.ts", "fileAttente.ts", "styles-de-la-barre-de-titre-tres-longues.css"]
-    : ["crates", "docs", "scripts", "src", "src-tauri", "tests", "web", "Cargo.toml", "package.json", "README.md", "RAPPORT-AXECODE.md", "un-nom-de-fichier-vraiment-tres-long-pour-voir-le-debordement.md"];
+    : ["crates", "docs", "scripts", "src", "src-tauri", "tests", "web", "Cargo.toml", "package.json", "README.md", "RAPPORT.md", "un-nom-de-fichier-vraiment-tres-long-pour-voir-le-debordement.md"];
   return noms.map((name) => {
     const dir = !name.includes(".");
     return { name, relativePath: base + name, absolutePath: WS + "\\" + (base + name).replace(/\//g, "\\"), kind: dir ? "directory" : "file", hasChildren: dir };
@@ -215,3 +215,15 @@ export function contexte(used = 168_000) {
     ],
   };
 }
+
+// axe:html — page des scènes « html-* » : image et style locaux, image distante
+// (doit être bloquée par la CSP de l'aperçu) et script (coupé par défaut).
+export const PAGE_HTML = `<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Rapport client</title>
+<link rel="stylesheet" href="style.css">
+<style>body{font-family:sans-serif;padding:24px} h1{color:#fc610b}</style></head>
+<body><h1>Rapport du cabinet Martin</h1>
+<p>Intervention du 23 octobre : standard téléphonique, 12 postes.</p>
+<img src="logo.png" alt="logo"> <img src="https://exemple.invalid/pixel.png" alt="pixel distant">
+<script>document.body.insertAdjacentHTML("beforeend", "<p id=js>script exécuté</p>")</script>
+</body></html>`;

@@ -251,5 +251,10 @@
   "fichier": "src/lib/titres.ts",
   "motif": "^(New conversation|Untitled)$",
   "raison": "titre par défaut écrit par le moteur (store.rs), reconnu pour l'afficher en français"
+ },
+ {
+  "fichier": "src/lib/apercuHtml.ts",
+  "motif": "^[a-z-]+-(src|action) ",
+  "raison": "directives CSP (syntaxe du navigateur, jamais affichées)"
  }
 ]

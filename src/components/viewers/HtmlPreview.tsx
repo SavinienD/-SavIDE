@@ -2,19 +2,13 @@
 // an iframe (srcdoc) with a <base> pointing at the file's folder so relative
 // images, styles and scripts resolve. Scripts stay disabled until the user
 // explicitly allows them; same-origin is never granted, so the page cannot
-// reach the app or its IPC.
+// reach the app or its IPC. axe:html — a CSP blocks every network access
+// (only local files of the folder, data: and blob:).
 
 import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import { assetDirUrl } from "./bytes";
-
-function withBase(html: string, baseHref: string): string {
-  if (/<base[\s>]/i.test(html)) return html;
-  const tag = `<base href="${baseHref.replace(/"/g, "&quot;")}">`;
-  if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (head) => `${head}${tag}`);
-  if (/<html[^>]*>/i.test(html)) return html.replace(/<html[^>]*>/i, (open) => `${open}<head>${tag}</head>`);
-  return `${tag}${html}`;
-}
+import { documentApercuHtml } from "../../lib/apercuHtml"; // axe:html
 
 export default function HtmlPreview({
   html,
@@ -24,14 +18,16 @@ export default function HtmlPreview({
   absolutePath: string;
 }) {
   const [scripts, setScripts] = useState(false);
-  const [doc, setDoc] = useState(() => withBase(html, assetDirUrl(absolutePath)));
+  const [source, setSource] = useState(html);
   const [reloads, setReloads] = useState(0);
 
   // Debounced so typing in the code view does not reload the page each key.
   useEffect(() => {
-    const timer = setTimeout(() => setDoc(withBase(html, assetDirUrl(absolutePath))), 300);
+    const timer = setTimeout(() => setSource(html), 300);
     return () => clearTimeout(timer);
-  }, [html, absolutePath]);
+  }, [html]);
+  // axe:html — CSP sans réseau (fichiers locaux du dossier seulement), scripts selon le choix.
+  const doc = documentApercuHtml(source, assetDirUrl(absolutePath), scripts);
 
   return (
     <div className="xv-html">
