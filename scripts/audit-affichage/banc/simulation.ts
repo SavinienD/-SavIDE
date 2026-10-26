@@ -115,6 +115,11 @@ export function installerSimulation(scene: Scene): void {
           const etat: any = { ...((scene.commandes as any) ?? {}) };
           if (a.params?.op === "heartbeat_off") etat.heartbeat = null;
           if (a.params?.op === "goal_clear") etat.goal = null;
+          // axe:guet — Annuler / Tout annuler.
+          if (typeof a.params?.op === "string" && a.params.op.startsWith("guet_annuler")) {
+            const cible = a.params.op.split(":")[1];
+            etat.guets = cible ? (etat.guets ?? []).filter((g: any) => g.id !== cible) : [];
+          }
           if (a.params?.op === "goal_pause" && etat.goal) etat.goal = { ...etat.goal, status: "paused" };
           scene.commandes = etat;
           return etat;

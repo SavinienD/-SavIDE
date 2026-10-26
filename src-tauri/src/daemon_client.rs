@@ -383,8 +383,13 @@ pub(crate) fn heartbeat_from_entry(data: &Value) -> Option<(String, i64)> {
         .filter(|p| p.get("type").and_then(Value::as_str) == Some("text"))
         .filter_map(|p| p.get("text").and_then(Value::as_str))
         .collect();
+    let ts = data.get("ts").and_then(Value::as_i64).unwrap_or(0);
+    // axe:guet — réveil d'un guet : même bulle discrète « guet g… : terminée ».
+    if let Some((id, statut, _)) = axecode_app::guet::lire_reveil(&text) {
+        return Some((format!("guet {id} : {}", axecode_app::guet::libelle_statut(&statut)), ts));
+    }
     let (body, at_ms) = axecode_app::session_commands::parse_heartbeat_text(&text)?;
-    Some((body, at_ms.or_else(|| data.get("ts").and_then(Value::as_i64)).unwrap_or(0)))
+    Some((body, at_ms.unwrap_or(ts)))
 }
 
 /// axe:commandes — un tour que l'IDE n'a pas lancé commence (réveil, continuation) :
@@ -873,6 +878,9 @@ mod bridge_turn_error_tests {
         assert_eq!(heartbeat_from_entry(&nu), Some(("coucou".to_string(), 5)));
         let normal = json!({"kind": "message", "message": {"role": "user", "parts": [{"type": "text", "text": "bonjour"}]}});
         assert_eq!(heartbeat_from_entry(&normal), None);
+        let guet = json!({"kind": "message", "ts": 9, "message": {"role": "user", "parts": [
+            {"type": "text", "text": "<guet id=\"g1a2b3c\" statut=\"termine\" at_ms=\"9\">\nfini\n</guet>"}]}});
+        assert_eq!(heartbeat_from_entry(&guet), Some(("guet g1a2b3c : terminée".to_string(), 9)));
         let assistant = json!({"kind": "message", "message": {"role": "assistant", "parts": [{"type": "text", "text": "<heartbeat>\nx\n</heartbeat>"}]}});
         assert_eq!(heartbeat_from_entry(&assistant), None);
     }

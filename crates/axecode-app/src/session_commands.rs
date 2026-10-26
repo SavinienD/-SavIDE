@@ -23,6 +23,7 @@ use axecode_core::{
 };
 use axecode_harness::{refine, HarnessStore};
 
+use crate::guet::{self, Guet, GuetResultat, GUET_ESSAI_MAX_MS, GUET_MAX_ACTIFS, GUET_SORTIE_MAX};
 use crate::repl::{ProviderResolver, TurnHook};
 
 /// Gate output kept for the model (bytes).
@@ -208,6 +209,9 @@ pub struct SessionState {
     pub autonomous: Option<Autonomous>,
     #[serde(default)]
     pub heartbeat: Option<Heartbeat>,
+    /// axe:guet — guets en cours (commande, condition, fichier) et réveils à livrer.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub guets: Vec<Guet>,
     /// One-shot notices for the next reminder (slash command results, ...).
     #[serde(default)]
     pub notices: Vec<String>,
@@ -453,6 +457,8 @@ struct Inner {
     /// axe:goal165 — planned automatic relaunch of each session.
     pursuits: Mutex<HashMap<String, tokio::task::JoinHandle<()>>>,
     pursuit_delay_ms: std::sync::atomic::AtomicU64,
+    /// axe:guet — tâche de chaque guet (clé : id du guet).
+    guets: Mutex<HashMap<String, tokio::task::JoinHandle<()>>>,
     refine: refine::RefineRunner,
 }
 
@@ -617,6 +623,179 @@ impl Inner {
         });
         lock(&self.heartbeats).insert(id.to_string(), handle);
     }
+
+    // ------------------------------------------------------------ axe:guet
+
+    fn guet(&self, sid: &str, gid: &str) -> Option<Guet> {
+        self.load(sid).guets.into_iter().find(|g| g.id == gid)
+    }
+
+    fn guet_vivant(&self, gid: &str) -> bool {
+        lock(&self.guets).get(gid).is_some_and(|h| !h.is_finished())
+    }
+
+    /// Exécute le guet `gid` de `sid` (sauf s'il a déjà son résultat), puis livre
+    /// son réveil dès que la session est libre. La tâche relit l'état à chaque pas :
+    /// un guet retiré de l'état (annulé par l'agent ou par l'IDE) s'arrête.
+    fn arm_guet(self: &Arc<Self>, sid: &str, gid: &str) {
+        if self.guet_vivant(gid) {
+            return;
+        }
+        let me = self.clone();
+        let (sid, gid) = (sid.to_string(), gid.to_string());
+        let key = gid.clone();
+        let handle = tokio::spawn(async move {
+            let Some(g) = me.guet(&sid, &gid) else { return };
+            if g.statut == "actif" {
+                let resultat = match g.genre.as_str() {
+                    "commande" => me.guet_commande(&sid, &g).await,
+                    _ => me.guet_sonde(&sid, &g).await,
+                };
+                let Some(r) = resultat else { return };
+                let pret = me.update(&sid, |s| match s.guets.iter_mut().find(|x| x.id == gid) {
+                    Some(x) => {
+                        x.statut = "a_livrer".into();
+                        x.prochain_ms = None;
+                        x.resultat = Some(r.clone());
+                        true
+                    }
+                    None => false,
+                });
+                if !pret {
+                    return;
+                }
+            }
+            me.livrer_guet(&sid, &gid).await;
+        });
+        lock(&self.guets).insert(key, handle);
+    }
+
+    async fn guet_commande(&self, sid: &str, g: &Guet) -> Option<GuetResultat> {
+        let dir = lock(&self.data_dir).clone().unwrap_or_else(std::env::temp_dir).join("guets");
+        let _ = std::fs::create_dir_all(&dir);
+        let log = dir.join(format!("{}.log", g.id));
+        let fin = |statut: &str, code: Option<i32>, extra: &str| {
+            let sortie = std::fs::read(&log).map(|b| String::from_utf8_lossy(&b).to_string()).unwrap_or_default();
+            let _ = std::fs::remove_file(&log);
+            GuetResultat { statut: statut.into(), code, sortie: guet::fin_de(&(sortie + extra), GUET_SORTIE_MAX), fin_ms: now_ms() }
+        };
+        let fichier = match std::fs::File::create(&log) {
+            Ok(f) => f,
+            Err(e) => return Some(GuetResultat { statut: "erreur".into(), code: None, sortie: format!("sortie impossible à enregistrer : {e}"), fin_ms: now_ms() }),
+        };
+        let mut c = guet::shell_cmd(g.cmd.as_deref().unwrap_or(""));
+        if let Ok(e) = fichier.try_clone() {
+            c.stderr(e);
+        }
+        c.current_dir(g.cwd.as_deref().unwrap_or(".")).stdout(fichier).kill_on_drop(true);
+        let mut child = match c.spawn() {
+            Ok(ch) => ch,
+            Err(e) => return Some(fin("erreur", None, &format!("impossible de lancer la commande : {e}"))),
+        };
+        let limite = g.cree_ms + g.timeout_ms as i64;
+        loop {
+            match tokio::time::timeout(Duration::from_millis(500), child.wait()).await {
+                Ok(Ok(st)) => return Some(fin("termine", st.code(), "")),
+                Ok(Err(e)) => return Some(fin("erreur", None, &format!("\n{e}"))),
+                Err(_) => {}
+            }
+            if self.guet(sid, &g.id).is_none() {
+                let _ = child.kill().await;
+                let _ = std::fs::remove_file(&log);
+                return None;
+            }
+            if now_ms() >= limite {
+                let _ = child.kill().await;
+                return Some(fin("delai_depasse", None, ""));
+            }
+        }
+    }
+
+    /// `condition` (relancer `cmd` jusqu'au code 0) et `fichier` (attendre qu'il existe).
+    async fn guet_sonde(&self, sid: &str, g: &Guet) -> Option<GuetResultat> {
+        let limite = g.cree_ms + g.timeout_ms as i64;
+        let cwd = PathBuf::from(g.cwd.clone().unwrap_or_else(|| ".".into()));
+        let (mut derniere, mut code) = (String::new(), None);
+        loop {
+            let prochain = self.guet(sid, &g.id)?.prochain_ms.unwrap_or(0).min(limite);
+            // Horloge murale par petits pas : l'annulation est vue en moins d'une seconde.
+            while now_ms() < prochain {
+                tokio::time::sleep(Duration::from_millis((prochain - now_ms()).clamp(20, 1_000) as u64)).await;
+                self.guet(sid, &g.id)?;
+            }
+            if now_ms() >= limite {
+                return Some(GuetResultat { statut: "delai_depasse".into(), code, sortie: derniere, fin_ms: now_ms() });
+            }
+            let (ok, c, sortie) = if g.genre == "fichier" {
+                (cwd.join(g.chemin.as_deref().unwrap_or("")).exists(), None, String::new())
+            } else {
+                let max = Duration::from_millis(GUET_ESSAI_MAX_MS.min((limite - now_ms()).max(1_000) as u64));
+                guet::essai(&cwd, g.cmd.as_deref().unwrap_or(""), max).await
+            };
+            (derniere, code) = (sortie, c);
+            let n = now_ms();
+            self.update(sid, |s| {
+                s.guets.iter_mut().find(|x| x.id == g.id).map(|x| {
+                    x.essais += 1;
+                    x.prochain_ms = Some(n + x.intervalle_ms as i64);
+                })
+            })?;
+            if ok {
+                return Some(GuetResultat { statut: "reussi".into(), code, sortie: derniere, fin_ms: n });
+            }
+        }
+    }
+
+    /// Livre le réveil une seule fois : retiré de l'état AVANT l'envoi.
+    async fn livrer_guet(&self, sid: &str, gid: &str) {
+        loop {
+            let Some(g) = self.guet(sid, gid) else { return };
+            let Some(r) = g.resultat.clone() else { return };
+            let host = self.host(sid);
+            let libre = match &host {
+                Some(h) => h.get_session(sid).await.is_ok_and(|m| m.status != SessionStatus::Running),
+                None => false,
+            };
+            if let (true, Some(host)) = (libre, host) {
+                let pris = self.update(sid, |s| {
+                    let avant = s.guets.len();
+                    s.guets.retain(|x| x.id != gid);
+                    s.guets.len() != avant
+                });
+                if pris {
+                    self.journal(sid, "guet", json!({"op": "livre", "id": gid, "statut": r.statut})).await;
+                    let _ = host.send_user_message(sid, guet::texte_reveil(&g, &r)).await;
+                }
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+    }
+
+    /// Au (re)chargement d'une session : relance les guets, livre ceux qui sont
+    /// prêts ; une commande lancée par un service précédent est perdue → réveil
+    /// « interrompu » (l'agent la relance s'il le faut).
+    fn rearm_guets(self: &Arc<Self>, sid: &str) {
+        let guets = self.load(sid).guets;
+        for g in guets {
+            if self.guet_vivant(&g.id) {
+                continue;
+            }
+            if g.genre == "commande" && g.statut == "actif" {
+                let r = GuetResultat {
+                    statut: "interrompu".into(),
+                    code: None,
+                    sortie: "Le service SavIDE a redémarré pendant la commande : son résultat est perdu.".into(),
+                    fin_ms: now_ms(),
+                };
+                self.update(sid, |s| if let Some(x) = s.guets.iter_mut().find(|x| x.id == g.id) {
+                    x.statut = "a_livrer".into();
+                    x.resultat = Some(r.clone());
+                });
+            }
+            self.arm_guet(sid, &g.id);
+        }
+    }
 }
 
 impl SessionCommandsHook {
@@ -630,6 +809,7 @@ impl SessionCommandsHook {
                 heartbeats: Mutex::new(HashMap::new()),
                 pursuits: Mutex::new(HashMap::new()),
                 pursuit_delay_ms: std::sync::atomic::AtomicU64::new(GOAL_PURSUIT_DELAY_MS),
+                guets: Mutex::new(HashMap::new()),
                 refine: refine::RefineRunner::new(),
             }),
         })
@@ -638,6 +818,14 @@ impl SessionCommandsHook {
     /// axe:goal165 — pause before an automatic relaunch (tests: a few ms).
     pub fn set_pursuit_delay(&self, delay: Duration) {
         self.inner.pursuit_delay_ms.store(delay.as_millis() as u64, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// axe:guet — arrête toutes les tâches de guet du processus (fin du service ;
+    /// les tests simulent ainsi l'arrêt du processus avant un rechargement).
+    pub fn stop_guets(&self) {
+        for (_, h) in lock(&self.inner.guets).drain() {
+            h.abort();
+        }
     }
 
     pub fn state(&self, session_id: &str) -> SessionState {
@@ -736,6 +924,39 @@ impl SessionCommandsHook {
                     I::Flou { raison } => reveil_a_confier(brut, &raison),
                 }
             }
+            "guet" => {
+                // axe:guet — langage courant ; sinon confié à l'agent.
+                use crate::commandes_naturelles::{analyser_guet, IntentionGuet as I};
+                let brut = cmd.rest.trim();
+                match analyser_guet(brut) {
+                    I::Afficher => if inner.load(id).guets.is_empty() {
+                        "L'utilisateur demande les guets en cours : il n'y en a aucun. Dis-le-lui en une phrase (exemple : « /guet quand la construction est finie »).".into()
+                    } else {
+                        "L'utilisateur demande les guets en cours (rappelés plus bas) : résume-les-lui en une phrase chacun, en français.".into()
+                    },
+                    I::Annuler { id: cible } => match self.guet_call(session, "guet.annuler", json!({"id": cible.clone().unwrap_or_default()})).await {
+                        Ok(v) => {
+                            let n = v["annules"].as_array().map_or(0, Vec::len);
+                            if n == 0 { "L'utilisateur a demandé d'annuler les guets : il n'y en avait aucun. Dis-le-lui en une phrase.".into() }
+                            else { format!("L'utilisateur a annulé {n} guet{} ({}) : tu ne seras pas réveillé pour {}.", if n > 1 { "s" } else { "" }, v["annules"], if n > 1 { "eux" } else { "lui" }) }
+                        }
+                        Err(e) => guet_a_confier(brut, &e),
+                    },
+                    I::Commande { cmd: c, condition } => {
+                        let methode = if condition { "guet.condition" } else { "guet.commande" };
+                        match self.guet_call(session, methode, json!({"cmd": c, "message": format!("/guet {brut}"), "par_utilisateur": true})).await {
+                            Ok(v) => format!(
+                                "L'utilisateur a posé un guet ({}) sur `{c}` : {}. Tu seras réveillé par un message <guet id=\"{}\" …> ; termine ton tour sans attendre. (Si cette lecture est fausse : `guet.annuler(\"{}\")` puis pose le bon guet.)",
+                                v["id"].as_str().unwrap_or(""),
+                                if condition { "relancée toutes les 30 s jusqu'à ce qu'elle réussisse (2 h au plus)" } else { "lancée en arrière-plan, réveil à sa fin" },
+                                v["id"].as_str().unwrap_or(""), v["id"].as_str().unwrap_or("")
+                            ),
+                            Err(e) => guet_a_confier(brut, &e),
+                        }
+                    }
+                    I::Flou { raison } => guet_a_confier(brut, &raison),
+                }
+            }
             "refine" => {
                 let focus = (!cmd.rest.is_empty()).then(|| cmd.rest.clone());
                 match self.start_refine(session, "user:/refine", focus).await {
@@ -817,6 +1038,57 @@ impl SessionCommandsHook {
         Ok(result)
     }
 
+
+    /// axe:guet — `guet.commande` / `guet.condition` / `guet.fichier` / `guet.liste` / `guet.annuler`.
+    pub async fn guet_call(&self, session: &SessionMeta, method: &str, params: Value) -> Result<Value, String> {
+        let id = session.id.as_str();
+        let inner = &self.inner;
+        match method {
+            "guet.liste" => Ok(Value::Array(inner.load(id).guets.iter().map(guet::vue).collect())),
+            "guet.annuler" => {
+                let cible = params.get("id").and_then(Value::as_str).unwrap_or("").trim().to_string();
+                let tous = cible.is_empty() || cible == "tout" || cible == "tous";
+                let annules: Vec<String> = inner.update(id, |s| {
+                    let (out, garde): (Vec<Guet>, Vec<Guet>) = std::mem::take(&mut s.guets).into_iter().partition(|g| tous || g.id == cible);
+                    s.guets = garde;
+                    out.into_iter().map(|g| g.id).collect()
+                });
+                if annules.is_empty() && !tous {
+                    return Err(format!("aucun guet `{cible}` (voir guet.liste())"));
+                }
+                for g in &annules {
+                    if let Some(h) = lock(&inner.guets).remove(g) {
+                        h.abort(); // la commande lancée est tuée (kill_on_drop)
+                    }
+                }
+                inner.journal(id, "guet", json!({"op": "annule", "ids": annules})).await;
+                Ok(json!({"annules": annules}))
+            }
+            "guet.commande" | "guet.condition" | "guet.fichier" => {
+                let mut g = guet::depuis_params(method.trim_start_matches("guet."), &params, now_ms())?;
+                let racine = PathBuf::from(&session.workspace_id);
+                g.cwd = Some(match g.cwd.take() {
+                    Some(c) => racine.join(c).display().to_string(),
+                    None => session.workspace_id.clone(),
+                });
+                let ajoute = inner.update(id, |s| {
+                    if s.guets.iter().filter(|x| x.statut == "actif").count() >= GUET_MAX_ACTIFS {
+                        return false;
+                    }
+                    s.guets.push(g.clone());
+                    true
+                });
+                if !ajoute {
+                    return Err(format!("déjà {GUET_MAX_ACTIFS} guets actifs : annule-en avec guet.annuler(id)"));
+                }
+                inner.journal(id, "guet", json!({"op": "pose", "guet": guet::vue(&g)})).await;
+                inner.arm_guet(id, &g.id);
+                Ok(guet::vue(&g))
+            }
+            other => Err(format!("unknown guet call `{other}`")),
+        }
+    }
+
     async fn heartbeat_call(&self, session: &SessionMeta, method: &str, params: Value) -> Result<Value, String> {
         let id = session.id.as_str();
         let inner = &self.inner;
@@ -889,7 +1161,14 @@ pub fn parse_heartbeat_text(text: &str) -> Option<(String, Option<i64>)> {
 
 /// Commands served by [`SessionCommandsHook::run_slash`] (the IDE checks its
 /// autocompletion list against it).
-pub const SLASH_COMMANDS: &[&str] = &["goal", "autonomous", "heartbeat", "refine", "compact"];
+pub const SLASH_COMMANDS: &[&str] = &["goal", "autonomous", "heartbeat", "guet", "refine", "compact"];
+
+/// axe:guet — `/guet` en phrase libre : l'agent pose lui-même le bon guet.
+fn guet_a_confier(brut: &str, raison: &str) -> String {
+    format!(
+        "L'utilisateur demande « /guet {brut} » ({raison}) : il veut que tu sois RÉVEILLÉ quand quelque chose se termine, sans heartbeat ni boucle. Trouve la commande qui le vérifie, puis pose le guet et termine ton tour : `guet.condition(cmd, intervalle=\"30s\", timeout=\"2h\", message=...)` relance `cmd` jusqu'à ce qu'elle réussisse (code 0) — ex. construction GitHub : `gh run watch <id> --exit-status` avec guet.commande, ou `gh run list -L1 --json status -q '.[0].status' | grep -qx completed` avec guet.condition ; `guet.commande(cmd, message=...)` lance une commande longue et réveille à sa fin ; `guet.fichier(chemin)` attend un fichier. Dis à l'utilisateur en une phrase ce que tu guettes. S'il manque une information (quel dépôt, quelle tâche), demande-la en une phrase. Ne réponds jamais « usage invalide »."
+    )
+}
 
 /// axe:cmdnat — `/heartbeat` pas compris : la demande est confiée à l'agent.
 fn reveil_a_confier(brut: &str, raison: &str) -> String {
@@ -1092,6 +1371,10 @@ impl TurnHook for SessionCommandsHook {
                 self.inner.arm_heartbeat(&context.session.id);
             }
         }
+        // axe:guet — guets posés avant un redémarrage du service.
+        if !self.inner.load(&context.session.id).guets.is_empty() && tokio::runtime::Handle::try_current().is_ok() {
+            self.inner.rearm_guets(&context.session.id);
+        }
     }
 
     async fn reminder(&self, session: &SessionMeta, request: &TurnRequest) -> Option<String> {
@@ -1130,7 +1413,7 @@ impl TurnHook for SessionCommandsHook {
         // the count of relaunches without progress.
         let input = user_text(request);
         let relaunch = input.as_deref().is_some_and(is_goal_continue);
-        let by_user = input.is_some() && !relaunch && !input.as_deref().is_some_and(|t| t.trim_start().starts_with("<heartbeat") || t.trim_start().starts_with("<system_reminder"));
+        let by_user = input.is_some() && !relaunch && !input.as_deref().is_some_and(|t| t.trim_start().starts_with("<heartbeat") || guet::est_reveil(t) || t.trim_start().starts_with("<system_reminder"));
         let active = self.inner.load(id).goal.is_some_and(|g| g.status == "active");
         if active {
             self.inner.cancel_pursuit(id);
@@ -1182,11 +1465,20 @@ impl TurnHook for SessionCommandsHook {
                 hb.message
             ));
         }
+        if !state.guets.is_empty() {
+            let mut b = String::from("## Guets en cours (tu seras réveillé par un message <guet> ; inutile de vérifier toi-même)\n");
+            for g in &state.guets {
+                let etat = if g.statut == "a_livrer" { "fini, réveil en attente de la fin du tour".to_string() } else { format!("depuis {}", crate::commandes_naturelles::decrire_duree((now_ms() - g.cree_ms).max(0) as u64)) };
+                b.push_str(&format!("- {} ({}) `{}` : {etat}\n", g.id, g.genre, g.libelle()));
+            }
+            b.push_str("Annuler : `guet.annuler(id)` ou /guet annule.");
+            blocks.push(b);
+        }
         (!blocks.is_empty()).then(|| blocks.join("\n\n"))
     }
 
     fn handles(&self, method: &str) -> bool {
-        method.starts_with("goal.") || method.starts_with("heartbeat.") || matches!(method, "refine.run" | "refine.status" | "refine.cancel")
+        method.starts_with("goal.") || method.starts_with("heartbeat.") || method.starts_with("guet.") || matches!(method, "refine.run" | "refine.status" | "refine.cancel")
     }
 
     async fn host_call(&self, session: &SessionMeta, method: &str, params: Value) -> Result<Value, String> {
@@ -1195,6 +1487,9 @@ impl TurnHook for SessionCommandsHook {
         }
         if method.starts_with("heartbeat.") {
             return self.heartbeat_call(session, method, params).await;
+        }
+        if method.starts_with("guet.") {
+            return self.guet_call(session, method, params).await;
         }
         match method {
             "refine.run" => {

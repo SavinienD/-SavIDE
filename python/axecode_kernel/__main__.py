@@ -53,7 +53,7 @@ SNAPSHOT_TOTAL_SECONDS = 20.0
 MODULES = [
     "files", "shell", "web", "images", "context", "question", "todo", "cua",
     "skills", "mcp", "compact", "rlm", "messages", "harness", "refine",
-    "goal", "heartbeat",
+    "goal", "heartbeat", "guet",
 ]
 
 

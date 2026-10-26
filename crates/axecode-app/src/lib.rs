@@ -18,6 +18,7 @@ pub mod read;
 pub mod repl; // axe:repl
 pub mod rlm; // axe:rlm
 mod ripgrep;
+pub mod guet; // axe:guet
 pub mod session_commands; // axe:goal
 pub mod skill;
 pub mod store;

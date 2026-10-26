@@ -25,7 +25,9 @@ fn state_path(data_dir: &Path, id: &str) -> SessionResult<PathBuf> {
 /// Vue renvoyée à l'IDE (champs absents = `null`).
 pub fn view(state: &Value) -> Value {
     let get = |k: &str| state.get(k).cloned().unwrap_or(Value::Null);
-    json!({"goal": get("goal"), "heartbeat": get("heartbeat"), "autonomous": get("autonomous")})
+    json!({"goal": get("goal"), "heartbeat": get("heartbeat"), "autonomous": get("autonomous"),
+        // axe:guet — guets en cours (indicateur à côté du modèle).
+        "guets": state.get("guets").cloned().filter(Value::is_array).unwrap_or_else(|| json!([]))})
 }
 
 /// Applique `op` à l'état (fonction pure, testée).
@@ -39,6 +41,17 @@ pub fn apply(state: &mut Value, op: &str) -> SessionResult<()> {
         }
         "goal_clear" => {
             obj.insert("goal".into(), Value::Null);
+        }
+        // axe:guet — `guet_annuler:<id>` (ou `guet_annuler` : tous). La tâche du guet
+        // relit l'état et s'arrête (la commande lancée est tuée).
+        op if op == "guet_annuler" || op.starts_with("guet_annuler:") => {
+            let cible = op.strip_prefix("guet_annuler:").unwrap_or("");
+            let liste = obj.get_mut("guets").and_then(Value::as_array_mut).ok_or_else(|| SessionError::Runtime("aucun guet en cours".into()))?;
+            let avant = liste.len();
+            liste.retain(|g| !(cible.is_empty() || g.get("id").and_then(Value::as_str) == Some(cible)));
+            if liste.len() == avant {
+                return Err(SessionError::Runtime(format!("aucun guet {cible}")));
+            }
         }
         "goal_pause" | "goal_resume" | "goal_done" => {
             let goal = obj
@@ -76,6 +89,7 @@ fn notice(op: &str) -> Option<&'static str> {
         "goal_resume" => "L'utilisateur a repris l'objectif depuis l'interface : continue d'y travailler.",
         "goal_done" => "L'utilisateur a marqué l'objectif comme atteint depuis l'interface. N'y travaille plus.",
         "heartbeat_off" => "L'utilisateur a arrêté le réveil (heartbeat) depuis l'interface.",
+        op if op.starts_with("guet_annuler") => "L'utilisateur a annulé le guet depuis l'interface : tu ne seras pas réveillé pour lui.",
         _ => return None,
     })
 }
@@ -95,6 +109,7 @@ pub fn set(daemon: &Daemon, id: &str, op: &str) -> SessionResult<Value> {
     .map_err(SessionError::Runtime)?;
     let (name, payload) = match op {
         "heartbeat_off" => ("heartbeat", json!({"op": "clear", "by": "ide"})),
+        op if op.starts_with("guet_annuler") => ("guet", json!({"op": "annule", "by": "ide", "cible": op.strip_prefix("guet_annuler:")})),
         _ => ("goal", json!({"op": op.trim_start_matches("goal_"), "by": "ide", "goal": state.get("goal")})),
     };
     let _ = daemon.append(id, JournalEntryKind::Extension { name: name.into(), payload });

@@ -151,6 +151,11 @@ fn setup(steps: Vec<Step>) -> Option<Session> {
 }
 
 fn setup_with(steps: Vec<Step>, window: Option<u32>) -> Option<(Session, Arc<Scripted>)> {
+    setup_hooks(steps, window, false)
+}
+
+/// axe:guet — `with_session_hook` : avec le crochet des commandes de session (guet, goal…).
+fn setup_hooks(steps: Vec<Step>, window: Option<u32>, with_session_hook: bool) -> Option<(Session, Arc<Scripted>)> {
     if axecode_repl::python::find_python(&[]).is_none() {
         eprintln!("skipping: no Python with IPython");
         return None;
@@ -163,10 +168,16 @@ fn setup_with(steps: Vec<Step>, window: Option<u32>) -> Option<(Session, Arc<Scr
         window,
         seen: Mutex::new(Vec::new()),
     });
+    let resolver: Arc<dyn axecode_app::repl::ProviderResolver> = Arc::new(Resolver(provider.clone()));
+    let hooks: Vec<Arc<dyn axecode_app::repl::TurnHook>> = if with_session_hook {
+        vec![axecode_app::session_commands::SessionCommandsHook::new(resolver.clone())]
+    } else {
+        vec![]
+    };
     let deps = Arc::new(ReplDeps {
-        providers: Arc::new(Resolver(provider.clone())),
+        providers: resolver,
         resource_dirs: vec![],
-        hooks: vec![],
+        hooks,
     });
     let mut config = DaemonConfig::new(base.join("data"));
     config.auto_shutdown = false;
@@ -426,4 +437,39 @@ async fn compacts_before_the_request_that_would_not_fit() {
     let h = j.history();
     assert!(h[0].text().contains("Summary: two long prints."), "{h:?}");
     assert_eq!(h.last().unwrap().text(), "E done");
+}
+
+/// axe:guet — posé depuis le noyau par `guet.condition`, le guet vit dans le service :
+/// le noyau meurt et redémarre, le guet est toujours là et réveille la conversation.
+#[tokio::test(flavor = "multi_thread")]
+async fn guet_survit_au_redemarrage_du_noyau() {
+    let Some((s, _)) = setup_hooks(
+        vec![
+            Step::Code("g = guet.condition('test -f pret.txt', intervalle='1s', message='fichier prêt ?')\nprint('pose', g['id'])"),
+            Step::Code("import os\nos._exit(3)"),
+            Step::Code("print('liste', [x['id'] for x in guet.liste()])"),
+            Step::Text("T1 done"),
+            Step::Text("reveil traite"),
+        ],
+        None,
+        true,
+    ) else {
+        return;
+    };
+    s.turn("guette", "T1 done").await;
+    let outputs = s.repl_outputs();
+    let id = outputs[0].split_whitespace().nth(1).expect("id du guet").to_string();
+    assert!(outputs[1].contains("kernel failure"), "{outputs:?}");
+    assert!(outputs[2].contains(&id), "le guet survit au noyau : {outputs:?}");
+    std::fs::write(s.base.join("ws/pret.txt"), "ok").unwrap();
+    for _ in 0..200 {
+        let j = s.daemon.journal(&s.id).unwrap();
+        let texte = serde_json::to_string(j.lock().unwrap().entries()).unwrap();
+        if texte.contains("reveil traite") {
+            assert!(texte.contains(&format!("<guet id=\\\"{id}\\\" statut=\\\"reussi\\\"")) && texte.contains("fichier prêt ?"));
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    panic!("pas de réveil du guet");
 }

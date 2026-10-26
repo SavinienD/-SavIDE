@@ -8,6 +8,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { cloudConnectionFromPath } from "../../lib/ipc";
 import {
   ETAT_VIDE,
+  detailGuet,
   formatHeure,
   formatIntervalle,
   libelleStatutGoal,
@@ -37,7 +38,7 @@ function appel<T>(workspacePath: string, method: string, params: unknown): Promi
 
 export function IndicateursSession({ workspacePath, conversationId, signal, dernierReveil }: Props) {
   const [etat, setEtat] = useState<EtatCommandes>(ETAT_VIDE);
-  const [ouvert, setOuvert] = useState<"heartbeat" | "goal" | null>(null);
+  const [ouvert, setOuvert] = useState<"heartbeat" | "goal" | "guet" | null>(null);
   const [clignote, setClignote] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const precedent = useRef<EtatCommandes>(ETAT_VIDE);
@@ -46,7 +47,7 @@ export function IndicateursSession({ workspacePath, conversationId, signal, dern
   // Le détail est posé sur <body> (position fixe) : la colonne de conversation rogne
   // tout ce qui dépasse du compositeur (banc 800x600 : haut du détail invisible).
   const [place, setPlace] = useState<CSSProperties>({});
-  const ouvrir = (quoi: "heartbeat" | "goal", bouton: HTMLElement) => {
+  const ouvrir = (quoi: "heartbeat" | "goal" | "guet", bouton: HTMLElement) => {
     if (ouvert === quoi) {
       setOuvert(null);
       return;
@@ -121,14 +122,19 @@ export function IndicateursSession({ workspacePath, conversationId, signal, dern
       const suivant = normaliserEtat(brut);
       precedent.current = suivant;
       setEtat(suivant);
-      if ((op === "heartbeat_off" && !suivant.heartbeat) || (op === "goal_clear" && !suivant.goal)) setOuvert(null);
+      if (
+        (op === "heartbeat_off" && !suivant.heartbeat) ||
+        (op === "goal_clear" && !suivant.goal) ||
+        (op.startsWith("guet_annuler") && suivant.guets.length === 0)
+      )
+        setOuvert(null);
     } catch (e) {
       setErreur(String(e));
     }
   };
 
-  const { heartbeat, goal } = etat;
-  if (!heartbeat && !goal) return null;
+  const { heartbeat, goal, guets } = etat;
+  if (!heartbeat && !goal && guets.length === 0) return null;
   const poursuite = goal ? textePoursuite(goal) : null;
   return (
     <div className="axe-indicateurs" ref={racine}>
@@ -159,6 +165,46 @@ export function IndicateursSession({ workspacePath, conversationId, signal, dern
         >
           <Icon icon="solar:target-linear" width={15} height={15} />
         </button>
+      )}
+      {guets.length > 0 && (
+        <button
+          type="button"
+          className="axe-indicateur"
+          data-kind="guet"
+          aria-label={`Guets en cours : ${guets.length}`}
+          title={`${guets.length} guet${guets.length > 1 ? "s" : ""} en cours : ${guets.map((g) => g.cible).join(" · ")}`}
+          onClick={(e) => ouvrir("guet", e.currentTarget)}
+        >
+          <Icon icon="solar:eye-scan-linear" width={15} height={15} />
+          <span className="axe-indicateur__nombre">{guets.length}</span>
+        </button>
+      )}
+      {ouvert === "guet" && guets.length > 0 && createPortal(
+        <div className="axe-indicateurs__detail" role="dialog" aria-label="Guets en cours" ref={detail} style={place}>
+          <div className="axe-indicateurs__titre">{`Guet${guets.length > 1 ? "s" : ""} en cours (${guets.length})`}</div>
+          {guets.map((g) => (
+            <div className="axe-indicateurs__guet" key={g.id} data-guet={g.id}>
+              {detailGuet(g).map((l, i) => (
+                <div key={i} className={i === 0 ? "axe-indicateurs__message" : undefined}>{l}</div>
+              ))}
+              {g.message && <div className="axe-indicateurs__resume">{g.message}</div>}
+              <div className="axe-indicateurs__actions">
+                <button type="button" onClick={() => void agir(`guet_annuler:${g.id}`)}>
+                  Annuler
+                </button>
+              </div>
+            </div>
+          ))}
+          {guets.length > 1 && (
+            <div className="axe-indicateurs__actions">
+              <button type="button" onClick={() => void agir("guet_annuler")}>
+                Tout annuler
+              </button>
+            </div>
+          )}
+          {erreur && <div className="axe-indicateurs__erreur">{erreur}</div>}
+        </div>,
+        document.body,
       )}
       {ouvert === "heartbeat" && heartbeat && createPortal(
         <div className="axe-indicateurs__detail" role="dialog" aria-label="Réveil périodique" ref={detail} style={place}>

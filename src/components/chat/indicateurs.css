@@ -106,3 +106,17 @@
 .axe-indicateurs__poursuite {
   color: var(--text-1);
 }
+/* axe:guet — icône des guets avec leur nombre ; un bloc par guet dans le détail */
+.axe-indicateur[data-kind="guet"] {
+  color: var(--text-2);
+  gap: 2px;
+}
+.axe-indicateur__nombre {
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+.axe-indicateurs__guet + .axe-indicateurs__guet {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-1, var(--bg-3));
+}

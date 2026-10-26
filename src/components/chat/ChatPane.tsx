@@ -59,7 +59,7 @@ import { customModelEntries, providerApi, type ProviderSettingsView } from "../.
 import { runClientSlashCommand, SLASH_COMMANDS, useSlashCommandMenu } from "./SlashCommands"; // axe:slash
 import { classeJeton, decouperJetons } from "./jetonsMessage"; // axe:couleurs
 import { IndicateursSession } from "./IndicateursSession"; // axe:commandes
-import { formatHeure, texteReveil } from "./logiqueIndicateurs"; // axe:commandes
+import { estReveilGuet, formatHeure, texteReveil } from "./logiqueIndicateurs"; // axe:commandes
 import type {
   AgentMode,
   AttachmentInput,
@@ -6467,8 +6467,12 @@ function BlockView({
     case "wake":
       return (
         <div className="msg" data-role="assistant">
-          <div className="axe-reveil" title="Message du réveil périodique injecté dans la session">
-            <Icon icon="solar:heart-pulse-linear" width={12} height={12} />
+          <div
+            className="axe-reveil"
+            data-kind={estReveilGuet(block.message) ? "guet" : undefined}
+            title={estReveilGuet(block.message) ? "Réveil d'un guet : la tâche guettée est finie" : "Message du réveil périodique injecté dans la session"}
+          >
+            <Icon icon={estReveilGuet(block.message) ? "solar:eye-scan-linear" : "solar:heart-pulse-linear"} width={12} height={12} />
             <span>{texteReveil(block.message, block.atMs)}</span>
           </div>
         </div>

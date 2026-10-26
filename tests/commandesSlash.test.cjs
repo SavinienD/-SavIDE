@@ -83,8 +83,8 @@ test("indicateurs : intervalle, statut, déclenchement, état normalisé", () =>
   assert.equal(c2.heartbeat.last_at_ms, 301000, "heure du dernier réveil lue");
   assert.equal(ind.vientDeSeDeclencher(c1, c2), true, "réveil livré (dernier réveil a changé)");
   assert.equal(ind.vientDeSeDeclencher(c2, c2), false);
-  assert.deepEqual(ind.normaliserEtat(null), { goal: null, heartbeat: null });
-  assert.deepEqual(ind.normaliserEtat({ heartbeat: null, goal: null, autonomous: null }), { goal: null, heartbeat: null });
+  assert.deepEqual(ind.normaliserEtat(null), { goal: null, heartbeat: null, guets: [] });
+  assert.deepEqual(ind.normaliserEtat({ heartbeat: null, goal: null, autonomous: null }), { goal: null, heartbeat: null, guets: [] });
 });
 
 test("réveil : lecture du message injecté et texte de la bulle avec l'heure", () => {
@@ -125,4 +125,29 @@ test("le message du heartbeat est affiché : en direct et depuis l'historique", 
   ]);
   assert.deepEqual(hist.blocks.map((b) => b.kind), ["wake", "assistant-text"]);
   assert.equal(hist.blocks.filter((b) => b.kind === "user-text").length, 0, "pas affiché comme un message de l'utilisateur");
+});
+
+// axe:guet — indicateur des guets et bulle de réveil.
+test("guet : état normalisé, détail, réveil", () => {
+  const e = ind.normaliserEtat({ guets: [
+    { id: "g1a2b3c", genre: "condition", cmd: "gh run view 1 --exit-status", cree_ms: Date.now() - 120000, prochain_ms: 1792000000000, essais: 2, statut: "actif" },
+    { id: "g4d5e6f", genre: "fichier", chemin: "pret.txt", cree_ms: 1, statut: "a_livrer" },
+    { pas: "un guet" },
+  ] });
+  assert.equal(e.guets.length, 2);
+  assert.equal(e.guets[1].cible, "fichier pret.txt");
+  const d = ind.detailGuet(e.guets[0]);
+  assert.equal(d[0], "Condition\u00a0: gh run view 1 --exit-status");
+  assert.match(d[1], /^Depuis \d\d:\d\d \(2 min\)$/);
+  assert.match(d[2], /^Prochain essai\u00a0: \d\d:\d\d:\d\d · 2 essais$/);
+  assert.match(ind.detailGuet(e.guets[1])[2], /réveil à la fin du tour/);
+  assert.deepEqual(ind.normaliserEtat({}).guets, []);
+  const r = ind.lireReveil('<guet id="g1a2b3c" statut="delai_depasse" at_ms="5">\nCommande `x`\n</guet>');
+  assert.equal(r.message.replace(/\u00a0/g, " "), "guet g1a2b3c : délai dépassé"); assert.equal(r.atMs, 5);
+  assert.ok(ind.estReveilGuet(r.message) && !ind.estReveilGuet("coucou"));
+  assert.equal(ind.texteReveil(r.message, null), r.message); assert.ok(ind.estReveilGuet("guet g1a2b3c : terminée"));
+  const usage = lire("src/components/chat/SlashCommands.tsx");
+  assert.match(usage, /\/guet <phrase libre>/);
+  const compo = lire("src/components/chat/IndicateursSession.tsx");
+  assert.ok(compo.includes("guet_annuler:${g.id}") && compo.includes('data-kind="guet"'), "bouton Annuler et icône");
 });

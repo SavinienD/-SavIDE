@@ -128,6 +128,34 @@ export const SCENES = [
     temoins: ["sel:.axe-indicateur[data-kind='heartbeat']", "sel:.axe-indicateur[data-kind='goal']", "sel:.axe-reveil", "sel:.axe-indicateurs__detail"],
     attendus: ["coucou", "Arrêter le réveil", "Toutes les 1 min"],
   },
+  // axe:guet — deux guets : icône avec leur nombre à côté du modèle, détail au clic
+  // (commande, depuis quand, prochain essai) avec Annuler ; bulle « guet … : terminée ».
+  {
+    id: "guets",
+    sim: {
+      commandes: {
+        goal: null,
+        heartbeat: null,
+        autonomous: null,
+        guets: [
+          { id: "g1a2b3c", genre: "condition", cmd: "gh run view 4242 --exit-status", cree_ms: Date.UTC(2026, 9, 23, 12, 10), prochain_ms: Date.UTC(2026, 9, 23, 12, 33, 30), essais: 7, statut: "actif", message: "construction GitHub de la 0.1.68" },
+          { id: "g4d5e6f", genre: "commande", cmd: "cargo test --workspace", cree_ms: Date.UTC(2026, 9, 23, 12, 25), statut: "actif" },
+        ],
+      },
+    },
+    stockage: () => colonnes([ids(1)]),
+    evenements: [
+      { type: "turn_started" },
+      { type: "heartbeat_received", message: "guet g9a8b7c : terminée", at_ms: Date.UTC(2026, 9, 23, 12, 31) },
+      { type: "text_started" },
+      { type: "text_chunk", delta: "La construction est finie." },
+      { type: "text_finished" },
+      { type: "turn_finished" },
+    ],
+    cliquer: ".axe-indicateur[data-kind='guet']",
+    temoins: ["sel:.axe-indicateur[data-kind='guet']", "sel:.axe-reveil[data-kind='guet']", "sel:.axe-indicateurs__detail", "sel:.axe-indicateurs__guet"],
+    attendus: ["gh run view 4242 --exit-status", "cargo test --workspace", "Annuler", "Tout annuler", "Prochain essai", "guet g9a8b7c"],
+  },
   // axe:couleurs — commande slash en orange (accent) et skill en violet : dans la bulle du
   // message envoyé (« /goal … /revue-code ») et dans le compositeur (« /heartbeat 5s coucou … »).
   {

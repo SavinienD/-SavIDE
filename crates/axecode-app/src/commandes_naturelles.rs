@@ -831,3 +831,81 @@ mod tests {
         assert_eq!(decrire_duree(86_400_000), "1 j");
     }
 }
+
+// ---------------------------------------------------------------- /guet (axe:guet)
+
+/// Ce que veut l'utilisateur avec `/guet …`.
+#[derive(Debug, Clone, PartialEq)]
+pub enum IntentionGuet {
+    /// `/guet`, `/guet ?`, `/guet liste` : montrer les guets en cours.
+    Afficher,
+    /// « annule », « stop », « arrête g1a2b3c » (`None` = tous).
+    Annuler { id: Option<String> },
+    /// Commande explicite entre accents graves : à lancer (`condition` = relancer
+    /// jusqu'à ce qu'elle réussisse).
+    Commande { cmd: String, condition: bool },
+    /// Phrase libre (« quand la construction github est finie ») : à confier à l'agent.
+    Flou { raison: String },
+}
+
+const MOTS_ANNULER_GUET: &[&str] = &[
+    "annule", "annuler", "annules", "annulez", "anule", "anuler", "anulle", "anuller", "cancel", "stop", "stoppe", "arrete", "arreter", "arretes",
+    "off", "coupe", "couper", "supprime", "supprimer", "enleve", "retire", "efface", "vide",
+];
+const MOTS_CONDITION_GUET: &[&str] = &[
+    "reussit", "reussisse", "reussi", "passe", "passent", "marche", "fonctionne", "repond", "reponde",
+    "vrai", "ok", "disponible", "dispo", "succeeds", "passes", "works", "responds", "true", "jusqu'a",
+    "until", "existe",
+];
+
+fn id_guet(w: &str) -> bool {
+    w.len() == 7 && w.starts_with('g') && w[1..].chars().all(|c| c.is_ascii_hexdigit())
+}
+
+/// Analyse `/guet <texte libre>`.
+pub fn analyser_guet(texte: &str) -> IntentionGuet {
+    let brut = texte.trim();
+    let norm = normaliser(brut);
+    let mots: Vec<String> = norm
+        .split(|c: char| c.is_whitespace() || matches!(c, ',' | ';' | '!' | '.' | '?' | ':' | '«' | '»' | '"'))
+        .filter(|w| !w.is_empty())
+        .map(str::to_string)
+        .collect();
+    if mots.is_empty() || mots.iter().all(|w| MOTS_AFFICHER.contains(&w.as_str()) || ["les", "guets", "guet", "en", "cours", "mes"].contains(&w.as_str())) {
+        return IntentionGuet::Afficher;
+    }
+    // Commande explicite : `…` (le seul endroit où l'on ne devine pas).
+    let commande = brut.split('`').nth(1).map(str::trim).filter(|c| !c.is_empty() && brut.matches('`').count() >= 2);
+    let premier = mots.iter().find(|w| !["le", "la", "les", "ce", "mon", "tous", "tout", "guet", "guets", "s'il", "te", "plait", "stp"].contains(&w.as_str()));
+    if commande.is_none() && premier.is_some_and(|w| proche(w, MOTS_ANNULER_GUET)) {
+        let id = mots.iter().find(|w| id_guet(w)).cloned();
+        return IntentionGuet::Annuler { id };
+    }
+    if let Some(cmd) = commande {
+        let hors: String = brut.split('`').enumerate().filter(|(i, _)| i % 2 == 0).map(|(_, s)| s).collect::<Vec<_>>().join(" ");
+        let condition = normaliser(&hors)
+            .split(|c: char| !(c.is_alphanumeric() || c == '\''))
+            .any(|w| MOTS_CONDITION_GUET.contains(&w));
+        return IntentionGuet::Commande { cmd: cmd.to_string(), condition };
+    }
+    IntentionGuet::Flou { raison: "pas de commande explicite entre accents graves".into() }
+}
+
+#[cfg(test)]
+mod tests_guet {
+    use super::*;
+    use IntentionGuet as G;
+
+    #[test]
+    fn guet_en_langage_courant() {
+        assert_eq!(analyser_guet(""), G::Afficher);
+        assert_eq!(analyser_guet("liste"), G::Afficher);
+        assert_eq!(analyser_guet("annule"), G::Annuler { id: None });
+        assert_eq!(analyser_guet("anulle tout"), G::Annuler { id: None });
+        assert_eq!(analyser_guet("arrête le guet g1a2b3c"), G::Annuler { id: Some("g1a2b3c".into()) });
+        assert_eq!(analyser_guet("stop"), G::Annuler { id: None });
+        assert_eq!(analyser_guet("quand `cargo build` est fini"), G::Commande { cmd: "cargo build".into(), condition: false });
+        assert_eq!(analyser_guet("dès que `curl -f http://x` répond"), G::Commande { cmd: "curl -f http://x".into(), condition: true });
+        assert!(matches!(analyser_guet("quand la construction github est finie"), G::Flou { .. }));
+    }
+}

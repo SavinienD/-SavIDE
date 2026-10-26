@@ -324,3 +324,136 @@ async fn pas_de_relance_si_l_utilisateur_ecrit() {
     b.daemon.dispatch(0, "sessions.commands_set", serde_json::json!({"sessionId": b.id, "op": "goal_pause"})).await.unwrap();
     assert!(b.hook.state(&b.id).goal.unwrap().status == "paused");
 }
+
+// ------------------------------------------------------------ axe:guet
+
+impl Banc {
+    fn meta(&self) -> axecode_core::SessionMeta {
+        self.daemon.list_metas().into_iter().find(|m| m.id == self.id).expect("session")
+    }
+    async fn guet(&self, method: &str, params: serde_json::Value) -> serde_json::Value {
+        use axecode_app::repl::TurnHook;
+        self.hook.host_call(&self.meta(), method, params).await.expect(method)
+    }
+    fn reveils(&self) -> usize {
+        let j = self.daemon.journal(&self.id).unwrap();
+        let j = j.lock().unwrap();
+        serde_json::to_string(j.entries()).unwrap().matches("<guet id=").count()
+    }
+    async fn attendre_reveils(&self, n: usize, secondes: u64) {
+        for _ in 0..secondes * 20 {
+            if self.reveils() >= n && self.idle() {
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+        panic!("{} réveil(s) de guet au lieu de {n}", self.reveils());
+    }
+}
+
+/// Une commande qui finit => UN seul réveil, avec son code et la fin de sa sortie.
+#[tokio::test(flavor = "multi_thread")]
+async fn guet_commande_un_seul_reveil() {
+    let Some(b) = banc() else { return };
+    b.send("bonjour").await;
+    let g = b.guet("guet.commande", serde_json::json!({"cmd": "echo construction-finie; exit 3", "message": "la construction"})).await;
+    assert_eq!(g["genre"], "commande");
+    assert_eq!(b.guet("guet.liste", serde_json::json!({})).await.as_array().unwrap().len(), 1);
+    b.attendre_reveils(1, 20).await;
+    tokio::time::sleep(Duration::from_millis(2_000)).await;
+    assert_eq!(b.reveils(), 1, "un seul réveil");
+    assert!(b.journal_has("statut=\\\"termine\\\"") && b.journal_has("code de sortie 3") && b.journal_has("construction-finie"));
+    assert!(b.last_prompt().contains("construction-finie"), "le réveil a lancé un tour");
+    assert!(b.hook.state(&b.id).guets.is_empty(), "guet retiré après livraison");
+}
+
+/// Condition fausse deux fois, vraie au 3e essai => un réveil « condition remplie ».
+#[tokio::test(flavor = "multi_thread")]
+async fn guet_condition_vraie_au_troisieme_essai() {
+    let Some(b) = banc() else { return };
+    b.send("bonjour").await;
+    let cmd = "n=$(cat compteur 2>/dev/null || echo 0); n=$((n+1)); echo $n > compteur; echo essai $n; [ $n -ge 3 ]";
+    b.guet("guet.condition", serde_json::json!({"cmd": cmd, "intervalle_ms": 300})).await;
+    b.attendre_reveils(1, 20).await;
+    assert!(b.journal_has("statut=\\\"reussi\\\"") && b.journal_has("3 essais") && b.journal_has("essai 3"));
+    tokio::time::sleep(Duration::from_millis(1_000)).await;
+    assert_eq!(std::fs::read_to_string(b.base.join("ws/compteur")).unwrap().trim(), "3", "plus d'essai après la réussite");
+    assert_eq!(b.reveils(), 1);
+}
+
+/// Délai dépassé (commande trop longue, condition jamais vraie) => réveil « délai dépassé ».
+#[tokio::test(flavor = "multi_thread")]
+async fn guet_delai_depasse() {
+    let Some(b) = banc() else { return };
+    b.send("bonjour").await;
+    b.guet("guet.commande", serde_json::json!({"cmd": "sleep 30", "timeout_ms": 1500})).await;
+    b.guet("guet.condition", serde_json::json!({"cmd": "false", "intervalle_ms": 300, "timeout_ms": 1500})).await;
+    b.attendre_reveils(2, 20).await;
+    let j = b.daemon.journal(&b.id).unwrap();
+    let texte = serde_json::to_string(j.lock().unwrap().entries()).unwrap();
+    assert_eq!(texte.matches("statut=\\\"delai_depasse\\\"").count(), 2, "{}", &texte[texte.len().saturating_sub(2000)..]);
+}
+
+/// Annulé (par l'agent puis par l'IDE) => pas de réveil, la commande est tuée.
+#[tokio::test(flavor = "multi_thread")]
+async fn guet_annulation() {
+    let Some(b) = banc() else { return };
+    b.send("bonjour").await;
+    let g = b.guet("guet.commande", serde_json::json!({"cmd": "sleep 2; touch fait"})).await;
+    let r = b.guet("guet.annuler", serde_json::json!({"id": g["id"]})).await;
+    assert_eq!(r["annules"][0], g["id"]);
+    // Annulation depuis l'IDE (indicateur) : sessions.commands_set guet_annuler:<id>.
+    let c = b.guet("guet.condition", serde_json::json!({"cmd": "false", "intervalle_ms": 200})).await;
+    let vue = b.daemon.dispatch(0, "sessions.commands_state", serde_json::json!({"sessionId": b.id})).await.unwrap();
+    assert_eq!(vue["guets"][0]["id"], c["id"]);
+    let op = format!("guet_annuler:{}", c["id"].as_str().unwrap());
+    let vue = b.daemon.dispatch(0, "sessions.commands_set", serde_json::json!({"sessionId": b.id, "op": op})).await.unwrap();
+    assert_eq!(vue["guets"].as_array().map_or(0, Vec::len), 0);
+    tokio::time::sleep(Duration::from_millis(3_500)).await;
+    assert_eq!(b.reveils(), 0, "aucun réveil après annulation");
+    assert!(!b.base.join("ws/fait").exists(), "la commande annulée a été tuée");
+    b.send("et alors ?").await;
+    assert!(b.last_prompt().contains("annulé le guet depuis l'interface"), "l'agent est prévenu");
+}
+
+/// Le guet vit dans le service, pas dans le noyau : rechargement complet du service
+/// (nouveau démon, nouveau crochet, noyau neuf) => la condition est toujours guettée,
+/// et une commande perdue au redémarrage réveille « interrompu ».
+#[tokio::test(flavor = "multi_thread")]
+async fn guet_survit_au_redemarrage() {
+    let Some(mut b) = banc() else { return };
+    b.send("bonjour").await;
+    b.guet("guet.fichier", serde_json::json!({"chemin": "pret.txt", "intervalle_ms": 200})).await;
+    b.guet("guet.commande", serde_json::json!({"cmd": "sleep 60"})).await;
+    let (base, id) = (b.base.clone(), b.id.clone());
+    b.keep = true;
+    b.hook.stop_guets(); // le processus du service s'arrête
+    drop(b);
+    let b = banc_sur(base, Some(id)).expect("banc rechargé");
+    let vue = b.daemon.dispatch(0, "sessions.commands_state", serde_json::json!({"sessionId": b.id})).await.unwrap();
+    assert_eq!(vue["guets"].as_array().map_or(0, Vec::len), 2, "guets gardés dans l'état");
+    b.send("me revoilà").await;
+    b.attendre_reveils(1, 20).await;
+    assert!(b.journal_has("statut=\\\"interrompu\\\""));
+    std::fs::write(b.base.join("ws/pret.txt"), "ok").unwrap();
+    b.attendre_reveils(2, 20).await;
+    assert!(b.journal_has("statut=\\\"reussi\\\"") && b.journal_has("fichier pret.txt"));
+}
+
+/// axe:guet — `/guet` en langage courant : commande explicite posée, phrase libre
+/// confiée à l'agent, « annule » arrête tout.
+#[tokio::test(flavor = "multi_thread")]
+async fn guet_par_commande_slash() {
+    let Some(b) = banc() else { return };
+    b.send("/guet quand la construction github est finie").await;
+    assert!(b.hook.state(&b.id).guets.is_empty());
+    let p = b.last_prompt();
+    assert!(p.contains("## Commande `/guet`") && p.contains("guet.condition") && p.contains("gh run"), "{}", &p[p.len().saturating_sub(1200)..]);
+    b.send("/guet dès que `test -f jamais.txt` réussit").await;
+    let g = b.hook.state(&b.id).guets;
+    assert_eq!((g.len(), g[0].genre.as_str(), g[0].par_utilisateur), (1, "condition", true));
+    assert!(b.last_prompt().contains("## Guets en cours"), "bloc d'état");
+    b.send("/guet anulle").await;
+    assert!(b.hook.state(&b.id).guets.is_empty(), "« anulle » (faute) annule");
+    assert!(b.last_prompt().contains("a annulé 1 guet"));
+}
