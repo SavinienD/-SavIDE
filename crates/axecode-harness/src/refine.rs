@@ -868,12 +868,17 @@ enum TaskEnd {
 pub struct RefineRunner {
     pending: Arc<Mutex<HashMap<String, PendingRefinement>>>,
     tasks: Arc<Mutex<HashMap<String, tokio::task::AbortHandle>>>,
-    timeout: Duration,
+    /// axe:refine169 — délai de préparation (ms), réglable après coup (tests).
+    timeout_ms: Arc<std::sync::atomic::AtomicU64>,
 }
 
 impl Default for RefineRunner {
     fn default() -> Self {
-        Self { pending: Arc::default(), tasks: Arc::default(), timeout: PLANNING_TIMEOUT }
+        Self {
+            pending: Arc::default(),
+            tasks: Arc::default(),
+            timeout_ms: Arc::new(std::sync::atomic::AtomicU64::new(PLANNING_TIMEOUT.as_millis() as u64)),
+        }
     }
 }
 
@@ -882,9 +887,18 @@ impl RefineRunner {
         Self::default()
     }
 
-    pub fn with_timeout(mut self, timeout: Duration) -> Self {
-        self.timeout = timeout;
+    pub fn with_timeout(self, timeout: Duration) -> Self {
+        self.set_timeout(timeout);
         self
+    }
+
+    /// axe:refine169 — change le délai de préparation des prochains affinages.
+    pub fn set_timeout(&self, timeout: Duration) {
+        self.timeout_ms.store(timeout.as_millis() as u64, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    fn timeout(&self) -> Duration {
+        Duration::from_millis(self.timeout_ms.load(std::sync::atomic::Ordering::Relaxed))
     }
 
     pub fn pending(&self, conversation_id: &str) -> Option<PendingRefinement> {
@@ -945,7 +959,7 @@ impl RefineRunner {
             tracing::warn!(error = %err, "refine: unable to journal the running record");
         }
 
-        let timeout = self.timeout;
+        let timeout = self.timeout();
         let work = {
             let store = store.clone();
             let record_id = record_id.clone();
@@ -1099,7 +1113,7 @@ impl RefineRunner {
         focus: Option<&str>,
     ) -> Result<RefinementRecord> {
         let entries = store.load_all()?;
-        let plan = tokio::time::timeout(self.timeout, plan(provider.as_ref(), model, history, &entries, focus))
+        let plan = tokio::time::timeout(self.timeout(), plan(provider.as_ref(), model, history, &entries, focus))
             .await
             .map_err(|_| anyhow!("délai dépassé : pas de réponse du modèle"))??;
         apply(

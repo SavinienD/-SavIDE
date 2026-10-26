@@ -815,6 +815,11 @@ impl SessionCommandsHook {
         })
     }
 
+    /// axe:refine169 — délai de préparation des affinages (10 min ; tests : quelques ms).
+    pub fn set_refine_timeout(&self, timeout: Duration) {
+        self.inner.refine.set_timeout(timeout);
+    }
+
     /// axe:goal165 — pause before an automatic relaunch (tests: a few ms).
     pub fn set_pursuit_delay(&self, delay: Duration) {
         self.inner.pursuit_delay_ms.store(delay.as_millis() as u64, std::sync::atomic::Ordering::Relaxed);
