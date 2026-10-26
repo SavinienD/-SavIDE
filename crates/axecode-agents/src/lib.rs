@@ -1,6 +1,7 @@
 //! External agents for SavIDE: a task queue on disk.
 //!
-//! One folder per task under `<workspace>/.axecode/agents/<id>`, holding the
+//! One folder per task under `<data>/projects/<key>/agents/<id>` (app data,
+//! never the user's project), holding the
 //! brief (`tache.md`), the state (`etat.json`), the agent output
 //! (`journal.log`) and its report (`resultat.md`). The service launches only
 //! commands declared in its configuration, each in its own process group, and

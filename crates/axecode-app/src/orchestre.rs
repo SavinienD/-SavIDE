@@ -57,7 +57,8 @@ fn data_dir() -> PathBuf {
 }
 
 fn open(root: &Path) -> Result<AgentStore, String> {
-    AgentStore::open(root, AgentsConfig::load(&data_dir())).map_err(|e| e.to_string())
+    let queue = axecode_harness::project_data_dir(root).join("agents");
+    AgentStore::open_at(root, &queue, AgentsConfig::load(&data_dir())).map_err(|e| e.to_string())
 }
 
 pub async fn run(workspace_root: &Path, name: &str, input: Value) -> ToolRunResult {
@@ -139,7 +140,7 @@ mod tests {
         let mut cfg = AgentsConfig::default();
         cfg.agents_commandes.clear();
         cfg.agents_commandes.insert("faux".into(), cmd.iter().map(|s| s.to_string()).collect());
-        let s = AgentStore::open(dir.path(), cfg).unwrap();
+        let s = AgentStore::open_at(dir.path(), &dir.path().join("file"), cfg).unwrap();
         (dir, s)
     }
 

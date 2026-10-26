@@ -1,7 +1,7 @@
 """harness — votre harnais continu (mémoire persistante d'une session à l'autre).
 
 Quatre sortes d'entrées, chacune dans deux portées (``"global"`` suit
-l'utilisateur partout, ``"project"`` vit dans ``<workspace>/.axecode/harness``) :
+l'utilisateur partout, ``"project"`` vit dans ``<workspace>/.axecode/harness`` s'il existe déjà, sinon dans les données de l'appli) :
 
 * notes de prompt    – consignes permanentes injectées à chaque tour
 * mémoires           – faits appris sur l'utilisateur / le projet, injectés à chaque tour

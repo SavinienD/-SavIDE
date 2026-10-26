@@ -1216,11 +1216,11 @@ mod tests {
     #[test]
     fn refine_never_writes_the_old_project_folder() {
         let dir = TempDir::new();
-        let store = store(&dir);
-        let legacy = store.paths().legacy_project_root.clone().unwrap();
+        let legacy = dir.0.join("ws").join(crate::store::LEGACY_PROJECT_DIR_NAME).join("harness");
         let old_file = legacy.join("memories").join("mem_old.md");
         fs::create_dir_all(old_file.parent().unwrap()).unwrap();
         fs::write(&old_file, "# Old\n\nold body").unwrap();
+        let store = store(&dir);
         let update = RefineOp {
             op: OpKind::Update,
             kind: None,
@@ -1239,8 +1239,8 @@ mod tests {
         assert_eq!(store.get("mem_old").unwrap().unwrap().body.trim(), "new body");
         rollback(&store, &record.id).unwrap();
         assert!(store.get("mem_old").unwrap().unwrap().body.contains("old body"));
-        assert_eq!(fs::read_to_string(&old_file).unwrap(), "# Old\n\nold body");
-        assert_eq!(fs::read_dir(old_file.parent().unwrap()).unwrap().count(), 1);
+        // axe:dossiers-anciens — l'ancien dossier a été déplacé, jamais réécrit.
+        assert!(!old_file.exists() && !legacy.exists());
     }
 
     #[test]

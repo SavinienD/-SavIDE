@@ -401,6 +401,7 @@ pub(super) fn skill_roots(workspace_root: &Path) -> Vec<PathBuf> {
     let mut roots = vec![
         workspace_root.join(".agents/skills"),
         workspace_root.join(".axecode/skills"),
+        axecode_harness::legacy_dirs::project_skills_dir(workspace_root), // axe:dossiers-anciens
     ];
     if let Some(home) = home_dir() {
         roots.push(home.join(".agents/skills"));

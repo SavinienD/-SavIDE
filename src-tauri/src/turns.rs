@@ -1262,6 +1262,7 @@ pub(super) fn attachment_looks_like_plan(attachment: &AttachmentInput) -> bool {
         .to_ascii_lowercase();
     path.ends_with(".md")
         || path.contains(".axecode/plans/")
+        || path.replace('\\', "/").contains("/plans/")
         || name.ends_with(".md")
         || name.contains("plan")
 }
@@ -1302,10 +1303,11 @@ pub(super) fn attach_latest_plan_artifact(
         return Ok(None);
     }
 
+    // Plans : dans les données de l'appli (par projet), jamais dans le projet.
     let relative_path = latest_plan_artifact_path(history)
-        .filter(|path| is_safe_plan_path(path))
-        .unwrap_or_else(|| new_plan_relative_path(conversation_id, &plan_text));
-    let plan_path = workspace_root.join(&relative_path);
+        .filter(|path| is_safe_plan_path(workspace_root, path))
+        .unwrap_or_else(|| new_plan_relative_path(workspace_root, conversation_id, &plan_text));
+    let plan_path = std::path::PathBuf::from(&relative_path);
     if let Some(parent) = plan_path.parent() {
         fs::create_dir_all(parent)
             .with_context(|| format!("impossible de créer le dossier du plan {}", parent.display()))?;
@@ -1440,20 +1442,28 @@ pub(super) fn latest_plan_artifact_path(history: &[ChatMessage]) -> Option<Strin
     None
 }
 
-pub(super) fn is_safe_plan_path(path: &str) -> bool {
-    if !path.starts_with(".axecode/plans/") || !path.ends_with(".md") {
-        return false;
-    }
-    Path::new(path)
-        .components()
-        .all(|component| matches!(component, Component::Normal(_)))
+/// Dossier des plans d'un projet : données de l'appli, hors du projet.
+pub(super) fn plans_dir(workspace_root: &Path) -> std::path::PathBuf {
+    axecode_harness::project_data_dir(workspace_root).join("plans")
 }
 
-pub(super) fn new_plan_relative_path(conversation_id: &str, plan_text: &str) -> String {
+/// Un plan réutilisable est un `.md` posé directement dans [`plans_dir`]
+/// (les anciens `.axecode/plans/...` du projet ne sont plus réécrits).
+pub(super) fn is_safe_plan_path(workspace_root: &Path, path: &str) -> bool {
+    let path = Path::new(path);
+    path.is_absolute()
+        && path.extension().is_some_and(|e| e == "md")
+        && path.parent() == Some(plans_dir(workspace_root).as_path())
+}
+
+pub(super) fn new_plan_relative_path(workspace_root: &Path, conversation_id: &str, plan_text: &str) -> String {
     let title = plan_title(plan_text).unwrap_or_else(|| "plan".to_string());
     let slug = slugify(&title);
     let short_id = conversation_id.chars().take(8).collect::<String>();
-    format!(".axecode/plans/{}-{}-{}.md", now_ms(), short_id, slug)
+    plans_dir(workspace_root)
+        .join(format!("{}-{}-{}.md", now_ms(), short_id, slug))
+        .display()
+        .to_string()
 }
 
 pub(super) fn plan_title(plan_text: &str) -> Option<String> {

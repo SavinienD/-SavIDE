@@ -42,7 +42,7 @@ impl Fixture {
     }
 
     fn store(&self, config: AgentsConfig) -> AgentStore {
-        AgentStore::open(&self.root, config).unwrap()
+        AgentStore::open_at(&self.root, &self.root.join(".axecode/agents"), config).unwrap()
     }
 
     fn task_dir(&self, id: &str) -> PathBuf {

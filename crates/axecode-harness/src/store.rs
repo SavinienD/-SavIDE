@@ -31,8 +31,8 @@ use crate::model::{
 
 pub const GLOBAL_DIR_NAME: &str = ".savide"; // SavIDE : harnais global distinct de SavIDE
 pub const PROJECT_DIR_NAME: &str = ".axecode";
-/// axe:migration - project folder of before the rename: read as a fallback,
-/// never written.
+/// axe:migration - project folder of before the rename: copied ONCE into the
+/// app data (see [`migrate_legacy_project`]), then never read nor written.
 pub const LEGACY_PROJECT_DIR_NAME: &str = ".atelier"; // rebrand:keep
 pub const HARNESS_DIR_NAME: &str = "harness";
 pub const INDEX_FILE_NAME: &str = "index.json";
@@ -59,16 +59,37 @@ pub struct HarnessPaths {
 
 impl HarnessPaths {
     pub fn for_workspace(workspace_root: impl AsRef<Path>) -> Self {
-        Self::with_home(workspace_root, default_home())
+        let workspace_root = workspace_root.as_ref();
+        let data = crate::datadir::project_data_dir(workspace_root);
+        Self::with_roots(workspace_root, default_home(), data)
     }
 
+    /// Tests : tout (global et données du projet) sous `home`.
     pub fn with_home(workspace_root: impl AsRef<Path>, home: Option<PathBuf>) -> Self {
         let workspace_root = workspace_root.as_ref();
+        let base = home.clone().unwrap_or_else(|| workspace_root.to_path_buf());
+        let data = crate::datadir::project_data_dir_in(&base.join(".axecode-data"), workspace_root);
+        Self::with_roots(workspace_root, home, data)
+    }
+
+    /// Harnais « projet » : toujours dans les données de l'appli
+    /// (`project_data/harness`). axe:dossiers-anciens — les anciens
+    /// `<workspace>/.axecode/` et `.atelier/` (rebrand:keep) y sont déplacés une
+    /// seule fois ([`crate::legacy_dirs`]) ; si un fichier n'a pas pu être
+    /// déplacé, l'ancien harnais reste lu (jamais écrit) en secours.
+    pub fn with_roots(workspace_root: &Path, home: Option<PathBuf>, project_data: PathBuf) -> Self {
         let home = home.unwrap_or_else(|| workspace_root.to_path_buf());
+        let global_root = home.join(GLOBAL_DIR_NAME).join(HARNESS_DIR_NAME);
+        crate::legacy_dirs::migrate(workspace_root, &project_data, Some(&home));
+        let project_root = project_data.join(HARNESS_DIR_NAME);
+        let legacy_project_root = [PROJECT_DIR_NAME, LEGACY_PROJECT_DIR_NAME]
+            .iter()
+            .map(|n| workspace_root.join(n).join(HARNESS_DIR_NAME))
+            .find(|p| p.is_dir() && *p != global_root);
         Self {
-            global_root: home.join(GLOBAL_DIR_NAME).join(HARNESS_DIR_NAME),
-            project_root: workspace_root.join(PROJECT_DIR_NAME).join(HARNESS_DIR_NAME),
-            legacy_project_root: Some(workspace_root.join(LEGACY_PROJECT_DIR_NAME).join(HARNESS_DIR_NAME)),
+            global_root,
+            project_root,
+            legacy_project_root,
             team_root: team_root_from_env(),
         }
     }
@@ -695,6 +716,25 @@ pub fn default_skill_code(name: &str, description: &str) -> String {
     )
 }
 
+/// Copie récursive sans écraser ; ignore `__pycache__`.
+pub fn copy_missing(src: &Path, dst: &Path) -> Result<()> {
+    for entry in fs::read_dir(src).with_context(|| format!("unable to read {}", src.display()))? {
+        let entry = entry?;
+        if entry.file_name() == "__pycache__" {
+            continue;
+        }
+        let target = dst.join(entry.file_name());
+        if entry.path().is_dir() {
+            copy_missing(&entry.path(), &target)?;
+        } else if !target.exists() {
+            fs::create_dir_all(dst).with_context(|| format!("unable to create {}", dst.display()))?;
+            fs::copy(entry.path(), &target)
+                .with_context(|| format!("unable to copy {}", entry.path().display()))?;
+        }
+    }
+    Ok(())
+}
+
 pub fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
     fs::create_dir_all(dst).with_context(|| format!("unable to create {}", dst.display()))?;
     for entry in fs::read_dir(src).with_context(|| format!("unable to read {}", src.display()))? {
@@ -864,57 +904,36 @@ mod tests {
         assert_eq!(entries[0].meta.title, "Manual note");
     }
 
-    // axe:migration
-    fn tree(root: &Path) -> BTreeMap<PathBuf, Vec<u8>> {
-        let mut out = BTreeMap::new();
-        let mut stack = vec![root.to_path_buf()];
-        while let Some(dir) = stack.pop() {
-            for item in fs::read_dir(&dir).unwrap().flatten() {
-                let path = item.path();
-                if path.is_dir() {
-                    stack.push(path);
-                } else {
-                    out.insert(path.clone(), fs::read(&path).unwrap());
-                }
-            }
-        }
-        out
+    #[test]
+    fn legacy_project_is_copied_once_out_of_the_project() {
+        let dir = tempdir::TempDir::new("harness-legacy");
+        let ws = dir.path().join("ws");
+        let legacy = ws.join(LEGACY_PROJECT_DIR_NAME).join(HARNESS_DIR_NAME);
+        fs::create_dir_all(legacy.join("notes")).unwrap();
+        fs::write(legacy.join("notes/note_a.md"), "# Old A\n\nold a").unwrap();
+        let store = HarnessStore::new(HarnessPaths::with_home(&ws, Some(dir.path().join("home"))));
+        assert!(store.paths().legacy_project_root.is_none());
+        assert!(!store.paths().project_root.starts_with(&ws), "{:?}", store.paths().project_root);
+        assert!(store.get("note_a").unwrap().unwrap().body.contains("old a"));
+        assert!(!ws.join(PROJECT_DIR_NAME).exists(), "nothing created in the project");
+        assert!(!ws.join(LEGACY_PROJECT_DIR_NAME).exists(), "ancien dossier déplacé");
+        // Une seule fois : une entrée supprimée ne revient pas.
+        store.delete("note_a").unwrap();
+        let again = HarnessStore::new(HarnessPaths::with_home(&ws, Some(dir.path().join("home"))));
+        assert!(again.get("note_a").unwrap().is_none());
     }
 
     #[test]
-    fn legacy_project_entries_are_read_only() {
-        let (dir, store) = temp_store();
-        let legacy = store.paths().legacy_project_root.clone().unwrap();
-        assert_eq!(legacy, dir.path().join("ws").join(LEGACY_PROJECT_DIR_NAME).join(HARNESS_DIR_NAME));
-        fs::create_dir_all(legacy.join("notes")).unwrap();
-        fs::write(legacy.join("notes/note_a.md"), "# Old A\n\nold a").unwrap();
-        fs::write(legacy.join("notes/note_b.md"), "# Old B\n\nold b").unwrap();
-        let old_skill = legacy.join("skills/old_skill");
-        fs::create_dir_all(&old_skill).unwrap();
-        fs::write(old_skill.join(SKILL_FILE_NAME), "# old skill").unwrap();
-        fs::write(old_skill.join(SKILL_INIT_FILE_NAME), "X = 1\n").unwrap();
-        let before = tree(&legacy);
-        // Read after the new folder.
-        assert_eq!(store.list(Some(EntryKind::PromptNote), Some(Scope::Project)).unwrap().len(), 2);
-        assert!(store.get("note_a").unwrap().unwrap().body.contains("old a"));
-        assert!(store.get_kind(EntryKind::Skill, "old_skill").unwrap().is_some());
-        // Update: written into the new folder, which then hides the old file.
-        let patch = EntryPatch { body: Some("new a".into()), ..Default::default() };
-        let updated = store.update("note_a", patch).unwrap();
-        let new_root = crate::os_path(&store.paths().project_root);
-        assert!(Path::new(&updated.path).starts_with(&new_root));
-        assert_eq!(store.get("note_a").unwrap().unwrap().body.trim(), "new a");
-        assert_eq!(store.list(Some(EntryKind::PromptNote), None).unwrap().len(), 2);
-        let patch = EntryPatch { code: Some("X = 2\n".into()), ..Default::default() };
-        let skill = store.update("old_skill", patch).unwrap();
-        let package = PathBuf::from(skill.package_dir.unwrap());
-        assert!(package.starts_with(&new_root));
-        assert_eq!(fs::read_to_string(package.join(SKILL_INIT_FILE_NAME)).unwrap(), "X = 2\n");
-        // Delete and move: refused; the old folder never changes.
-        assert!(store.delete("note_b").is_err());
-        assert!(store.promote("note_b").is_err());
-        assert_eq!(tree(&legacy), before);
-        assert!(!store.paths().skills_paths().iter().any(|p| p.starts_with(&legacy)));
+    fn existing_project_harness_moves_to_app_data() {
+        let dir = tempdir::TempDir::new("harness-legacy");
+        let ws = dir.path().join("ws");
+        let old = ws.join(PROJECT_DIR_NAME).join(HARNESS_DIR_NAME);
+        fs::create_dir_all(old.join("memories")).unwrap();
+        fs::write(old.join("memories/m.md"), "# M\n\nm").unwrap();
+        let paths = HarnessPaths::with_home(&ws, Some(dir.path().join("home")));
+        assert!(!paths.project_root.starts_with(&ws));
+        assert!(!ws.join(PROJECT_DIR_NAME).exists());
+        assert!(HarnessStore::new(paths).get("m").unwrap().is_some());
     }
 
     mod tempdir {

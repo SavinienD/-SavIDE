@@ -1,15 +1,18 @@
 //! Continual harness for SavIDE.
 
 pub mod cloud_mirror;
+pub mod datadir;
 pub mod host;
 pub mod import;
 pub mod inject;
+pub mod legacy_dirs;
 pub mod model;
 pub mod refine;
 pub mod store;
 
 pub use model::{Entry, EntryKind, EntryMeta, EntryPatch, IndexRow, NewEntry, Scope};
 pub use store::{HarnessPaths, HarnessStore};
+pub use datadir::{app_data_dir, project_data_dir};
 
 /// Form of a path to hand to the UI or to another program: without the
 /// Windows verbatim prefix `\\?\` that `canonicalize` adds and that users

@@ -422,8 +422,15 @@ fn under_trash(relative: &Path) -> bool {
     it.next() == Some(".axecode") && it.next() == Some("corbeille")
 }
 
-fn trash_root(r: &Path) -> PathBuf {
-    r.join(".axecode").join("corbeille")
+/// Corbeille d'un espace : dans les données du service, jamais dans le projet.
+fn trash_root(d: &Daemon, r: &Path) -> PathBuf {
+    axecode_harness::datadir::project_data_dir_in(d.data_dir(), r).join("corbeille")
+}
+
+/// Corbeilles lues : la nouvelle, puis l'ancienne `<projet>/.axecode/corbeille`
+/// si elle existe déjà (jamais créée).
+fn trash_roots(d: &Daemon, r: &Path) -> Vec<PathBuf> {
+    vec![trash_root(d, r), r.join(".axecode").join("corbeille")]
 }
 
 /// Déplacement même-volume, avec repli copie+suppression hors volume.
@@ -718,7 +725,7 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
                 .ok_or_else(|| SessionError::Protocol("invalid name".into()))?
                 .to_string();
             let id = trash_id();
-            let dest_dir = trash_root(&r).join(&id);
+            let dest_dir = trash_root(d, &r).join(&id);
             std::fs::create_dir_all(&dest_dir).map_err(|e| SessionError::Io(e.to_string()))?;
             let dest = dest_dir.join(&name);
             if let Err(e) = move_entry(&src, &dest) {
@@ -747,9 +754,9 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
         }
         // axe:v2-l2.4 — contenu de la corbeille, du plus récent au plus ancien.
         "fs.trash_list" => {
-            let dir = trash_root(&r);
             let mut out = Vec::new();
-            if let Ok(entries) = std::fs::read_dir(&dir) {
+            for dir in trash_roots(d, &r) {
+                let Ok(entries) = std::fs::read_dir(&dir) else { continue };
                 for entry in entries.flatten() {
                     let path = entry.path();
                     if !path.is_dir() {
@@ -790,7 +797,11 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
             if id_rel.components().count() != 1 || under_trash(&id_rel) {
                 return Err(SessionError::Protocol("invalid trash id".into()));
             }
-            let entry_dir = trash_root(&r).join(&id_rel);
+            let entry_dir = trash_roots(d, &r)
+                .into_iter()
+                .map(|root| root.join(&id_rel))
+                .find(|dir| dir.join("meta.json").is_file())
+                .unwrap_or_else(|| trash_root(d, &r).join(&id_rel));
             let raw = std::fs::read_to_string(entry_dir.join("meta.json"))
                 .map_err(|_| SessionError::Protocol("trash entry not found".into()))?;
             let meta: Value = serde_json::from_str(&raw)
@@ -1447,12 +1458,8 @@ mod tests {
         assert_eq!(t["name"], "demo.txt");
         assert!(t["trashedAtMs"].as_u64().unwrap() > 0);
         assert!(!f.root.join("src/demo.txt").exists());
-        assert!(f
-            .root
-            .join(".axecode/corbeille")
-            .join(&id)
-            .join("demo.txt")
-            .exists());
+        assert!(trash_root(&f.daemon, &f.root).join(&id).join("demo.txt").exists());
+        assert!(!f.root.join(".axecode").exists(), "rien dans le projet");
         let list = f.call("fs.trash_list", json!({})).unwrap();
         let list = list.as_array().unwrap();
         assert_eq!(list.len(), 1);
@@ -1472,7 +1479,7 @@ mod tests {
             std::fs::read_to_string(f.root.join("src/demo.txt")).unwrap(),
             "contenu"
         );
-        assert!(!f.root.join(".axecode/corbeille").join(&id).exists());
+        assert!(!trash_root(&f.daemon, &f.root).join(&id).exists());
         assert_eq!(f.call("fs.trash_list", json!({})).unwrap(), json!([]));
     }
 

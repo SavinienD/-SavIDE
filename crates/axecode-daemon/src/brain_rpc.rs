@@ -167,7 +167,13 @@ fn render_skill_file(name: &str, description: &str, content: &str) -> String {
 
 pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
     let root = workspace_rpc::root(d)?;
-    let store = HarnessStore::open(&root);
+    // Harnais « projet » hors du projet (données du service) s'il n'y existe pas déjà.
+    let data = axecode_harness::datadir::project_data_dir_in(d.data_dir(), &root);
+    let store = HarnessStore::new(axecode_harness::HarnessPaths::with_roots(
+        &root,
+        axecode_harness::store::default_home(),
+        data,
+    ));
     match m {
         // ----- skills ----------------------------------------------------
         "skills.list" => Ok(serde_json::to_value(all_skills(d, &root))?),
@@ -445,7 +451,8 @@ mod tests {
         let f = Fixture::new();
         let paths = f.call("harness.paths", json!({})).unwrap();
         assert!(paths["globalRoot"].as_str().unwrap().ends_with(".axecode/harness"));
-        assert!(paths["projectRoot"].as_str().unwrap().ends_with(".axecode/harness"));
+        assert!(paths["projectRoot"].as_str().unwrap().ends_with("/harness"));
+        assert!(!paths["projectRoot"].as_str().unwrap().starts_with(&f.root.display().to_string()));
 
         let created = f
             .call(

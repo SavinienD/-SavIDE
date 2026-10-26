@@ -51,10 +51,24 @@ fn place_generated_images(result: &mut ToolRunResult, workspace: &Path, requeste
         let rel = |p: &Path| p.strip_prefix(workspace).unwrap_or(p).to_string_lossy().replace('\\', "/");
         let (old_rel, new_rel) = (rel(&source), rel(&dest));
         result.content = result.content.replace(&old_rel, &new_rel);
+        let mut known = false;
         for change in result.file_changes.iter_mut() {
             if change.relative_path.replace('\\', "/") == old_rel {
                 change.relative_path = new_rel.clone();
+                known = true;
             }
+        }
+        if !known && dest.starts_with(workspace) {
+            result.file_changes.push(crate::tool_run::FileChange {
+                relative_path: new_rel.clone(),
+                kind: crate::tool_run::FileChangeKind::Added,
+                summary: "Added generated image".into(),
+                binary: true,
+                added_lines: 0,
+                removed_lines: 0,
+                truncated: false,
+                lines: Vec::new(),
+            });
         }
         image.path = Some(dest.display().to_string());
     }
@@ -67,7 +81,7 @@ mod place_tests {
     use crate::tool_run::ToolRunImage;
 
     fn generated(workspace: &Path, names: &[&str]) -> ToolRunResult {
-        let dir = workspace.join(".axecode/images");
+        let dir = workspace.with_extension("donnees").join("images");
         std::fs::create_dir_all(&dir).unwrap();
         let images = names
             .iter()
@@ -76,7 +90,7 @@ mod place_tests {
                 ToolRunImage { media_type: "image/png".into(), data: String::new(), path: Some(dir.join(name).display().to_string()) }
             })
             .collect();
-        let content = names.iter().map(|n| format!("- .axecode/images/{n}")).collect::<Vec<_>>().join("\n");
+        let content = names.iter().map(|n| format!("- {}", dir.join(n).display())).collect::<Vec<_>>().join("\n");
         ToolRunResult::ok_with_images(content, images, Vec::new())
     }
 
@@ -87,7 +101,10 @@ mod place_tests {
         let mut one = generated(&ws, &["1-1.png"]);
         place_generated_images(&mut one, &ws, "sorties/logo").unwrap();
         assert!(ws.join("sorties/logo.png").exists());
-        assert!(!ws.join(".axecode/images/1-1.png").exists());
+        assert!(!ws.with_extension("donnees").join("images/1-1.png").exists());
+        assert!(!ws.join(".axecode").exists(), "no hidden folder in the project");
+        assert_eq!(one.file_changes.len(), 1);
+        assert_eq!(one.file_changes[0].relative_path, "sorties/logo.png");
         assert!(one.content.contains("sorties/logo.png"), "{}", one.content);
         assert_eq!(one.images[0].path.as_deref(), Some(ws.join("sorties/logo.png").display().to_string().as_str()));
 
@@ -95,6 +112,7 @@ mod place_tests {
         place_generated_images(&mut two, &ws, "b.png").unwrap();
         assert!(ws.join("b-1.png").exists() && ws.join("b-2.png").exists());
         let _ = std::fs::remove_dir_all(&ws);
+        let _ = std::fs::remove_dir_all(ws.with_extension("donnees"));
     }
 }
 
@@ -202,7 +220,8 @@ pub(crate) async fn dispatch(shared: &Arc<Shared>, method: &str, params: Value) 
                 settings.nano_banana_api_key(),
             );
             // `path` is a kernel-side option (images.generate(path=...)): the
-            // tool always saves under .axecode/images, the file is then moved.
+            // tool saves in the app data (never the project), the file is then
+            // MOVED to `path` (no copy left anywhere).
             let mut params = params;
             let requested = params
                 .as_object_mut()

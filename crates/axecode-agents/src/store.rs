@@ -1,6 +1,7 @@
 //! On-disk task queue and supervisor.
 //!
-//! Layout, under `<workspace>/.axecode/agents/`:
+//! Layout, under the queue root (app data: `<data>/projects/<key>/agents/`,
+//! never inside the user's project):
 //!
 //! ```text
 //! <id>/tache.md     brief written by the caller
@@ -587,21 +588,18 @@ pub struct AgentStore {
 }
 
 impl AgentStore {
-    /// Opens (and creates) `<workspace>/.axecode/agents`, rebuilds the index
-    /// from disk and recovers ghost `en_cours` tasks.
-    pub fn open(workspace_root: &Path, config: AgentsConfig) -> Result<Self, AgentsError> {
+    /// Opens (and creates) the queue `queue_root` of the workspace (in the
+    /// app data, never in the user's project), rebuilds the index from disk
+    /// and recovers ghost `en_cours` tasks.
+    pub fn open_at(workspace_root: &Path, queue_root: &Path, config: AgentsConfig) -> Result<Self, AgentsError> {
         let workspace = workspace_root
             .canonicalize()
             .map_err(|_| AgentsError::NoWorkspace)?;
         if !workspace.is_dir() {
             return Err(AgentsError::NoWorkspace);
         }
-        let raw = workspace.join(".axecode").join("agents");
-        std::fs::create_dir_all(&raw)?;
-        let root = raw.canonicalize()?;
-        if !root.starts_with(&workspace) {
-            return Err(AgentsError::InvalidTask);
-        }
+        std::fs::create_dir_all(queue_root)?;
+        let root = queue_root.canonicalize()?;
         let inner = Arc::new(Inner {
             root,
             config: config.normalized(),

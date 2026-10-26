@@ -324,8 +324,9 @@ impl CreateImageTool {
         output.push_str("\nsaved:");
         for image in &images {
             if let Some(path) = &image.path {
-                if let Ok(relative) = PathBuf::from(path).strip_prefix(&self.workspace_root) {
-                    output.push_str(&format!("\n- {}", relative.display()));
+                match PathBuf::from(path).strip_prefix(&self.workspace_root) {
+                    Ok(relative) => output.push_str(&format!("\n- {}", relative.display())),
+                    Err(_) => output.push_str(&format!("\n- {path}")),
                 }
             }
         }
@@ -342,6 +343,8 @@ impl CreateImageTool {
         }
         output.push_str("\n\n[Image jointe en visuel.]");
 
+        // Images des données de l'appli : pas un changement du projet.
+        file_changes.retain(|c| !std::path::Path::new(&c.relative_path).is_absolute());
         Ok(ToolRunResult::ok_with_images(output, images, file_changes))
     }
 
@@ -440,8 +443,9 @@ impl CreateImageTool {
         output.push_str("\nsaved:");
         for image in &images {
             if let Some(path) = &image.path {
-                if let Ok(relative) = PathBuf::from(path).strip_prefix(&self.workspace_root) {
-                    output.push_str(&format!("\n- {}", relative.display()));
+                match PathBuf::from(path).strip_prefix(&self.workspace_root) {
+                    Ok(relative) => output.push_str(&format!("\n- {}", relative.display())),
+                    Err(_) => output.push_str(&format!("\n- {path}")),
                 }
             }
         }
@@ -457,6 +461,8 @@ impl CreateImageTool {
         }
         output.push_str("\n\n[Image jointe en visuel.]");
 
+        // Images des données de l'appli : pas un changement du projet.
+        file_changes.retain(|c| !std::path::Path::new(&c.relative_path).is_absolute());
         Ok(ToolRunResult::ok_with_images(output, images, file_changes))
     }
 
@@ -660,8 +666,9 @@ impl CreateImageTool {
         output.push_str("\nsaved:");
         for image in &images {
             if let Some(path) = &image.path {
-                if let Ok(relative) = PathBuf::from(path).strip_prefix(&self.workspace_root) {
-                    output.push_str(&format!("\n- {}", relative.display()));
+                match PathBuf::from(path).strip_prefix(&self.workspace_root) {
+                    Ok(relative) => output.push_str(&format!("\n- {}", relative.display())),
+                    Err(_) => output.push_str(&format!("\n- {path}")),
                 }
             }
         }
@@ -671,17 +678,21 @@ impl CreateImageTool {
         }
         output.push_str("\n\n[Image jointe en visuel.]");
 
+        // Images des données de l'appli : pas un changement du projet.
+        file_changes.retain(|c| !std::path::Path::new(&c.relative_path).is_absolute());
         Ok(ToolRunResult::ok_with_images(output, images, file_changes))
     }
 
     fn save_image(&self, bytes: &[u8], extension: &str, idx: usize) -> Result<String> {
-        let dir = self.workspace_root.join(".axecode/images");
-        fs::create_dir_all(&dir).context("unable to create .axecode/images")?;
+        // Jamais dans le projet : données de l'appli, par projet. Avec
+        // `images.generate(path=...)`, le fichier est ensuite DÉPLACÉ au chemin
+        // demandé (repl::host::place_generated_images).
+        let dir = axecode_harness::project_data_dir(&self.workspace_root).join("images");
+        fs::create_dir_all(&dir).with_context(|| format!("unable to create {}", dir.display()))?;
         let name = format!("{}-{}.{}", now_ms(), idx + 1, extension);
-        let relative_path = format!(".axecode/images/{name}");
-        fs::write(self.workspace_root.join(&relative_path), bytes)
-            .context("unable to save generated image")?;
-        Ok(relative_path)
+        let path = dir.join(name);
+        fs::write(&path, bytes).context("unable to save generated image")?;
+        Ok(path.display().to_string())
     }
 
     async fn acquire_write_permit(&self) -> Result<Option<OwnedSemaphorePermit>> {
@@ -1121,6 +1132,19 @@ fn now_ms() -> u128 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn saved_image_never_lands_in_the_project() {
+        let ws = std::env::temp_dir().join(format!("axecode-img-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(&ws).unwrap();
+        let tool = CreateImageTool::new(&ws);
+        let saved = PathBuf::from(tool.save_image(b"png", "png", 0).unwrap());
+        assert!(saved.is_file());
+        assert!(!saved.starts_with(&ws), "{}", saved.display());
+        assert_eq!(fs::read_dir(&ws).unwrap().count(), 0, "rien dans le projet");
+        let _ = fs::remove_file(&saved);
+        let _ = fs::remove_dir_all(&ws);
+    }
 
     #[test]
     fn generated_image_format_prefers_detected_png_over_requested_webp() {

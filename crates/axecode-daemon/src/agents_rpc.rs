@@ -47,6 +47,11 @@ fn workspace_root(d: &Daemon) -> SessionResult<PathBuf> {
     Ok(root)
 }
 
+/// `<data>/projects/<clé du projet>/agents`.
+pub(crate) fn agents_queue_root(data_dir: &std::path::Path, workspace: &std::path::Path) -> std::path::PathBuf {
+    axecode_harness::datadir::project_data_dir_in(data_dir, workspace).join("agents")
+}
+
 fn store(d: &Daemon) -> SessionResult<AgentStore> {
     let root = workspace_root(d)?;
     {
@@ -56,7 +61,9 @@ fn store(d: &Daemon) -> SessionResult<AgentStore> {
         }
     }
     let config = AgentsConfig::load(d.data_dir());
-    let opened = AgentStore::open(&root, config).map_err(err)?;
+    // File d'attente dans les données du service, jamais dans le projet.
+    let queue = agents_queue_root(d.data_dir(), &root);
+    let opened = AgentStore::open_at(&root, &queue, config).map_err(err)?;
     let mut stores = stores().lock().unwrap_or_else(|p| p.into_inner());
     // Another request may have opened it first; keep the shared supervisor.
     Ok(stores.entry(root).or_insert(opened).clone())
@@ -179,7 +186,7 @@ mod tests {
         fn drop(&mut self) {
             self.daemon = None;
             // Stop any process still alive before removing the folder.
-            let agents = self.root.join(".axecode/agents");
+            let agents = agents_queue_root(&self.base.join("data"), &self.root);
             if let Ok(entries) = std::fs::read_dir(&agents) {
                 for entry in entries.flatten() {
                     let raw = std::fs::read_to_string(entry.path().join("etat.json"));
@@ -301,6 +308,7 @@ mod tests {
             );
         }
         assert!(!f.root.join(".axecode/agents/../escape").exists());
+        assert!(!f.root.join(".axecode").exists(), "rien dans le projet");
     }
 
     #[tokio::test(flavor = "multi_thread")]

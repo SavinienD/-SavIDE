@@ -109,13 +109,14 @@ impl SkillTool {
         let mut roots = vec![
             self.workspace_root.join(".agents/skills"),
             self.workspace_root.join(".axecode/skills"),
-            legacy_skills_dir(&self.workspace_root), // axe:migration - read only
+            axecode_harness::legacy_dirs::project_skills_dir(&self.workspace_root), // axe:dossiers-anciens
+            legacy_skills_dir(&self.workspace_root, false), // axe:migration - read only
         ];
         if let Some(base_dirs) = BaseDirs::new() {
             let home = base_dirs.home_dir();
             roots.push(home.join(".agents/skills"));
             roots.push(home.join(".axecode/skills"));
-            roots.push(legacy_skills_dir(home)); // axe:migration - read only
+            roots.push(legacy_skills_dir(home, true)); // axe:migration - read only
         }
 
         let mut seen = HashSet::new();
@@ -270,12 +271,13 @@ pub fn list_installed_skills(
             workspace_root.join(".agents/skills"),
         ),
         (SkillSource::Workspace, workspace_root.join(".axecode/skills")),
-        (SkillSource::Workspace, legacy_skills_dir(workspace_root)), // axe:migration - read only
+        (SkillSource::Workspace, axecode_harness::legacy_dirs::project_skills_dir(workspace_root)), // axe:dossiers-anciens
+        (SkillSource::Workspace, legacy_skills_dir(workspace_root, false)), // axe:migration - read only
     ];
     if let Some(home) = home_dir.as_ref() {
         roots.push((SkillSource::Global, home.join(".agents/skills")));
         roots.push((SkillSource::Global, home.join(".axecode/skills")));
-        roots.push((SkillSource::Global, legacy_skills_dir(home))); // axe:migration - read only
+        roots.push((SkillSource::Global, legacy_skills_dir(home, true))); // axe:migration - read only
     }
 
     let mut seen = HashSet::new();
@@ -351,10 +353,22 @@ pub fn scan_installed_skills(
     skills
 }
 
-/// axe:migration - skill folder of before the rename, listed after the new one
-/// (same name: the new one wins) and never written: not in `skill_roots`.
-fn legacy_skills_dir(root: &Path) -> PathBuf {
-    root.join(axecode_harness::store::LEGACY_PROJECT_DIR_NAME).join("skills")
+/// axe:migration - skills of before the rename (`<root>/.atelier/skills`, rebrand:keep):
+/// copied ONCE into the app data (never into the project), then only that copy
+/// is listed, after the new folders (same name: the new one wins), never
+/// written: not in `skill_roots`.
+fn legacy_skills_dir(root: &Path, global: bool) -> PathBuf {
+    let dest = if global {
+        axecode_harness::app_data_dir().join("legacy-skills")
+    } else {
+        axecode_harness::project_data_dir(root).join("legacy-skills")
+    };
+    let src = root.join(axecode_harness::store::LEGACY_PROJECT_DIR_NAME).join("skills");
+    let marker = dest.with_extension("migrated");
+    if src.is_dir() && !marker.exists() && axecode_harness::store::copy_missing(&src, &dest).is_ok() {
+        let _ = fs::write(&marker, src.display().to_string());
+    }
+    dest
 }
 
 /// axe:v2-l2.4 — allowed skill roots (workspace first, then global), mirroring
@@ -363,6 +377,7 @@ pub fn skill_roots(workspace_root: &Path) -> Vec<PathBuf> {
     let mut roots = vec![
         workspace_root.join(".agents/skills"),
         workspace_root.join(".axecode/skills"),
+        axecode_harness::legacy_dirs::project_skills_dir(workspace_root), // axe:dossiers-anciens
     ];
     if let Some(base) = BaseDirs::new() {
         let home = base.home_dir();
@@ -567,12 +582,15 @@ mod migration_tests {
         let tmp = tempfile::tempdir().unwrap();
         let ws = tmp.path();
         skill(&ws.join(".axecode/skills"), "mig-test-both", "new");
-        skill(&legacy_skills_dir(ws), "mig-test-both", "old");
-        skill(&legacy_skills_dir(ws), "mig-test-old-only", "old");
+        std::env::set_var(axecode_harness::datadir::DATA_ENV, tmp.path().join("donnees"));
+        let old = ws.join(axecode_harness::store::LEGACY_PROJECT_DIR_NAME).join("skills");
+        skill(&old, "mig-test-both", "old");
+        skill(&old, "mig-test-old-only", "old");
         let skills = list_installed_skills(ws, &SkillSettings::default());
         let find = |name: &str| skills.iter().find(|s| s.name == name).unwrap();
         assert!(find("mig-test-both").content.contains("new"));
-        assert!(find("mig-test-old-only").absolute_path.contains(axecode_harness::store::LEGACY_PROJECT_DIR_NAME));
-        assert!(!skill_roots(ws).contains(&legacy_skills_dir(ws)));
+        assert!(find("mig-test-old-only").absolute_path.starts_with(&tmp.path().join("donnees").display().to_string()));
+        assert!(!skill_roots(ws).contains(&legacy_skills_dir(ws, false)));
+        std::env::remove_var(axecode_harness::datadir::DATA_ENV);
     }
 }
