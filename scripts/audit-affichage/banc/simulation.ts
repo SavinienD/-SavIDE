@@ -183,6 +183,9 @@ export function installerSimulation(scene: Scene): void {
       return { name: rel.split("/").pop(), relativePath: rel, absolutePath: D.WS + "\\" + rel.replace(/\//g, "\\"), editable: true, content, reason: null, size: content.length, lastModifiedMs: D.T0, imageMediaType: null, imageData: null };
     },
     list_workspace_files_command: () => D.entrees(""),
+    // axe:explorateur — « Ouvrir avec… » et « Ouvrir dans l'explorateur » (comptés dans __bancAppels).
+    open_workspace_entry_with_command: () => null,
+    reveal_workspace_entry_command: () => null,
     git_repository_snapshot_command: () => D.git(),
     provider_quota: () => ({
       fetchedAtMs: Date.now(),

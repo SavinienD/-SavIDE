@@ -980,6 +980,12 @@ export const api = {
       input: { workspacePath, entries },
     });
   },
+  // axe:explorateur — « Ouvrir avec… » (choix de l'application par le système).
+  openEntryWith(workspacePath: string, relativePath: string) {
+    return invoke<void>("open_workspace_entry_with_command", {
+      input: { workspacePath, relativePath },
+    });
+  },
   revealEntry(workspacePath: string, relativePath: string) {
     return invoke<void>("reveal_workspace_entry_command", {
       input: { workspacePath, relativePath },

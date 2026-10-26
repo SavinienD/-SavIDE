@@ -203,6 +203,37 @@ export const SCENES = [
     ],
     attendus: ["la notice", "github.com/exemple/projet/actions", "src/lib/ipc.ts", "notes.txt"],
   },
+  // axe:explorateur — clavier dans l'explorateur : gauche replie « docs », bas, droite déplie
+  // « scripts », bas = premier enfant, Ctrl+C = chemin absolu SANS « \\?\ ».
+  {
+    id: "explorateur-clavier", sim: {}, stockage: () => colonnes([ids(1)]),
+    explorateur: { clic: "docs", touches: ["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowDown", "Control+c"] },
+    temoins: ["choisi:scripts/ChatPane.tsx", "presse:C:\\Users\\utilisateur\\Documents\\Projets\\axecode\\scripts\\ChatPane.tsx", "sel:.tree-row[data-entry-path='scripts/ChatPane.tsx'][data-selected='true']"],
+  },
+  // Fin = dernière ligne (défilement qui suit), Ctrl+Maj+C = chemin relatif (séparateur Windows).
+  {
+    id: "explorateur-fin", sim: {}, stockage: () => colonnes([ids(1)]),
+    explorateur: { clic: "src", touches: ["ArrowDown", "End", "Control+Shift+C"] },
+    temoins: ["choisi:un-nom-de-fichier-vraiment-tres-long-pour-voir-le-debordement.md", "presse:un-nom-de-fichier-vraiment-tres-long-pour-voir-le-debordement.md", "sel:.tree-row[data-selected='true']"],
+  },
+  // Clic droit sur un fichier : « Ouvrir avec… », « Ouvrir dans l'explorateur », raccourcis affichés.
+  {
+    id: "explorateur-menu", sim: {}, stockage: () => colonnes([ids(1)]),
+    explorateur: { clic: "tests", clicDroit: "Cargo.toml" },
+    temoins: ["clic:.tree-menu .tree-menu__item", "sel:.tree-menu__hint"],
+    attendus: ["Ouvrir avec…", "Ouvrir dans l'explorateur", "Ctrl+C", "Ctrl+Maj+C"],
+  },
+  {
+    id: "explorateur-ouvrir-avec", sim: {}, stockage: () => colonnes([ids(1)]),
+    explorateur: { clic: "tests", clicDroit: "Cargo.toml", menu: "Ouvrir avec…" },
+    temoins: ["appel:open_workspace_entry_with_command", "absent:.tree-menu"],
+  },
+  // Menu de tri de l'en-tête : taille, décroissant, sans « dossiers d'abord » -> le plus gros fichier en tête.
+  {
+    id: "explorateur-tri", sim: {}, stockage: () => colonnes([ids(1)]),
+    explorateur: { clic: "tests", menuTri: ["ouvrir", "[data-tri='taille']", "[data-sens='decroissant']", "[data-dossiers-dabord]"] },
+    temoins: ["clic:.sidebar__head-btn[data-action='trier']", "clic:.tree-sort__menu .tree-menu__item", "premier:RAPPORT.md", "sel:.tree-sort__menu [data-tri='taille'][data-active='true']"],
+  },
   // axe:couleurs — commande slash en orange (accent) et skill en violet : dans la bulle du
   // message envoyé (« /goal … /revue-code ») et dans le compositeur (« /heartbeat 5s coucou … »).
   {

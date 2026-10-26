@@ -494,6 +494,7 @@ pub fn run() {
             workspace::update_skill_content_command,
             workspace::open_external_url_command,
             workspace::open_path_with_default_app_command,
+            workspace::open_workspace_entry_with_command,
             workspace::copy_file_to_path_command,
             workspace::copy_workspace_entries_command,
             workspace::import_workspace_paths_command,

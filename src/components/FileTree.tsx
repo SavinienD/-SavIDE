@@ -12,6 +12,29 @@ import { Icon } from "@iconify/react";
 import { api } from "../lib/ipc";
 import { fileIcon, folderIcon } from "../lib/fileIcon";
 import type { WorkspaceDeletedEntry, WorkspaceEntry } from "../types";
+import {
+  TOUCHES_NAVIGATION,
+  TRI_PAR_DEFAUT,
+  actionClavier,
+  cheminAffiche,
+  cheminRelatifSysteme,
+  libelleRaccourci,
+  raccourciCopieChemin,
+  trierEntrees,
+  type CleTri,
+  type TriExplorateur,
+} from "../lib/arbreFichiers";
+
+// axe:explorateur — système du poste (raccourcis Cmd sur macOS, séparateur « \ » sous Windows).
+const PLATEFORME =
+  typeof navigator !== "undefined" ? navigator.platform || navigator.userAgent || "" : "";
+const EST_MAC = /mac/i.test(PLATEFORME);
+const EST_WINDOWS = /win/i.test(PLATEFORME);
+const LIBELLE_REVELER = EST_MAC
+  ? "Afficher dans le Finder"
+  : EST_WINDOWS
+    ? "Ouvrir dans l'explorateur"
+    : "Ouvrir dans l'explorateur de fichiers";
 
 type NodeState = {
   entry: WorkspaceEntry;
@@ -94,6 +117,8 @@ type Props = {
   refreshToken?: number;
   dropActive?: boolean;
   dropTargetRelative?: string | null;
+  /** axe:explorateur — tri choisi dans l'en-tête de l'explorateur. */
+  tri?: TriExplorateur;
 };
 
 export type FileTreeHandle = {
@@ -113,6 +138,7 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
     refreshToken,
     dropActive,
     dropTargetRelative,
+    tri = TRI_PAR_DEFAUT,
   },
   ref,
 ) {
@@ -251,9 +277,22 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
   }, []);
 
   const visibleEntries = useMemo(
-    () => flattenVisibleEntries(roots, expanded),
-    [expanded, roots],
+    () => flattenVisibleEntries(roots, expanded, tri),
+    [expanded, roots, tri],
   );
+
+  const sortedRoots = useMemo(() => trierEntrees(roots, tri), [roots, tri]);
+
+  // axe:explorateur — le défilement suit la ligne sélectionnée (clavier compris).
+  useEffect(() => {
+    const path = selectedEntry?.relativePath;
+    const body = bodyRef.current;
+    if (!path || !body) return;
+    const row = Array.from(
+      body.querySelectorAll<HTMLElement>(".tree-row[data-entry-path]"),
+    ).find((el) => el.dataset.entryPath === path);
+    row?.scrollIntoView?.({ block: "nearest" });
+  }, [selectedEntry]);
 
   const selectedRelativePaths = useMemo(
     () => new Set(Object.keys(selectedEntries)),
@@ -426,7 +465,7 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
       }
       setActionError(null);
       const width = 196;
-      const height = entry ? 392 : 138;
+      const height = entry ? 470 : 138;
       const x =
         typeof window === "undefined"
           ? event.clientX
@@ -557,7 +596,7 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
       setSelectedEntries(selectionMap(entries));
       closeMenu();
       void navigator.clipboard
-        ?.writeText(entries.map((item) => item.absolutePath).join("\n"))
+        ?.writeText(entries.map((item) => cheminAffiche(item.absolutePath)).join("\n"))
         .catch(() => {});
     },
     [closeMenu, selectedScopeFor],
@@ -649,6 +688,20 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
     [closeMenu, workspacePath],
   );
 
+  const openEntryWith = useCallback(
+    async (entry: WorkspaceEntry | null) => {
+      if (!entry) return;
+      closeMenu();
+      try {
+        setActionError(null);
+        await api.openEntryWith(workspacePath, entry.relativePath);
+      } catch (err) {
+        setActionError(errorText(err));
+      }
+    },
+    [closeMenu, workspacePath],
+  );
+
   const copyEntryPaths = useCallback(
     async (entry: WorkspaceEntry | null, mode: "absolute" | "relative") => {
       const entries = selectedScopeFor(entry);
@@ -663,7 +716,9 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
         }
         const text = entries
           .map((item) =>
-            mode === "absolute" ? item.absolutePath : item.relativePath,
+            mode === "absolute"
+              ? cheminAffiche(item.absolutePath)
+              : cheminRelatifSysteme(item.relativePath, EST_WINDOWS),
           )
           .join("\n");
         await navigator.clipboard.writeText(text);
@@ -1065,6 +1120,19 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
         void restoreLastDeletedEntries();
         return;
       }
+      // axe:explorateur — Ctrl+C (Cmd+C) : copie l'élément ET son chemin absolu ;
+      // Ctrl+Maj+C (Cmd+Maj+C) : chemin relatif au dossier ouvert.
+      const copieChemin = raccourciCopieChemin(event, EST_MAC);
+      if (copieChemin && entry) {
+        event.preventDefault();
+        if (copieChemin === "absolu") {
+          // copySelection écrit aussi le chemin absolu (nettoyé) dans le presse-papiers.
+          copySelection(entry, false);
+        } else {
+          void copyEntryPaths(entry, "relative");
+        }
+        return;
+      }
       if (command && event.key.toLowerCase() === "c") {
         event.preventDefault();
         copySelection(entry, false);
@@ -1095,6 +1163,40 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
         void deleteEntries(entry);
         return;
       }
+      // axe:explorateur — navigation clavier (flèches, Début/Fin, Entrée).
+      if (
+        !command &&
+        !event.altKey &&
+        TOUCHES_NAVIGATION.includes(event.key)
+      ) {
+        const action = actionClavier(
+          visibleEntries,
+          entry?.relativePath ?? null,
+          event.key,
+          (path) => Boolean(expandedRef.current[path]?.expanded),
+        );
+        event.preventDefault();
+        if (!action) return;
+        const cible = visibleEntryByPath.get(action.relativePath);
+        if (!cible) return;
+        if (action.type === "selectionner") {
+          if (event.shiftKey && entry) {
+            setSelectedEntries(
+              selectionMap(
+                entriesInVisibleRange(visibleEntries, entry.relativePath, cible.relativePath),
+              ),
+            );
+            setSelectedEntry(cible);
+          } else {
+            selectOnly(cible);
+          }
+        } else if (action.type === "deplier") {
+          void expandDirectory(cible);
+        } else if (action.type === "replier") {
+          void toggle(cible);
+        }
+        return;
+      }
       if (event.key === "Enter" && entry) {
         event.preventDefault();
         if (entry.kind === "directory") void toggle(entry);
@@ -1102,6 +1204,11 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
       }
     },
     [
+      copyEntryPaths,
+      expandDirectory,
+      selectOnly,
+      visibleEntries,
+      visibleEntryByPath,
       copySelection,
       deleteEntries,
       editState,
@@ -1166,8 +1273,9 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
           onCancel={cancelEdit}
         />
       )}
-      {roots.map((entry) => (
+      {sortedRoots.map((entry) => (
         <TreeNode
+          tri={tri}
           key={entry.relativePath}
           entry={entry}
           depth={0}
@@ -1214,6 +1322,7 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
           }}
           onRename={() => startRename(menu.entry)}
           onReveal={() => void revealEntry(menu.entry)}
+          onOpenWith={() => void openEntryWith(menu.entry)}
           onCopy={() => copySelection(menu.entry, false)}
           onCut={() => copySelection(menu.entry, true)}
           onCopyPath={() => void copyEntryPaths(menu.entry, "absolute")}
@@ -1274,6 +1383,7 @@ type NodeProps = {
   onCancelEdit: () => void;
   dropTargetRelative: string | null;
   dropHoverRelative: string | null;
+  tri: TriExplorateur;
 };
 
 const TreeNode = memo(function TreeNode({
@@ -1299,6 +1409,7 @@ const TreeNode = memo(function TreeNode({
   onCancelEdit,
   dropTargetRelative,
   dropHoverRelative,
+  tri,
 }: NodeProps) {
   const isDir = entry.kind === "directory";
   const state = expanded[entry.relativePath];
@@ -1431,8 +1542,9 @@ const TreeNode = memo(function TreeNode({
               </span>
             </div>
           )}
-          {state.children?.map((child) => (
+          {state.children && trierEntrees(state.children, tri).map((child) => (
             <TreeNode
+              tri={tri}
               key={child.relativePath}
               entry={child}
               depth={depth + 1}
@@ -1674,6 +1786,7 @@ function TreeContextMenu({
   onOpen,
   onRename,
   onReveal,
+  onOpenWith,
   onCopy,
   onCut,
   onCopyPath,
@@ -1689,6 +1802,7 @@ function TreeContextMenu({
   onOpen: () => void;
   onRename: () => void;
   onReveal: () => void;
+  onOpenWith: () => void;
   onCopy: () => void;
   onCut: () => void;
   onCopyPath: () => void;
@@ -1714,6 +1828,13 @@ function TreeContextMenu({
           onClick={onOpen}
         />
       )}
+      {entry && entry.kind === "file" && (
+        <MenuItem
+          icon="solar:widget-add-linear"
+          label="Ouvrir avec…"
+          onClick={onOpenWith}
+        />
+      )}
       <MenuItem icon="solar:document-add-linear" label="Nouveau fichier" onClick={onNewFile} />
       <MenuItem
         icon="solar:add-folder-linear"
@@ -1729,11 +1850,13 @@ function TreeContextMenu({
           <MenuItem
             icon="solar:link-linear"
             label="Copier le chemin"
+            hint={libelleRaccourci(false, EST_MAC)}
             onClick={onCopyPath}
           />
           <MenuItem
             icon="solar:branching-paths-down-linear"
             label="Copier le chemin relatif"
+            hint={libelleRaccourci(true, EST_MAC)}
             onClick={onCopyRelativePath}
           />
         </>
@@ -1749,7 +1872,7 @@ function TreeContextMenu({
           <MenuItem icon="solar:pen-linear" label="Renommer" onClick={onRename} />
           <MenuItem
             icon="solar:folder-open-linear"
-            label="Afficher dans l'Explorateur"
+            label={LIBELLE_REVELER}
             onClick={onReveal}
           />
           <MenuItem
@@ -1769,11 +1892,13 @@ function TreeContextMenu({
 function MenuItem({
   icon,
   label,
+  hint,
   danger,
   onClick,
 }: {
   icon: string;
   label: string;
+  hint?: string;
   danger?: boolean;
   onClick: () => void;
 }) {
@@ -1787,6 +1912,7 @@ function MenuItem({
     >
       <Icon icon={icon} width={14} height={14} />
       <span>{label}</span>
+      {hint && <span className="tree-menu__hint">{hint}</span>}
     </button>
   );
 }
@@ -1798,10 +1924,11 @@ function MenuSeparator() {
 function flattenVisibleEntries(
   entries: WorkspaceEntry[],
   expanded: Record<string, NodeState>,
+  tri: TriExplorateur,
 ): WorkspaceEntry[] {
   const visible: WorkspaceEntry[] = [];
   const visit = (items: WorkspaceEntry[]) => {
-    for (const entry of items) {
+    for (const entry of trierEntrees(items, tri)) {
       visible.push(entry);
       const state = expanded[entry.relativePath];
       if (entry.kind === "directory" && state?.expanded && state.children) {
@@ -1974,4 +2101,123 @@ async function readExternalClipboardPaths(): Promise<string[]> {
     .split(/\r?\n/)
     .map((line) => line.trim().replace(/^file:\/\//, ""))
     .filter((line) => line.startsWith("/") || /^[A-Za-z]:[\\/]/.test(line));
+}
+
+// axe:explorateur — menu de tri de l'en-tête de l'explorateur (nom, date, taille, sens, dossiers d'abord).
+const LIBELLES_TRI: { cle: CleTri; libelle: string }[] = [
+  { cle: "nom", libelle: "Nom" },
+  { cle: "date", libelle: "Date de modification" },
+  { cle: "taille", libelle: "Taille" },
+];
+
+export function MenuTriExplorateur({
+  tri,
+  onChange,
+  classeBouton,
+}: {
+  tri: TriExplorateur;
+  onChange: (tri: TriExplorateur) => void;
+  classeBouton: string;
+}) {
+  const [ouvert, setOuvert] = useState(false);
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 8, y: 8 });
+  const racineRef = useRef<HTMLSpanElement | null>(null);
+
+  useEffect(() => {
+    if (!ouvert) return;
+    const fermer = (event: PointerEvent) => {
+      if (racineRef.current?.contains(event.target as Node)) return;
+      setOuvert(false);
+    };
+    const echap = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOuvert(false);
+    };
+    window.addEventListener("pointerdown", fermer);
+    window.addEventListener("keydown", echap);
+    return () => {
+      window.removeEventListener("pointerdown", fermer);
+      window.removeEventListener("keydown", echap);
+    };
+  }, [ouvert]);
+
+  const coche = (actif: boolean) =>
+    actif ? "solar:check-read-linear" : "solar:minus-circle-linear";
+
+  return (
+    <span className="tree-sort" ref={racineRef}>
+      <button
+        type="button"
+        className={classeBouton}
+        data-action="trier"
+        data-active={ouvert ? "true" : "false"}
+        title="Trier les fichiers"
+        aria-haspopup="menu"
+        aria-expanded={ouvert}
+        onClick={(event) => {
+          // Menu en position fixe sous le bouton (l'en-tête rogne ce qui déborde).
+          const r = event.currentTarget.getBoundingClientRect();
+          const largeur = 210;
+          setPosition({
+            x: Math.max(8, Math.min(r.right - largeur, window.innerWidth - largeur - 8)),
+            y: r.bottom + 4,
+          });
+          setOuvert((v) => !v);
+        }}
+      >
+        <Icon icon="solar:sort-vertical-linear" width={15} height={15} />
+      </button>
+      {ouvert && (
+        <div
+          className="tree-menu tree-sort__menu"
+          role="menu"
+          style={{ left: position.x, top: position.y }}
+        >
+          <div className="tree-sort__titre">Trier par</div>
+          {LIBELLES_TRI.map(({ cle, libelle }) => (
+            <button
+              key={cle}
+              type="button"
+              className="tree-menu__item"
+              role="menuitemradio"
+              aria-checked={tri.cle === cle}
+              data-tri={cle}
+              data-active={tri.cle === cle ? "true" : "false"}
+              onClick={() => onChange({ ...tri, cle })}
+            >
+              <Icon icon={coche(tri.cle === cle)} width={14} height={14} />
+              <span>{libelle}</span>
+            </button>
+          ))}
+          <MenuSeparator />
+          {(["croissant", "decroissant"] as const).map((sens) => (
+            <button
+              key={sens}
+              type="button"
+              className="tree-menu__item"
+              role="menuitemradio"
+              aria-checked={tri.sens === sens}
+              data-sens={sens}
+              data-active={tri.sens === sens ? "true" : "false"}
+              onClick={() => onChange({ ...tri, sens })}
+            >
+              <Icon icon={coche(tri.sens === sens)} width={14} height={14} />
+              <span>{sens === "croissant" ? "Croissant" : "Décroissant"}</span>
+            </button>
+          ))}
+          <MenuSeparator />
+          <button
+            type="button"
+            className="tree-menu__item"
+            role="menuitemcheckbox"
+            aria-checked={tri.dossiersDabord}
+            data-dossiers-dabord={tri.dossiersDabord ? "true" : "false"}
+            onClick={() => onChange({ ...tri, dossiersDabord: !tri.dossiersDabord })}
+          >
+            <Icon icon={coche(tri.dossiersDabord)} width={14} height={14} />
+            <span>Dossiers d'abord</span>
+          </button>
+        </div>
+      )}
+    </span>
+  );
 }

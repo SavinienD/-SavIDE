@@ -256,5 +256,10 @@
   "fichier": "src/lib/apercuHtml.ts",
   "motif": "^[a-z-]+-(src|action) ",
   "raison": "directives CSP (syntaxe du navigateur, jamais affichées)"
+ },
+ {
+  "fichier": "src/lib/arbreFichiers.ts",
+  "motif": "^Home$",
+  "raison": "nom de touche du clavier (KeyboardEvent.key), pas un texte affiché"
  }
 ]

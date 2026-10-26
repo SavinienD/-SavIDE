@@ -17,7 +17,8 @@ import { titreAffiche } from "../lib/titres";
 import { modelRefWithThinking, thinkingFromRef } from "../lib/models";
 import { Splitter } from "./Splitter";
 import { fournirActions } from "../axe/raccourcis"; // axe:raccourcis
-import { FileTree, type FileTreeHandle } from "./FileTree";
+import { FileTree, MenuTriExplorateur, type FileTreeHandle } from "./FileTree";
+import { CLE_STOCKAGE_TRI, lireTri, type TriExplorateur } from "../lib/arbreFichiers";
 import { ConversationList } from "./ConversationList";
 import { NouvelleConversation } from "./NouvelleConversation"; // axe:e13
 import { EditorPane } from "./EditorPane";
@@ -780,6 +781,18 @@ export function Workspace({
     "file" | "directory" | null
   >(null);
   const fileTreeRef = useRef<FileTreeHandle | null>(null);
+  // axe:explorateur — tri de l'explorateur, mémorisé sur le poste.
+  const [triExplorateur, setTriExplorateur] = useState<TriExplorateur>(() =>
+    lireTri(typeof localStorage !== "undefined" ? localStorage.getItem(CLE_STOCKAGE_TRI) : null),
+  );
+  const changerTriExplorateur = useCallback((tri: TriExplorateur) => {
+    setTriExplorateur(tri);
+    try {
+      localStorage.setItem(CLE_STOCKAGE_TRI, JSON.stringify(tri));
+    } catch {
+      // stockage indisponible : le tri vaut pour la session
+    }
+  }, []);
   const [editorRevealTarget, setEditorRevealTarget] =
     useState<EditorRevealTarget | null>(null);
   const tabsRef = useRef(tabs);
@@ -2949,6 +2962,9 @@ export function Workspace({
               height={15}
             />
           </button>
+          {!fileSearchOpen && (
+            <MenuTriExplorateur tri={triExplorateur} onChange={changerTriExplorateur} classeBouton="sidebar__head-btn" />
+          )}
           <VoletOutils volet="explorateur" volets={volets} classeBouton="sidebar__head-btn" />
         </span>
       </div>
@@ -2971,6 +2987,7 @@ export function Workspace({
           refreshToken={fileTreeRefreshToken}
           dropActive={fileTreeDropState.active}
           dropTargetRelative={fileTreeDropState.targetRelative}
+          tri={triExplorateur}
         />
       )}
       {importError && (

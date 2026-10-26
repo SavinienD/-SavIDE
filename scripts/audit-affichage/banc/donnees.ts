@@ -176,9 +176,16 @@ export function entrees(dossier: string) {
   const noms = dossier
     ? ["Workspace.tsx", "ChatPane.tsx", "stream.ts", "colonnes.ts", "fileAttente.ts", "styles-de-la-barre-de-titre-tres-longues.css"]
     : ["crates", "docs", "scripts", "src", "src-tauri", "tests", "web", "Cargo.toml", "package.json", "README.md", "RAPPORT.md", "un-nom-de-fichier-vraiment-tres-long-pour-voir-le-debordement.md"];
-  return noms.map((name) => {
+  // axe:explorateur — comme le vrai backend Windows avant correction : chemins « \\?\C:\… »
+  // (canonicalize) ; l'explorateur doit les copier sans ce préfixe. Dates et tailles pour le tri.
+  return noms.map((name, i) => {
     const dir = !name.includes(".");
-    return { name, relativePath: base + name, absolutePath: WS + "\\" + (base + name).replace(/\//g, "\\"), kind: dir ? "directory" : "file", hasChildren: dir };
+    return {
+      name, relativePath: base + name,
+      absolutePath: "\\\\?\\" + WS + "\\" + (base + name).replace(/\//g, "\\"),
+      kind: dir ? "directory" : "file", hasChildren: dir,
+      modifiedMs: Date.UTC(2026, 9, 1 + ((i * 7) % 20)), size: dir ? undefined : 100 + ((i * 937) % 5000),
+    };
   });
 }
 

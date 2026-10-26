@@ -7,6 +7,11 @@
       "raison": "Fenêtre de la mise à jour, ouverte au clic sur le badge : elle flotte au-dessus du contenu (comme tout menu déroulant) et se ferme par « Plus tard » ou un clic à côté."
     },
     {
+      "regle": "chevauchement",
+      "selecteur": ".tree-menu",
+      "raison": "Menu contextuel ou menu de tri de l'explorateur, ouvert par un clic : il flotte au-dessus du contenu (comme tout menu déroulant) et se ferme par Échap ou un clic à côté."
+    },
+    {
       "regle": "libelle-2-lignes",
       "selecteur": ".titlebar__update-popover-notes",
       "raison": "Notes de version : des phrases, qui passent normalement à la ligne dans la fenêtre de 320 px."

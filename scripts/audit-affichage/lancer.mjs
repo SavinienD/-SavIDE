@@ -335,6 +335,40 @@ async function preparerScene(page, si, sc) {
       await pause(150);
     }
   }
+  // axe:explorateur — explorateur de fichiers : clic sur une ligne, touches du clavier
+  // (« Control+Shift+C »…), clic droit, entrée du menu ; le presse-papiers est intercepté.
+  if (sc.explorateur) {
+    const ligne = (p) => `.sidebar__body .tree-row[data-entry-path="${p}"]`;
+    await page.evaluate(() => {
+      window.__bancPresse = null;
+      const presse = { writeText: async (t) => { window.__bancPresse = t; }, readText: async () => window.__bancPresse ?? "" };
+      Object.defineProperty(navigator, "clipboard", { value: presse, configurable: true });
+    });
+    await page.waitForSelector(ligne(sc.explorateur.clic), { timeout: 6000 }).catch(() => undefined);
+    await page.click(ligne(sc.explorateur.clic)).catch(() => undefined);
+    await pause(300);
+    for (const touche of sc.explorateur.touches ?? []) {
+      const parts = touche.split("+");
+      const finale = parts.pop();
+      for (const m of parts) await page.keyboard.down(m);
+      await page.keyboard.press(finale);
+      for (const m of parts.reverse()) await page.keyboard.up(m);
+      await pause(250);
+    }
+    for (const etape of sc.explorateur.menuTri ?? []) {
+      if (etape === "ouvrir") await page.click(".sidebar__head-btn[data-action='trier']").catch(() => undefined);
+      else await page.click(`.tree-sort__menu ${etape}`).catch(() => undefined);
+      await pause(250);
+    }
+    if (sc.explorateur.clicDroit) {
+      await page.click(ligne(sc.explorateur.clicDroit), { button: "right" }).catch(() => undefined);
+      await pause(300);
+    }
+    if (sc.explorateur.menu) {
+      await cliquerTexte(page, ".tree-menu .tree-menu__item", sc.explorateur.menu);
+      await pause(300);
+    }
+  }
   // axe:commandes — clic sur un élément (ex. icône du heartbeat) pour ouvrir son détail.
   if (sc.cliquer) {
     await pause(600);
@@ -394,7 +428,15 @@ async function auditer(page, si, sc, journal, preparation) {
       const el = [...document.querySelectorAll(spec.slice(0, i))].find((e) => e.getClientRects().length > 0);
       return !!el && getComputedStyle(el).color.replace(/\s/g, "") === spec.slice(i + 1).replace(/\s/g, "");
     };
-    const ok = (t) => (t.startsWith("couleur:") ? couleur(t.slice(8)) : t.startsWith("sel:") ? vu(t.slice(4)) : t.startsWith("clic:") ? cliquable(t.slice(5)) : t.startsWith("absent:") ? !vu(t.slice(7)) : t.startsWith("appel:") ? t.slice(6).split("|").some((c) => (window.__bancAppels?.[c] ?? 0) > 0) : t.startsWith("gras:") ? gras(t.slice(5)) : t.startsWith("surligne:") ? surligne(t.slice(9)) : texte.includes(t));
+    // axe:explorateur — « presse:<texte> » : texte copié dans le presse-papiers ;
+    // « premier:<chemin> » : première ligne de l'explorateur ; « choisi:<chemin> » : seule ligne sélectionnée.
+    const lignes = () => [...document.querySelectorAll(".sidebar__body .tree-row[data-entry-path]")];
+    const special = (t) =>
+      t.startsWith("presse:") ? window.__bancPresse === t.slice(7)
+      : t.startsWith("premier:") ? lignes()[0]?.dataset.entryPath === t.slice(8)
+      : t.startsWith("choisi:") ? lignes().filter((l) => l.dataset.selected === "true").map((l) => l.dataset.entryPath).join("|") === t.slice(7)
+      : null;
+    const ok = (t) => special(t) ?? (t.startsWith("couleur:") ? couleur(t.slice(8)) : t.startsWith("sel:") ? vu(t.slice(4)) : t.startsWith("clic:") ? cliquable(t.slice(5)) : t.startsWith("absent:") ? !vu(t.slice(7)) : t.startsWith("appel:") ? t.slice(6).split("|").some((c) => (window.__bancAppels?.[c] ?? 0) > 0) : t.startsWith("gras:") ? gras(t.slice(5)) : t.startsWith("surligne:") ? surligne(t.slice(9)) : texte.includes(t));
     const manquants = temoins.filter((t) => !ok(t));
     const disparus = attendus.filter((t) => !window.__texteVisible(t));
     const fil = document.querySelector(".colonne-chat[data-focus='true'] .chat-body")?.getBoundingClientRect();

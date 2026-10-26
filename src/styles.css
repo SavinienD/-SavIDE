@@ -1525,6 +1525,28 @@ textarea {
   background: var(--line-soft);
 }
 
+/* axe:explorateur — raccourci affiché dans le menu contextuel et menu de tri. */
+.tree-menu__hint {
+  margin-left: auto;
+  padding-left: 16px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+.tree-sort {
+  display: inline-flex;
+}
+.tree-sort__menu {
+  min-width: 210px;
+}
+.tree-sort__titre {
+  padding: 4px 9px 2px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+.tree-menu__item[data-active="true"] {
+  color: var(--text-0);
+}
+
 /* Search */
 .search-pane {
   flex: 1 1 0;

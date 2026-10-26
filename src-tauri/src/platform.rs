@@ -309,13 +309,14 @@ pub(super) fn reveal_path(path: &Path) -> Result<()> {
 
     #[cfg(target_os = "windows")]
     {
-        let status = Command::new("explorer")
-            .arg(format!("/select,{}", path.display()))
-            .status()
+        use std::os::windows::process::CommandExt;
+        // axe:explorateur — sans le préfixe « \\?\ » (que explorer.exe ne comprend pas) ;
+        // explorer.exe rend souvent le code 1 même quand il a réussi : on ne le lit pas.
+        let cible = axecode_app::workspace::os_path(path);
+        Command::new("explorer")
+            .raw_arg(format!("/select,\"{}\"", cible.display()))
+            .spawn()
             .context("impossible d'afficher l'élément dans l'Explorateur")?;
-        if !status.success() {
-            anyhow::bail!("échec de l'affichage dans l'Explorateur");
-        }
         return Ok(());
     }
 
@@ -459,6 +460,82 @@ pub(super) fn open_external_url(raw_url: &str) -> Result<()> {
         if !status.success() {
             anyhow::bail!("échec de l'ouverture du lien");
         }
+        return Ok(());
+    }
+
+    #[allow(unreachable_code)]
+    Ok(())
+}
+
+/// axe:explorateur — « Ouvrir avec… » : laisse l'utilisateur choisir l'application.
+/// Windows : boîte « Ouvrir avec » du système ; macOS : choix d'une application puis `open -a` ;
+/// Linux : choix d'un lanceur .desktop (zenity) puis `gtk-launch`, sinon `xdg-open`.
+pub(super) fn open_with_chooser(path: &Path) -> Result<()> {
+    if !path.exists() {
+        anyhow::bail!("le chemin n'existe pas");
+    }
+    let cible = axecode_app::workspace::os_path(path);
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        Command::new("rundll32.exe")
+            .raw_arg(format!("shell32.dll,OpenAs_RunDLL {}", cible.display()))
+            .spawn()
+            .context("impossible d'ouvrir la boîte « Ouvrir avec »")?;
+        return Ok(());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::thread::spawn(move || {
+            let choix = Command::new("osascript")
+                .args([
+                    "-e",
+                    "POSIX path of (path to (choose application with prompt \"Ouvrir avec…\"))",
+                ])
+                .output();
+            if let Ok(sortie) = choix {
+                let appli = String::from_utf8_lossy(&sortie.stdout).trim().to_string();
+                if sortie.status.success() && !appli.is_empty() {
+                    let _ = Command::new("open").arg("-a").arg(appli).arg(&cible).status();
+                }
+            }
+        });
+        return Ok(());
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        std::thread::spawn(move || {
+            let choix = Command::new("zenity")
+                .args([
+                    "--file-selection",
+                    "--title=Ouvrir avec…",
+                    "--filename=/usr/share/applications/",
+                    "--file-filter=Applications | *.desktop",
+                ])
+                .output();
+            match choix {
+                Ok(sortie) if sortie.status.success() => {
+                    let lanceur = String::from_utf8_lossy(&sortie.stdout).trim().to_string();
+                    let nom = Path::new(&lanceur)
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or_default()
+                        .to_string();
+                    if !nom.is_empty() {
+                        let _ = Command::new("gtk-launch").arg(nom).arg(&cible).status();
+                    }
+                }
+                // Choix annulé : rien à faire.
+                Ok(_) => {}
+                // Pas de zenity : application par défaut.
+                Err(_) => {
+                    let _ = Command::new("xdg-open").arg(&cible).status();
+                }
+            }
+        });
         return Ok(());
     }
 

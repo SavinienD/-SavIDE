@@ -495,6 +495,9 @@ export type WorkspaceEntry = {
   absolutePath: string;
   kind: "file" | "directory";
   hasChildren: boolean;
+  /** axe:explorateur — dernière modification (ms) et taille (octets), pour le tri. */
+  modifiedMs?: number;
+  size?: number;
 };
 
 export type WorkspaceDeletedEntry = {

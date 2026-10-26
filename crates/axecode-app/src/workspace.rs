@@ -70,6 +70,22 @@ pub struct WorkspaceEntry {
     pub absolute_path: String,
     pub kind: WorkspaceEntryKind,
     pub has_children: bool,
+    /// axe:explorateur — date de dernière modification (ms depuis 1970), pour le tri.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub modified_ms: Option<u64>,
+    /// axe:explorateur — taille en octets (fichiers seulement), pour le tri.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size: Option<u64>,
+}
+
+/// axe:explorateur — date de modification d'une entrée en millisecondes (tri de l'explorateur).
+fn modified_ms(metadata: &fs::Metadata) -> Option<u64> {
+    metadata
+        .modified()
+        .ok()?
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()
+        .map(|d| d.as_millis() as u64)
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -217,9 +233,11 @@ pub fn list_workspace_entries(
         entries.push(WorkspaceEntry {
             name: item.file_name().to_string_lossy().into_owned(),
             relative_path,
-            absolute_path: path.display().to_string(),
+            absolute_path: os_path(&path).display().to_string(),
             kind,
             has_children,
+            modified_ms: modified_ms(&metadata),
+            size: (!metadata.is_dir()).then(|| metadata.len()),
         });
     }
 
@@ -262,9 +280,11 @@ pub fn list_workspace_files(root: &Path) -> Result<Vec<WorkspaceEntry>> {
         entries.push(WorkspaceEntry {
             name: item.file_name().to_string_lossy().into_owned(),
             relative_path,
-            absolute_path: path.display().to_string(),
+            absolute_path: os_path(&path).display().to_string(),
             kind: WorkspaceEntryKind::File,
             has_children: false,
+            modified_ms: None,
+            size: None,
         });
     }
     entries.sort_by(|left, right| {
@@ -636,7 +656,7 @@ pub fn read_external_file(path: &Path) -> Result<FileDocument> {
         // For external files we use the absolute path as the identifier
         // because there is no meaningful workspace-relative path.
         relative_path: path.display().to_string(),
-        absolute_path: path.display().to_string(),
+        absolute_path: os_path(&path).display().to_string(),
         editable: false,
         content,
         reason,
@@ -1250,9 +1270,11 @@ fn workspace_entry_from_path(root: &Path, path: &Path) -> Result<WorkspaceEntry>
             .unwrap_or_default()
             .to_string(),
         relative_path: relative_from_root(root, path)?,
-        absolute_path: path.display().to_string(),
+        absolute_path: os_path(&path).display().to_string(),
         kind,
         has_children: matches!(kind, WorkspaceEntryKind::Directory) && directory_has_children(path),
+        modified_ms: modified_ms(&metadata),
+        size: (!metadata.is_dir()).then(|| metadata.len()),
     })
 }
 
@@ -1329,7 +1351,7 @@ fn read_document(root: &Path, path: &Path) -> Result<FileDocument> {
             .unwrap_or_default()
             .to_string(),
         relative_path,
-        absolute_path: path.display().to_string(),
+        absolute_path: os_path(&path).display().to_string(),
         editable,
         content,
         reason,

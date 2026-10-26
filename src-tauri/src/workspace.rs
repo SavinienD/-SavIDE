@@ -534,6 +534,18 @@ pub(super) async fn open_path_with_default_app_command(
     open_with_default_app(&path).map_err(error_to_string)
 }
 
+// axe:explorateur — « Ouvrir avec… » sur une entrée de l'explorateur.
+#[tauri::command]
+pub(super) async fn open_workspace_entry_with_command(
+    input: WorkspaceFileInput,
+) -> std::result::Result<(), String> {
+    let workspace_root =
+        normalize_workspace_root(&input.workspace_path).map_err(error_to_string)?;
+    let path = axecode_app::workspace::resolve_workspace_path(&workspace_root, &input.relative_path)
+        .map_err(error_to_string)?;
+    open_with_chooser(&path).map_err(error_to_string)
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(super) struct CopyFileToPathInput {
