@@ -89,11 +89,11 @@ export function installerSimulation(scene: Scene): void {
     // Scène « maj-badge » : une version disponible (badge discret, installation sur clic seulement).
     updater_check: () =>
       scene.majDispo
-        ? { available: true, currentVersion: "0.1.66", version: String(scene.majDispo), notes: "Badge de mise à jour discret : plus d'installation forcée.\nCorrection de l'installeur relancé après une mise à jour réussie.", date: null }
+        ? { available: true, currentVersion: "0.1.67", version: String(scene.majDispo), notes: "Badge de mise à jour discret : plus d'installation forcée.\nCorrection de l'installeur relancé après une mise à jour réussie.", date: null }
         : { available: false, currentVersion: "0.1.57", version: null, notes: null, date: null },
     updater_current_version: () => "0.1.57",
     // API Tauri getVersion (Réglages > À propos).
-    "plugin:app|version": () => "0.1.66",
+    "plugin:app|version": () => "0.1.67",
     cloud_state: () =>
       cloud
         ? { connected: true, base: "https://cloud.exemple.invalid", email: "utilisateur@exemple.invalid", role: "admin", expireLe: "2026-11-21T08:00:00Z", poste: "PC-POSTE", connectionId: "cloud" }

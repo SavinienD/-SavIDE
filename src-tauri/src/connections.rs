@@ -371,10 +371,11 @@ async fn open(
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<axecode_daemon::protocol::Event>();
         let app = app.clone();
         let connection_id = connection.id.clone();
+        let source = format!("{}:{}", connection.id, crate::daemon_client::next_source_id());
         tokio::spawn(async move {
             while let Some(event) = rx.recv().await {
                 // axe:un-seul-espace - les evenements du daemon distant alimentent le chat.
-                crate::daemon_client::bridge_event(&app, &event);
+                crate::daemon_client::bridge_event(&app, &event, &source);
                 let mut payload = serde_json::to_value(&event).unwrap_or_default();
                 payload["connectionId"] = json!(connection_id);
                 let _ = app.emit(crate::daemon_client::DAEMON_EVENT, payload);

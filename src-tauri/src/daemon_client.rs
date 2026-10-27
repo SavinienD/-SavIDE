@@ -147,6 +147,12 @@ pub(crate) struct DaemonState {
     pub(crate) client: Mutex<Option<DaemonClient>>,
 }
 
+/// axe:flux-unique — identifiant propre à chaque client démon (une reconnexion = nouvelle source).
+pub(crate) fn next_source_id() -> u64 {
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+    NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+}
+
 fn data_dir() -> std::result::Result<PathBuf, String> {
     axecode_daemon::util::default_data_dir().map_err(|e| e.to_string())
 }
@@ -167,9 +173,10 @@ async fn connect(app: &AppHandle) -> std::result::Result<DaemonClient, String> {
         .await;
     let _ = client.call("sessions.attach", json!({"sessionId": "*"})).await;
     let app_events = app.clone();
+    let source = format!("local:{}", next_source_id());
     tokio::spawn(async move {
         while let Some(event) = rx.recv().await {
-            bridge_event(&app_events, &event);
+            bridge_event(&app_events, &event, &source);
             let _ = app_events.emit(DAEMON_EVENT, &event);
         }
     });
@@ -357,6 +364,30 @@ pub(crate) struct BridgeTurn {
     in_thinking: bool,
     /// axe:parcours-collegue — dernière erreur affichée (journal puis flux : une seule fois).
     last_error: Option<String>,
+    /// axe:flux-unique — source (client démon) qui alimente ce tour, et dernier événement reçu.
+    stream_owner: Option<(String, std::time::Instant)>,
+}
+
+/// axe:flux-unique — le même tour peut arriver par plusieurs clients démon (démon local
+/// + une ou plusieurs connexions distantes vers la même VM, ou une connexion rouverte
+/// pendant que l'ancienne vit encore). Chaque client relaie les mêmes deltas avec son
+/// propre retard : le texte s'affichait en double, entremêlé (« Ça corÇa corrige »).
+/// Une seule source alimente un tour ; une autre ne prend la main que si la première
+/// se tait depuis plus de `STREAM_OWNER_TIMEOUT`.
+const STREAM_OWNER_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
+pub(crate) fn accept_stream_source(
+    owner: &mut Option<(String, std::time::Instant)>,
+    source: &str,
+    now: std::time::Instant,
+) -> bool {
+    match owner {
+        Some((id, seen)) if id != source && now.saturating_duration_since(*seen) < STREAM_OWNER_TIMEOUT => false,
+        _ => {
+            *owner = Some((source.to_string(), now));
+            true
+        }
+    }
 }
 
 #[derive(Default)]
@@ -666,7 +697,7 @@ fn close_open_parts(app: &AppHandle, conversation_id: &str, turn: &mut BridgeTur
 }
 
 /// Translates daemon events of bridged sessions into chat `AgentEvent`s.
-pub(crate) fn bridge_event(app: &AppHandle, event: &DaemonEvent) {
+pub(crate) fn bridge_event(app: &AppHandle, event: &DaemonEvent, source: &str) {
     let Some(session_id) = event.session_id.as_deref() else { return };
     let mut events: Vec<AgentEvent> = Vec::new();
     let mut finished = false;
@@ -685,6 +716,11 @@ pub(crate) fn bridge_event(app: &AppHandle, event: &DaemonEvent) {
             }
         }
         let Some(turn) = turns.get_mut(session_id) else { return };
+        if matches!(event.event.as_str(), "stream" | "entry")
+            && !accept_stream_source(&mut turn.stream_owner, source, std::time::Instant::now())
+        {
+            return;
+        }
         match event.event.as_str() {
             "stream" => {
                 let data = event.data.get("event").cloned().unwrap_or_default();
@@ -826,6 +862,29 @@ async fn finish_turn(app: AppHandle, workspace_id: String, session_id: String) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // axe:flux-unique — reproduit la capture : deux clients démon relaient le même flux
+    // avec un décalage ; sans filtre « Ça corÇa corrige », avec filtre le texte exact.
+    #[test]
+    fn doubled_stream_from_two_clients_is_filtered() {
+        let deltas = ["Ça cor", "rige", " l'orthographe."];
+        // Ordre d'arrivée : A0, B0, A1, A2, B1, B2 (B en retard sur A).
+        let arrivals = [("A", 0), ("B", 0), ("A", 1), ("A", 2), ("B", 1), ("B", 2)];
+        let naive: String = arrivals.iter().map(|(_, i)| deltas[*i]).collect();
+        assert!(naive.starts_with("Ça corÇa corrige"));
+        let now = std::time::Instant::now();
+        let mut owner = None;
+        let filtered: String = arrivals
+            .iter()
+            .filter(|(src, _)| accept_stream_source(&mut owner, src, now))
+            .map(|(_, i)| deltas[*i])
+            .collect();
+        assert_eq!(filtered, "Ça corrige l'orthographe.");
+        // La source muette depuis plus du délai cède la main (connexion morte).
+        let later = now + STREAM_OWNER_TIMEOUT + std::time::Duration::from_secs(1);
+        assert!(accept_stream_source(&mut owner, "B", later));
+        assert!(!accept_stream_source(&mut owner, "A", later));
+    }
 
     // axe:v2-l2.4c — analyse pure du chemin d'espace virtuel cloud.
     #[test]
