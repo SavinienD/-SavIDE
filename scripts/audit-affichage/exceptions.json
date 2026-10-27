@@ -12,6 +12,11 @@
       "raison": "Menu contextuel ou menu de tri de l'explorateur, ouvert par un clic : il flotte au-dessus du contenu (comme tout menu déroulant) et se ferme par Échap ou un clic à côté."
     },
     {
+      "regle": "chevauchement",
+      "selecteur": ".chat-body__bas",
+      "raison": "Bouton flottant ↓ (aller en bas du chat) : il flotte volontairement au-dessus des messages quand on n'est plus en bas, et disparaît dès qu'on y revient."
+    },
+    {
       "regle": "libelle-2-lignes",
       "selecteur": ".titlebar__update-popover-notes",
       "raison": "Notes de version : des phrases, qui passent normalement à la ligne dans la fenêtre de 320 px."

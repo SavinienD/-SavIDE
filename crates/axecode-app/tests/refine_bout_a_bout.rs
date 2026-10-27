@@ -118,7 +118,14 @@ impl Drop for Banc {
 }
 
 fn banc(planif: Planif, delai: Option<Duration>) -> Option<Banc> {
-    if axecode_repl::python::find_python(&[]).is_none() {
+    if !axecode_repl::python::find_python(&[]).map_or(false, |py| {
+        std::process::Command::new(py)
+            .args(["-c", "import IPython"])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .map_or(false, |s| s.success())
+    }) {
         eprintln!("skipping: no Python with IPython");
         return None;
     }
