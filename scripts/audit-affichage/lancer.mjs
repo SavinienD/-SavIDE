@@ -111,7 +111,7 @@ const navigateur = await puppeteer.launch({
   executablePath: await trouverNavigateur(),
   headless: true,
   ignoreDefaultArgs: ["--hide-scrollbars"],
-  args: ["--no-sandbox", "--font-render-hinting=none", "--disable-gpu", "--lang=fr-FR"],
+  args: ["--no-sandbox", "--font-render-hinting=none", "--disable-gpu", "--lang=fr-FR", "--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"],
 });
 
 // Une situation = taille de fenetre x mise a l'echelle Windows x taille du texte.
@@ -386,7 +386,7 @@ async function preparerScene(page, si, sc) {
     // axe:liens — « cliquer » accepte une liste : clics successifs.
     for (const sel of [sc.cliquer].flat()) {
       await page.evaluate((s) => document.querySelector(s)?.click(), sel);
-      await pause(400);
+      await pause(sc.pauseClics ?? 400); // axe:0.1.71 — dictée : enregistrement assez long
     }
   }
   await pause(900);

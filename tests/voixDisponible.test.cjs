@@ -46,3 +46,12 @@ test("le micro du compositeur et les réglages suivent la disponibilité", () =>
   assert.match(section, /MESSAGE_DICTEE_INDISPONIBLE_LOCAL/);
   assert.match(section, /if \(dispo === false\) \{/);
 });
+
+test("barre et bulles de la dictée placées dans le compositeur (jamais rognées par une colonne étroite)", () => {
+  const bouton = fs.readFileSync(path.resolve(__dirname, "../src/axe/voix/DicteeBouton.tsx"), "utf8");
+  assert.equal((bouton.match(/placer\(/g) ?? []).length, 4);
+  assert.match(bouton, /closest<HTMLElement>\("\.composer__box"\)/);
+  const css = fs.readFileSync(path.resolve(__dirname, "../src/axe/voix/voix.css"), "utf8");
+  assert.match(css, /\.composer__box > \.axe-voix__bulle \{[^}]*max-width: calc\(100% - 16px\)/);
+  assert.match(css, /\.composer__actions > \.axe-voix__barre \{[^}]*max-width: calc\(100% - 10px\)/);
+});

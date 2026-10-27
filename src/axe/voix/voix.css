@@ -230,3 +230,39 @@
 .axe-voix-reglages__ko {
   color: var(--danger, #e5484d);
 }
+
+/* axe:0.1.71 — barre et bulles dans le compositeur (portails de DicteeBouton) : jamais plus
+   larges que lui, donc jamais rognées par une colonne étroite (800 px, trois colonnes). */
+.composer__actions > .axe-voix__barre {
+  right: 5px;
+  top: auto;
+  bottom: 4px;
+  transform: none;
+  max-width: calc(100% - 10px);
+  overflow: hidden;
+  animation: axe-voix-entree-rangee 120ms ease-out;
+}
+
+@keyframes axe-voix-entree-rangee {
+  from {
+    opacity: 0;
+    transform: scaleX(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.composer__actions > .axe-voix__barre .axe-voix__onde {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.composer__box > .axe-voix__bulle {
+  right: 8px;
+  bottom: calc(100% + 6px);
+  max-width: calc(100% - 16px);
+  overflow-wrap: anywhere;
+}
