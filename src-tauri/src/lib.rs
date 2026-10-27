@@ -360,6 +360,7 @@ pub fn run() {
             daemon_client::daemon_shutdown,
             daemon_client::daemon_sessions,
             daemon_client::daemon_call,
+            daemon_client::queue_push, // axe:file-demon
             // axe:gemini-web
             gemini_web::gemini_web_status,
             gemini_web::gemini_web_login,

@@ -514,11 +514,13 @@ pub(crate) fn is_bridged(app: &AppHandle, conversation_id: &str) -> bool {
 }
 
 /// Runs a chat turn in the daemon. `conversation_id` is the session id.
-pub(crate) async fn send_repl_message(
-    app: AppHandle,
+/// axe:file-demon — prépare la session du service et le message (commun à
+/// l'envoi direct et à la file d'attente tenue par le service).
+async fn prepare_repl(
+    app: &AppHandle,
     state: &DesktopState,
     input: &SendMessageInput,
-) -> std::result::Result<(), String> {
+) -> std::result::Result<(DaemonClient, SavedConversation, ChatMessage, ModelRef, bool, String), String> {
     let workspace_root = normalize_workspace_root(&input.workspace_path).map_err(error_to_string)?;
     let workspace_id = workspace_root.display().to_string();
     let stored = state
@@ -551,13 +553,13 @@ pub(crate) async fn send_repl_message(
     // axe:un-seul-espace - conversation d'un espace cloud : le tour part sur le daemon
     // de la VM (avant : daemon LOCAL du PC, d'ou les messages sans reponse).
     let client = match cloud_connection_id(&workspace_root) {
-        Some(id) => crate::connections::connect_remote(&app, &id).await?,
-        None => connect(&app).await?,
+        Some(id) => crate::connections::connect_remote(app, &id).await?,
+        None => connect(app).await?,
     };
     // axe:v2-l2.4c — espace cloud : l'agent tourne sur le service, dans le
     // chemin réel (`fs.root`) ; l'IDE ne garde que l'identifiant virtuel.
     // axe:freechat — sinon, une conversation libre travaille dans son dossier privé.
-    let session_workspace = match cloud_service_workspace(&app, &workspace_root).await {
+    let session_workspace = match cloud_service_workspace(app, &workspace_root).await {
         Some(service_root) => service_root,
         None => crate::freechat::session_workspace(&workspace_root, &conversation.id),
     };
@@ -584,6 +586,16 @@ pub(crate) async fn send_repl_message(
             .call("sessions.set_model", json!({"sessionId": conversation.id, "model": model}))
             .await?;
     }
+    Ok((client, conversation, message, model, adopted, workspace_id))
+}
+
+pub(crate) async fn send_repl_message(
+    app: AppHandle,
+    state: &DesktopState,
+    input: &SendMessageInput,
+) -> std::result::Result<(), String> {
+    let (client, mut conversation, message, model, adopted, workspace_id) =
+        prepare_repl(&app, state, input).await?;
     if let Ok(mut known) = bridge(&app).known.lock() {
         known.insert(conversation.id.clone(), workspace_id.clone());
     }
@@ -1022,4 +1034,41 @@ mod cloud_subdir_tests {
         assert_eq!(cloud_subdir_parts(Path::new("axe-cloud://axe-cloud/work/../etc")), None);
         assert_eq!(cloud_subdir_parts(Path::new("/home/x")), None);
     }
+}
+
+/// axe:file-demon — met un message dans la file du service (envoyé par le
+/// service à la fin du tour, même si l'IDE montre un autre dossier).
+#[derive(Debug, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct QueuePushInput {
+    pub(crate) message: SendMessageInput,
+    pub(crate) item_id: String,
+    #[serde(default)]
+    pub(crate) index: Option<usize>,
+    #[serde(default)]
+    pub(crate) display: Option<Value>,
+}
+
+#[tauri::command]
+pub(crate) async fn queue_push(
+    app: AppHandle,
+    state: tauri::State<'_, DesktopState>,
+    input: QueuePushInput,
+) -> std::result::Result<Value, String> {
+    let (client, conversation, message, model, _adopted, _ws) =
+        prepare_repl(&app, &state, &input.message).await?;
+    let mut params = json!({
+        "sessionId": conversation.id,
+        "item": {
+            "id": input.item_id,
+            "text": input.message.text.trim(),
+            "message": message,
+            "model": model,
+            "display": input.display,
+        },
+    });
+    if let Some(index) = input.index {
+        params["index"] = json!(index);
+    }
+    client.call("queue.push", params).await
 }
