@@ -33,6 +33,7 @@ import {
 } from "./ToolCard";
 import { TodoStrip, type QueuedPromptStripItem } from "./TodoStrip";
 import { filesPartagees } from "./fileAttente"; // axe:file-attente
+import { deplacerFile, ecouterFilesDemon, migrerFilesNavigateur, pousserFile, relireFileDemon, retirerFile } from "./fileDemon"; // axe:file-demon
 import { avecNote, noteConversation } from "./arrierePlan"; // axe:arriere-plan
 import { fileIcon } from "../../lib/fileIcon";
 import { DicteeBouton } from "../../axe/voix/DicteeBouton"; // axe:voix
@@ -1970,6 +1971,10 @@ export function ChatPane({
           insertQueuedPrompt(queue, queuedPrompt, editing?.index),
         ),
       );
+      // axe:file-demon — la file part dans le service, qui l'enverra en fin de tour.
+      void pousserFile(workspacePath, conversationId, queuedPrompt, editing?.index).catch((err) =>
+        setView((prev) => ({ ...prev, lastError: String(err) })),
+      );
       setText("");
       setAttachments([]);
       setInlineMentions([]);
@@ -2121,25 +2126,20 @@ export function ChatPane({
   // démonté (autre onglet, autre conversation), Workspace prend le relais.
   useEffect(() => FILES_PARTAGEES.monter(conversationId), [conversationId]);
 
-  // axe:file-attente — envoi automatique : un seul par conversation (tous volets
-  // confondus), jamais pendant une compaction ni avant sa relance.
+  // axe:file-demon — plus d'envoi automatique ici : le service envoie la file
+  // à la fin du tour. Le volet migre l'ancienne file du navigateur et relit
+  // la copie d'affichage.
   useEffect(() => {
-    const nextPrompt = FILES_PARTAGEES.prochain(conversationId, {
-      occupe: view.status === "streaming" || isStreaming,
-      sousAgent: activeSubAgentId !== null,
-      edition: editingQueuedPrompt?.conversationId === conversationId,
-    });
-    if (!nextPrompt) return;
-    sendQueuedPrompt(nextPrompt, 0);
-  }, [
-    etatFiles,
-    activeSubAgentId,
-    conversationId,
-    editingQueuedPrompt,
-    isStreaming,
-    sendQueuedPrompt,
-    view.status,
-  ]);
+    ecouterFilesDemon();
+    let annule = false;
+    void (async () => {
+      await migrerFilesNavigateur(workspacePath, [conversationId]);
+      if (!annule) await relireFileDemon(workspacePath, conversationId);
+    })().catch((err) => console.warn("file du service indisponible", err));
+    return () => {
+      annule = true;
+    };
+  }, [workspacePath, conversationId]);
 
   const compactDisabled =
     view.status === "streaming" ||
@@ -3154,6 +3154,7 @@ export function ChatPane({
             return moveQueuedPrompt(queue, id, first.id);
           }),
         );
+        void deplacerFile(workspacePath, conversationId, id, 0).catch(() => {});
         void onStop().catch((err) => {
           setView((prev) => ({
             ...prev,
@@ -3162,6 +3163,7 @@ export function ChatPane({
         });
         return;
       }
+      void retirerFile(workspacePath, conversationId, id).catch(() => {});
       sendQueuedPrompt(item, itemIndex);
     },
     [
@@ -3216,6 +3218,11 @@ export function ChatPane({
           return next;
         }),
       );
+      void retirerFile(workspacePath, conversationId, item.id).catch(() => {});
+      if (stashedDraft) {
+        const at = editing ? editing.index : itemIndex;
+        void pousserFile(workspacePath, conversationId, stashedDraft, at).catch(() => {});
+      }
       FILES_PARTAGEES.debloquer(item.id);
       setText(item.text);
       setAttachments(composerAttachmentsFromQueue(item.attachments));
@@ -3253,8 +3260,9 @@ export function ChatPane({
           queue.filter((prompt) => prompt.id !== id),
         ),
       );
+      void retirerFile(workspacePath, conversationId, id).catch(() => {});
     },
-    [conversationId],
+    [conversationId, workspacePath],
   );
 
   const handleQueuedPromptMove = useCallback(
@@ -3264,8 +3272,10 @@ export function ChatPane({
           moveQueuedPrompt(queue, draggedId, targetId),
         ),
       );
+      const index = queuedPrompts.findIndex((p) => p.id === targetId);
+      if (index >= 0) void deplacerFile(workspacePath, conversationId, draggedId, index).catch(() => {});
     },
-    [conversationId],
+    [conversationId, workspacePath, queuedPrompts],
   );
 
   // axe:arriere-plan — « Arrière-plan » (à côté de Stop) ou « Lancer maintenant

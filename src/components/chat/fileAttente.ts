@@ -427,7 +427,7 @@ export function prochainEnvoi<T extends ElementFile>(args: {
   return premier;
 }
 
-function stockageDuNavigateur(): Stockage | null {
+export function stockageDuNavigateur(): Stockage | null {
   try {
     if (typeof window === "undefined" || !window.localStorage) return null;
     return window.localStorage;
@@ -440,6 +440,8 @@ let partage: MagasinFiles<ElementFile> | null = null;
 
 /** Le magasin unique de l'appli (créé au premier appel). */
 export function filesPartagees<T extends ElementFile>(): MagasinFiles<T> {
-  partage ??= new MagasinFiles<ElementFile>(stockageDuNavigateur());
+  // axe:file-demon — copie d'affichage seulement : la vraie file est dans le
+  // service ; l'ancienne file du navigateur est migrée (fileDemon.ts).
+  partage ??= new MagasinFiles<ElementFile>(null);
   return partage as unknown as MagasinFiles<T>;
 }
