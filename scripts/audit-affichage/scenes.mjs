@@ -297,4 +297,9 @@ export const SCENES = [
   { id: "collegue-arbre", sim: { fournisseur: false, collegue: true, espaceVide: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, creer: "test", ecrire: "Bonjour", evenementsTour: tourFini("s-1"), arbre: true, temoins: ["sel:.axe-tree-overlay"] },
   // À la réouverture de l'espace : la liste doit montrer les conversations de l'espace (« test »).
   { id: "collegue-liste", sim: { fournisseur: false, collegue: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, temoins: ["test"] },
+  // axe:bas169 — remonté dans un long chat : bouton flottant « ↓ » cliquable.
+  { id: "chat-aller-en-bas", sim: {}, stockage: () => colonnes([ids(3)]), defilerChatHaut: true, temoins: ["clic:[data-testid='chat-aller-en-bas']"] },
+  // axe:hist169 — prompt envoyé puis flèche HAUT dans le compositeur vide : il revient.
+  { id: "historique-prompts", sim: {}, stockage: () => colonnes([ids(1)]), ecrire: "relance le banc à 800 px", touchesCompositeur: ["ArrowUp"],
+    temoins: ["valeur:relance le banc à 800 px"] },
 ];

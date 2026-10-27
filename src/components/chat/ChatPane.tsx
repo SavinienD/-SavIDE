@@ -1925,6 +1925,9 @@ export function ChatPane({
 
   const handleSend = useCallback(async () => {
     if (!modelEntry) return;
+    // axe:hist169 — tout envoi (Entrée ou bouton) entre dans l'historique.
+    if (text.trim()) memoriserPrompt(conversationId, text);
+    histRef.current = { index: null, brouillon: "" };
     // axe:slash — IDE-side commands (/compact, /refine, /tree, /login, /settings).
     if (
       composerAttachments.length === 0 &&
@@ -2814,8 +2817,6 @@ export function ChatPane({
     }
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      if (text.trim()) memoriserPrompt(conversationId, text);
-      histRef.current = { index: null, brouillon: "" };
       const now = Date.now();
       const busy = view.status === "streaming" || isStreaming || conversationOccupee;
       // axe:queue - Entree = file ; double Entree (< 500 ms) = envoi immediat.

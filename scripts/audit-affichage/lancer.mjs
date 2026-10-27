@@ -279,6 +279,17 @@ async function preparerScene(page, si, sc) {
     await page.keyboard.press("Escape");
     await pause(400);
   }
+  // axe:hist169 — touches dans le compositeur (ex. ArrowUp) après saisie/envoi.
+  for (const t of sc.touchesCompositeur ?? []) {
+    await page.focus(".colonne-chat[data-focus='true'] .composer textarea, .composer textarea").catch(() => undefined);
+    await page.keyboard.press(t);
+    await pause(200);
+  }
+  // axe:bas169 — remonter dans le chat : le bouton « ↓ » doit apparaître.
+  if (sc.defilerChatHaut) {
+    await page.evaluate(() => { const b = document.querySelector(".colonne-chat[data-focus='true'] .chat-body, .chat-body"); if (b) { b.scrollTop = 0; b.dispatchEvent(new Event("scroll")); } });
+    await pause(400);
+  }
   for (const ev of sc.evenementsTour ?? []) {
     await page.evaluate((e) => window.__bancEmettre?.("agent-event", e), ev);
     await pause(150);
@@ -436,7 +447,7 @@ async function auditer(page, si, sc, journal, preparation) {
       : t.startsWith("premier:") ? lignes()[0]?.dataset.entryPath === t.slice(8)
       : t.startsWith("choisi:") ? lignes().filter((l) => l.dataset.selected === "true").map((l) => l.dataset.entryPath).join("|") === t.slice(7)
       : null;
-    const ok = (t) => special(t) ?? (t.startsWith("couleur:") ? couleur(t.slice(8)) : t.startsWith("sel:") ? vu(t.slice(4)) : t.startsWith("clic:") ? cliquable(t.slice(5)) : t.startsWith("absent:") ? !vu(t.slice(7)) : t.startsWith("appel:") ? t.slice(6).split("|").some((c) => (window.__bancAppels?.[c] ?? 0) > 0) : t.startsWith("gras:") ? gras(t.slice(5)) : t.startsWith("surligne:") ? surligne(t.slice(9)) : texte.includes(t));
+    const ok = (t) => special(t) ?? (t.startsWith("valeur:") ? [...document.querySelectorAll(".composer textarea")].some((x) => x.value === t.slice(7)) : null) ?? (t.startsWith("couleur:") ? couleur(t.slice(8)) : t.startsWith("sel:") ? vu(t.slice(4)) : t.startsWith("clic:") ? cliquable(t.slice(5)) : t.startsWith("absent:") ? !vu(t.slice(7)) : t.startsWith("appel:") ? t.slice(6).split("|").some((c) => (window.__bancAppels?.[c] ?? 0) > 0) : t.startsWith("gras:") ? gras(t.slice(5)) : t.startsWith("surligne:") ? surligne(t.slice(9)) : texte.includes(t));
     const manquants = temoins.filter((t) => !ok(t));
     const disparus = attendus.filter((t) => !window.__texteVisible(t));
     const fil = document.querySelector(".colonne-chat[data-focus='true'] .chat-body")?.getBoundingClientRect();
