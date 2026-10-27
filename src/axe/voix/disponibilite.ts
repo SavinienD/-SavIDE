@@ -23,4 +23,4 @@ export function dicteeDisponible(etat: EtatVoix | null | undefined, options: Opt
 }
 
 export const MESSAGE_DICTEE_INDISPONIBLE =
-  "Dictée vocale indisponible : aucun moteur de transcription ne répond. Le bouton micro est masqué.";
+  "Dictée vocale indisponible : aucun moteur de transcription ne répond. Le bouton micro est masqué.";

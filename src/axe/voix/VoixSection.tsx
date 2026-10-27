@@ -71,7 +71,7 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
       </header>
       {dispo === false && (
         <p className="axe-voix-reglages__ko" role="status">
-          {MESSAGE_DICTEE_INDISPONIBLE} Lancez « Tester les moteurs » une fois un moteur démarré.
+          {MESSAGE_DICTEE_INDISPONIBLE} Lancez « Tester les moteurs » une fois un moteur démarré.
         </p>
       )}
 
