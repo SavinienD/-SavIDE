@@ -10709,3 +10709,20 @@ textarea {
   color: var(--fg-1, #ddd); cursor: pointer; z-index: 5; box-shadow: 0 2px 8px rgba(0,0,0,.3);
 }
 .chat-body__bas:hover { background: var(--bg-3, #333); }
+
+/* axe:0.1.71 — indicateur « arrière-plan » d'une conversation (sessions rangées dans Agents). */
+.conv-row__bg {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 4px;
+  margin-left: 4px;
+  border: 1px solid var(--line, rgba(128, 128, 128, 0.35));
+  border-radius: var(--r-pill, 999px);
+  background: transparent;
+  color: var(--text-2, #aaa);
+  font-size: var(--fs-xs, 11px);
+  cursor: pointer;
+}
+.conv-row__bg[data-en-cours="true"] { color: var(--accent, #6aa0ff); }

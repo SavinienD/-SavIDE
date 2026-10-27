@@ -34,6 +34,8 @@ function conversation(id: string, titre: string, modele: any) {
 export function simulationCollegue(scene: any, base: Record<string, (a: any, brut: any) => unknown>) {
   // Espace vide (le collègue crée « test » avec « + ») ou déjà doté de « test ».
   const sessions = scene.espaceVide ? [] : [meta(ID_TEST, "test", MODELE_ESPACE, 0)];
+  // axe:0.1.71 — clone « … — arrière-plan » de « test » : hors de la liste, indicateur sur « test ».
+  if (scene.arrierePlan && sessions[0]) sessions.push({ ...meta("bg-1", "test — arrière-plan", MODELE_ESPACE, 1), parentId: ID_TEST, status: "running" } as any);
   const envois: any[] = [];
   const historiques: Record<string, any[]> = {};
   (window as any).__bancEnvois = envois;

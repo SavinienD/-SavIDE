@@ -168,7 +168,13 @@ impl Provider for OpenAiProvider {
         })
     }
 
-    async fn stream(&self, request: ProviderRequest) -> Result<ProviderStream> {
+    async fn stream(&self, mut request: ProviderRequest) -> Result<ProviderStream> {
+        // axe:images — same 2000 px cap as Anthropic (smaller payloads,
+        // and old transcripts with huge images stay usable).
+        axecode_core::image_fit::fit_transcript_images_in_place(
+            &mut request.transcript,
+            axecode_core::image_fit::MAX_IMAGE_SIDE,
+        );
         if request.model.provider != "openai" {
             return Err(AppError::Unsupported(format!(
                 "openai provider cannot run model provider {}",

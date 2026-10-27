@@ -294,11 +294,14 @@ impl Provider for AnthropicProvider {
                 exact: false,
             });
         }
+        let fitted_transcript = axecode_core::image_fit::fit_transcript_images(
+            &request.transcript,
+            axecode_core::image_fit::MAX_IMAGE_SIDE,
+        );
         let body = wire::CountTokensRequest {
             model: &request.model.name,
             system: build_system_blocks(is_oauth, request.system_prompt.as_deref(), false),
-            messages: request
-                .transcript
+            messages: fitted_transcript
                 .iter()
                 .filter_map(|message| to_wire_message(message, false).transpose())
                 .collect::<Result<Vec<_>>>()?,
@@ -332,7 +335,14 @@ impl Provider for AnthropicProvider {
         })
     }
 
-    async fn stream(&self, request: ProviderRequest) -> Result<ProviderStream> {
+    async fn stream(&self, mut request: ProviderRequest) -> Result<ProviderStream> {
+        // axe:images — shrink images > 2000 px (also those already stored in
+        // the transcript): Anthropic refuses the whole request otherwise, and
+        // since the image stays in the history the session would be dead.
+        axecode_core::image_fit::fit_transcript_images_in_place(
+            &mut request.transcript,
+            axecode_core::image_fit::MAX_IMAGE_SIDE,
+        );
         let mut body = self.messages_request(&request)?;
         let ttl = self.cache_ttl();
         apply_cache_ttl(&mut body, ttl);
@@ -745,6 +755,7 @@ fn image_source<'a>(media_type: &'a str, data: &'a str) -> wire::ImageSource<'a>
 
 fn image_base64_fits_anthropic(data: &str) -> bool {
     data.len() <= ANTHROPIC_MAX_IMAGE_BASE64_BYTES
+        && axecode_core::image_fit::base64_image_within(data, axecode_core::image_fit::MAX_IMAGE_SIDE)
 }
 
 fn part_is_ui_only(part: &Part) -> bool {
@@ -987,6 +998,83 @@ mod tests {
         assert!(blocks
             .iter()
             .all(|block| !matches!(block, wire::ToolResultBlock::Image { .. })));
+    }
+
+    fn wire_image_dims(message: &wire::WireMessage<'_>) -> Vec<(u32, u32)> {
+        let mut dims = Vec::new();
+        for part in &message.content {
+            if let wire::WirePart::ToolResult {
+                content: wire::ToolResultContent::Blocks(blocks),
+                ..
+            } = part
+            {
+                for block in blocks {
+                    if let wire::ToolResultBlock::Image {
+                        source: wire::ImageSource::Base64 { data, .. },
+                    } = block
+                    {
+                        dims.push(axecode_core::image_fit::base64_image_dimensions(data).unwrap());
+                    }
+                }
+            }
+        }
+        dims
+    }
+
+    fn image_tool_result(id: &str, data: String) -> ChatMessage {
+        ChatMessage {
+            role: Role::User,
+            parts: vec![Part::ToolResult {
+                tool_call_id: id.into(),
+                content: "path: shot.png".into(),
+                images: vec![ToolResultImage {
+                    media_type: "image/png".into(),
+                    data,
+                    path: None,
+                }],
+                is_error: false,
+                meta: None,
+            }],
+        }
+    }
+
+    #[test]
+    fn image_over_2000_px_is_shrunk_or_replaced_with_note() {
+        // Unfitted (as stored in an old transcript): never sent as an image.
+        let big = BASE64_STANDARD.encode(axecode_core::image_fit::test_png(3000, 1200));
+        let raw = image_tool_result("call_1", big.clone());
+        let wire_message = to_wire_message(&raw, false).unwrap().unwrap();
+        assert!(wire_image_dims(&wire_message).is_empty());
+
+        // After fitting (what stream() does): shrunk to 2000 px.
+        let fitted = axecode_core::image_fit::fit_transcript_images(
+            std::slice::from_ref(&raw),
+            axecode_core::image_fit::MAX_IMAGE_SIDE,
+        );
+        let wire_message = to_wire_message(&fitted[0], false).unwrap().unwrap();
+        assert_eq!(wire_image_dims(&wire_message), vec![(2000, 800)]);
+    }
+
+    #[test]
+    fn session_with_25_images_and_one_of_3000_px_sends_only_small_images() {
+        let small = BASE64_STANDARD.encode(axecode_core::image_fit::test_png(40, 30));
+        let big = BASE64_STANDARD.encode(axecode_core::image_fit::test_png(3000, 3000));
+        let mut transcript: Vec<ChatMessage> = (0..25)
+            .map(|i| image_tool_result(&format!("call_{i}"), small.clone()))
+            .collect();
+        transcript[7] = image_tool_result("call_7", big);
+        axecode_core::image_fit::fit_transcript_images_in_place(
+            &mut transcript,
+            axecode_core::image_fit::MAX_IMAGE_SIDE,
+        );
+        let mut all = Vec::new();
+        for message in &transcript {
+            let wire_message = to_wire_message(message, false).unwrap().unwrap();
+            all.extend(wire_image_dims(&wire_message));
+        }
+        assert_eq!(all.len(), 25);
+        assert!(all.iter().all(|(w, h)| *w <= 2000 && *h <= 2000));
+        assert_eq!(all[7], (2000, 2000));
     }
 
     #[test]

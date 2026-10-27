@@ -7,8 +7,10 @@ license.workspace = true
 description = "Provider-agnostic types for the axecode CLI"
 
 [dependencies]
+base64 = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

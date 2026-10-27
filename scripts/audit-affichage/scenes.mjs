@@ -65,6 +65,12 @@ export const SCENES = [
   { id: "maj-badge-fenetre", sim: { majDispo: "0.1.66" }, stockage: () => colonnes([ids(3)]), cliquer: ".titlebar__update-pill", temoins: ["sel:.titlebar__update-popover .titlebar__update-popover-notes", "clic:.titlebar__update-popover-btn--primary", "clic:.titlebar__update-popover-btn--ghost", "absent:.updater-lock"] },
   { id: "maj-badge-accueil", sim: { majDispo: "0.1.66" }, espace: false, temoins: ["clic:.welcome__maj .titlebar__update-pill"] },
   { id: "accueil", sim: { cloud: true }, espace: false, temoins: ["sel:button.welcome__cta", "absent:svg linearGradient"] },
+  // axe:0.1.71 — bulle d'info de la dictée (« Transcrit par … en 6,0 s, nettoyé par l'IA. ») : elle débordait du compositeur.
+  { id: "dictee-info", sim: {}, stockage: () => colonnes([ids(3)]), cliquer: [".axe-voix__micro", ".axe-voix__valider"], pauseClics: 1500, temoins: ["clic:.axe-voix__bulle--info"] },
+  { id: "dictee-info-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: [".axe-voix__micro", ".axe-voix__valider"], pauseClics: 1500, temoins: ["clic:.axe-voix__bulle--info"] },
+  // axe:0.1.71 — pendant l'enregistrement, la barre de dictée recouvrait le bouton Envoyer (colonne étroite).
+  { id: "dictee-envoyer-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: ".axe-voix__micro", temoins: ["clic:.colonne-chat[data-focus='true'] .composer__send", "clic:.axe-voix__valider", "clic:.axe-voix__annuler"] },
+  { id: "dictee-enregistrement-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: ".axe-voix__micro", temoins: ["clic:.axe-voix__valider", "clic:.axe-voix__annuler"] },
   { id: "c1", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["sel:.thinking-block", "sel:.tool-card__err-dot", "sel:.composer__send"] },
   { id: "c1-terminal", sim: {}, stockage: () => colonnes([ids(3)]), terminal: true, temoins: ["sel:.terminal-shell .terminal-tabs"] },
   { id: "explorateur-hauteur", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["sel:.sidebar__section .tree-row"] },
@@ -278,6 +284,8 @@ export const SCENES = [
   { id: "mcp-supprimer", sim: { mcp: ["github", "postgres"] }, stockage: () => colonnes([ids(1)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__nav-list-item[data-server='github'] .settings-pane__nav-list-item-main", ".settings-pane__mcp-delete", ".settings-pane__mcp-delete[data-confirm='true']"],
     temoins: ["appel:delete_mcp_server", "absent:.settings-pane__nav-list-item[data-server='github']", "sel:.settings-pane__nav-list-item[data-server='postgres']"] },
+  // axe:0.1.71 — session « test — arrière-plan » : hors de la liste, indicateur sur « test ».
+  { id: "arriere-plan-liste", sim: { fournisseur: false, collegue: true, arrierePlan: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, temoins: ["clic:.conv-row__bg"] },
   // Parcours d'un collègue (Camille) : connecté à Axe Cloud, aucun fournisseur sur son PC,
   // son espace a le fournisseur axe-cloud. Il ouvre son espace, crée « test » (« + »), écrit et envoie.
   { id: "collegue", sim: { fournisseur: false, collegue: true, espaceVide: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, creer: "test", sansFournisseur: true, ecrire: "Bonjour, peux-tu résumer le dossier clients ?", temoins: ["sel:.conv-row"] },

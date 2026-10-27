@@ -32,8 +32,8 @@ use axecode_core::{Effort, ModelRef, SessionError, SessionResult};
 
 use crate::daemon::Daemon;
 
-const DEFAULT_ENGINES: &str = "http://127.0.0.1:8179/inference|whisper large-v3-turbo (VM);\
-http://127.0.0.1:8178/inference|whisper small (VM) de secours";
+const DEFAULT_ENGINES: &str = "http://127.0.0.1:8179/inference|whisper large-v3-turbo (poste);\
+http://127.0.0.1:8178/inference|whisper small (poste) de secours";
 /// 40 Mo d'audio compressé : plus d'une heure d'opus à 48 kbit/s.
 const MAX_AUDIO_BYTES: usize = 40 * 1024 * 1024;
 const JOB_TTL: Duration = Duration::from_secs(15 * 60);
@@ -616,7 +616,7 @@ mod tests {
         );
         let defaults = engines_from(DEFAULT_ENGINES);
         assert_eq!(defaults.len(), 2);
-        assert_eq!(defaults[1].label, "whisper small (VM) de secours");
+        assert_eq!(defaults[1].label, "whisper small (poste) de secours");
     }
 
     #[test]

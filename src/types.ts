@@ -90,6 +90,8 @@ export type ConversationSummary = {
   updatedAtMs: number;
   /// axe:e3 — conversation rangée dans l'archive (le chemin reste caché).
   archived?: boolean;
+  /// axe:0.1.71 — sessions « … — arrière-plan » nées de cette conversation (vue Agents).
+  arrierePlan?: { id: string; title: string; enCours: boolean }[];
 };
 
 export type SavedConversation = {

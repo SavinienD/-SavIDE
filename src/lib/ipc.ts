@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { resumesConversations } from "../components/chat/arrierePlan"; // axe:0.1.71
 import type {
   AttachmentInput,
   ActiveTurnReplay,
@@ -518,19 +519,8 @@ function cloudChatMessage(raw: unknown): ChatMessage | null {
 /// axe:v2-l7 — `ConversationSummary` a partir des sessions du service (tri recent -> ancien,
 /// sessions archivees ignorees).
 function cloudConversationSummaries(sessions: CloudSessionMeta[]): ConversationSummary[] {
-  return (Array.isArray(sessions) ? sessions : [])
-    .filter((s) => s && typeof s.id === "string" && !s.archived)
-    .map((s) => ({
-      id: s.id as string,
-      title: typeof s.name === "string" ? s.name : "",
-      updatedAtMs:
-        typeof s.updatedAtMs === "number"
-          ? s.updatedAtMs
-          : typeof s.createdAtMs === "number"
-            ? s.createdAtMs
-            : 0,
-    }))
-    .sort((a, b) => b.updatedAtMs - a.updatedAtMs);
+  // axe:0.1.71 — sous-agents et clones « … — arrière-plan » hors de la liste (vue Agents).
+  return resumesConversations(sessions);
 }
 
 /// axe:v2-l7 — liste des conversations du service (seules a exister en cloud).

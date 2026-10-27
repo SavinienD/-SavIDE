@@ -710,7 +710,9 @@ pub async fn run_turn(ctx: TurnContext) -> TurnOutput {
                 {
                     update_read_fingerprint_cache(&mut read_fingerprints, result.meta.as_ref());
                 }
-                let result_images = result.images.clone();
+                // axe:images — no image larger than 2000 px enters the
+                // transcript (read, images.read/show, MCP...).
+                let result_images = crate::tool_run::fit_tool_run_images(result.images.clone());
                 let result_content = result.content.clone();
                 if let Some(teams) = &teams {
                     teams

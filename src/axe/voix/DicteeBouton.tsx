@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { formaterDuree } from "./inserer";
 import { useDictee } from "./useDictee";
+import { useDicteeDisponible } from "./useDicteeDisponible"; // axe:0.1.71
 import "./voix.css";
 
 /**
@@ -53,10 +55,26 @@ function Chrono({ depuis }: { depuis: number }) {
 
 export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
   const d = useDictee({ workspacePath, modele, onTexte });
+  // axe:0.1.71 — sans moteur qui répond, pas de micro (au lieu de l'erreur « connexion refusée »).
+  // SavIDE est 100 % local : seul un moteur Whisper du poste compte (jamais celui de la VM).
+  const dispo = useDicteeDisponible(workspacePath, { localSeulement: true });
   const enregistre = d.phase === "enregistrement" || d.phase === "demarrage";
+  // axe:0.1.71 — barre d'enregistrement et bulles placées dans la rangée d'actions et dans la
+  // boîte du compositeur (portails), plus sous le micro : ancrées au micro, elles dépassaient
+  // de la colonne étroite (bulle « … en 6,0 s, » rognée, coupée à droite, sur le compositeur).
+  const ancre = useRef<HTMLSpanElement | null>(null);
+  const [cibles, setCibles] = useState<{ rangee: HTMLElement | null; boite: HTMLElement | null }>({ rangee: null, boite: null });
+  useLayoutEffect(() => {
+    const el = ancre.current;
+    const rangee = el?.closest<HTMLElement>(".composer__actions") ?? null;
+    const boite = el?.closest<HTMLElement>(".composer__box") ?? null;
+    if (rangee !== cibles.rangee || boite !== cibles.boite) setCibles({ rangee, boite });
+  });
+  const placer = (noeud: ReactNode, cible: HTMLElement | null) => (cible ? createPortal(noeud, cible) : noeud);
+  if (dispo !== true) return null;
 
   return (
-    <span className="axe-voix">
+    <span className="axe-voix" ref={ancre}>
       <button
         type="button"
         className="composer__iconbtn axe-voix__micro"
@@ -69,7 +87,7 @@ export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
         <IconeMicro />
       </button>
 
-      {enregistre && (
+      {enregistre && placer(
         <span className="axe-voix__barre" role="group" aria-label="Dictée en cours">
           <button
             type="button"
@@ -97,10 +115,11 @@ export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
           >
             <IconeValider />
           </button>
-        </span>
+        </span>,
+        cibles.rangee,
       )}
 
-      {d.phase === "transcription" && (
+      {d.phase === "transcription" && placer(
         <span className="axe-voix__barre axe-voix__barre--attente" role="status" aria-live="polite">
           <span className="axe-voix__roue" aria-hidden="true" />
           <span className="axe-voix__libelle">Transcription…</span>
@@ -114,10 +133,11 @@ export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
           >
             <IconeCroix />
           </button>
-        </span>
+        </span>,
+        cibles.rangee,
       )}
 
-      {d.phase === "erreur" && d.erreur && (
+      {d.phase === "erreur" && d.erreur && placer(
         <span className="axe-voix__bulle" role="alert">
           <span className="axe-voix__bulle-texte">{d.erreur.message}</span>
           <span className="axe-voix__bulle-actions">
@@ -133,13 +153,15 @@ export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
               Fermer
             </button>
           </span>
-        </span>
+        </span>,
+        cibles.boite,
       )}
 
-      {d.phase === "repos" && d.info && (
+      {d.phase === "repos" && d.info && placer(
         <span className="axe-voix__bulle axe-voix__bulle--info" role="status" onClick={d.fermer}>
           {d.info}
-        </span>
+        </span>,
+        cibles.boite,
       )}
     </span>
   );

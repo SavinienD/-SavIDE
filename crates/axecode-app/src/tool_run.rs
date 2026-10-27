@@ -68,6 +68,27 @@ pub struct ToolRunImage {
     pub path: Option<String>,
 }
 
+/// Shrinks images larger than `axecode_core::image_fit::MAX_IMAGE_SIDE`
+/// (axe:images). Images that cannot be decoded are kept: the provider
+/// replaces them by a note if they are still too large.
+pub fn fit_tool_run_images(images: Vec<ToolRunImage>) -> Vec<ToolRunImage> {
+    images
+        .into_iter()
+        .map(|mut image| {
+            if !image.data.is_empty() {
+                if let Ok(Some((media_type, data))) = axecode_core::image_fit::shrink_base64_image(
+                    &image.data,
+                    axecode_core::image_fit::MAX_IMAGE_SIDE,
+                ) {
+                    image.media_type = media_type;
+                    image.data = data;
+                }
+            }
+            image
+        })
+        .collect()
+}
+
 #[derive(Debug, Clone)]
 pub struct ToolRunResult {
     pub content: String,
