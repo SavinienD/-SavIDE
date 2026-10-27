@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { formaterDuree } from "./inserer";
 import { useDictee } from "./useDictee";
+import { useDicteeDisponible } from "./useDicteeDisponible"; // axe:0.1.71
 import "./voix.css";
 
 /**
@@ -53,7 +54,10 @@ function Chrono({ depuis }: { depuis: number }) {
 
 export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
   const d = useDictee({ workspacePath, modele, onTexte });
+  // axe:0.1.71 — sans moteur qui répond, pas de micro (au lieu de l'erreur « connexion refusée »).
+  const dispo = useDicteeDisponible(workspacePath);
   const enregistre = d.phase === "enregistrement" || d.phase === "demarrage";
+  if (dispo !== true) return null;
 
   return (
     <span className="axe-voix">

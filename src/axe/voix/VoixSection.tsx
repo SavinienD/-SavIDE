@@ -7,6 +7,8 @@ import {
   lireReglagesVoix,
   type ReglagesVoix,
 } from "./reglages";
+import { dicteeDisponible, MESSAGE_DICTEE_INDISPONIBLE } from "./disponibilite"; // axe:0.1.71
+import { lireEtatVoix } from "./useDicteeDisponible";
 import "./voix.css";
 
 /** axe:voix — Réglages > Dictée vocale : options et test des moteurs. */
@@ -19,6 +21,16 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
   const [etat, setEtat] = useState<EtatVoix | null>(null);
   const [test, setTest] = useState<"repos" | "en-cours" | "erreur">("repos");
   const [erreurTest, setErreurTest] = useState("");
+  const [dispo, setDispo] = useState<boolean | null>(null);
+  useEffect(() => {
+    let fini = false;
+    void lireEtatVoix(workspacePath).then((e) => {
+      if (!fini) setDispo(dicteeDisponible(e));
+    });
+    return () => {
+      fini = true;
+    };
+  }, [workspacePath]);
 
   useEffect(() => {
     const relire = () => setReglages(lireReglagesVoix());
@@ -36,7 +48,10 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
     setTest("en-cours");
     setErreurTest("");
     try {
-      setEtat(await invoke<EtatVoix>("voix_etat", { input: { workspacePath: workspacePath ?? null } }));
+      const lu = await invoke<EtatVoix>("voix_etat", { input: { workspacePath: workspacePath ?? null } });
+      setEtat(lu);
+      setDispo(dicteeDisponible(lu));
+      void lireEtatVoix(workspacePath, true);
       setTest("repos");
     } catch (err) {
       setErreurTest(String(err));
@@ -54,6 +69,11 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
           zone de saisie, modifiable, et n'est jamais envoyé automatiquement. Échap annule.
         </p>
       </header>
+      {dispo === false && (
+        <p className="axe-voix-reglages__ko" role="status">
+          {MESSAGE_DICTEE_INDISPONIBLE} Lancez « Tester les moteurs » une fois un moteur démarré.
+        </p>
+      )}
 
       <section className="axe-appearance__block">
         <h3>Options</h3>
