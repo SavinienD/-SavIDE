@@ -2,6 +2,7 @@
 pub mod declared_providers;
 pub mod env; // axe:migration
 pub mod error;
+pub mod image_fit;
 pub mod message;
 pub mod model;
 pub mod provider;

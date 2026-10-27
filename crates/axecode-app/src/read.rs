@@ -118,9 +118,25 @@ impl ReadTool {
         let bytes =
             fs::read(&path).with_context(|| format!("unable to read file {}", path.display()))?;
         if let Some(media_type) = image_media_type {
+            // axe:images — larger than 2000 px: shrunk before it reaches the model.
+            let original_size = bytes.len();
+            let (media_type, bytes, note) = match axecode_core::image_fit::shrink_image_bytes(
+                &bytes,
+                axecode_core::image_fit::MAX_IMAGE_SIDE,
+            ) {
+                Ok(Some((shrunk_type, shrunk))) => {
+                    let (w, h) = axecode_core::image_fit::image_dimensions(&bytes).unwrap_or((0, 0));
+                    (
+                        shrunk_type,
+                        shrunk,
+                        format!(" (original {w}x{h} px, {original_size} bytes, reduced to 2000 px max)"),
+                    )
+                }
+                _ => (media_type, bytes, String::new()),
+            };
             return Ok(ToolRunResult::ok_with_images(
                 format!(
-                    "path: {display_path}\ntype: {media_type}\nsize: {} bytes\n\n[Image jointe en visuel.]",
+                    "path: {display_path}\ntype: {media_type}\nsize: {} bytes{note}\n\n[Image jointe en visuel.]",
                     bytes.len()
                 ),
                 vec![ToolRunImage {
