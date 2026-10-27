@@ -1,3 +1,4 @@
+import { historiquePrompts, memoriserPrompt, naviguer, type EtatHistorique } from "./historiquePrompts";
 import {
   Fragment, // axe:providers
   createContext, // axe:couleurs
@@ -531,6 +532,7 @@ export function ChatPane({
   const activeSubAgentIdRef = useRef<string | null>(null);
   const [autoCloseSubAgentId, setAutoCloseSubAgentId] = useState<string | null>(null);
   const [text, setText] = useState("");
+  const histRef = useRef<EtatHistorique>({ index: null, brouillon: "" });
   // axe:slash
   const slashMenu = useSlashCommandMenu(text, setText);
   const [slashNotice, setSlashNotice] = useState<string | null>(null);
@@ -1704,6 +1706,8 @@ export function ChatPane({
   const scrollAnimationRef = useRef<number | null>(null);
   const autoScrollingRef = useRef(false);
   const stickToBottomRef = useRef(true);
+  // axe:bas169 — bouton « ↓ » quand on n'est plus en bas (Ctrl+Fin aussi).
+  const [pasEnBas, setPasEnBas] = useState(false);
   const pendingForceScrollRef = useRef(true);
   const [sendTick, setSendTick] = useState(0);
   const scrollViewStatus =
@@ -1775,6 +1779,7 @@ export function ChatPane({
       if (autoScrollingRef.current) return;
       stickToBottomRef.current =
         el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+      setPasEnBas(el.scrollHeight - el.scrollTop - el.clientHeight > 200);
     };
     const cancelOnUpwardWheel = (event: WheelEvent) => {
       if (event.deltaY >= 0) return;
@@ -1822,6 +1827,25 @@ export function ChatPane({
   }, [sendTick, scheduleStickToBottom]);
 
   useEffect(() => stopAutoScroll, [stopAutoScroll]);
+
+  const allerEnBas = useCallback(() => {
+    stickToBottomRef.current = true;
+    setPasEnBas(false);
+    scheduleStickToBottom({ force: true, animated: true });
+  }, [scheduleStickToBottom]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey && event.key === "End")) return;
+      const pane = bodyRef.current?.parentElement;
+      const actif = document.activeElement;
+      if (!pane || !(actif === document.body || pane.contains(actif))) return;
+      event.preventDefault();
+      allerEnBas();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [allerEnBas]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1901,6 +1925,9 @@ export function ChatPane({
 
   const handleSend = useCallback(async () => {
     if (!modelEntry) return;
+    // axe:hist169 — tout envoi (Entrée ou bouton) entre dans l'historique.
+    if (text.trim()) memoriserPrompt(conversationId, text);
+    histRef.current = { index: null, brouillon: "" };
     // axe:slash — IDE-side commands (/compact, /refine, /tree, /login, /settings).
     if (
       composerAttachments.length === 0 &&
@@ -2776,6 +2803,18 @@ export function ChatPane({
         return;
       }
     }
+    if ((event.key === "ArrowUp" || event.key === "ArrowDown") && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
+      const ta = event.currentTarget;
+      if (ta.selectionStart === ta.selectionEnd) {
+        const r = naviguer(event.key === "ArrowUp" ? "haut" : "bas", text, ta.selectionStart, historiquePrompts(conversationId), histRef.current);
+        if (r) {
+          event.preventDefault();
+          histRef.current = r.etat;
+          setText(r.texte);
+          return;
+        }
+      }
+    }
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       const now = Date.now();
@@ -3547,6 +3586,18 @@ export function ChatPane({
           )}
         </div>
       </div>
+      {pasEnBas ? (
+        <button
+          type="button"
+          className="chat-body__bas"
+          data-testid="chat-aller-en-bas"
+          title="Aller en bas (Ctrl+Fin)"
+          aria-label="Aller en bas"
+          onClick={allerEnBas}
+        >
+          ↓
+        </button>
+      ) : null}
       <TodoStrip
         blocks={displayView.blocks}
         teamBlocks={teamTaskBlocks}

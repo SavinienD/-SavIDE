@@ -213,7 +213,8 @@ async fn heartbeat_et_goal_par_commande_slash() {
     assert_eq!(a.status, "stopped");
 
     b.send("/compact garder les décisions").await;
-    assert!(b.last_prompt().contains("compact.run"), "/compact doit demander compact.run");
+    assert!(!b.last_prompt().contains("Call `compact.run"), "/compact ne passe plus par l'IA");
+    assert!(b.journal_has("\"compaction\""), "/compact compacte directement");
 }
 
 /// Le heartbeat se déclenche (intervalle minimal 5 s) et son message est journalisé

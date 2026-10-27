@@ -815,6 +815,11 @@ impl SessionCommandsHook {
         })
     }
 
+    /// axe:refine169 — délai de préparation des affinages (10 min ; tests : quelques ms).
+    pub fn set_refine_timeout(&self, timeout: Duration) {
+        self.inner.refine.set_timeout(timeout);
+    }
+
     /// axe:goal165 — pause before an automatic relaunch (tests: a few ms).
     pub fn set_pursuit_delay(&self, delay: Duration) {
         self.inner.pursuit_delay_ms.store(delay.as_millis() as u64, std::sync::atomic::Ordering::Relaxed);
@@ -965,10 +970,10 @@ impl SessionCommandsHook {
                     Err(e) => format!("/refine could not start: {e}"),
                 }
             }
-            "compact" => {
-                let directive = if cmd.rest.is_empty() { "None".to_string() } else { serde_json::to_string(&cmd.rest).unwrap_or_default() };
-                format!("The user asked to compact the conversation. Call `compact.run(directive={directive})` right now, then continue.")
-            }
+            // axe:compact169 — /compact est exécuté directement par la boucle du tour
+            // (repl/turn.rs), sans consigne à l'IA : l'ancienne consigne « Call
+            // compact.run() right now » restait dans le prompt et l'IA bouclait.
+            "compact" => return None,
             _ => return None,
         })
     }

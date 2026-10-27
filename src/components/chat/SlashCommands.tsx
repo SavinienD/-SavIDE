@@ -20,7 +20,7 @@ export const SLASH_COMMANDS: SlashCommandSpec[] = [
   { name: "autonomous", usage: "/autonomous [--max-turns N] [--max-tokens N] [--timeout-ms N] [--gate \"cmd\"] [tâche]", description: "Continuation bornée, porte de validation optionnelle (stop pour arrêter)" },
   { name: "heartbeat", usage: "/heartbeat <phrase libre>, ou « stop »", description: "Réveil périodique de l'agent, en phrase libre, ex. « dis coucou toutes les 5 minutes »" },
   { name: "guet", usage: "/guet <phrase libre>, ou « annule »", description: "Être réveillé quand une tâche se termine, ex. « quand la construction github est finie » ou « quand `cargo build` est fini »" },
-  { name: "compact", usage: "/compact [directive]", description: "Compacter la conversation (traité par l'agent : compact.run)" },
+  { name: "compact", usage: "/compact [directive]", description: "Compacter la conversation (faite directement, sans passer par l'IA)" },
   { name: "refine", usage: "/refine [focus]", description: "Améliorer le harnais à partir de cette session", client: true },
   { name: "tree", usage: "/tree", description: "Arbre du journal de la session, retour à un point", client: true },
   { name: "login", usage: "/login", description: "Connexion aux fournisseurs (Réglages > Fournisseurs)", client: true },

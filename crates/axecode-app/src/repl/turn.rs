@@ -69,8 +69,30 @@ async fn run_inner(
     // Started up front: its module catalog goes into the system prompt.
     runtime.kernel().await?;
     shared.family.begin_turn(&request.peer_messages);
+    *lock(&shared.compact_calls) = 0;
+    // axe:compact169 — `/compact [directive]` tapé par l'utilisateur : la compaction
+    // est faite ici, directement, sans demander à l'IA d'appeler compact.run().
+    let slash_compact: Option<Option<String>> = match &request.input {
+        TurnInput::User { message } => {
+            let text = message.text();
+            let text = text.trim();
+            text.strip_prefix("/compact")
+                .filter(|rest| rest.is_empty() || rest.starts_with(char::is_whitespace))
+                .map(|rest| Some(rest.trim().to_string()).filter(|d| !d.is_empty()))
+        }
+        _ => None,
+    };
+    if slash_compact.is_some() {
+        *lock(&shared.compact_calls) = 1;
+    }
 
     let mut history = request.history.clone();
+    if slash_compact.is_some() {
+        // La commande elle-même n'a rien à résumer.
+        if history.last().map(|m| m.role) == Some(Role::User) {
+            history.pop();
+        }
+    }
     repair_missing_tool_results(&mut history);
     // Heartbeats and wake-ups need a trailing user message.
     let wake_text = match &request.input {
@@ -184,7 +206,10 @@ async fn run_inner(
             .or_else(|| caps.as_ref().map(|c| c.max_output_tokens));
         let tools = vec![prompt::python_tool()];
         let mut sent_chars = super::budget::request_chars(&system, &history, &tools);
-        let requested = lock(&shared.compact_request).take();
+        let requested = match &slash_compact {
+            Some(directive) => Some(directive.clone()),
+            None => lock(&shared.compact_request).take(),
+        };
         let over_threshold = settings.compaction_threshold < 100
             && auto_compactions < super::budget::MAX_AUTO_COMPACTIONS_PER_TURN
             && caps.as_ref().is_some_and(|caps| {
@@ -203,12 +228,29 @@ async fn run_inner(
                 auto_compactions += 1;
             }
             let directive = requested.flatten();
-            match super::compaction::compact(&shared, provider.clone(), &system, &history, directive, &sink).await {
+            let resultat = if slash_compact.is_some() && history.is_empty() {
+                Err(anyhow::anyhow!("la conversation n'a pas d'historique à compacter"))
+            } else {
+                super::compaction::compact(&shared, provider.clone(), &system, &history, directive, &sink).await
+            };
+            match resultat {
                 Ok(new_history) => {
                     history = new_history;
                     sent_chars = super::budget::request_chars(&system, &history, &tools);
+                    if slash_compact.is_some() {
+                        final_text = "Conversation compactée.".to_string();
+                        break;
+                    }
                 }
-                Err(err) => tracing::warn!(error = %err, "compaction failed"),
+                Err(err) => {
+                    tracing::warn!(error = %err, "compaction failed");
+                    if slash_compact.is_some() {
+                        let message = format!("Compaction impossible : {err}");
+                        sink.emit(json!({"type": "turn_error", "error": message})).await;
+                        final_text = message;
+                        break;
+                    }
+                }
             }
         }
 
