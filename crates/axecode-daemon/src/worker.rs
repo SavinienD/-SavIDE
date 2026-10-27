@@ -206,6 +206,8 @@ impl Daemon {
         };
         if idle {
             self.set_status(id, SessionStatus::Idle);
+            // axe:file-demon — tour fini : le message suivant de la file part.
+            crate::queue_rpc::dispatch_next(self, id);
         }
     }
 

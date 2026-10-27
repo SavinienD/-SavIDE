@@ -177,6 +177,8 @@ impl Daemon {
             }
             // v2-l7c — external agents (on-disk task queue under .axecode/agents)
             m if m.starts_with("agents.") => crate::agents_rpc::dispatch(self, m, &params),
+            // axe:file-demon — file d'attente des messages, par session
+            m if m.starts_with("queue.") => crate::queue_rpc::dispatch(self, m, &params),
             // axe:voix — dictée vocale : Whisper de la machine, nettoyage IA optionnel
             m if m.starts_with("voice.") => crate::voice_rpc::dispatch(self, m, &params).await,
             m if m.starts_with("term.") => {
@@ -521,6 +523,7 @@ pub async fn run(daemon: Arc<Daemon>) -> anyhow::Result<()> {
         tracing::warn!(error = %error, "agents queue unavailable at startup");
     }
 
+    crate::queue_rpc::dispatch_all(&daemon); // axe:file-demon
     let housekeeping = {
         let daemon = daemon.clone();
         tokio::spawn(async move {

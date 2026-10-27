@@ -146,3 +146,41 @@ async fn journal_lisible_apres_archivage() {
     client.call("shutdown", json!({"force": true})).await.unwrap();
     let _ = tokio::time::timeout(Duration::from_secs(5), handle).await;
 }
+
+// axe:file-demon — la file part en fin de tour, dans l'ordre, une seule fois,
+// sans aucun client qui regarde la conversation.
+#[tokio::test(flavor = "multi_thread")]
+async fn file_demon_part_en_fin_de_tour() {
+    let data_dir = tmp();
+    let mut config = DaemonConfig::new(data_dir.clone());
+    config.auto_shutdown = false;
+    let daemon = Daemon::new(config.clone(), Arc::new(EchoFactory));
+    let handle = tokio::spawn(server::run(daemon.clone()));
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    let client = DaemonClient::connect(&config.endpoint, None).await.unwrap();
+    let meta = client
+        .call("sessions.create", json!({"name": "a", "workspaceId": "wsA", "model": {"provider": "anthropic", "name": "m"}}))
+        .await
+        .unwrap();
+    let id = meta["id"].as_str().unwrap().to_string();
+    for (i, t) in ["un", "deux", "trois"].iter().enumerate() {
+        client
+            .call("queue.push", json!({"sessionId": id, "item": {"id": format!("q{i}"), "text": t,
+                "message": {"role": "user", "parts": [{"type": "text", "text": t}]}}}))
+            .await
+            .unwrap();
+    }
+    let history = wait_for(&client, &id, |h| h.as_array().is_some_and(|a| a.len() == 6)).await;
+    let users: Vec<String> = history.as_array().unwrap().iter()
+        .filter(|m| m["role"] == "user")
+        .map(|m| m["parts"][0]["text"].as_str().unwrap_or("").to_string())
+        .collect();
+    assert_eq!(users, vec!["un", "deux", "trois"]);
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    let h = client.call("sessions.history", json!({"sessionId": id})).await.unwrap();
+    assert_eq!(h.as_array().unwrap().len(), 6, "rien n'est parti deux fois");
+    let q = client.call("queue.list", json!({"sessionId": id})).await.unwrap();
+    assert_eq!(q, json!([]));
+    client.call("shutdown", json!({"force": true})).await.unwrap();
+    let _ = tokio::time::timeout(Duration::from_secs(5), handle).await;
+}

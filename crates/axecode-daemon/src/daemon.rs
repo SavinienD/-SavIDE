@@ -134,6 +134,8 @@ pub struct Daemon {
     pub(crate) boot: Instant,
     /// axe:menage — last compression pass of the archives (startup, then daily).
     pub(crate) last_compress: Mutex<Option<Instant>>,
+    /// axe:file-demon — files d'attente des messages, par session.
+    pub(crate) queues: crate::queue_rpc::QueuesState,
 }
 
 pub(crate) fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
@@ -233,6 +235,7 @@ impl Daemon {
             archive_lock: Mutex::new(()),                         // axe:menage
             boot,                                                 // axe:menage
             last_compress: Mutex::new(None),                      // axe:menage
+            queues: Mutex::new(Default::default()),               // axe:file-demon
         })
     }
 
