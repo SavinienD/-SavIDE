@@ -254,6 +254,23 @@
   }
 }
 
+/* axe:0.1.71 — pendant l'enregistrement, la barre ne recouvre plus la rangée (elle cachait le
+   bouton Envoyer dans une colonne étroite) : elle passe sur sa propre ligne, sous les actions,
+   alignée à droite ; Envoyer reste visible et cliquable. */
+.composer__actions > .axe-voix__barre {
+  position: static;
+  order: 99;
+  margin-left: auto;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.composer__actions:has(> .axe-voix__barre)::after {
+  content: "";
+  order: 98;
+  flex-basis: 100%;
+  height: 0;
+}
+
 .composer__actions > .axe-voix__barre .axe-voix__onde {
   flex: 0 1 auto;
   min-width: 0;

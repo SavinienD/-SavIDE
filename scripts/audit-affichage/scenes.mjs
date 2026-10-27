@@ -68,6 +68,8 @@ export const SCENES = [
   // axe:0.1.71 — bulle d'info de la dictée (« Transcrit par … en 6,0 s, nettoyé par l'IA. ») : elle débordait du compositeur.
   { id: "dictee-info", sim: {}, stockage: () => colonnes([ids(3)]), cliquer: [".axe-voix__micro", ".axe-voix__valider"], pauseClics: 1500, temoins: ["clic:.axe-voix__bulle--info"] },
   { id: "dictee-info-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: [".axe-voix__micro", ".axe-voix__valider"], pauseClics: 1500, temoins: ["clic:.axe-voix__bulle--info"] },
+  // axe:0.1.71 — pendant l'enregistrement, la barre de dictée recouvrait le bouton Envoyer (colonne étroite).
+  { id: "dictee-envoyer-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: ".axe-voix__micro", temoins: ["clic:.colonne-chat[data-focus='true'] .composer__send", "clic:.axe-voix__valider", "clic:.axe-voix__annuler"] },
   { id: "dictee-enregistrement-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: ".axe-voix__micro", temoins: ["clic:.axe-voix__valider", "clic:.axe-voix__annuler"] },
   { id: "c1", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["sel:.thinking-block", "sel:.tool-card__err-dot", "sel:.composer__send"] },
   { id: "c1-terminal", sim: {}, stockage: () => colonnes([ids(3)]), terminal: true, temoins: ["sel:.terminal-shell .terminal-tabs"] },
