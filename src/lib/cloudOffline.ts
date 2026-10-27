@@ -201,7 +201,7 @@ function markPending(workspacePath: string, path: string): void {
 export async function refreshOfflineState(workspacePath: string): Promise<void> {
   const state = stateFor(workspacePath);
   try {
-    const status = await invoke<OfflineStatus>("offline_status", { workspacePath });
+    const status = await invoke<OfflineStatus>("offline_status", { input: { workspacePath } });
     state.ready = Boolean(status?.mirrorReady);
     state.lastSyncAtMs = status?.lastSyncAtMs ?? null;
     const dirty = Number(status?.dirty ?? 0);
@@ -210,9 +210,9 @@ export async function refreshOfflineState(workspacePath: string): Promise<void> 
     // miroir illisible : on conserve l'etat connu.
   }
   try {
-    const journal = await invoke<OfflineJournalEntry[]>("offline_journal", {
+    const journal = await invoke<OfflineJournalEntry[]>("offline_journal", { input: {
       workspacePath,
-    });
+    } });
     state.pending = new Set(
       (journal ?? [])
         .map((entry) => cleanRelative(entry.newPath || entry.path))
@@ -232,7 +232,7 @@ export async function ensureOfflineMirror(workspacePath: string): Promise<void> 
   if (state.ready || state.preparing) return;
   state.preparing = true;
   try {
-    await invoke("offline_prepare", { workspacePath });
+    await invoke("offline_prepare", { input: { workspacePath } });
     state.ready = true;
   } catch {
     // echec silencieux : la barre de titre reste le seul temoin.
@@ -254,7 +254,7 @@ export async function syncOffline(
   }
   state.syncing = true;
   try {
-    const result = await invoke<OfflineSyncResult>("offline_sync", { workspacePath });
+    const result = await invoke<OfflineSyncResult>("offline_sync", { input: { workspacePath } });
     const applied = (result?.applied ?? []).map(cleanRelative);
     state.conflicts = result?.conflicts ?? [];
     // Ce qui n'a pas pu partir reste dans le journal : on le signale d'un mot,
@@ -282,7 +282,7 @@ export async function resolveOfflineConflict(
   path: string,
   keep: "local" | "server" | "both",
 ): Promise<void> {
-  await invoke("offline_resolve", { workspacePath, path, keep });
+  await invoke("offline_resolve", { input: { workspacePath, path, keep } });
   const state = stateFor(workspacePath);
   state.conflicts = state.conflicts.filter((conflict) => conflict.path !== path);
   if (keep !== "local") {
@@ -295,7 +295,7 @@ export async function resolveOfflineConflict(
 
 /// Oublie le miroir (et ses modifications en attente) pour cet espace.
 export async function forgetOfflineMirror(workspacePath: string): Promise<void> {
-  await invoke("offline_forget", { workspacePath });
+  await invoke("offline_forget", { input: { workspacePath } });
   const state = stateFor(workspacePath);
   state.pending.clear();
   state.pendingCount = 0;
@@ -310,7 +310,7 @@ export async function forgetOfflineMirror(workspacePath: string): Promise<void> 
 export async function listOfflineIndex(
   workspacePath: string,
 ): Promise<WorkspaceEntry[]> {
-  const entries = await invoke<WorkspaceEntry[]>("offline_list", { workspacePath });
+  const entries = await invoke<WorkspaceEntry[]>("offline_list", { input: { workspacePath } });
   return (entries ?? []).map((entry) => ({
     ...entry,
     relativePath: cleanRelative(entry.relativePath),
@@ -380,7 +380,7 @@ export async function readOfflineFile(
     path?: string;
     content?: string | null;
     mirroredAtMs?: number | null;
-  }>("offline_read", { workspacePath, path: relativePath });
+  }>("offline_read", { input: { workspacePath, path: relativePath } });
   return documentFor(
     workspacePath,
     result?.path || relativePath,
@@ -396,11 +396,11 @@ export async function writeOfflineFile(
   relativePath: string,
   content: string,
 ): Promise<FileDocument> {
-  const result = await invoke<OfflineWriteResult>("offline_write", {
+  const result = await invoke<OfflineWriteResult>("offline_write", { input: {
     workspacePath,
     path: relativePath,
     content,
-  });
+  } });
   markPending(workspacePath, result?.path || relativePath);
   return documentFor(workspacePath, relativePath, content, Date.now());
 }
@@ -411,10 +411,10 @@ export async function createOfflineFile(
   name: string,
 ): Promise<WorkspaceEntry> {
   const path = joinRelative(targetRelativePath, name);
-  const result = await invoke<OfflineWriteResult>("offline_create_file", {
+  const result = await invoke<OfflineWriteResult>("offline_create_file", { input: {
     workspacePath,
     path,
-  });
+  } });
   markPending(workspacePath, result?.path || path);
   return entryFor(workspacePath, path, "file");
 }
@@ -425,10 +425,10 @@ export async function createOfflineDirectory(
   name: string,
 ): Promise<WorkspaceEntry> {
   const path = joinRelative(targetRelativePath, name);
-  const result = await invoke<OfflineWriteResult>("offline_create_dir", {
+  const result = await invoke<OfflineWriteResult>("offline_create_dir", { input: {
     workspacePath,
     path,
-  });
+  } });
   markPending(workspacePath, result?.path || path);
   return entryFor(workspacePath, path, "directory");
 }
@@ -437,10 +437,10 @@ export async function deleteOfflineEntry(
   workspacePath: string,
   relativePath: string,
 ): Promise<void> {
-  const result = await invoke<OfflineWriteResult>("offline_delete", {
+  const result = await invoke<OfflineWriteResult>("offline_delete", { input: {
     workspacePath,
     path: relativePath,
-  });
+  } });
   markPending(workspacePath, result?.path || relativePath);
 }
 
@@ -450,11 +450,11 @@ export async function renameOfflineEntry(
   newName: string,
 ): Promise<WorkspaceEntry> {
   const to = joinRelative(parentRelative(relativePath), newName);
-  const result = await invoke<{ from?: string; to?: string }>("offline_rename", {
+  const result = await invoke<{ from?: string; to?: string }>("offline_rename", { input: {
     workspacePath,
     from: relativePath,
     to,
-  });
+  } });
   const target = result?.to || to;
   markPending(workspacePath, target);
   let kind: WorkspaceEntry["kind"] = "file";
