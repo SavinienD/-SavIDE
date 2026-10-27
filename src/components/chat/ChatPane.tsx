@@ -1,3 +1,4 @@
+import { historiquePrompts, memoriserPrompt, naviguer, type EtatHistorique } from "./historiquePrompts";
 import {
   Fragment, // axe:providers
   createContext, // axe:couleurs
@@ -531,6 +532,7 @@ export function ChatPane({
   const activeSubAgentIdRef = useRef<string | null>(null);
   const [autoCloseSubAgentId, setAutoCloseSubAgentId] = useState<string | null>(null);
   const [text, setText] = useState("");
+  const histRef = useRef<EtatHistorique>({ index: null, brouillon: "" });
   // axe:slash
   const slashMenu = useSlashCommandMenu(text, setText);
   const [slashNotice, setSlashNotice] = useState<string | null>(null);
@@ -2798,8 +2800,22 @@ export function ChatPane({
         return;
       }
     }
+    if ((event.key === "ArrowUp" || event.key === "ArrowDown") && !event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
+      const ta = event.currentTarget;
+      if (ta.selectionStart === ta.selectionEnd) {
+        const r = naviguer(event.key === "ArrowUp" ? "haut" : "bas", text, ta.selectionStart, historiquePrompts(conversationId), histRef.current);
+        if (r) {
+          event.preventDefault();
+          histRef.current = r.etat;
+          setText(r.texte);
+          return;
+        }
+      }
+    }
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
+      if (text.trim()) memoriserPrompt(conversationId, text);
+      histRef.current = { index: null, brouillon: "" };
       const now = Date.now();
       const busy = view.status === "streaming" || isStreaming || conversationOccupee;
       // axe:queue - Entree = file ; double Entree (< 500 ms) = envoi immediat.
