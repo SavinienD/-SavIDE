@@ -3107,6 +3107,7 @@ export function Workspace({
           archived={archivedConversations}
           onRestoreArchived={restoreArchivedConversation}
           onDeleteArchived={deleteArchivedConversation}
+          onOpenBackground={(id, title) => setJournalSession({ id, conn: cloudConnection ?? LOCAL_CONNECTION, title })} // axe:0.1.71
         />
         </>
         )}

@@ -119,3 +119,36 @@ export async function mettreEnArrierePlan(
   }
   return { id: clone.id, nom: nomFinal };
 }
+
+/** axe:0.1.71 — liste « Conversations » d'un espace : une session qui a un parent (sous-agent,
+ *  clone « … — arrière-plan ») n'y figure plus ; elle reste dans la vue Agents et le démon
+ *  l'archive seul une fois son travail fini (menage). Les clones d'arrière-plan sont
+ *  rattachés à leur conversation d'origine (indicateur + clic pour ouvrir). */
+export type SessionListee = { id?: unknown; name?: unknown; parentId?: unknown; status?: unknown; archived?: unknown; updatedAtMs?: unknown; createdAtMs?: unknown };
+export type ResumeConversation = { id: string; title: string; updatedAtMs: number; arrierePlan?: { id: string; title: string; enCours: boolean }[] };
+
+export function resumesConversations(sessions: readonly SessionListee[] | unknown): ResumeConversation[] {
+  const liste = (Array.isArray(sessions) ? sessions : []).filter(
+    (s): s is SessionListee & { id: string } => !!s && typeof (s as SessionListee).id === "string" && !(s as SessionListee).archived,
+  );
+  const parId = new Map<string, ResumeConversation>();
+  const out: ResumeConversation[] = [];
+  for (const s of liste) {
+    if (typeof s.parentId === "string" && s.parentId) continue;
+    const r: ResumeConversation = {
+      id: s.id,
+      title: typeof s.name === "string" ? s.name : "",
+      updatedAtMs: typeof s.updatedAtMs === "number" ? s.updatedAtMs : typeof s.createdAtMs === "number" ? s.createdAtMs : 0,
+    };
+    parId.set(s.id, r);
+    out.push(r);
+  }
+  for (const s of liste) {
+    const nom = typeof s.name === "string" ? s.name : "";
+    if (typeof s.parentId !== "string" || !nom.endsWith(SUFFIXE_ARRIERE_PLAN)) continue;
+    const parent = parId.get(s.parentId);
+    if (!parent) continue;
+    (parent.arrierePlan ??= []).push({ id: s.id, title: nom, enCours: s.status === "running" });
+  }
+  return out.sort((a, b) => b.updatedAtMs - a.updatedAtMs);
+}

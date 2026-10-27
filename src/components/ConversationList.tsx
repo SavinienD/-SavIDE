@@ -17,6 +17,8 @@ type Props = {
   archived?: ConversationSummary[];
   onRestoreArchived?: (id: string) => void;
   onDeleteArchived?: (id: string) => void;
+  /** axe:0.1.71 — ouvre une session d'arrière-plan (journal, comme la vue Agents). */
+  onOpenBackground?: (id: string, title: string) => void;
 };
 
 // Renders only the body of the conversations list. The parent owns the
@@ -33,6 +35,7 @@ export function ConversationList({
   archived,
   onRestoreArchived,
   onDeleteArchived,
+  onOpenBackground,
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [archivesOpen, setArchivesOpen] = useState(false);
@@ -101,6 +104,23 @@ export function ConversationList({
               >
                 {titreAffiche(conv.title)}
               </span>
+              {conv.arrierePlan?.length ? (
+                <button
+                  type="button"
+                  className="conv-row__bg"
+                  data-en-cours={conv.arrierePlan.some((b) => b.enCours) ? "true" : "false"}
+                  title={`Travail en arrière-plan : ${conv.arrierePlan.map((b) => b.title).join(", ")} (ouvrir)`}
+                  aria-label="Ouvrir le travail en arrière-plan"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    const b = conv.arrierePlan![0];
+                    onOpenBackground?.(b.id, b.title);
+                  }}
+                >
+                  <Icon icon="solar:layers-minimalistic-linear" width={12} height={12} />
+                  {conv.arrierePlan.length > 1 ? <span>{conv.arrierePlan.length}</span> : null}
+                </button>
+              ) : null}
               <span className="conv-row__actions">
                 <button
                   className="conv-row__btn"
