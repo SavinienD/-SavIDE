@@ -120,6 +120,9 @@ export class MagasinFiles<T extends ElementFile> {
   private etat: EtatFiles<T>;
   private readonly ecouteurs = new Set<() => void>();
   private readonly essais = new Map<string, number>();
+  // axe:file-hors-vue — volets montés par conversation : une conversation sans
+  // volet est vidée par le gestionnaire global (Workspace), plus par un volet.
+  private readonly vues = new Map<string, number>();
 
   constructor(private readonly stockage: Stockage | null) {
     const files = new Map<string, T[]>();
@@ -242,6 +245,44 @@ export class MagasinFiles<T extends ElementFile> {
       else suivant.set(conversationId, apres);
       return suivant;
     });
+  }
+
+  /** Un volet montre la conversation (rend la fonction de démontage). */
+  monter(conversationId: string): () => void {
+    this.vues.set(conversationId, (this.vues.get(conversationId) ?? 0) + 1);
+    let fait = false;
+    return () => {
+      if (fait) return;
+      fait = true;
+      const n = (this.vues.get(conversationId) ?? 1) - 1;
+      if (n <= 0) this.vues.delete(conversationId);
+      else this.vues.set(conversationId, n);
+      // Le volet part : le gestionnaire global doit reprendre la file.
+      this.publier({});
+    };
+  }
+
+  affichee(conversationId: string): boolean {
+    return (this.vues.get(conversationId) ?? 0) > 0;
+  }
+
+  /**
+   * axe:file-hors-vue — conversations qu'aucun volet ne montre et dont le
+   * premier message peut partir maintenant (tour fini, rien en vol, libre,
+   * pas bloqué). Ordre conservé : un seul élément par conversation à la fois.
+   */
+  prochainsHorsVue(enCours: ReadonlySet<string>): Array<[string, T]> {
+    const sortie: Array<[string, T]> = [];
+    for (const conversationId of this.etat.files.keys()) {
+      if (this.affichee(conversationId)) continue;
+      const suivant = this.prochain(conversationId, {
+        occupe: enCours.has(conversationId),
+        sousAgent: false,
+        edition: false,
+      });
+      if (suivant) sortie.push([conversationId, suivant]);
+    }
+    return sortie;
   }
 
   envoiEnCours(conversationId: string): boolean {

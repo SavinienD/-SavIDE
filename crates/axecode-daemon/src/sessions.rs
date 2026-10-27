@@ -119,6 +119,26 @@ impl Daemon {
         Ok(Value::Array(out))
     }
 
+    /// axe:journal-archive — journal d'une conversation archivée, en lecture seule,
+    /// si elle existe et reste visible dans l'espace (sinon `None` / introuvable).
+    pub(crate) fn archived_journal_readonly(&self, id: &str) -> SessionResult<Option<Journal>> {
+        valid_session_id(id)?;
+        if !journal::archive_exists(&self.config.data_dir, id) {
+            return Ok(None);
+        }
+        let journal = journal::open_archived(&self.config.data_dir, id)?;
+        let root = self.workspace_root_canon()?;
+        if root.is_some() {
+            let visible = journal
+                .rebuild_meta()
+                .is_some_and(|meta| self.visible_meta(&meta, root.as_deref()));
+            if !visible {
+                return Err(SessionError::NotFound(id.to_string()));
+            }
+        }
+        Ok(Some(journal))
+    }
+
     pub fn meta(&self, id: &str) -> SessionResult<SessionMeta> {
         lock(&self.sessions)
             .get(id)
