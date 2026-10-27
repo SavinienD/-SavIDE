@@ -108,3 +108,41 @@ async fn free_conversation_gets_scratch_folder_and_relocates() {
     assert_eq!(metas[0].workspace_id, project.display().to_string());
     assert!(!metas[0].scratch);
 }
+
+
+// axe:journal-archive — le journal d'une conversation archivée (non sous-agent) se lit
+// en lecture seule sans la rétablir ; un identifiant inconnu reste introuvable.
+#[tokio::test(flavor = "multi_thread")]
+async fn journal_lisible_apres_archivage() {
+    let data_dir = tmp();
+    let mut config = DaemonConfig::new(data_dir.clone());
+    config.auto_shutdown = false;
+    let daemon = Daemon::new(config.clone(), Arc::new(EchoFactory));
+    let handle = tokio::spawn(server::run(daemon.clone()));
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    let client = DaemonClient::connect(&config.endpoint, None).await.unwrap();
+    let meta = client
+        .call(
+            "sessions.create",
+            json!({"name": "bg", "workspaceId": "ws", "model": {"provider": "anthropic", "name": "m"}}),
+        )
+        .await
+        .unwrap();
+    let id = meta["id"].as_str().unwrap().to_string();
+    client.call("sessions.send", json!({"sessionId": id, "text": "bonjour"})).await.unwrap();
+    wait_for(&client, &id, |h| h.as_array().is_some_and(|a| a.len() == 2)).await;
+    client.call("sessions.archive", json!({"sessionId": id})).await.unwrap();
+
+    let tree = client.call("sessions.tree", json!({"sessionId": id})).await.unwrap();
+    assert!(tree["entries"].as_array().unwrap().len() >= 3, "{tree}");
+    let history = client.call("sessions.history", json!({"sessionId": id})).await.unwrap();
+    assert!(history.to_string().contains("echo: bonjour"));
+    // Lecture seule : toujours archivée, pas rétablie.
+    assert!(daemon.meta(&id).is_err());
+    assert!(axecode_daemon::journal::archive_exists(&data_dir, &id));
+    let err = client.call("sessions.tree", json!({"sessionId": "inconnu-123"})).await.unwrap_err();
+    assert!(err.to_string().contains("not found"), "{err}");
+
+    client.call("shutdown", json!({"force": true})).await.unwrap();
+    let _ = tokio::time::timeout(Duration::from_secs(5), handle).await;
+}

@@ -1,3 +1,4 @@
+import { getActiveConnection } from "../settings/connectionsApi"; // axe:journal-espace
 import { historiquePrompts, memoriserPrompt, naviguer, type EtatHistorique } from "./historiquePrompts";
 import {
   Fragment, // axe:providers
@@ -456,14 +457,15 @@ export function ChatPane({
   // axe:sub-n — sous-agents (descendants) de la conversation active en cours d'execution.
   const [agentsAuTravail, setAgentsAuTravail] = useState(0);
   // axe:bg-c — le plus récent des agents au travail : le clic sur le bandeau ouvre sa conversation.
-  const agentRecentRef = useRef<{ id: string; name: string } | null>(null);
+  const agentRecentRef = useRef<{ id: string; name: string; conn: string } | null>(null);
   // axe:bg-b — recompte à la fin de chaque tour (pas seulement sur événement / 10 s).
   const rechargerAgentsRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     let vivant = true;
     const charger = async () => {
       try {
-        const all = await agentsApi.list();
+        const conn = getActiveConnection(); // axe:journal-espace — la machine qui a listé l'agent
+        const all = await agentsApi.list(conn);
         const enfants = new Map<string, string[]>();
         for (const x of all) if (x.parentId) enfants.set(x.parentId, [...(enfants.get(x.parentId) ?? []), x.id]);
         const parId = new Map(all.map((x) => [x.id, x]));
@@ -483,7 +485,7 @@ export function ChatPane({
           pile.push(...(enfants.get(id) ?? []));
         }
         if (vivant) {
-          agentRecentRef.current = recent ? { id: recent.id, name: recent.name } : null;
+          agentRecentRef.current = recent ? { id: recent.id, name: recent.name, conn } : null;
           setAgentsAuTravail(n);
         }
       } catch {
@@ -2115,6 +2117,10 @@ export function ChatPane({
     [conversationId, history, onSend],
   );
 
+  // axe:file-hors-vue — tant que ce volet est monté, c'est lui qui vide la file ;
+  // démonté (autre onglet, autre conversation), Workspace prend le relais.
+  useEffect(() => FILES_PARTAGEES.monter(conversationId), [conversationId]);
+
   // axe:file-attente — envoi automatique : un seul par conversation (tous volets
   // confondus), jamais pendant une compaction ni avant sa relance.
   useEffect(() => {
@@ -3634,7 +3640,7 @@ export function ChatPane({
             // axe:bg-c — comme la vue Agents : ouvre la conversation (journal) de l'agent.
             const a = agentRecentRef.current;
             window.dispatchEvent(new CustomEvent("axe:open-agents"));
-            if (a) window.dispatchEvent(new CustomEvent("axe:open-agent-journal", { detail: { id: a.id, title: a.name || a.id.slice(0, 8) } }));
+            if (a) window.dispatchEvent(new CustomEvent("axe:open-agent-journal", { detail: { id: a.id, title: a.name || a.id.slice(0, 8), conn: a.conn } })); // axe:journal-espace
           }}
         >
           ● {agentsAuTravail} agent(s) au travail

@@ -10715,8 +10715,13 @@ textarea {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 2px;
-  padding: 1px 4px;
+  /* axe:file-hors-vue — zone de clic 24 px (était 22x16). */
+  min-width: 24px;
+  min-height: 24px;
+  box-sizing: border-box;
+  padding: 1px 6px;
   margin-left: 4px;
   border: 1px solid var(--line, rgba(128, 128, 128, 0.35));
   border-radius: var(--r-pill, 999px);

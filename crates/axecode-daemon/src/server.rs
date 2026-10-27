@@ -122,6 +122,22 @@ impl Daemon {
                 self.wake_archived(&id);
             }
         }
+        // axe:journal-archive — lire le journal (arbre, historique) d'une conversation
+        // archivée hors des sous-agents (ex. « … — arrière-plan ») : lecture seule depuis
+        // l'archive, sans la rétablir (avant : « session not found »).
+        if matches!(method, methods::SESSIONS_TREE | methods::SESSIONS_HISTORY) {
+            if let Some(id) = opt_str(&params, "sessionId").filter(|id| id != "*") {
+                if self.meta(&id).is_err() {
+                    if let Some(journal) = self.archived_journal_readonly(&id)? {
+                        return Ok(if method == methods::SESSIONS_TREE {
+                            serde_json::to_value(journal.tree())?
+                        } else {
+                            serde_json::to_value(journal.history())?
+                        });
+                    }
+                }
+            }
+        }
         if self.config.workspace_root.is_some()
             && method.starts_with("sessions.")
             && !matches!(

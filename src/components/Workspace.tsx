@@ -64,12 +64,12 @@ import { ConnectionSelector } from "./agents/ConnectionSelector";
 import { RemoteConversations } from "./agents/RemoteConversations";
 import { agentsApi } from "./agents/agentsApi"; // axe:e12b — creation d'une conversation sur le service
 import { rememberedModel } from "./agents/remoteItems"; // axe:e12b — modele choisi plus tard, jamais demande ici
-import { LOCAL_CONNECTION, useActiveConnection } from "./settings/connectionsApi";
+import { getActiveConnection, LOCAL_CONNECTION, useActiveConnection } from "./settings/connectionsApi";
 // axe:remote end
 import { ChatPane, type ExternalDropFeed } from "./chat/ChatPane";
 import { createConversationActions } from "./chat/actionsConversation"; // axe:e17a
 import { filesPartagees } from "./chat/fileAttente"; // axe:file-attente
-import { mettreEnArrierePlan } from "./chat/arrierePlan"; // axe:arriere-plan
+import { avecNote, mettreEnArrierePlan } from "./chat/arrierePlan"; // axe:arriere-plan
 import {
   clore,
   clotLaDemande,
@@ -249,7 +249,8 @@ export function Workspace({
   useEffect(() => {
     const ouvrir = (e: Event) => {
       const d = (e as CustomEvent<{ id: string; title: string; conn?: string }>).detail;
-      if (d?.id) setJournalSession({ id: d.id, conn: d.conn ?? LOCAL_CONNECTION, title: d.title });
+      // axe:journal-espace — sans machine précisée : celle de la vue Agents (l'espace), pas le PC.
+      if (d?.id) setJournalSession({ id: d.id, conn: d.conn ?? getActiveConnection(), title: d.title });
     };
     window.addEventListener("axe:open-agent-journal", ouvrir);
     return () => window.removeEventListener("axe:open-agent-journal", ouvrir);
@@ -2314,6 +2315,58 @@ export function Workspace({
     },
     [cloudConnection, libererConversation],
   );
+
+  // axe:file-hors-vue — la file d'une conversation qu'aucun volet ne montre
+  // (autre onglet, autre conversation de la liste, espace local ou distant)
+  // part dès que son tour finit, ici, au lieu d'attendre le retour du volet.
+  // Même magasin et même réservation (prendreEnvoi) que le volet : jamais deux
+  // envois, ordre conservé (un seul en vol par conversation).
+  useEffect(() => {
+    type ElementEnFile = {
+      id: string;
+      text: string;
+      attachments: { path: string; name?: string }[];
+      model: SavedConversation["model"];
+      thinking: ThinkingLevel;
+      mode: AgentMode;
+      serviceTier: ServiceTier | null;
+    };
+    const files = filesPartagees<ElementEnFile>();
+    // Seulement les conversations de CET espace (le magasin les garde toutes).
+    const ici = new Set(conversations.map((c) => c.id));
+    const vider = () => {
+      for (const [conversationId, element] of files.prochainsHorsVue(streamingIdsRef.current)) {
+        if (!ici.has(conversationId)) continue;
+        if (!files.prendreEnvoi(conversationId, element.id)) continue;
+        files.debloquer(element.id);
+        const note = files.prendreNote(conversationId);
+        const workspaceAtRequest = workspacePath;
+        void (async () => {
+          const conversation = await api.loadConversation(workspaceAtRequest, conversationId);
+          await sendMessageForConversation(
+            conversation,
+            avecNote(note, element.text),
+            element.attachments,
+            element.model,
+            element.thinking,
+            element.mode,
+            element.serviceTier,
+          );
+        })()
+          .catch((err) => {
+            console.error(err);
+            if (note) files.poserNote(conversationId, note);
+            const essais = files.noterEchec(element.id);
+            files.bloquer(element.id);
+            if (essais < 2) window.setTimeout(() => files.debloquer(element.id), 3000);
+            files.modifierFile(conversationId, (file) => [element, ...file]);
+          })
+          .finally(() => files.libererEnvoi(conversationId, element.id));
+      }
+    };
+    vider();
+    return files.abonner(vider);
+  }, [conversations, streamingConversationIds, workspacePath, sendMessageForConversation]);
 
   const conversationExecutors = useMemo(
     () => ({

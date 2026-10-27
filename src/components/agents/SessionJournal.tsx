@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { agentsApi, describeEntry, type JournalEntry, type JournalTree } from "./agentsApi";
 import "./agents.css";
+import { getActiveConnection } from "../settings/connectionsApi"; // axe:journal-espace
+import { chargerJournal, messageJournal } from "./journalAgent";
+import { erreurMoteurEnFrancais } from "../../lib/erreursMoteur";
 
 type Props = {
   sessionId: string;
@@ -24,6 +27,7 @@ function messageText(entry: JournalEntry): { role: string; text: string } {
   return { role: msg?.role ?? "user", text };
 }
 
+
 export function SessionJournal({ sessionId, connectionId = "local", title, onClose }: Props) {
   const [tree, setTree] = useState<JournalTree | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,10 +45,10 @@ export function SessionJournal({ sessionId, connectionId = "local", title, onClo
 
   const load = useCallback(async () => {
     try {
-      setTree(await agentsApi.tree(sessionId, connectionId));
+      setTree(await chargerJournal(agentsApi.tree, sessionId, connectionId, getActiveConnection()));
       setError(null);
     } catch (e) {
-      setError(String(e));
+      setError(messageJournal(e, erreurMoteurEnFrancais));
     }
   }, [sessionId, connectionId]);
 

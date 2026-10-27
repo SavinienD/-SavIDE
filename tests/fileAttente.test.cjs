@@ -195,3 +195,37 @@ test("les volets sont prévenus de chaque changement (useSyncExternalStore)", ()
 test("un seul magasin pour toute l'appli (survit au remontage d'un volet)", () => {
   assert.equal(F.filesPartagees(), F.filesPartagees());
 });
+
+// axe:file-hors-vue — A tourne avec 2 messages en file, l'utilisateur passe sur B.
+test("file hors vue : A démontée envoie ses 2 messages dans l'ordre", () => {
+  const m = new F.MagasinFiles(null);
+  const el = (id) => ({ id, text: id, attachments: [] });
+  m.modifierFile("A", () => [el("a1"), el("a2")]);
+  const demonterA = m.monter("A");
+  m.monter("B");
+  const enCours = new Set(["A"]);
+  assert.deepEqual(m.prochainsHorsVue(enCours), []); // A affichée : c'est son volet
+  demonterA(); // passage sur B
+  assert.deepEqual(m.prochainsHorsVue(enCours), []); // tour en cours
+  enCours.delete("A"); // turn_finished
+  let p = m.prochainsHorsVue(enCours);
+  assert.deepEqual(p.map(([c, e]) => [c, e.id]), [["A", "a1"]]);
+  assert.ok(m.prendreEnvoi("A", "a1"));
+  assert.deepEqual(m.prochainsHorsVue(enCours), []); // un seul en vol
+  enCours.add("A");
+  m.libererEnvoi("A", "a1");
+  assert.deepEqual(m.prochainsHorsVue(enCours), []);
+  enCours.delete("A");
+  p = m.prochainsHorsVue(enCours);
+  assert.deepEqual(p.map(([c, e]) => [c, e.id]), [["A", "a2"]]);
+  assert.ok(m.prendreEnvoi("A", "a2"));
+  m.libererEnvoi("A", "a2");
+  assert.deepEqual(m.file("A"), []);
+});
+
+test("file hors vue : B affichée et vide n'est jamais touchée", () => {
+  const m = new F.MagasinFiles(null);
+  m.monter("B");
+  m.modifierFile("B", () => [{ id: "b1", text: "x", attachments: [] }]);
+  assert.deepEqual(m.prochainsHorsVue(new Set()), []);
+});
