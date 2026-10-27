@@ -24,3 +24,7 @@ export function dicteeDisponible(etat: EtatVoix | null | undefined, options: Opt
 
 export const MESSAGE_DICTEE_INDISPONIBLE =
   "Dictée vocale indisponible : aucun moteur de transcription ne répond. Le bouton micro est masqué.";
+
+/** SavIDE : la dictée ne vise jamais le Whisper de la VM. */
+export const MESSAGE_DICTEE_INDISPONIBLE_LOCAL =
+  "Dictée vocale indisponible : SavIDE fonctionne 100 % en local et aucun moteur de transcription ne tourne sur ce poste. Le bouton micro est masqué ; il reviendra dès qu'un moteur local répondra.";

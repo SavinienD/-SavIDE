@@ -55,7 +55,8 @@ function Chrono({ depuis }: { depuis: number }) {
 export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
   const d = useDictee({ workspacePath, modele, onTexte });
   // axe:0.1.71 — sans moteur qui répond, pas de micro (au lieu de l'erreur « connexion refusée »).
-  const dispo = useDicteeDisponible(workspacePath);
+  // SavIDE est 100 % local : seul un moteur Whisper du poste compte (jamais celui de la VM).
+  const dispo = useDicteeDisponible(workspacePath, { localSeulement: true });
   const enregistre = d.phase === "enregistrement" || d.phase === "demarrage";
   if (dispo !== true) return null;
 

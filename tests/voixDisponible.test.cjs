@@ -40,8 +40,9 @@ test("mode local : ni espace distant ni OpenAI ne comptent", () => {
 
 test("le micro du compositeur et les réglages suivent la disponibilité", () => {
   const bouton = fs.readFileSync(path.resolve(__dirname, "../src/axe/voix/DicteeBouton.tsx"), "utf8");
-  assert.match(bouton, /useDicteeDisponible\(/);
+  assert.match(bouton, /useDicteeDisponible\(workspacePath, \{ localSeulement: true \}\)/);
   assert.match(bouton, /if \(dispo !== true\) return null;/);
   const section = fs.readFileSync(path.resolve(__dirname, "../src/axe/voix/VoixSection.tsx"), "utf8");
-  assert.match(section, /MESSAGE_DICTEE_INDISPONIBLE/);
+  assert.match(section, /MESSAGE_DICTEE_INDISPONIBLE_LOCAL/);
+  assert.match(section, /if \(dispo === false\) \{/);
 });

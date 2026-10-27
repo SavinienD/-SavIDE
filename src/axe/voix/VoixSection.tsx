@@ -7,7 +7,7 @@ import {
   lireReglagesVoix,
   type ReglagesVoix,
 } from "./reglages";
-import { dicteeDisponible, MESSAGE_DICTEE_INDISPONIBLE } from "./disponibilite"; // axe:0.1.71
+import { dicteeDisponible, MESSAGE_DICTEE_INDISPONIBLE_LOCAL } from "./disponibilite"; // axe:0.1.71
 import { lireEtatVoix } from "./useDicteeDisponible";
 import "./voix.css";
 
@@ -25,7 +25,7 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
   useEffect(() => {
     let fini = false;
     void lireEtatVoix(workspacePath).then((e) => {
-      if (!fini) setDispo(dicteeDisponible(e));
+      if (!fini) setDispo(dicteeDisponible(e, { localSeulement: true }));
     });
     return () => {
       fini = true;
@@ -50,7 +50,7 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
     try {
       const lu = await invoke<EtatVoix>("voix_etat", { input: { workspacePath: workspacePath ?? null } });
       setEtat(lu);
-      setDispo(dicteeDisponible(lu));
+      setDispo(dicteeDisponible(lu, { localSeulement: true }));
       void lireEtatVoix(workspacePath, true);
       setTest("repos");
     } catch (err) {
@@ -59,21 +59,31 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
     }
   };
 
+  // axe:0.1.71 — SavIDE (100 % local) : sans moteur Whisper sur le poste, la dictée est masquée.
+  if (dispo === false) {
+    return (
+      <div className="axe-appearance axe-voix-reglages">
+        <header>
+          <h2>Dictée vocale</h2>
+        </header>
+        <p className="axe-voix-reglages__ko" role="status">{MESSAGE_DICTEE_INDISPONIBLE_LOCAL}</p>
+        <button type="button" className="axe-appearance__button" onClick={() => void tester()} disabled={test === "en-cours"}>
+          {test === "en-cours" ? "Test…" : "Revérifier"}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="axe-appearance axe-voix-reglages">
       <header>
         <h2>Dictée vocale</h2>
         <p className="axe-appearance__hint">
           Micro du compositeur (Ctrl+Maj+D) : enregistrement, puis transcription par Whisper
-          large-v3-turbo sur la VM (français, vocabulaire technique). Le texte est inséré dans la
+          local du poste (français, vocabulaire technique). Le texte est inséré dans la
           zone de saisie, modifiable, et n'est jamais envoyé automatiquement. Échap annule.
         </p>
       </header>
-      {dispo === false && (
-        <p className="axe-voix-reglages__ko" role="status">
-          {MESSAGE_DICTEE_INDISPONIBLE} Lancez « Tester les moteurs » une fois un moteur démarré.
-        </p>
-      )}
 
       <section className="axe-appearance__block">
         <h3>Options</h3>
@@ -99,7 +109,7 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
             onChange={(e) => changer({ repliOpenai: e.target.checked })}
           />
           <span>
-            Repli OpenAI si la VM est injoignable
+            Repli OpenAI si le moteur local est injoignable
             <br />
             <span className="axe-appearance__hint">
               gpt-4o-transcribe puis whisper-1, seulement si une clé API OpenAI est configurée
@@ -146,7 +156,7 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
       <section className="axe-appearance__block">
         <h3>Moteurs</h3>
         <p className="axe-appearance__hint">
-          Ordre : service de l'espace cloud (Whisper de la VM), puis OpenAI (si clé), sinon dictée
+          Moteur : un serveur Whisper local lancé sur ce poste, sinon dictée
           Windows (Win+H) proposée en secours.
         </p>
         <button type="button" className="axe-appearance__button" onClick={() => void tester()} disabled={test === "en-cours"}>
