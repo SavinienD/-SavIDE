@@ -69,6 +69,7 @@ import { getActiveConnection, LOCAL_CONNECTION, useActiveConnection } from "./se
 import { ChatPane, type ExternalDropFeed } from "./chat/ChatPane";
 import { createConversationActions } from "./chat/actionsConversation"; // axe:e17a
 import { filesPartagees } from "./chat/fileAttente"; // axe:file-attente
+import { messageArchiveEchec } from "./chat/archiveErreur"; // axe:archive-erreur
 import { avecNote, mettreEnArrierePlan } from "./chat/arrierePlan"; // axe:arriere-plan
 import {
   clore,
@@ -712,11 +713,19 @@ export function Workspace({
     void refreshArchivedConversations();
   }, [refreshArchivedConversations]);
 
+  // axe:archive-erreur — pushNotice est defini plus bas : on passe par une ref.
+  const avisArchiveRef = useRef<(texte: string) => void>(() => {});
   const archiveConversation = useCallback(
     async (id: string) => {
+      if (streamingConversationIds.has(id)) {
+        // Avant : retour silencieux, le bouton semblait ne rien faire.
+        avisArchiveRef.current(
+          "Archivage impossible : la conversation travaille encore. Arrêtez-la puis réessayez.",
+        );
+        return;
+      }
       setOngletsChat((t) => t.filter((o) => o.id !== id)); // axe:suppr-onglet
       setChatDetache((a) => (a === id ? null : a));
-      if (streamingConversationIds.has(id)) return;
       try {
         const next = await api.archiveConversation(workspacePath, id);
         setConversations(next);
@@ -732,6 +741,7 @@ export function Workspace({
         }
       } catch (err) {
         console.error(err);
+        avisArchiveRef.current(messageArchiveEchec(err));
       }
     },
     [
@@ -1041,6 +1051,7 @@ export function Workspace({
       kind === "error" ? 6000 : 4000,
     );
   }, []);
+  avisArchiveRef.current = (texte) => pushNotice("error", texte);
 
   // axe:freechat — no editor in the free conversation view: files produced
   // by the agent (relative to the conversation's private folder) open with
