@@ -10696,3 +10696,12 @@ textarea {
     display: none;
   }
 }
+
+/* axe:bas169 - bouton flottant du chat */
+.chat-body__bas {
+  position: sticky; bottom: 8px; margin: -36px 12px 8px auto; display: flex;
+  align-self: flex-end; width: 30px; height: 30px; align-items: center; justify-content: center;
+  border-radius: 50%; border: 1px solid var(--border, #444); background: var(--bg-2, #222);
+  color: var(--fg-1, #ddd); cursor: pointer; z-index: 5; box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+.chat-body__bas:hover { background: var(--bg-3, #333); }

@@ -1704,6 +1704,8 @@ export function ChatPane({
   const scrollAnimationRef = useRef<number | null>(null);
   const autoScrollingRef = useRef(false);
   const stickToBottomRef = useRef(true);
+  // axe:bas169 — bouton « ↓ » quand on n'est plus en bas (Ctrl+Fin aussi).
+  const [pasEnBas, setPasEnBas] = useState(false);
   const pendingForceScrollRef = useRef(true);
   const [sendTick, setSendTick] = useState(0);
   const scrollViewStatus =
@@ -1775,6 +1777,7 @@ export function ChatPane({
       if (autoScrollingRef.current) return;
       stickToBottomRef.current =
         el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+      setPasEnBas(el.scrollHeight - el.scrollTop - el.clientHeight > 200);
     };
     const cancelOnUpwardWheel = (event: WheelEvent) => {
       if (event.deltaY >= 0) return;
@@ -1822,6 +1825,25 @@ export function ChatPane({
   }, [sendTick, scheduleStickToBottom]);
 
   useEffect(() => stopAutoScroll, [stopAutoScroll]);
+
+  const allerEnBas = useCallback(() => {
+    stickToBottomRef.current = true;
+    setPasEnBas(false);
+    scheduleStickToBottom({ force: true, animated: true });
+  }, [scheduleStickToBottom]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey && event.key === "End")) return;
+      const pane = bodyRef.current?.parentElement;
+      const actif = document.activeElement;
+      if (!pane || !(actif === document.body || pane.contains(actif))) return;
+      event.preventDefault();
+      allerEnBas();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [allerEnBas]);
 
   useEffect(() => {
     let cancelled = false;
@@ -3547,6 +3569,18 @@ export function ChatPane({
           )}
         </div>
       </div>
+      {pasEnBas ? (
+        <button
+          type="button"
+          className="chat-body__bas"
+          data-testid="chat-aller-en-bas"
+          title="Aller en bas (Ctrl+Fin)"
+          aria-label="Aller en bas"
+          onClick={allerEnBas}
+        >
+          ↓
+        </button>
+      ) : null}
       <TodoStrip
         blocks={displayView.blocks}
         teamBlocks={teamTaskBlocks}
