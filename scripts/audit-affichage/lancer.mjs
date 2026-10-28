@@ -383,11 +383,20 @@ async function preparerScene(page, si, sc) {
   // axe:commandes — clic sur un élément (ex. icône du heartbeat) pour ouvrir son détail.
   if (sc.cliquer) {
     await pause(600);
+    // axe:micro-local — bulle de la dictée (6 s) : gardée pendant le relevé, même lent (libellés agrandis).
+    if (sc.attendre) {
+      await page.evaluate(() => {
+        const avant = window.setTimeout;
+        window.setTimeout = (f, d, ...a) => avant(f, d === 6000 ? 120000 : d, ...a);
+      });
+    }
     // axe:liens — « cliquer » accepte une liste : clics successifs.
     for (const sel of [sc.cliquer].flat()) {
       await page.evaluate((s) => document.querySelector(s)?.click(), sel);
       await pause(sc.pauseClics ?? 400); // axe:0.1.71 — dictée : enregistrement assez long
     }
+    // axe:micro-local — attendre un élément (ex. bulle de la dictée après le décodage audio).
+    if (sc.attendre) await page.waitForSelector(sc.attendre, { timeout: 10000 }).catch(() => undefined);
   }
   await pause(900);
 }

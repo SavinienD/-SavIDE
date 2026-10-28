@@ -78,6 +78,7 @@ export function installerSimulation(scene: Scene): void {
   const inconnues: Record<string, unknown> = {};
   window.__bancAppels = appels;
   window.__bancInconnues = inconnues;
+  const filesBanc: Record<string, any[]> = {}; // axe:file-demon
   const fournisseur = scene.fournisseur !== false;
   const active = scene.active ?? D.idConv(0);
   const tourActif = scene.tour === "en_cours" || scene.tour === "erreur";
@@ -89,7 +90,7 @@ export function installerSimulation(scene: Scene): void {
     // Scène « maj-badge » : une version disponible (badge discret, installation sur clic seulement).
     updater_check: () =>
       scene.majDispo
-        ? { available: true, currentVersion: "0.1.69", version: String(scene.majDispo), notes: "Badge de mise à jour discret : plus d'installation forcée.\nCorrection de l'installeur relancé après une mise à jour réussie.", date: null }
+        ? { available: true, currentVersion: "0.1.70", version: String(scene.majDispo), notes: "Badge de mise à jour discret : plus d'installation forcée.\nCorrection de l'installeur relancé après une mise à jour réussie.", date: null }
         : { available: false, currentVersion: "0.1.57", version: null, notes: null, date: null },
     updater_current_version: () => "0.1.57",
     // axe:0.1.71 — dictée : un moteur répond (sauf scène voix: false) ; transcription simulée.
@@ -100,13 +101,30 @@ export function installerSimulation(scene: Scene): void {
     voix_modele_local: () => ({ ok: true, modeles: [{ nom: "base", octets: 147951465, present: true }, { nom: "small", octets: 487601967, present: true }] }),
     voix_transcrire: () => ({ text: "Relance le banc.", moteur: "whisper large-v3-turbo (poste)", ms: 6000, nettoye: true, avertissements: ["Nettoyage : 1 terme technique corrigé."] }),
     // API Tauri getVersion (Réglages > À propos).
-    "plugin:app|version": () => "0.1.69",
+    "plugin:app|version": () => "0.1.70",
     cloud_state: () =>
       cloud
         ? { connected: true, base: "https://cloud.exemple.invalid", email: "utilisateur@exemple.invalid", role: "admin", expireLe: "2026-11-21T08:00:00Z", poste: "PC-POSTE", connectionId: "cloud" }
         : { connected: false, base: "https://cloud.exemple.invalid", email: "", role: "", expireLe: "", poste: "", connectionId: "cloud" },
+    // axe:file-demon — file d'attente tenue par le service (copie simulée, par conversation).
+    queue_push: (a) => {
+      const i = a?.input ?? a ?? {};
+      const id = i.message?.conversationId ?? "";
+      const liste = (filesBanc[id] ??= []);
+      const n = liste.findIndex((x) => x.id === i.itemId);
+      if (n >= 0) liste.splice(n, 1);
+      liste.push({ id: i.itemId ?? `q-${liste.length + 1}`, text: i.message?.text ?? "", display: i.display ?? null, createdAtMs: 0 });
+      return null;
+    },
     daemon_call: (a) => {
       switch (a.method) {
+        case "queue.state":
+          return { items: filesBanc[a.params?.sessionId] ?? [], paused: scene.filePause === true };
+        case "queue.list":
+          return filesBanc[a.params?.sessionId] ?? [];
+        case "queue.resume":
+          scene.filePause = false;
+          return { ok: true };
         case "fs.list":
           return ["projets", "clients", "factures", "documentation-client", "FIC_axe", ".axecode"].map((name) => ({ name, kind: "directory" }));
         case "status":

@@ -3618,7 +3618,7 @@ export function ChatPane({
       ) : null}
       {!viewingSubAgent && queuedPrompts.length > 0 && fileEnPause(conversationId) ? (
         <div className="chat-file-pause" data-testid="file-en-pause">
-          <span>File d'attente en pause après l'arrêt.</span>
+          <span title="File d'attente en pause après l'arrêt">File en pause</span>
           <button
             type="button"
             className="chat-file-pause__reprendre"

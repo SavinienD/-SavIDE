@@ -66,12 +66,12 @@ export const SCENES = [
   { id: "maj-badge-accueil", sim: { majDispo: "0.1.66" }, espace: false, temoins: ["clic:.welcome__maj .titlebar__update-pill"] },
   { id: "accueil", sim: { cloud: true }, espace: false, temoins: ["sel:button.welcome__cta", "absent:svg linearGradient"] },
   // axe:0.1.71 — bulle d'info de la dictée (« Transcrit par … en 6,0 s, nettoyé par l'IA. ») : elle débordait du compositeur.
-  { id: "dictee-info", sim: {}, stockage: () => colonnes([ids(3)]), cliquer: [".axe-voix__micro", ".axe-voix__valider"], pauseClics: 1500, temoins: ["clic:.axe-voix__bulle--info"] },
-  { id: "dictee-info-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: [".axe-voix__micro", ".axe-voix__valider"], pauseClics: 1500, temoins: ["clic:.axe-voix__bulle--info"] },
+  { id: "dictee-info", sim: {}, stockage: () => colonnes([ids(3)]), cliquer: [".axe-voix__micro", ".axe-voix__valider"], pauseClics: 1500, attendre: ".axe-voix__bulle--info", temoins: ["clic:.axe-voix__bulle--info"] },
+  { id: "dictee-info-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: [".axe-voix__micro", ".axe-voix__valider"], pauseClics: 1500, attendre: ".axe-voix__bulle--info", temoins: ["clic:.axe-voix__bulle--info"] },
   // axe:0.1.71 — pendant l'enregistrement, la barre de dictée recouvrait le bouton Envoyer (colonne étroite).
   { id: "dictee-envoyer-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: ".axe-voix__micro", temoins: ["clic:.colonne-chat[data-focus='true'] .composer__send", "clic:.axe-voix__valider", "clic:.axe-voix__annuler"] },
   // axe:micro-local — whisper.cpp embarqué : micro visible sans aucun service, réglage petit/moyen.
-  { id: "dictee-micro-local", sim: { voixLocale: true }, stockage: () => colonnes([ids(3)]), cliquer: [".axe-voix__micro", ".axe-voix__valider"], pauseClics: 1500, temoins: ["clic:.axe-voix__bulle--info"] },
+  { id: "dictee-micro-local", sim: { voixLocale: true }, stockage: () => colonnes([ids(3)]), cliquer: [".axe-voix__micro", ".axe-voix__valider"], pauseClics: 1500, attendre: ".axe-voix__bulle--info", temoins: ["clic:.axe-voix__bulle--info"] },
   { id: "dictee-reglage-modele", sim: { voixLocale: true }, stockage: () => colonnes([ids(3)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='voice']"],
     temoins: ["sel:[data-testid='voix-modele-local'] input[type='radio']:checked", "Moyen (small)", "Petit (base)"] },
@@ -96,6 +96,8 @@ export const SCENES = [
   { id: "sans-fournisseur-clic", sim: { fournisseur: false, accelerer: true }, stockage: () => colonnes([ids(3)]), sansFournisseur: true, clicConnecter: true, temoins: ["sel:.settings-pane"] },
   { id: "sans-fournisseur-c1", sim: { fournisseur: false, accelerer: true }, stockage: () => colonnes([ids(3)]), sansFournisseur: true, temoins: ["sel:.composer__connect-cta"] },
   { id: "tour-file-sous-agents", sim: { tour: "en_cours", sousAgents: 2 }, stockage: () => ({ ...colonnes([ids(2), ["c-003"]]), ...fileAttente("c-001", 3) }), temoins: ["sel:.composer__send[data-variant='stop']", "sel:.composer__send[data-variant='background']", "sel:.axe-agents-bandeau", "sel:.todo-strip__queue"] },
+  // axe:file-pause — après un Stop, la file attend : bouton « Reprendre la file ».
+  { id: "file-en-pause", sim: { filePause: true }, stockage: () => ({ ...colonnes([ids(2), ["c-003"]]), ...fileAttente("c-001", 2) }), temoins: ["clic:[data-testid='reprendre-file']", "sel:.todo-strip__queue"] },
   { id: "arret-force", sim: { tour: "en_cours", sousAgents: 1, accelerer: true }, stockage: () => ({ ...colonnes([ids(2), ["c-003"], ["c-004"]]), ...fileAttente("c-001", 2) }), arretForce: true, temoins: ["sel:.composer__send[data-variant='stop'][data-force='true']", "sel:.axe-agents-bandeau"] },
   // attendus : le détail de l'erreur, affiché tel quel avant comme après la traduction du préfixe (« Réponse interrompue : … »).
   { id: "erreur-compaction", sim: { tour: "erreur", compaction: true }, stockage: () => colonnes([ids(3)]), temoins: ["sel:.tool-card__pre[data-error='true']", "sel:.compaction-marker, .compaction-summary"], attendus: ["error decoding response body"] },
