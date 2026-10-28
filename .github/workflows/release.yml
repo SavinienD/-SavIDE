@@ -164,6 +164,8 @@ jobs:
   macos:
     runs-on: macos-latest
     env:
+      # whisper.cpp (micro local) utilise std::filesystem : macOS 10.15 minimum.
+      MACOSX_DEPLOYMENT_TARGET: "10.15"
       CUA_URL: https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.38.0/cua-driver-rs-0.38.0-darwin-universal-binary.tar.gz
       CUA_SHA256: 2bb8dc4a7e69185ffd04c4a9c0eab590bd2c54b72c2c1be13ab675be4f487732
     steps:
