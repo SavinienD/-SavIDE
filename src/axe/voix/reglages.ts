@@ -12,13 +12,16 @@ export type ReglagesVoix = {
   repliOpenai: boolean;
   /** Dictée rapide : fenêtre Whisper réduite (≈ 3× plus rapide sur une phrase courte, moins précise). */
   rapide: boolean;
+  /** axe:micro-local — modèle Whisper du poste : « base » (petit, ≈ 148 Mo) ou « small » (moyen, ≈ 488 Mo). */
+  modeleLocal: "base" | "small";
 };
 
 export const REGLAGES_VOIX_DEFAUT: ReglagesVoix = {
-  nettoyer: false,
+  nettoyer: true,
   vocabulaire: "",
   repliOpenai: true,
   rapide: false,
+  modeleLocal: "base",
 };
 
 const CLE = "axe.voix.reglages";
@@ -34,6 +37,7 @@ export function lireReglagesVoix(): ReglagesVoix {
       vocabulaire: typeof lu.vocabulaire === "string" ? lu.vocabulaire : "",
       repliOpenai: typeof lu.repliOpenai === "boolean" ? lu.repliOpenai : REGLAGES_VOIX_DEFAUT.repliOpenai,
       rapide: typeof lu.rapide === "boolean" ? lu.rapide : REGLAGES_VOIX_DEFAUT.rapide,
+      modeleLocal: lu.modeleLocal === "small" ? "small" : "base",
     };
   } catch {
     return { ...REGLAGES_VOIX_DEFAUT };

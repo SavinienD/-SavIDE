@@ -5,7 +5,7 @@
 
 export type MoteurVoix = { url: string; label: string; ok: boolean; error?: string | null };
 export type EtatServiceVoix = { connexion: string; ok: boolean; moteurs?: MoteurVoix[] | null; erreur?: string };
-export type EtatVoix = { services: EtatServiceVoix[]; openai: boolean };
+export type EtatVoix = { services: EtatServiceVoix[]; openai: boolean; local?: { ok: boolean } | null };
 
 export const SERVICE_LOCAL = "service local";
 
@@ -17,6 +17,8 @@ export type OptionsDisponibilite = {
 /** Un service joignable dont au moins un moteur Whisper répond (ou, hors mode local, une clé OpenAI). */
 export function dicteeDisponible(etat: EtatVoix | null | undefined, options: OptionsDisponibilite = {}): boolean {
   if (!etat) return false;
+  // axe:micro-local — whisper.cpp embarqué : toujours disponible (modèle téléchargé au premier usage).
+  if (options.localSeulement && etat.local?.ok) return true;
   const services = (etat.services ?? []).filter((s) => !options.localSeulement || s.connexion === SERVICE_LOCAL);
   if (services.some((s) => s.ok && (s.moteurs ?? []).some((m) => m.ok))) return true;
   return !options.localSeulement && etat.openai === true;

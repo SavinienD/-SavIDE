@@ -93,7 +93,11 @@ export function installerSimulation(scene: Scene): void {
         : { available: false, currentVersion: "0.1.57", version: null, notes: null, date: null },
     updater_current_version: () => "0.1.57",
     // axe:0.1.71 — dictée : un moteur répond (sauf scène voix: false) ; transcription simulée.
-    voix_etat: () => ({ services: scene.voix === false ? [] : [{ connexion: "service local", ok: true, moteurs: [{ url: "http://127.0.0.1:8179/inference", label: "whisper large-v3-turbo (poste)", ok: true }] }], openai: false }),
+    voix_etat: () =>
+      scene.voixLocale
+        ? { services: [], openai: false, local: { ok: true, modeles: [{ nom: "base", octets: 147951465, present: true }, { nom: "small", octets: 487601967, present: false }] } } // axe:micro-local
+        : { services: scene.voix === false ? [] : [{ connexion: "service local", ok: true, moteurs: [{ url: "http://127.0.0.1:8179/inference", label: "whisper large-v3-turbo (poste)", ok: true }] }], openai: false },
+    voix_modele_local: () => ({ ok: true, modeles: [{ nom: "base", octets: 147951465, present: true }, { nom: "small", octets: 487601967, present: true }] }),
     voix_transcrire: () => ({ text: "Relance le banc.", moteur: "whisper large-v3-turbo (poste)", ms: 6000, nettoye: true, avertissements: ["Nettoyage : 1 terme technique corrigé."] }),
     // API Tauri getVersion (Réglages > À propos).
     "plugin:app|version": () => "0.1.69",

@@ -283,3 +283,9 @@
   max-width: calc(100% - 16px);
   overflow-wrap: anywhere;
 }
+
+/* axe:micro-local — titre sur une ligne même en colonne étroite */
+.axe-voix-reglages > header > h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.axe-voix-reglages { min-width: 0; }
+.axe-voix-reglages .axe-appearance__button { max-width: 100%; white-space: normal; }
+.axe-voix-reglages__ligne { min-width: 0; overflow-wrap: anywhere; }

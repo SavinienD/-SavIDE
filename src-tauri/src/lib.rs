@@ -115,6 +115,7 @@ fn voice_dictation() -> Result<(), String> {
 }
 mod conversations;
 mod voix; // axe:voix
+mod voix_local; // axe:micro-local
 mod custom_providers; // axe:providers
 mod daemon_client; // axe:daemon
 mod freechat; // axe:freechat
@@ -354,6 +355,7 @@ pub fn run() {
             voix::voix_transcrire, // axe:voix
             voix::voix_annuler,
             voix::voix_etat,
+            voix::voix_modele_local, // axe:micro-local
             import_dossier::push_folder_cloud,
             // axe:daemon
             daemon_client::daemon_status,

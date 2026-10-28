@@ -2,13 +2,13 @@ import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
-  blobEnBase64,
   classerErreurMicro,
   EnregistreurVoix,
   messageErreurMicro,
   microDisponible,
 } from "./enregistreur";
 import { lireReglagesVoix } from "./reglages";
+import { blobEnPcm16k, MIME_PCM, pcmEnBase64 } from "./pcm"; // axe:micro-local
 
 /** axe:voix — machine à états de la dictée : repos -> enregistrement ->
  *  transcription -> texte inséré (jamais envoyé), ou erreur avec secours Win+H. */
@@ -144,20 +144,23 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
     debutTranscription.current = performance.now();
     setPhase("transcription");
     try {
-      const { blob, mime, dureeMs: duree } = await enr.terminer();
+      const { blob, dureeMs: duree } = await enr.terminer();
       if (blob.size === 0 || duree < 300) {
         demandeCourante.current = null;
         setPhase("repos");
         setInfo("Enregistrement trop court.");
         return;
       }
-      const audio = await blobEnBase64(blob);
+      // axe:micro-local — SavIDE : whisper.cpp embarqué, audio décodé ici en PCM 16 kHz.
+      const audio = pcmEnBase64(await blobEnPcm16k(blob));
       const reglages = lireReglagesVoix();
       const { workspacePath: espace, modele: chat } = contexteRef.current;
       const resultat = await invoke<ResultatTranscription>("voix_transcrire", {
         input: {
           audio,
-          mime,
+          mime: MIME_PCM,
+          local: true,
+          modeleLocal: reglages.modeleLocal,
           durationMs: Math.round(duree),
           workspacePath: espace ?? null,
           vocabulaire: reglages.vocabulaire || null,

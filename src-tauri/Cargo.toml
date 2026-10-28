@@ -47,6 +47,8 @@ zip = { workspace = true } # axe:viewers
 ring = { workspace = true }
 portable-pty = "0.9.0"
 reqwest = { workspace = true }
+whisper-rs = "0.16" # axe:micro-local
+sha2 = { workspace = true } # axe:micro-local
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6.4"

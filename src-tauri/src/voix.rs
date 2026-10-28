@@ -71,6 +71,12 @@ pub(crate) struct VoixTranscrireInput {
     /// Repli OpenAI autorisé (défaut : oui, seulement si une clé existe).
     #[serde(default)]
     repli_openai: Option<bool>,
+    /// axe:micro-local — transcription sur ce poste (whisper.cpp embarqué), sans aucun service.
+    #[serde(default)]
+    local: bool,
+    /// Modèle local : « base » (défaut) ou « small ».
+    #[serde(default)]
+    modele_local: Option<String>,
     /// Identifiant choisi par l'interface pour `voix_annuler`.
     #[serde(default)]
     demande: Option<String>,
@@ -270,6 +276,31 @@ async fn transcrire(app: &AppHandle, input: VoixTranscrireInput) -> std::result:
     let mut echecs: Vec<String> = Vec::new();
     let mut obtenu: Option<Value> = None;
 
+    // axe:micro-local — 100 % sur le poste : ni espace, ni VM, ni OpenAI.
+    if input.local {
+        let m = crate::voix_local::modele(input.modele_local.as_deref());
+        let chemin = crate::voix_local::assurer(app, m).await?;
+        if est_annulee(demande) {
+            return Err(ANNULE.into());
+        }
+        let echantillons = crate::voix_local::pcm_depuis_base64(audio_b64)?;
+        let mut amorce = BASE_PROMPT.to_string();
+        if let Some(v) = vocabulaire {
+            amorce.push_str(" Autres termes : ");
+            amorce.push_str(v);
+        }
+        let t0 = std::time::Instant::now();
+        let texte = tokio::task::spawn_blocking(move || crate::voix_local::transcrire_pcm(&chemin, &echantillons, &amorce))
+            .await
+            .map_err(|e| e.to_string())??;
+        obtenu = Some(json!({
+            "text": canonical_terms(&tidy_transcript(&texte), vocabulaire),
+            "model": format!("whisper {} (local)", m.nom),
+            "engine": "local",
+            "ms": t0.elapsed().as_millis() as u64,
+        }));
+    }
+
     let params = json!({
         "audio": audio_b64,
         "mime": mime,
@@ -278,7 +309,8 @@ async fn transcrire(app: &AppHandle, input: VoixTranscrireInput) -> std::result:
         "prompt": vocabulaire,
         "fast": input.rapide,
     });
-    for connexion in connexions(input.workspace_path.as_deref()) {
+    let services = if input.local { Vec::new() } else { connexions(input.workspace_path.as_deref()) };
+    for connexion in services {
         if est_annulee(demande) {
             return Err(ANNULE.into());
         }
@@ -292,7 +324,7 @@ async fn transcrire(app: &AppHandle, input: VoixTranscrireInput) -> std::result:
         }
     }
 
-    if obtenu.is_none() && input.repli_openai.unwrap_or(true) {
+    if obtenu.is_none() && !input.local && input.repli_openai.unwrap_or(true) {
         match cle_openai() {
             Some((base, cle)) => {
                 let audio = base64::engine::general_purpose::STANDARD
@@ -390,7 +422,22 @@ pub(crate) async fn voix_etat(
             Err(err) => json!({"connexion": nom_connexion(&connexion), "ok": false, "erreur": echec_service(&connexion, &err)}),
         });
     }
-    Ok(json!({"services": services, "openai": cle_openai().is_some()}))
+    Ok(json!({"services": services, "openai": cle_openai().is_some(), "local": crate::voix_local::etat(&app)}))
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct VoixModeleInput {
+    #[serde(default)]
+    modele: Option<String>,
+}
+
+/// axe:micro-local — télécharge (si besoin) le modèle local choisi, empreinte vérifiée.
+#[tauri::command]
+pub(crate) async fn voix_modele_local(app: AppHandle, input: VoixModeleInput) -> std::result::Result<Value, String> {
+    let m = crate::voix_local::modele(input.modele.as_deref());
+    crate::voix_local::assurer(&app, m).await?;
+    Ok(crate::voix_local::etat(&app))
 }
 
 #[cfg(test)]

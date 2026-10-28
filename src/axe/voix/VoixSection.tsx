@@ -10,11 +10,18 @@ import {
 import { dicteeDisponible, MESSAGE_DICTEE_INDISPONIBLE_LOCAL } from "./disponibilite"; // axe:0.1.71
 import { lireEtatVoix } from "./useDicteeDisponible";
 import "./voix.css";
+import { listen } from "@tauri-apps/api/event";
+
+const MODELES_LOCAUX = [
+  { nom: "base" as const, libelle: "Petit (base)", taille: "148 Mo", aide: "Rapide, bon pour des phrases courtes." },
+  { nom: "small" as const, libelle: "Moyen (small)", taille: "488 Mo", aide: "Plus précis, environ trois fois plus lent." },
+];
 
 /** axe:voix — Réglages > Dictée vocale : options et test des moteurs. */
 type Moteur = { url: string; label: string; ok: boolean; error?: string | null };
 type EtatService = { connexion: string; ok: boolean; moteurs?: Moteur[] | null; erreur?: string };
-type EtatVoix = { services: EtatService[]; openai: boolean };
+type ModeleLocal = { nom: string; octets: number; present: boolean };
+type EtatVoix = { services: EtatService[]; openai: boolean; local?: { ok: boolean; modeles?: ModeleLocal[] } | null };
 
 export function VoixSection({ workspacePath }: { workspacePath?: string }) {
   const [reglages, setReglages] = useState<ReglagesVoix>(() => lireReglagesVoix());
@@ -42,6 +49,31 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
     const suivant = { ...reglages, ...patch };
     setReglages(suivant);
     ecrireReglagesVoix(suivant);
+  };
+
+  // axe:micro-local — téléchargement du modèle choisi, avec progression.
+  const [telechargement, setTelechargement] = useState<string | null>(null);
+  useEffect(() => {
+    void tester();
+    let stop: (() => void) | undefined;
+    void listen<{ recu: number; total: number }>("axe://voix-modele", (e) => {
+      const p = e.payload;
+      if (p?.total) setTelechargement(`Téléchargement… ${Math.floor((100 * p.recu) / p.total)} %`);
+    }).then((f) => (stop = f));
+    return () => stop?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const telecharger = async () => {
+    setTelechargement("Téléchargement…");
+    setErreurTest("");
+    try {
+      const local = await invoke<EtatVoix["local"]>("voix_modele_local", { input: { modele: reglages.modeleLocal } });
+      setEtat((e) => (e ? { ...e, local } : e));
+    } catch (err) {
+      setErreurTest(String(err));
+    } finally {
+      setTelechargement(null);
+    }
   };
 
   const tester = async () => {
@@ -79,8 +111,7 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
       <header>
         <h2>Dictée vocale</h2>
         <p className="axe-appearance__hint">
-          Micro du compositeur (Ctrl+Maj+D) : enregistrement, puis transcription par Whisper
-          local du poste (français, vocabulaire technique). Le texte est inséré dans la
+          Micro du compositeur (Ctrl+Maj+D) : enregistrement, puis transcription par Whisper sur ce poste (français, vocabulaire technique), nettoyée ensuite par le modèle de la conversation. Le texte est inséré dans la
           zone de saisie, modifiable, et n'est jamais envoyé automatiquement. Échap annule.
         </p>
       </header>
@@ -102,41 +133,45 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
             </span>
           </span>
         </label>
-        <label className="axe-voix-reglages__ligne">
-          <input
-            type="checkbox"
-            checked={reglages.repliOpenai}
-            onChange={(e) => changer({ repliOpenai: e.target.checked })}
-          />
-          <span>
-            Repli OpenAI si le moteur local est injoignable
-            <br />
-            <span className="axe-appearance__hint">
-              gpt-4o-transcribe puis whisper-1, seulement si une clé API OpenAI est configurée
-              (fournisseur « compatible OpenAI » sur api.openai.com, ou OPENAI_API_KEY). L'audio part
-              alors chez OpenAI.
-            </span>
-          </span>
-        </label>
       </section>
 
-      <section className="axe-appearance__block">
-        <label className="axe-voix-reglages__ligne">
-          <input
-            type="checkbox"
-            checked={reglages.rapide}
-            onChange={(e) => changer({ rapide: e.target.checked })}
-          />
-          <span>
-            Dictée rapide (moins précise)
-            <br />
-            <span className="axe-appearance__hint">
-              Whisper n'analyse que la durée parlée au lieu d'une fenêtre de 30 s : environ 6 s au
-              lieu de 17 s pour une phrase courte, mais des erreurs nettement plus fréquentes
-              (mesuré). Désactivé par défaut.
-            </span>
-          </span>
-        </label>
+      <section className="axe-appearance__block" data-testid="voix-modele-local">
+        <h3>Modèle</h3>
+        <p className="axe-appearance__hint">
+          Transcription 100&nbsp;% sur ce poste (whisper.cpp intégré)&nbsp;: l'audio ne quitte jamais
+          l'ordinateur. Le modèle est téléchargé une fois, au premier usage, puis vérifié
+          (empreinte SHA-256).
+        </p>
+        {MODELES_LOCAUX.map((m) => {
+          const present = etat?.local?.modeles?.find((x) => x.nom === m.nom)?.present;
+          return (
+            <label key={m.nom} className="axe-voix-reglages__ligne">
+              <input
+                type="radio"
+                name="axe-voix-modele"
+                checked={reglages.modeleLocal === m.nom}
+                onChange={() => changer({ modeleLocal: m.nom })}
+              />
+              <span>
+                {m.libelle}
+                <br />
+                <span className="axe-appearance__hint">
+                  {m.aide}
+                  {present === true ? " Déjà téléchargé." : present === false ? ` Téléchargement de ${m.taille} au premier usage.` : ""}
+                </span>
+              </span>
+            </label>
+          );
+        })}
+        <button
+          type="button"
+          className="axe-appearance__button"
+          onClick={() => void telecharger()}
+          disabled={telechargement !== null}
+        >
+          {telechargement ?? "Télécharger maintenant"}
+        </button>
+        {erreurTest && <p className="axe-voix-reglages__ko">{erreurTest}</p>}
       </section>
 
       <section className="axe-appearance__block">
@@ -153,39 +188,6 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
         />
       </section>
 
-      <section className="axe-appearance__block">
-        <h3>Moteurs</h3>
-        <p className="axe-appearance__hint">
-          Moteur : un serveur Whisper local lancé sur ce poste, sinon dictée
-          Windows (Win+H) proposée en secours.
-        </p>
-        <button type="button" className="axe-appearance__button" onClick={() => void tester()} disabled={test === "en-cours"}>
-          {test === "en-cours" ? "Test…" : "Tester les moteurs"}
-        </button>
-        {test === "erreur" && <p className="axe-voix-reglages__ko">{erreurTest}</p>}
-        {etat && (
-          <div className="axe-voix-reglages__etat">
-            {etat.services.map((service) => (
-              <div key={service.connexion}>
-                <strong>{service.connexion}</strong>
-                {service.ok ? (
-                  (service.moteurs ?? []).map((m) => (
-                    <div key={m.url} className={m.ok ? "axe-voix-reglages__ok" : "axe-voix-reglages__ko"}>
-                      {m.ok ? "✓" : "✗"} {m.label}
-                      {m.ok ? "" : ` — ${m.error ?? "injoignable"}`}
-                    </div>
-                  ))
-                ) : (
-                  <div className="axe-voix-reglages__ko">✗ {service.erreur}</div>
-                )}
-              </div>
-            ))}
-            <div className={etat.openai ? "axe-voix-reglages__ok" : ""}>
-              {etat.openai ? "✓ clé OpenAI configurée" : "– pas de clé OpenAI (repli indisponible)"}
-            </div>
-          </div>
-        )}
-      </section>
     </div>
   );
 }
