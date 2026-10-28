@@ -10736,3 +10736,105 @@ textarea {
 .chat-file-pause { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 12px; padding: 6px 10px; border: 1px solid var(--border, #444); border-radius: 6px; font-size: 12px; }
 .chat-file-pause > span { flex: 1 1 auto; white-space: nowrap; }
 .chat-file-pause__reprendre { white-space: nowrap; flex-shrink: 0; padding: 3px 10px; border-radius: 4px; cursor: pointer; }
+
+/* axe:banc-174 : barre de titre étroite / libellés allongés ; Réglages > Fournisseurs sans défilement horizontal. */
+@container barre-titre (max-width: 1180px) {
+  .titlebar__btn-label { display: none; }
+  .titlebar__btn { padding: 0 6px; }
+  .titlebar__email { max-width: 150px; }
+}
+@container barre-titre (max-width: 560px) {
+  .titlebar__email { display: none; }
+}
+.settings-pane__main { overflow-x: hidden; }
+.settings-pane__body--providers { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.settings-pane__body--providers > * { min-width: 0; }
+.settings-pane__provider-title-row h2 { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.thinking-block__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+
+/* axe:banc-174b : Réglages > MCP sur une colonne en fenêtre étroite ; barre de titre très étroite : compte réduit à l'icône. */
+.settings-pane__body--mcp { grid-template-columns: minmax(180px, 280px) minmax(0, 1fr); }
+.settings-pane__detail-cmd { overflow-wrap: anywhere; min-width: 0; }
+@container barre-titre (max-width: 760px) {
+  .titlebar__compte .titlebar__btn--petit { display: none; }
+  .titlebar__btn { padding: 0 4px; }
+}
+
+
+/* axe:banc-174c : Réglages > MCP en une colonne quand la zone est étroite ; boutons et statuts qui passent à la ligne au lieu de déborder. */
+.settings-pane__main { container: reglages-main / inline-size; }
+@container reglages-main (max-width: 900px) {
+  .settings-pane__body--mcp { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+}
+.settings-pane__actions, .settings-pane__detail-head, .settings-pane__detail-head-actions { flex-wrap: wrap; min-width: 0; }
+.settings-pane__status { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+.settings-pane__btn, .settings-pane__chip, .settings-pane__mcp-delete { flex: 0 0 auto; white-space: nowrap; }
+.settings-pane__nav-list-item { min-width: 0; }
+.settings-pane__nav-list-item > :first-child { min-width: 0; }
+.settings-pane__switch { flex: 0 0 auto; }
+
+
+/* axe:banc-174d : la colonne MCP passe en pleine largeur dès que la zone fait moins de 1100 px. */
+@container reglages-main (max-width: 1100px) {
+  .settings-pane__body--mcp { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .settings-pane__body--mcp > * { min-width: 0; }
+}
+.settings-pane__header .settings-pane__actions { flex: 1 1 auto; }
+
+
+/* axe:banc-174e : zone de réglages étroite : en-tête sur deux rangées (titre puis actions), boutons du détail MCP sous le titre. */
+@container reglages-main (max-width: 1100px) {
+  .settings-pane__header-text { flex: 1 1 100%; }
+  .settings-pane__header .settings-pane__actions { justify-content: flex-start; }
+  .settings-pane__detail-head { flex-wrap: wrap; }
+  .settings-pane__detail-head-actions { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+  .settings-pane__status { flex: 1 1 100%; }
+}
+
+
+/* axe:banc-174f */
+@container reglages-main (max-width: 1100px) {
+  .settings-pane__header .settings-pane__actions { flex: 1 1 100%; flex-wrap: wrap; }
+  .settings-pane__header .settings-pane__actions > .settings-pane__btn { flex: 0 1 auto; }
+  .settings-pane__status { white-space: normal; flex: 1 1 100%; }
+  .settings-pane__title { white-space: nowrap; }
+}
+
+
+/* axe:banc-174g : volet de réglages très étroit (colonne) : bouton borné à la largeur, libellé avec « … » (complet au survol). */
+.settings-pane__header .settings-pane__actions > .settings-pane__btn { max-width: 100%; min-width: 0; }
+.settings-pane__header .settings-pane__actions > .settings-pane__btn > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+
+/* axe:banc-174h : Réglages > Fournisseurs en volet étroit : carte en colonne (logo, texte, actions), rien ne déborde. */
+@container reglages-main (max-width: 1100px) {
+  .settings-pane__provider-card { display: flex; flex-direction: column; align-items: stretch; gap: 10px; min-width: 0; }
+  .settings-pane__provider-main { min-width: 0; width: 100%; }
+  .settings-pane__provider-copy { min-width: 0; flex: 1 1 auto; }
+  .settings-pane__provider-actions { min-width: 0; max-width: 100%; flex-wrap: wrap; }
+  .settings-pane__provider-actions .settings-pane__btn { max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .settings-pane__subtitle { overflow-wrap: normal; }
+}
+.titlebar__actions { flex-wrap: nowrap; }
+@container barre-titre (max-width: 200px) {
+  .titlebar__btn:not(.titlebar__btn--remote):not([data-action]) { display: none; }
+}
+.chat-empty__title, .xv-btn--text, .axe-agents__muted { white-space: nowrap; }
+.xv-toolbar { flex-wrap: wrap; }
+
+
+/* axe:banc-174i */
+@container reglages-main (max-width: 1100px) {
+  .settings-pane__provider-actions .settings-pane__btn > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .settings-pane__provider-copy, .settings-pane__provider-copy * { overflow-wrap: anywhere; }
+  .settings-pane__body--providers { overflow-x: hidden; }
+  .settings-pane__body--providers > * { max-width: 100%; box-sizing: border-box; }
+}
+.settings-pane__subtitle { text-wrap: balance; }
+.axe-journal__head { min-width: 0; flex-wrap: nowrap; }
+.axe-journal__head > strong { min-width: 4ch; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-journal__head > button { flex: 0 0 auto; }
+.axe-journal__head > .axe-agents__muted { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.axe-agents { overflow-x: hidden; min-width: 0; }
+

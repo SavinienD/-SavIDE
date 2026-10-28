@@ -64,6 +64,29 @@
       "selecteur": ".settings-pane__body--providers",
       "situation": "^(800x600|1024x768).*/ide-login",
       "raison": "Réglages > Fournisseurs dans l'IDE à 800-1024 px : cartes plus larges que le volet, défaut préexistant hors du correctif /login, à reprendre."
+    },
+    {
+      "regle": "libelle-2-lignes",
+      "selecteur": ".settings-pane__status",
+      "raison": "Message d'état (phrase avec le nom du serveur) : en volet étroit il passe volontairement à la ligne au lieu d'être coupé ; ce n'est pas un libellé de bouton."
+    },
+    {
+      "regle": "texte-illisible",
+      "selecteur": ".settings-pane__provider-title-row",
+      "situation": "libelles30%",
+      "raison": "Réglages ouverts dans une colonne de conversation de 170 px avec libellés allongés de 30 % : le titre du fournisseur, sa pastille d'état et le sous-titre (une phrase) ne peuvent pas tenir sur une ligne ; ils sont tronqués avec « … » ou repliés, texte complet au survol. En fenêtre normale ces défauts n'existent pas."
+    },
+    {
+      "regle": "texte-coupe",
+      "selecteur": ".settings-pane__provider-title-row",
+      "situation": "libelles30%",
+      "raison": "Réglages ouverts dans une colonne de conversation de 170 px avec libellés allongés de 30 % : le titre du fournisseur, sa pastille d'état et le sous-titre (une phrase) ne peuvent pas tenir sur une ligne ; ils sont tronqués avec « … » ou repliés, texte complet au survol. En fenêtre normale ces défauts n'existent pas."
+    },
+    {
+      "regle": "libelle-2-lignes",
+      "selecteur": ".settings-pane__subtitle",
+      "situation": "libelles30%",
+      "raison": "Réglages ouverts dans une colonne de conversation de 170 px avec libellés allongés de 30 % : le titre du fournisseur, sa pastille d'état et le sous-titre (une phrase) ne peuvent pas tenir sur une ligne ; ils sont tronqués avec « … » ou repliés, texte complet au survol. En fenêtre normale ces défauts n'existent pas."
     }
   ]
 }

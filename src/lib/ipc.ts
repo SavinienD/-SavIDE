@@ -539,7 +539,10 @@ async function cloudListArchivedConversations(
     "sessions.list",
     { archived: true },
   );
-  return cloudConversationSummaries(sessions).map((conversation) => ({
+  // axe:archives-cloud : resumesConversations ecarte les sessions marquees
+  // `archived` ; sans ce retrait, la liste des archives de l'espace restait vide.
+  const liste = (Array.isArray(sessions) ? sessions : []).map((s) => ({ ...s, archived: false }));
+  return cloudConversationSummaries(liste).map((conversation) => ({
     ...conversation,
     archived: true,
   }));
@@ -1166,9 +1169,15 @@ export const api = {
         input: { workspacePath, conversationId },
       });
     }
-    await cloudWriteRpc<{ state?: string }>(conn, "sessions.archive", {
-      sessionId: conversationId,
-    });
+    try {
+      await cloudWriteRpc<{ state?: string }>(conn, "sessions.archive", {
+        sessionId: conversationId,
+      });
+    } catch (err) {
+      // axe:archives-cloud : deja archivee (liste perimee) -> on rafraichit au lieu d'echouer.
+      const archives = await cloudListArchivedConversations(conn).catch(() => []);
+      if (!archives.some((c) => c.id === conversationId)) throw err;
+    }
     return cloudListConversations(conn);
   },
   /// axe:e3 — conversations rangées dans l'archive.
