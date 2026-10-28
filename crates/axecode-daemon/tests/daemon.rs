@@ -184,3 +184,21 @@ async fn file_demon_part_en_fin_de_tour() {
     client.call("shutdown", json!({"force": true})).await.unwrap();
     let _ = tokio::time::timeout(Duration::from_secs(5), handle).await;
 }
+
+// axe:reveil-demarrage — une session avec heartbeat est retrouvée au démarrage.
+#[tokio::test(flavor = "multi_thread")]
+async fn heartbeat_rearme_au_demarrage() {
+    let data_dir = tmp();
+    let mut config = DaemonConfig::new(data_dir.clone());
+    config.auto_shutdown = false;
+    let daemon = Daemon::new(config.clone(), Arc::new(EchoFactory));
+    let a = daemon.create(serde_json::from_value(json!({"name": "a", "workspaceId": "ws", "model": {"provider": "anthropic", "name": "m"}})).unwrap()).unwrap();
+    let b = daemon.create(serde_json::from_value(json!({"name": "b", "workspaceId": "ws", "model": {"provider": "anthropic", "name": "m"}})).unwrap()).unwrap();
+    let st = data_dir.join("session_state");
+    std::fs::create_dir_all(&st).unwrap();
+    std::fs::write(st.join(format!("{}.json", a.id)), r#"{"heartbeat":{"interval_ms":60000,"message":"x"}}"#).unwrap();
+    std::fs::write(st.join(format!("{}.json", b.id)), r#"{"heartbeat":null}"#).unwrap();
+    std::fs::write(st.join("inconnue.json"), r#"{"heartbeat":{"interval_ms":60000,"message":"x"}}"#).unwrap();
+    let daemon = Daemon::new(config, Arc::new(EchoFactory));
+    assert_eq!(daemon.sessions_a_rearmer(), vec![a.id.clone()]);
+}

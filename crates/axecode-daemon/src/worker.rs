@@ -438,6 +438,40 @@ impl Daemon {
         self.compress_archives_if_due().await;
     }
 
+    /// axe:reveil-demarrage — au démarrage du service, les sessions qui ont un
+    /// heartbeat, un guet ou une relance /goal en attente
+    /// (`<données>/session_state/<id>.json`) sont chargées : le hook les réarme dans
+    /// `bind`. Avant, elles ne repartaient qu'au prochain tour de la session.
+    pub fn sessions_a_rearmer(&self) -> Vec<String> {
+        let dir = self.config.data_dir.join("session_state");
+        let Ok(entries) = std::fs::read_dir(dir) else { return Vec::new() };
+        let known: std::collections::HashSet<String> = lock(&self.sessions).keys().cloned().collect();
+        let mut out = Vec::new();
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) != Some("json") { continue; }
+            let Some(id) = path.file_stem().and_then(|s| s.to_str()).map(str::to_string) else { continue };
+            if !known.contains(&id) { continue; }
+            let Ok(v) = std::fs::read(&path).map_err(|_| ()).and_then(|b| serde_json::from_slice::<Value>(&b).map_err(|_| ())) else { continue };
+            let hb = v.get("heartbeat").is_some_and(|h| !h.is_null());
+            let guets = v.get("guets").and_then(Value::as_array).is_some_and(|a| !a.is_empty())
+                || v.get("guets").and_then(Value::as_object).is_some_and(|o| !o.is_empty());
+            let goal = v.get("goal").is_some_and(|g| g.get("status").and_then(Value::as_str) == Some("active")
+                && g.get("next_relaunch_ms").is_some_and(|n| !n.is_null()));
+            if hb || guets || goal { out.push(id); }
+        }
+        out.sort();
+        out
+    }
+
+    pub async fn rearmer_au_demarrage(&self) {
+        for id in self.sessions_a_rearmer() {
+            if let Err(err) = self.runtime_for(&id).await {
+                tracing::warn!(session = %id, error = %err, "heartbeat non réarmé au démarrage");
+            }
+        }
+    }
+
     pub(crate) fn any_running(&self) -> bool {
         lock(&self.sessions).values().any(|s| s.cancel.is_some())
     }

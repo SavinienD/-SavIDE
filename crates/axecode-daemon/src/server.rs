@@ -524,6 +524,10 @@ pub async fn run(daemon: Arc<Daemon>) -> anyhow::Result<()> {
     }
 
     crate::queue_rpc::dispatch_all(&daemon); // axe:file-demon
+    {
+        let daemon = daemon.clone(); // axe:reveil-demarrage
+        tokio::spawn(async move { daemon.rearmer_au_demarrage().await });
+    }
     let housekeeping = {
         let daemon = daemon.clone();
         tokio::spawn(async move {
