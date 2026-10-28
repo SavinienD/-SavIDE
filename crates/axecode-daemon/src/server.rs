@@ -322,7 +322,9 @@ impl Daemon {
                 ok(json!({"entryId": self.post_peer(&from, &to, text)?}))
             }
             methods::SESSIONS_STOP => {
-                self.stop(&sid(&params)?)?;
+                let id = sid(&params)?;
+                self.stop(&id)?;
+                crate::queue_rpc::pause_after_stop(self, &id); // axe:file-pause
                 ok(json!({"ok": true}))
             }
             methods::SESSIONS_HISTORY => {

@@ -33,6 +33,7 @@ import {
 } from "./ToolCard";
 import { TodoStrip, type QueuedPromptStripItem } from "./TodoStrip";
 import { filesPartagees } from "./fileAttente"; // axe:file-attente
+import { abonnerPauses, fileEnPause, instantanePauses, reprendreFile } from "./fileDemon"; // axe:file-pause
 import { deplacerFile, ecouterFilesDemon, migrerFilesNavigateur, pousserFile, relireFileDemon, retirerFile } from "./fileDemon"; // axe:file-demon
 import { avecNote, noteConversation } from "./arrierePlan"; // axe:arriere-plan
 import { fileIcon } from "../../lib/fileIcon";
@@ -844,6 +845,7 @@ export function ChatPane({
     () => collectComposerAttachments(attachments, inlineMentions),
     [attachments, inlineMentions],
   );
+  useSyncExternalStore(abonnerPauses, instantanePauses); // axe:file-pause
   const queuedPrompts =
     promptQueuesByConversation.get(conversationId) ?? EMPTY_QUEUED_PROMPTS;
   const visibleContextEstimate: ContextEstimateState =
@@ -3613,6 +3615,19 @@ export function ChatPane({
         >
           ↓
         </button>
+      ) : null}
+      {!viewingSubAgent && queuedPrompts.length > 0 && fileEnPause(conversationId) ? (
+        <div className="chat-file-pause" data-testid="file-en-pause">
+          <span>File d'attente en pause après l'arrêt.</span>
+          <button
+            type="button"
+            className="chat-file-pause__reprendre"
+            data-testid="reprendre-file"
+            onClick={() => void reprendreFile(workspacePath, conversationId).catch((e) => console.error("reprise de la file", e))}
+          >
+            Reprendre la file
+          </button>
+        </div>
       ) : null}
       <TodoStrip
         blocks={displayView.blocks}

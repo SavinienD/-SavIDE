@@ -67,14 +67,50 @@ export function deplacerFile(workspacePath: string, conversationId: string, item
   return appel(workspacePath, "queue.move", { sessionId: conversationId, itemId, index });
 }
 
-/** Relit la file du service pour une conversation (copie d'affichage). */
-export async function relireFileDemon(workspacePath: string, conversationId: string): Promise<void> {
-  const items = await appel<ElementDemon[]>(workspacePath, "queue.list", { sessionId: conversationId });
-  appliquer(conversationId, items ?? []);
+// axe:file-pause — après un Stop, le service met la file en pause ; le
+// bouton « Reprendre la file » la relance (queue.resume).
+const PAUSES = new Set<string>();
+const ABONNES_PAUSE = new Set<() => void>();
+let versionPauses = 0;
+export function abonnerPauses(f: () => void): () => void {
+  ABONNES_PAUSE.add(f);
+  return () => ABONNES_PAUSE.delete(f);
+}
+export function instantanePauses(): number {
+  return versionPauses;
+}
+export function fileEnPause(conversationId: string): boolean {
+  return PAUSES.has(conversationId);
+}
+export function noterPause(conversationId: string, paused: boolean | undefined): void {
+  if (paused === undefined || PAUSES.has(conversationId) === paused) return;
+  if (paused) PAUSES.add(conversationId);
+  else PAUSES.delete(conversationId);
+  versionPauses += 1;
+  for (const f of ABONNES_PAUSE) f();
+}
+export async function reprendreFile(workspacePath: string, conversationId: string): Promise<void> {
+  noterPause(conversationId, false);
+  await appel(workspacePath, "queue.resume", { sessionId: conversationId });
 }
 
-function appliquer(conversationId: string, items: ElementDemon[]) {
+/** Relit la file du service pour une conversation (copie d'affichage). */
+export async function relireFileDemon(workspacePath: string, conversationId: string): Promise<void> {
+  try {
+    const st = await appel<{ items?: ElementDemon[]; paused?: boolean }>(workspacePath, "queue.state", {
+      sessionId: conversationId,
+    });
+    appliquer(conversationId, st?.items ?? [], st?.paused ?? false);
+  } catch {
+    // service plus ancien (sans queue.state)
+    const items = await appel<ElementDemon[]>(workspacePath, "queue.list", { sessionId: conversationId });
+    appliquer(conversationId, items ?? []);
+  }
+}
+
+function appliquer(conversationId: string, items: ElementDemon[], paused?: boolean) {
   filesPartagees().modifierFile(conversationId, () => items.map((i) => versAffichage(i)));
+  noterPause(conversationId, items.length === 0 ? false : paused);
 }
 
 let ecoute = false;
@@ -82,13 +118,13 @@ let ecoute = false;
 export function ecouterFilesDemon(): void {
   if (ecoute) return;
   ecoute = true;
-  void listen<{ event?: string; sessionId?: string; data?: { sessionId?: string; items?: ElementDemon[] } }>(
+  void listen<{ event?: string; sessionId?: string; data?: { sessionId?: string; items?: ElementDemon[]; paused?: boolean } }>(
     "axe://daemon",
     (e) => {
       const p = e.payload;
       if (p?.event !== "queue") return;
       const id = p.data?.sessionId ?? p.sessionId;
-      if (id) appliquer(id, p.data?.items ?? []);
+      if (id) appliquer(id, p.data?.items ?? [], p.data?.paused);
     },
   ).catch(() => {
     ecoute = false;

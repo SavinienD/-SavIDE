@@ -47,6 +47,8 @@ pub struct QueueItem {
 pub struct Queues {
     loaded: bool,
     map: HashMap<String, Vec<QueueItem>>,
+    /// axe:file-pause — files en pause après un Stop (« Reprendre la file »).
+    paused: std::collections::HashSet<String>,
 }
 
 pub type QueuesState = Mutex<Queues>;
@@ -78,6 +80,25 @@ fn ensure_loaded(d: &Daemon, q: &mut Queues) {
     }
 }
 
+fn pause_path(d: &Daemon, id: &str) -> PathBuf {
+    dir(d).join(format!("{id}.paused"))
+}
+
+fn is_paused(d: &Daemon, q: &Queues, id: &str) -> bool {
+    q.paused.contains(id) || pause_path(d, id).exists()
+}
+
+fn set_paused(d: &Daemon, q: &mut Queues, id: &str, on: bool) {
+    if on {
+        q.paused.insert(id.to_string());
+        let _ = std::fs::create_dir_all(dir(d));
+        let _ = std::fs::write(pause_path(d, id), b"");
+    } else {
+        q.paused.remove(id);
+        let _ = std::fs::remove_file(pause_path(d, id));
+    }
+}
+
 fn save(d: &Daemon, id: &str, items: &[QueueItem]) {
     let dir = dir(d);
     let path = dir.join(format!("{id}.json"));
@@ -104,11 +125,14 @@ fn edit<R>(d: &Daemon, id: &str, f: impl FnOnce(&mut Vec<QueueItem>) -> R) -> R 
         let snapshot = items.clone();
         if snapshot.is_empty() {
             q.map.remove(id);
+            set_paused(d, &mut q, id, false); // file vide : plus de pause
         }
         save(d, id, &snapshot);
-        (out, snapshot)
+        let paused = is_paused(d, &q, id);
+        (out, (snapshot, paused))
     };
-    d.broadcast("queue", Some(id), json!({"sessionId": id, "items": items}));
+    let (items, paused) = items;
+    d.broadcast("queue", Some(id), json!({"sessionId": id, "items": items, "paused": paused}));
     out
 }
 
@@ -129,6 +153,13 @@ fn idle(d: &Daemon, id: &str) -> bool {
 pub fn dispatch_next(d: &Daemon, id: &str) {
     if !idle(d, id) {
         return;
+    }
+    {
+        let mut q = lock(&d.queues);
+        ensure_loaded(d, &mut q);
+        if is_paused(d, &q, id) {
+            return; // axe:file-pause — après un Stop, on attend « Reprendre la file »
+        }
     }
     let next = edit(d, id, |items| (!items.is_empty()).then(|| items.remove(0)));
     let Some(item) = next else { return };
@@ -151,6 +182,20 @@ pub fn dispatch_all(d: &Daemon) {
     for id in ids {
         dispatch_next(d, &id);
     }
+}
+
+/// axe:file-pause — Stop de l'utilisateur : la file (non vide) se met en pause.
+pub fn pause_after_stop(d: &Daemon, id: &str) {
+    let paused = {
+        let mut q = lock(&d.queues);
+        ensure_loaded(d, &mut q);
+        if q.map.get(id).is_none_or(|v| v.is_empty()) {
+            return;
+        }
+        set_paused(d, &mut q, id, true);
+        true
+    };
+    d.broadcast("queue", Some(id), json!({"sessionId": id, "items": items(d, id), "paused": paused}));
 }
 
 fn sid(p: &Value) -> SessionResult<String> {
@@ -217,6 +262,24 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
                 items.clone()
             });
             Ok(serde_json::to_value(out)?)
+        }
+        "queue.state" => {
+            let id = sid(p)?;
+            let list = items(d, &id);
+            let mut q = lock(&d.queues);
+            ensure_loaded(d, &mut q);
+            Ok(json!({"items": list, "paused": is_paused(d, &q, &id)}))
+        }
+        "queue.resume" => {
+            let id = sid(p)?;
+            {
+                let mut q = lock(&d.queues);
+                ensure_loaded(d, &mut q);
+                set_paused(d, &mut q, &id, false);
+            }
+            d.broadcast("queue", Some(&id), json!({"sessionId": id, "items": items(d, &id), "paused": false}));
+            dispatch_next(d, &id);
+            Ok(json!({"ok": true}))
         }
         "queue.clear" => {
             let id = sid(p)?;

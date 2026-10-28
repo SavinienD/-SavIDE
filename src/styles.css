@@ -10731,3 +10731,8 @@ textarea {
   cursor: pointer;
 }
 .conv-row__bg[data-en-cours="true"] { color: var(--accent, #6aa0ff); }
+
+/* axe:file-pause — file d'attente en pause après un Stop */
+.chat-file-pause { display: flex; align-items: center; gap: 8px; margin: 4px 12px; padding: 6px 10px; border: 1px solid var(--border, #444); border-radius: 6px; font-size: 12px; }
+.chat-file-pause > span { flex: 1; min-width: 0; }
+.chat-file-pause__reprendre { padding: 3px 10px; border-radius: 4px; cursor: pointer; }

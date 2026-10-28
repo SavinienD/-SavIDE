@@ -202,3 +202,30 @@ async fn heartbeat_rearme_au_demarrage() {
     let daemon = Daemon::new(config, Arc::new(EchoFactory));
     assert_eq!(daemon.sessions_a_rearmer(), vec![a.id.clone()]);
 }
+
+// axe:file-pause — après un Stop, la file attend « Reprendre la file ».
+#[tokio::test(flavor = "multi_thread")]
+async fn file_en_pause_apres_stop() {
+    use axecode_daemon::queue_rpc;
+    let data_dir = tmp();
+    let mut config = DaemonConfig::new(data_dir.clone());
+    config.auto_shutdown = false;
+    let daemon = Daemon::new(config.clone(), Arc::new(EchoFactory));
+    let a = daemon.create(serde_json::from_value(json!({"name": "a", "workspaceId": "ws", "model": {"provider": "anthropic", "name": "m"}})).unwrap()).unwrap();
+    let qd = data_dir.join("queues");
+    std::fs::create_dir_all(&qd).unwrap();
+    std::fs::write(qd.join(format!("{}.json", a.id)),
+        json!([{"id": "q0", "text": "un", "message": {"role": "user", "parts": [{"type": "text", "text": "un"}]}}]).to_string()).unwrap();
+    daemon.stop(&a.id).unwrap();
+    queue_rpc::pause_after_stop(&daemon, &a.id);
+    queue_rpc::dispatch_next(&daemon, &a.id);
+    let st = queue_rpc::dispatch(&daemon, "queue.state", &json!({"sessionId": a.id})).unwrap();
+    assert_eq!(st["paused"], json!(true));
+    assert_eq!(st["items"].as_array().unwrap().len(), 1, "rien n'est parti pendant la pause");
+    queue_rpc::dispatch(&daemon, "queue.resume", &json!({"sessionId": a.id})).unwrap();
+    let st = queue_rpc::dispatch(&daemon, "queue.state", &json!({"sessionId": a.id})).unwrap();
+    assert_eq!(st["paused"], json!(false));
+    assert_eq!(st["items"], json!([]), "reprise : le message est parti");
+    assert!(!qd.join(format!("{}.paused", a.id)).exists());
+}
+
