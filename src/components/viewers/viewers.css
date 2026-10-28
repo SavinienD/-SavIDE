@@ -633,9 +633,21 @@
 .xv-media[data-video="true"] {
   background: #000;
 }
+.xv-media[data-video="true"] {
+  /* axe:video-largeur — volet flex : sans min-width/min-height 0, la vidéo
+     pouvait être calculée à ~0 px de large (bande étroite sur fond noir). */
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
 .xv-media__video {
-  max-width: 100%;
-  max-height: 100%;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  object-fit: contain;
   outline: none;
 }
 .xv-media__audio {
