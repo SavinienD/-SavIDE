@@ -941,6 +941,43 @@ export function Workspace({
     };
   }, [refreshFileTree]);
 
+  // axe:reprise-reveil — au réveil du PC (onglet visible, focus) ou à la
+  // reconnexion d'un espace, relire la liste et la conversation ouverte : les
+  // tours faits pendant la coupure s'affichent au lieu de sembler arrêtés.
+  useEffect(() => {
+    let dernier = 0;
+    const relire = () => {
+      const maintenant = Date.now();
+      if (maintenant - dernier < 2000) return;
+      dernier = maintenant;
+      void (async () => {
+        try {
+          setConversations(await api.listConversations(workspacePath));
+          const id = activeConvIdRef.current;
+          if (id) {
+            const loaded = await api.loadConversation(workspacePath, id);
+            if (activeConvIdRef.current === loaded.id) setActiveConv(loaded);
+          }
+        } catch (err) {
+          console.warn("relecture après réveil impossible", err);
+        }
+      })();
+    };
+    const onVisible = () => {
+      if (document.visibilityState === "visible") relire();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", relire);
+    const arret = listen<{ event?: string }>("axe://daemon", (e) => {
+      if (e.payload?.event === "connection" || e.payload?.event === "hello") relire();
+    });
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", relire);
+      void arret.then((u) => u()).catch(() => {});
+    };
+  }, [workspacePath]);
+
   const hasStreamingConversation = streamingConversationIds.size > 0;
   useEffect(() => {
     if (!hasStreamingConversation) return;
