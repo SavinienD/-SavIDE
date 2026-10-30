@@ -31,7 +31,6 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
   const [erreurTest, setErreurTest] = useState("");
   const [dispo, setDispo] = useState<boolean | null>(null);
   const [mesure] = useState(() => lireMesure()); // axe:0.1.75
-  const [mesure] = useState(() => lireMesure()); // axe:0.1.75
   useEffect(() => {
     let fini = false;
     void lireEtatVoix(workspacePath).then((e) => {
@@ -173,7 +172,7 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
             <span className="axe-appearance__hint">
               Moyen s'il transcrit en moins de 2× la durée parlée sur ce poste (mesuré pendant les
               dictées), sinon petit. Le moyen est téléchargé en arrière-plan à la première dictée.
-              {mesure ? ` Dernière mesure : moyen à ${String(mesure.facteur).replace(".", ",")}× le temps réel, ${mesure.taille} retenu.` : ""}
+              {mesure ? ` Dernière mesure : moyen à ${String(mesure.facteur).replace(".", ",")}× le temps réel, ${mesure.taille} retenu.` : ""}
             </span>
           </span>
         </label>
