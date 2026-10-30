@@ -288,7 +288,8 @@ async fn transcrire(app: &AppHandle, input: VoixTranscrireInput) -> std::result:
         let m = crate::voix_local::modele(input.modele_local.as_deref());
         // axe:0.1.75 — un morceau de la dictée en direct ne déclenche jamais de téléchargement.
         if input.morceau && !crate::voix_local::present(app, m) {
-            return Err(format!("modèle {} pas encore sur le poste", m.nom));
+            // axe:0.1.77 — message montré dans l'encadré du direct (téléchargement lancé par l'interface).
+            return Err(format!("modèle {} pas encore sur le poste (téléchargement au premier usage)", m.nom));
         }
         let chemin = crate::voix_local::assurer(app, m).await?;
         if est_annulee(demande) {

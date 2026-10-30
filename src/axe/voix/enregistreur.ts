@@ -69,6 +69,10 @@ export class EnregistreurVoix {
   private pcmLongueur = 0;
   private dernierSon = 0;
   private frequence = 48_000;
+  // axe:0.1.77 — PCM reçu depuis le début (0 = WebAudio muet) et secours par segments MediaRecorder.
+  private pcmTotal = 0;
+  private segment: MediaRecorder | null = null;
+  private minuterieSegment: number | null = null;
 
   async demarrer(): Promise<void> {
     const flux = await navigator.mediaDevices.getUserMedia({
@@ -108,6 +112,9 @@ export class EnregistreurVoix {
         (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (Contexte) {
         this.contexte = new Contexte();
+        // axe:0.1.77 — contexte créé après l'attente du micro : il peut naître « suspendu »
+        // (règle d'autoplay de WebView2) ; suspendu, il ne livre ni niveau ni PCM.
+        if (this.contexte.state === "suspended") void this.contexte.resume().catch(() => undefined);
         const source = this.contexte.createMediaStreamSource(flux);
         this.analyseur = this.contexte.createAnalyser();
         this.analyseur.fftSize = 1024;
@@ -121,6 +128,7 @@ export class EnregistreurVoix {
             const canal = event.inputBuffer.getChannelData(0);
             this.pcm.push(new Float32Array(canal));
             this.pcmLongueur += canal.length;
+            this.pcmTotal += canal.length;
             let somme = 0;
             for (let i = 0; i < canal.length; i += 1) somme += canal[i] * canal[i];
             if (Math.sqrt(somme / canal.length) > 0.012) this.dernierSon = performance.now();
@@ -148,8 +156,67 @@ export class EnregistreurVoix {
     return this.processeur ? performance.now() - this.dernierSon : 0;
   }
 
+  /** axe:0.1.77 — le direct marche aussi sans WebAudio (segments MediaRecorder). */
   directPossible(): boolean {
-    return this.processeur !== null;
+    return this.flux !== null;
+  }
+
+  /** axe:0.1.77 — le WebAudio livre-t-il du son ? (faux : passer aux segments) */
+  pcmLivre(): boolean {
+    return this.processeur !== null && this.pcmTotal > 0;
+  }
+
+  segmentsActifs(): boolean {
+    return this.segment !== null;
+  }
+
+  /**
+   * axe:0.1.77 — secours du direct quand le WebAudio ne livre rien : un second
+   * MediaRecorder sur le même flux, arrêté et relancé toutes les `dureeMs`. Chaque
+   * segment est un fichier webm/opus complet, transcrit à part.
+   */
+  demarrerSegments(dureeMs: number, surSegment: (blob: Blob, ms: number) => void): boolean {
+    const flux = this.flux;
+    if (!flux || this.segment || typeof MediaRecorder === "undefined") return false;
+    const lancer = () => {
+      if (!this.flux) return;
+      let r: MediaRecorder;
+      try {
+        r = new MediaRecorder(this.flux, { ...(this.type ? { mimeType: this.type } : {}), audioBitsPerSecond: 48_000 });
+      } catch {
+        this.segment = null;
+        return;
+      }
+      const parts: Blob[] = [];
+      const debut = performance.now();
+      r.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) parts.push(event.data);
+      };
+      r.onstop = () => {
+        const actif = this.segment === r;
+        if (parts.length > 0 && actif) surSegment(new Blob(parts, { type: r.mimeType || this.type }), performance.now() - debut);
+        if (actif) lancer();
+      };
+      this.segment = r;
+      r.start();
+      this.minuterieSegment = window.setTimeout(() => {
+        if (r.state !== "inactive") r.stop();
+      }, dureeMs);
+    };
+    lancer();
+    return this.segment !== null;
+  }
+
+  private arreterSegments(): void {
+    if (this.minuterieSegment !== null) window.clearTimeout(this.minuterieSegment);
+    this.minuterieSegment = null;
+    const r = this.segment;
+    this.segment = null;
+    try {
+      if (r && r.state !== "inactive") r.stop();
+    } catch {
+      /* déjà arrêté */
+    }
   }
 
   /** Prend le son capté depuis la dernière coupe (fréquence du micro). */
@@ -216,6 +283,7 @@ export class EnregistreurVoix {
   }
 
   private liberer(): void {
+    this.arreterSegments();
     this.flux?.getTracks().forEach((piste) => piste.stop());
     this.flux = null;
     this.recorder = null;

@@ -145,10 +145,17 @@ export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
         cibles.rangee,
       )}
 
-      {(enregistre || d.phase === "transcription") && d.provisoire && placer(
+      {(enregistre || d.phase === "transcription") && (d.provisoire || (enregistre && (d.direct.actif || d.direct.erreur))) && placer(
         // axe:0.1.75 — texte provisoire de la dictée en direct, grisé ; le texte final le remplace.
         <span className="axe-voix__provisoire" role="status" aria-live="polite" title="Texte provisoire : remplacé par la transcription complète à la fin">
-          <span className="axe-voix__provisoire-texte">{finProvisoire(d.provisoire)}<span aria-hidden="true">…</span></span>
+          {/* axe:0.1.77 — encadré visible dès le début du direct (attente), avec la raison d'un aperçu absent. */}
+          {d.provisoire ? (
+            <span className="axe-voix__provisoire-texte">{finProvisoire(d.provisoire)}<span aria-hidden="true">…</span></span>
+          ) : d.direct.erreur ? (
+            <span className="axe-voix__provisoire-texte" data-etat="erreur">Aperçu en direct indisponible : {d.direct.erreur}</span>
+          ) : (
+            <span className="axe-voix__provisoire-texte" data-etat="attente">En direct : le texte s'affiche ici au fil de la parole…</span>
+          )}
         </span>,
         cibles.boite,
       )}

@@ -41,6 +41,9 @@ export const NB_BARRES = 28;
 /** Au-delà, la dictée est terminée d'office (et transcrite). */
 export const DUREE_MAX_MS = 10 * 60 * 1000;
 const ANNULE = "dictée annulée";
+/** axe:0.1.77 — sans PCM du WebAudio après ce délai, le direct passe aux segments MediaRecorder. */
+export const ATTENTE_PCM_MS = 1_500;
+export const SEGMENT_MS = 3_000;
 
 type Options = {
   workspacePath?: string;
@@ -84,7 +87,12 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
   // axe:0.1.75 — dictée en direct : morceaux de ≈ 3 s transcrits au fil de l'eau.
   const [provisoire, setProvisoire] = useState("");
   const morceauxTexte = useRef<string[]>([]);
+  // axe:0.1.77 — un segment MediaRecorder (secours) est décodé en PCM avant la file.
   const fileMorceaux = useRef<{ audio: Float32Array; ms: number }[]>([]);
+  // axe:0.1.77 — état visible du direct : l'encadré gris s'affiche dès le début (attente),
+  // et dit pourquoi l'aperçu manque au lieu de se taire (erreurs avalées en 0.1.75-0.1.76).
+  const [direct, setDirect] = useState<{ actif: boolean; erreur: string | null }>({ actif: false, erreur: null });
+  const debutDirect = useRef(0);
   const morceauEnCours = useRef(false);
   const directActif = useRef(false);
   const tailleSession = useRef<TailleWhisper>("moyen");
@@ -92,14 +100,21 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
   const session = useRef(0);
   const minuterieDirect = useRef<number | null>(null);
   const moyenPresent = useRef(false);
+  // axe:0.1.77 — le petit (base) aussi peut manquer (premier usage) : sans lui, chaque
+  // morceau échouait (« pas encore sur le poste ») et l'aperçu restait vide sans explication.
+  const petitPresent = useRef(false);
   useEffect(() => {
     void invoke<{ local?: { modeles?: { nom: string; present: boolean }[] } }>("voix_etat", { input: {} })
-      .then((e) => { moyenPresent.current = e?.local?.modeles?.some((m) => m.nom === "small" && m.present) ?? false; })
+      .then((e) => {
+        moyenPresent.current = e?.local?.modeles?.some((m) => m.nom === "small" && m.present) ?? false;
+        petitPresent.current = e?.local?.modeles?.some((m) => m.nom === "base" && m.present) ?? false;
+      })
       .catch(() => undefined);
   }, []);
 
   const arreterDirect = useCallback(() => {
     directActif.current = false;
+    setDirect((d) => (d.actif ? { ...d, actif: false } : d));
     if (minuterieDirect.current !== null) window.clearInterval(minuterieDirect.current);
     minuterieDirect.current = null;
     fileMorceaux.current = [];
@@ -154,6 +169,7 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
         morceauxTexte.current.push(texte);
         setProvisoire(assemblerProvisoire(morceauxTexte.current));
       }
+      setDirect((d) => (d.erreur ? { ...d, erreur: null } : d));
       const duree = r.transcriptionMs ?? r.ms ?? 0;
       const facteur = duree / Math.max(1, audioMs);
       facteurs.current.push(facteur);
@@ -164,10 +180,15 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
       }
       if (apercuTropLent(facteurs.current)) {
         arreterDirect();
+        setDirect({ actif: false, erreur: "le moteur ne suit pas, la transcription complète arrive à la fin" });
         setInfo("Aperçu en direct arrêté : le moteur ne suit pas. La transcription complète arrive à la fin.");
       }
-    } catch {
-      // Un morceau raté n'arrête pas la dictée : le texte final le contiendra.
+    } catch (err) {
+      // Un morceau raté n'arrête pas la dictée (le texte final le contiendra), mais la
+      // raison s'affiche dans l'encadré du direct.
+      if (session.current === maSession && directActif.current) {
+        setDirect({ actif: true, erreur: texteErreur(err).slice(0, 200) });
+      }
     } finally {
       morceauEnCours.current = false;
       if (directActif.current && fileMorceaux.current.length > 0) void pomper();
@@ -184,14 +205,46 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
     // dictée, et téléchargement du moyen en arrière-plan (gratuit, empreinte vérifiée).
     if (reglages.modeleLocal === "auto" && tailleSession.current === "moyen" && !moyenPresent.current) {
       tailleSession.current = "petit";
-      void invoke<{ modeles?: { nom: string; present: boolean }[] }>("voix_modele_local", { input: { modele: "small" } })
-        .then((etat) => { moyenPresent.current = etat?.modeles?.some((m) => m.nom === "small" && m.present) ?? false; })
+      type Etat = { modeles?: { nom: string; present: boolean }[] };
+      const noter = (etat: Etat | undefined) => {
+        moyenPresent.current = etat?.modeles?.some((m) => m.nom === "small" && m.present) ?? moyenPresent.current;
+        petitPresent.current = etat?.modeles?.some((m) => m.nom === "base" && m.present) ?? petitPresent.current;
+      };
+      // Le petit d'abord (il sert tout de suite à l'aperçu), puis le moyen.
+      const petit = petitPresent.current
+        ? Promise.resolve()
+        : invoke<Etat>("voix_modele_local", { input: { modele: "base" } }).then(noter).catch(() => undefined);
+      void petit
+        .then(() => invoke<Etat>("voix_modele_local", { input: { modele: "small" } }))
+        .then(noter)
         .catch(() => undefined);
     }
+    setDirect({ actif: false, erreur: null });
     if (!reglages.direct || !enr.directPossible()) return;
     directActif.current = true;
+    debutDirect.current = performance.now();
+    setDirect({ actif: true, erreur: null });
+    const maSession = session.current;
+    const surSegment = (blob: Blob, ms: number) => {
+      if (session.current !== maSession || !directActif.current) return;
+      // SavIDE : whisper.cpp embarqué attend du PCM 16 kHz (segment webm décodé ici).
+      void blobEnPcm16k(blob)
+        .then((audio) => {
+          if (session.current !== maSession || !directActif.current) return;
+          fileMorceaux.current.push({ audio, ms });
+          void pomper();
+        })
+        .catch((err) => setDirect({ actif: true, erreur: texteErreur(err).slice(0, 200) }));
+    };
     minuterieDirect.current = window.setInterval(() => {
       if (!directActif.current || enregistreur.current !== enr) return;
+      if (enr.segmentsActifs()) return;
+      // axe:0.1.77 — WebAudio muet (contexte suspendu, ScriptProcessor sans rappel) :
+      // 1,5 s sans PCM -> segments MediaRecorder de 3 s (cause du direct « vide » sur PC).
+      if (!enr.pcmLivre()) {
+        if (performance.now() - debutDirect.current >= ATTENTE_PCM_MS) enr.demarrerSegments(SEGMENT_MS, surSegment);
+        return;
+      }
       if (!doitCouper(enr.pcmEnAttenteMs(), enr.silenceMs())) return;
       const ms = enr.pcmEnAttenteMs();
       const { echantillons, frequence } = enr.prendrePcm();
@@ -409,6 +462,7 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
 
   return {
     provisoire,
+    direct,
     phase,
     niveaux,
     dureeMs,

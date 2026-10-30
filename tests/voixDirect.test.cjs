@@ -67,3 +67,45 @@ test("réglages : gratuits par défaut (pas de repli OpenAI), direct et taille a
   assert.equal(R.REGLAGES_VOIX_DEFAUT.direct, true);
   assert.equal(R.REGLAGES_VOIX_DEFAUT.modeleLocal, "auto"); // SavIDE : whisper.cpp du poste
 });
+
+// axe:0.1.77 — direct sans WebAudio : segments MediaRecorder relancés toutes les 3 s ;
+// erreurs des morceaux montrées (avant : avalées, aperçu vide sans explication).
+test("secours du direct : segments MediaRecorder complets, relancés, arrêtés avec l'enregistrement", async () => {
+  const minuteries = [];
+  global.window = { setTimeout: (fn, ms) => { minuteries.push(fn); return minuteries.length; }, clearTimeout: () => undefined };
+  const crees = [];
+  class FauxRecorder {
+    constructor(flux, opts) { this.flux = flux; this.mimeType = (opts && opts.mimeType) || "audio/webm;codecs=opus"; this.state = "inactive"; crees.push(this); }
+    start() { this.state = "recording"; }
+    stop() { this.state = "inactive"; this.ondataavailable({ data: { size: 10 } }); this.onstop(); }
+  }
+  global.MediaRecorder = FauxRecorder;
+  global.Blob = class { constructor(parts, o) { this.parts = parts; this.type = o.type; } };
+  global.performance = { now: () => 0 };
+  const E = charger("../src/axe/voix/enregistreur.ts");
+  const enr = new E.EnregistreurVoix();
+  enr.flux = { getTracks: () => [] };
+  enr.type = "audio/webm;codecs=opus";
+  enr.recorder = new FauxRecorder(enr.flux, {});
+  assert.equal(enr.directPossible(), true, "direct possible sans WebAudio");
+  assert.equal(enr.pcmLivre(), false);
+  const segments = [];
+  assert.equal(enr.demarrerSegments(3000, (b) => segments.push(b)), true);
+  minuteries[0]();
+  minuteries[1]();
+  assert.equal(segments.length, 2);
+  assert.equal(segments[0].type, "audio/webm;codecs=opus");
+  enr.annuler();
+  assert.equal(enr.segmentsActifs(), false);
+  assert.equal(segments.length, 2, "pas de segment après l'arrêt");
+});
+
+test("useDictee : bascule sur les segments sans PCM, erreur d'un morceau affichée, contexte relancé", () => {
+  const u = fs.readFileSync(path.resolve(__dirname, "../src/axe/voix/useDictee.ts"), "utf8");
+  const e = fs.readFileSync(path.resolve(__dirname, "../src/axe/voix/enregistreur.ts"), "utf8");
+  const b = fs.readFileSync(path.resolve(__dirname, "../src/axe/voix/DicteeBouton.tsx"), "utf8");
+  assert.match(u, /if \(!enr\.pcmLivre\(\)\)[\s\S]*demarrerSegments\(SEGMENT_MS/);
+  assert.match(u, /catch \(err\)[\s\S]*setDirect\(\{ actif: true, erreur: texteErreur\(err\)/);
+  assert.match(e, /contexte\.state === "suspended"\) void this\.contexte\.resume\(\)/);
+  assert.match(b, /Aperçu en direct indisponible/);
+});
