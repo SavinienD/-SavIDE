@@ -11,6 +11,7 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { api } from "../../lib/ipc";
 import { MermaidDiagram } from "./MermaidDiagram";
+import { PreCopiable } from "./PreCopiable"; // axe:copier-code
 import { decouperLiens, estFichier, estUrl, raccourcirUrl } from "./liensChat";
 
 type Props = {
@@ -173,7 +174,7 @@ export const Markdown = memo(function Markdown({ text, onOpenFile }: Props) {
                 );
               }
             }
-            return <pre>{children}</pre>;
+            return <PreCopiable>{children}</PreCopiable>;
           },
           p({ children }) {
             return <p>{linkifyChildren(children, { onOpenFile })}</p>;

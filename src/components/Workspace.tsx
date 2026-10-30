@@ -2916,6 +2916,7 @@ export function Workspace({
         onBackground={actions.onBackground}
         stopForce={demandesArret.get(conv.id)?.forcee === true}
         onOpenFile={layout === "chat" ? openFreeChatFile : openChatFile}
+        mentionScope={layout === "chat" ? conv.id : null}
         onOpenSettings={openSettings}
         externalDrops={externalDropFeed}
         dropZoneRef={enFocus ? chatDropZoneRef : chatDropZoneMorteRef}

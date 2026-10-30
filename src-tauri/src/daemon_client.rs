@@ -589,6 +589,46 @@ async fn prepare_repl(
     Ok((client, conversation, message, model, adopted, workspace_id))
 }
 
+/// axe:reecrire-repl — « Modifier » un message déjà envoyé dans une conversation REPL
+/// (sans dossier, dossier en mode REPL) : la branche du journal repart du parent
+/// du message visé (`sessions.move_leaf`), puis le nouveau texte est envoyé au REPL.
+/// Avant, la réécriture repassait par l'agent classique, sans le REPL.
+pub(crate) fn rewrite_parent_entry(
+    history: &[ChatMessage],
+    tree: &Value,
+    index: usize,
+) -> std::result::Result<String, String> {
+    let target = history.get(index).ok_or("index de réécriture hors limites")?;
+    if !crate::turns::is_rewritable_user_message(target) {
+        return Err("l'index de réécriture doit viser un message utilisateur modifiable".into());
+    }
+    let rank = history[..index].iter().filter(|m| crate::turns::is_rewritable_user_message(m)).count();
+    let entries: Vec<axecode_core::session::JournalEntry> = tree
+        .get("entries")
+        .cloned()
+        .and_then(|v| serde_json::from_value(v).ok())
+        .ok_or("journal illisible")?;
+    let by_id: std::collections::HashMap<&str, &axecode_core::session::JournalEntry> =
+        entries.iter().map(|e| (e.id.as_str(), e)).collect();
+    let mut path = Vec::new();
+    let mut cursor = tree.get("leaf").and_then(Value::as_str).and_then(|id| by_id.get(id).copied());
+    while let Some(entry) = cursor {
+        path.push(entry);
+        if path.len() > entries.len() {
+            break;
+        }
+        cursor = entry.parent.as_deref().and_then(|id| by_id.get(id).copied());
+    }
+    path.reverse();
+    let found = path
+        .iter()
+        .filter(|e| matches!(&e.kind, axecode_core::session::JournalEntryKind::Message { message, .. }
+            if crate::turns::is_rewritable_user_message(message)))
+        .nth(rank)
+        .ok_or("message à modifier introuvable dans le journal")?;
+    found.parent.clone().ok_or_else(|| "message à modifier sans parent".into())
+}
+
 pub(crate) async fn send_repl_message(
     app: AppHandle,
     state: &DesktopState,
@@ -596,6 +636,19 @@ pub(crate) async fn send_repl_message(
 ) -> std::result::Result<(), String> {
     let (client, mut conversation, message, model, adopted, workspace_id) =
         prepare_repl(&app, state, input).await?;
+    if let Some(index) = input.rewrite_from_history_index {
+        let history: Vec<ChatMessage> = serde_json::from_value(
+            client.call("sessions.history", json!({"sessionId": conversation.id})).await?,
+        )
+        .map_err(|e| e.to_string())?;
+        let tree = client.call("sessions.tree", json!({"sessionId": conversation.id})).await?;
+        let parent = rewrite_parent_entry(&history, &tree, index)?;
+        client
+            .call("sessions.move_leaf", json!({"sessionId": conversation.id, "entryId": parent, "label": "réécriture"}))
+            .await?;
+        conversation.history = history;
+        conversation.history.truncate(index);
+    }
     if let Ok(mut known) = bridge(&app).known.lock() {
         known.insert(conversation.id.clone(), workspace_id.clone());
     }
@@ -874,6 +927,27 @@ async fn finish_turn(app: AppHandle, workspace_id: String, session_id: String) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // axe:reecrire-repl — « Modifier » le 2e message : la branche repart de la réponse 1.
+    #[test]
+    fn reecriture_repart_du_parent_du_message() {
+        use axecode_core::session::{JournalEntry, JournalEntryKind};
+        let msg = |id: &str, parent: &str, m: ChatMessage| JournalEntry {
+            id: id.into(), parent: Some(parent.into()), ts: 0,
+            kind: JournalEntryKind::Message { message: m, usage: None, turn_id: None },
+        };
+        let root = JournalEntry { id: "r".into(), parent: None, ts: 0, kind: JournalEntryKind::SessionCreated {
+            name: "x".into(), workspace_id: "w".into(), model: ModelRef::new("p", "m"), parent_id: None, system_prompt_extra: None } };
+        let entries = vec![root,
+            msg("u1", "r", ChatMessage::user_text("un")), msg("a1", "u1", ChatMessage::assistant_text("A")),
+            msg("u2", "a1", ChatMessage::user_text("deux")), msg("a2", "u2", ChatMessage::assistant_text("B"))];
+        let tree = json!({"leaf": "a2", "entries": entries});
+        let history = vec![ChatMessage::user_text("un"), ChatMessage::assistant_text("A"),
+            ChatMessage::user_text("deux"), ChatMessage::assistant_text("B")];
+        assert_eq!(rewrite_parent_entry(&history, &tree, 2).unwrap(), "a1");
+        assert_eq!(rewrite_parent_entry(&history, &tree, 0).unwrap(), "r");
+        assert!(rewrite_parent_entry(&history, &tree, 1).is_err());
+    }
 
     // axe:flux-unique — reproduit la capture : deux clients démon relaient le même flux
     // avec un décalage ; sans filtre « Ça corÇa corrige », avec filtre le texte exact.

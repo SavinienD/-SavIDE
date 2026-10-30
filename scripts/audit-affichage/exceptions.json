@@ -3,6 +3,12 @@
   "exceptions": [
     {
       "regle": "chevauchement",
+      "selecteur": ".chat-body__bas",
+      "situation": "/copier-code$",
+      "raison": "Scène copier-code : le fil est remonté jusqu'au bloc de code, le bouton flottant « Aller en bas » apparaît donc au-dessus du contenu, comme prévu."
+    },
+    {
+      "regle": "chevauchement",
       "selecteur": ".titlebar__update-popover",
       "raison": "Fenêtre de la mise à jour, ouverte au clic sur le badge : elle flotte au-dessus du contenu (comme tout menu déroulant) et se ferme par « Plus tard » ou un clic à côté."
     },

@@ -392,6 +392,16 @@ async function preparerScene(page, si, sc) {
     }
     // axe:liens — « cliquer » accepte une liste : clics successifs.
     for (const sel of [sc.cliquer].flat()) {
+      if (sc.defilerAvantClic) {
+        // axe:copier-code — l'élément est amené au milieu de l'écran puis survolé (pointeur réel).
+        const r = await page.evaluate((s) => {
+          const el = document.querySelector(s);
+          el?.scrollIntoView({ block: "center" });
+          const b = (el?.closest(".bloc-copie") ?? el)?.getBoundingClientRect();
+          return b ? { x: b.x + 12, y: b.bottom - 6 } : null;
+        }, sel);
+        if (r) await page.mouse.move(r.x, r.y);
+      }
       await page.evaluate((s) => document.querySelector(s)?.click(), sel);
       await pause(sc.pauseClics ?? 400); // axe:0.1.71 — dictée : enregistrement assez long
     }
@@ -560,6 +570,8 @@ let echec = null;
 async function travailleur() {
   // Contexte isole par travailleur : stockage local separe (les scenes ne se melangent pas).
   const contexte = await navigateur.createBrowserContext();
+  // axe:copier-code — presse-papiers autorisé (bouton « Copier » des blocs de code).
+  await contexte.overridePermissions(new URL(BASE).origin, ["clipboard-read", "clipboard-write", "clipboard-sanitized-write"]).catch(() => {});
   const page = await contexte.newPage();
   await emulerWindows(page);
   const journal = [];

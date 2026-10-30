@@ -6,6 +6,7 @@ import {
   type CSSProperties,
   type MouseEvent,
 } from "react";
+import { PreCopiable } from "./PreCopiable"; // axe:copier-code
 import { Icon } from "@iconify/react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import type { FileChange, TodoStatus, ToolResultImage } from "../../types";
@@ -429,7 +430,7 @@ function TodoListCard({
 
       {open && (
         <div className="tool-card__body">
-          <pre className="tool-card__code">{argsPretty || "—"}</pre>
+          <PreCopiable className="tool-card__code">{argsPretty || "—"}</PreCopiable>
         </div>
       )}
     </div>
@@ -482,15 +483,15 @@ function CleanContextCard({
       </div>
       {open && (
         <div className="tool-card__body">
-          {argsPretty ? <pre className="tool-card__code">{argsPretty}</pre> : null}
+          {argsPretty ? <PreCopiable className="tool-card__code">{argsPretty}</PreCopiable> : null}
           {output !== undefined && (
-            <pre
+            <PreCopiable
               className="tool-card__code"
               data-kind="output"
               data-error={isError ? "true" : "false"}
             >
               {output.length ? output : "—"}
-            </pre>
+            </PreCopiable>
           )}
         </div>
       )}
@@ -1489,18 +1490,18 @@ function LegacyToolCard({
               loading={teamRunPreparing}
             />
           ) : isBash && command ? (
-            <pre className="tool-card__code">{command}</pre>
+            <PreCopiable className="tool-card__code">{command}</PreCopiable>
           ) : displayArgsPretty ? (
-            <pre className="tool-card__code">{displayArgsPretty}</pre>
+            <PreCopiable className="tool-card__code">{displayArgsPretty}</PreCopiable>
           ) : null}
           {displayOutput !== undefined && (!isTeamRunSpawn || isError) && (
-            <pre
+            <PreCopiable
               className="tool-card__code"
               data-kind="output"
               data-error={isError ? "true" : "false"}
             >
               {displayOutput.length ? displayOutput : "—"}
-            </pre>
+            </PreCopiable>
           )}
           {hasImages && <ToolImages images={images!} />}
           {showChangesInBody && renderFileChanges(false)}

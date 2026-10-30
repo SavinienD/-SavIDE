@@ -178,12 +178,23 @@ pub(crate) async fn freechat_relocate(
         .is_ok()
     {
         let extra = system_prompt_for_workspace(&target, "").unwrap_or_default();
-        crate::daemon_client::daemon_call_value(
-            &app,
-            "sessions.relocate",
-            json!({"sessionId": id, "workspaceId": target_id, "systemPromptExtra": extra.trim()}),
-        )
-        .await?;
+        let params = json!({"sessionId": id, "workspaceId": target_id, "systemPromptExtra": extra.trim()});
+        // axe:relocate-occupe — juste après une réponse, le service peut encore tenir la
+        // session (« session busy ») : nouvel essai automatique, puis message en français.
+        let mut essai = 0;
+        loop {
+            match crate::daemon_client::daemon_call_value(&app, "sessions.relocate", params.clone()).await {
+                Ok(_) => break,
+                Err(err) if relocate_occupe(&err) && essai < 20 => {
+                    essai += 1;
+                    tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                }
+                Err(err) if relocate_occupe(&err) => {
+                    return Err("La conversation termine encore une tâche : réessayez dans quelques secondes.".into());
+                }
+                Err(err) => return Err(err),
+            }
+        }
     }
     let conn = Connection::open(state.store.path()).map_err(error_to_string)?;
     let changed = conn
@@ -339,4 +350,18 @@ pub(crate) async fn mirror_rename(app: &AppHandle, workspace_root: &Path, conver
         json!({"sessionId": conversation_id, "name": title}),
     )
     .await;
+}
+
+/// axe:relocate-occupe — l'erreur « session busy » du service (tour pas encore libéré).
+pub(crate) fn relocate_occupe(err: &str) -> bool {
+    err.to_ascii_lowercase().contains("session busy")
+}
+
+#[cfg(test)]
+mod tests_relocate {
+    #[test]
+    fn busy_reconnu() {
+        assert!(super::relocate_occupe("session busy: abc"));
+        assert!(!super::relocate_occupe("session not found: abc"));
+    }
 }

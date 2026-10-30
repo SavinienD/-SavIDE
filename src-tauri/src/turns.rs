@@ -72,9 +72,8 @@ pub(super) async fn send_message(
     let cloud_conversation = route_root
         .as_deref()
         .is_some_and(|root| crate::daemon_client::cloud_connection_id(root).is_some());
-    if (crate::daemon_client::repl_agent_enabled() || free_conversation || cloud_conversation)
-        && input.rewrite_from_history_index.is_none()
-    {
+    // axe:reecrire-repl — la réécriture d'un message reste aussi dans le REPL.
+    if crate::daemon_client::repl_agent_enabled() || free_conversation || cloud_conversation {
         return crate::daemon_client::send_repl_message(app, &state, &input).await;
     }
     // axe:repl end

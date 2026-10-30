@@ -1,3 +1,4 @@
+import { PreCopiable } from "./PreCopiable"; // axe:copier-code
 import { useMemo, useState, type ReactNode } from "react";
 
 // axe:repl — condensed card for one `python(code)` execution: first line of
@@ -101,14 +102,14 @@ export function ReplCard({ status, code: rawCode, output, isError, meta, onOpenF
       {children}
       {open && (
         <div className="repl-card__body">
-          <pre className="repl-card__pre repl-card__pre--code">{code}</pre>
-          {repl?.stdout ? <pre className="repl-card__pre">{repl.stdout}</pre> : null}
+          <PreCopiable className="repl-card__pre repl-card__pre--code">{code}</PreCopiable>
+          {repl?.stdout ? <PreCopiable className="repl-card__pre">{repl.stdout}</PreCopiable> : null}
           {repl?.value ? (
-            <pre className="repl-card__pre repl-card__pre--value">{`Sortie : ${repl.value}`}</pre>
+            <PreCopiable className="repl-card__pre repl-card__pre--value">{`Sortie : ${repl.value}`}</PreCopiable>
           ) : null}
-          {repl?.stderr ? <pre className="repl-card__pre repl-card__pre--err">{repl.stderr}</pre> : null}
-          {repl?.error ? <pre className="repl-card__pre repl-card__pre--err">{repl.error}</pre> : null}
-          {!repl && output ? <pre className="repl-card__pre">{output}</pre> : null}
+          {repl?.stderr ? <PreCopiable className="repl-card__pre repl-card__pre--err">{repl.stderr}</PreCopiable> : null}
+          {repl?.error ? <PreCopiable className="repl-card__pre repl-card__pre--err">{repl.error}</PreCopiable> : null}
+          {!repl && output ? <PreCopiable className="repl-card__pre">{output}</PreCopiable> : null}
           {repl?.fileChanges?.length ? (
             <div className="repl-card__files">
               {repl.fileChanges.map((change) => (

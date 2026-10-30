@@ -1,4 +1,5 @@
 import { getActiveConnection } from "../settings/connectionsApi"; // axe:journal-espace
+import { filtrerMentionsConversation } from "./mentionsLibre"; // axe:mention-libre
 import { historiquePrompts, memoriserPrompt, naviguer, type EtatHistorique } from "./historiquePrompts";
 import {
   Fragment, // axe:providers
@@ -215,6 +216,8 @@ type Props = {
   /** axe:stop-force — « Arrêt forcé… » : l'arrêt a été renvoyé, un clic libère la conversation. */
   stopForce?: boolean;
   onOpenFile: (path: string) => void;
+  /** axe:mention-libre — conversation sans dossier : « @ » limité à ce sous-dossier. */
+  mentionScope?: string | null;
   onOpenSettings: (section?: "providers") => void;
   externalDrops: ExternalDropFeed;
   dropZoneRef: RefObject<HTMLDivElement>;
@@ -451,6 +454,7 @@ export function ChatPane({
   onBackground, // axe:arriere-plan
   stopForce = false,
   onOpenFile,
+  mentionScope,
   onOpenSettings,
   externalDrops,
   dropZoneRef,
@@ -1082,7 +1086,7 @@ export function ChatPane({
       window.clearTimeout(mentionRefreshTimerRef.current);
       mentionRefreshTimerRef.current = null;
     }
-  }, [workspacePath]);
+  }, [workspacePath, mentionScope]);
 
   useEffect(() => {
     return () => {
@@ -1141,7 +1145,7 @@ export function ChatPane({
       mentionLoadingRef.current = true;
 
       try {
-        const files = await api.listAllFiles(requestWorkspacePath);
+        const files = filtrerMentionsConversation(await api.listAllFiles(requestWorkspacePath), mentionScope);
         if (
           mentionWorkspacePathRef.current !== requestWorkspacePath ||
           requestId !== mentionRequestSeqRef.current
@@ -1174,7 +1178,7 @@ export function ChatPane({
         }
       }
     },
-    [workspacePath],
+    [workspacePath, mentionScope],
   );
 
   const scheduleMentionFilesRefresh = useCallback(() => {
