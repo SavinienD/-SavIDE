@@ -289,3 +289,25 @@
 .axe-voix-reglages { min-width: 0; }
 .axe-voix-reglages .axe-appearance__button { max-width: 100%; white-space: normal; }
 .axe-voix-reglages__ligne { min-width: 0; overflow-wrap: anywhere; }
+/* axe:0.1.75 — dictée en direct : texte provisoire grisé au-dessus de la zone de saisie,
+   remplacé par la transcription complète à la fin (les dernières lignes restent visibles). */
+.axe-voix__provisoire {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: calc(100% + 6px);
+  z-index: 6;
+  padding: 6px 10px;
+  border-radius: var(--r-card, 8px);
+  background: var(--bg-2, #1e1e1e);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  border: 1px dashed var(--line-strong, rgba(128, 128, 128, 0.45));
+  color: var(--text-3, #888);
+  font-style: italic;
+  font-size: var(--fs-sm, 12px);
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+.axe-voix__provisoire-texte { display: block; }

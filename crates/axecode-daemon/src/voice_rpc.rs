@@ -8,7 +8,9 @@
 //! un `jobId` et `voice.result` le résultat, ce qui évite la limite de 60 s
 //! d'un appel RPC pour une longue dictée.
 //!
-//! - `voice.transcribe {audio, mime?, durationMs?, language?, prompt?, fast?, wait?}`
+//! - `voice.transcribe {audio, mime?, durationMs?, language?, prompt?, fast?, tier?, wait?}`
+//!   (`tier` : « petit » | « moyen » | « grand », axe:0.1.75 ; la dictée en direct
+//!   envoie des morceaux WAV de ≈ 3 s avec `wait: true`)
 //!   -> `{jobId}` (ou le résultat directement avec `wait: true`)
 //! - `voice.result {jobId}` -> `{status: "pending"|"done"|"error", ...}`
 //! - `voice.cancel {jobId}` -> `{ok}`
@@ -16,7 +18,8 @@
 //! - `voice.clean {text, provider, model, effort?, vocabulary?}` -> `{text}`
 //!   (nettoyage par le modèle du chat, sans outil)
 //!
-//! Réglage : `AXE_VOIX_WHISPER="url|libellé;url|libellé"` (ordre = priorité).
+//! Réglage : `AXE_VOIX_WHISPER="url|libellé|taille;url|libellé|taille"` (ordre = priorité).
+//! Moteurs gratuits seulement (whisper.cpp local) ; 8177 = whisper base, s'il tourne.
 //! Un compte SavIDE ne joint que les ports locaux permis par nftables
 //! (table `inet axe_atelier`, ensemble `ports_permis`) : 8179/8178 doivent y être.
 
@@ -32,8 +35,9 @@ use axecode_core::{Effort, ModelRef, SessionError, SessionResult};
 
 use crate::daemon::Daemon;
 
-const DEFAULT_ENGINES: &str = "http://127.0.0.1:8179/inference|whisper large-v3-turbo (poste);\
-http://127.0.0.1:8178/inference|whisper small (poste) de secours";
+const DEFAULT_ENGINES: &str = "http://127.0.0.1:8179/inference|whisper large-v3-turbo (poste)|grand;\
+http://127.0.0.1:8178/inference|whisper small (poste) de secours|moyen;\
+http://127.0.0.1:8177/inference|whisper base (poste)|petit";
 /// 40 Mo d'audio compressé : plus d'une heure d'opus à 48 kbit/s.
 const MAX_AUDIO_BYTES: usize = 40 * 1024 * 1024;
 const JOB_TTL: Duration = Duration::from_secs(15 * 60);
@@ -72,23 +76,63 @@ const HALLUCINATIONS: &[&str] = &[
 pub struct Engine {
     pub url: String,
     pub label: String,
+    /// axe:0.1.75 — « grand » (large/turbo), « moyen » (small), « petit » (base/tiny).
+    pub tier: String,
 }
 
-/// `url|libellé` séparés par des points-virgules (ou des retours à la ligne) ;
+/// Taille d'un moteur d'après son libellé quand la spec ne la donne pas.
+pub fn tier_from_label(label: &str) -> &'static str {
+    let l = label.to_lowercase();
+    if l.contains("base") || l.contains("tiny") {
+        "petit"
+    } else if l.contains("small") || l.contains("medium") {
+        "moyen"
+    } else {
+        "grand"
+    }
+}
+
+/// axe:0.1.75 — ordre des moteurs pour une taille demandée : cette taille d'abord,
+/// puis la plus proche (petit -> moyen -> grand ; moyen -> petit -> grand ;
+/// grand -> moyen -> petit). Sans taille, l'ordre de la spec (meilleur d'abord).
+/// Le booléen indique une fenêtre réduite : « petit » demandé et moteur « petit »
+/// absent ou arrêté -> le moteur moyen en fenêtre réduite (≈ 2× plus rapide).
+pub fn engines_for(engines: &[Engine], tier: Option<&str>) -> Vec<(Engine, bool)> {
+    let Some(tier) = tier.filter(|t| matches!(*t, "petit" | "moyen" | "grand")) else {
+        return engines.iter().cloned().map(|e| (e, false)).collect();
+    };
+    let order: [&str; 3] = match tier {
+        "petit" => ["petit", "moyen", "grand"],
+        "moyen" => ["moyen", "petit", "grand"],
+        _ => ["grand", "moyen", "petit"],
+    };
+    let mut out = Vec::new();
+    for t in order {
+        for e in engines.iter().filter(|e| e.tier == t) {
+            // « petit » demandé, moteur « petit » absent ou arrêté (8177 non démarré) :
+            // le moyen en fenêtre réduite.
+            out.push((e.clone(), tier == "petit" && t == "moyen"));
+        }
+    }
+    out
+}
+
+/// `url|libellé|taille` séparés par des points-virgules (ou des retours à la ligne) ;
 /// seules les URL http(s) sont gardées.
 pub fn engines_from(spec: &str) -> Vec<Engine> {
     spec.split([';', '\n'])
         .filter_map(|item| {
             let item = item.trim();
-            let (url, label) = match item.split_once('|') {
-                Some((url, label)) => (url.trim(), label.trim()),
-                None => (item, ""),
-            };
+            let mut parts = item.split('|').map(str::trim);
+            let url = parts.next().unwrap_or("");
+            let label = parts.next().unwrap_or("");
+            let tier = parts.next().unwrap_or("");
             if !(url.starts_with("http://") || url.starts_with("https://")) {
                 return None;
             }
             let label = if label.is_empty() { url } else { label };
-            Some(Engine { url: url.to_string(), label: label.to_string() })
+            let tier = if matches!(tier, "petit" | "moyen" | "grand") { tier } else { tier_from_label(label) };
+            Some(Engine { url: url.to_string(), label: label.to_string(), tier: tier.to_string() })
         })
         .collect()
 }
@@ -333,6 +377,8 @@ pub struct Dictation {
     pub fast: bool,
     /// Termes ajoutés par l'utilisateur (graphie canonique).
     pub extra_terms: Option<String>,
+    /// axe:0.1.75 — taille de modèle demandée (« petit », « moyen », « grand ») ; None = meilleur d'abord.
+    pub tier: Option<String>,
 }
 
 async fn whisper_once(
@@ -381,8 +427,9 @@ pub async fn transcribe_with(engines: &[Engine], dictation: &Dictation) -> Resul
     let client = http_client()?;
     let started = Instant::now();
     let mut failures: Vec<String> = Vec::new();
-    for engine in engines {
-        let ctx = if dictation.fast { audio_ctx_for(dictation.duration_ms) } else { None };
+    for (engine, reduced) in engines_for(engines, dictation.tier.as_deref()) {
+        let engine = &engine;
+        let ctx = if dictation.fast || reduced { audio_ctx_for(dictation.duration_ms) } else { None };
         let first = whisper_once(&client, engine, dictation, ctx).await;
         let outcome = match first {
             Ok(text) if ctx.is_some() && looks_degenerate(&text, dictation.duration_ms.unwrap_or(0)) => {
@@ -401,6 +448,7 @@ pub async fn transcribe_with(engines: &[Engine], dictation: &Dictation) -> Resul
                     "url": engine.url,
                     "ms": started.elapsed().as_millis() as u64,
                     "audioCtx": used_ctx,
+                    "tier": engine.tier,
                     "fallbacks": failures,
                 }));
             }
@@ -477,6 +525,9 @@ fn dictation_from(params: &Value) -> SessionResult<Dictation> {
         prompt: build_prompt(str_param(params, "prompt")),
         fast: params.get("fast").and_then(Value::as_bool).unwrap_or(false),
         extra_terms: str_param(params, "prompt").map(str::to_string),
+        tier: str_param(params, "tier")
+            .filter(|t| matches!(*t, "petit" | "moyen" | "grand"))
+            .map(str::to_string),
     })
 }
 
@@ -572,7 +623,7 @@ pub(crate) async fn dispatch(daemon: &Daemon, method: &str, params: &Value) -> S
                     Ok(response) => (false, Some(format!("HTTP {}", response.status()))),
                     Err(err) => (false, Some(http_error(&err))),
                 };
-                out.push(json!({"url": engine.url, "label": engine.label, "ok": ok, "error": error}));
+                out.push(json!({"url": engine.url, "label": engine.label, "tier": engine.tier, "ok": ok, "error": error}));
             }
             Ok(json!({"engines": out, "prompt": BASE_PROMPT}))
         }
@@ -610,13 +661,29 @@ mod tests {
         assert_eq!(
             list,
             vec![
-                Engine { url: "http://a:1/inference".into(), label: "turbo, très bien".into() },
-                Engine { url: "http://b:2/inference".into(), label: "http://b:2/inference".into() },
+                Engine { url: "http://a:1/inference".into(), label: "turbo, très bien".into(), tier: "grand".into() },
+                Engine { url: "http://b:2/inference".into(), label: "http://b:2/inference".into(), tier: "grand".into() },
             ]
         );
         let defaults = engines_from(DEFAULT_ENGINES);
-        assert_eq!(defaults.len(), 2);
+        assert_eq!(defaults.len(), 3);
         assert_eq!(defaults[1].label, "whisper small (poste) de secours");
+        assert_eq!(defaults.iter().map(|e| e.tier.as_str()).collect::<Vec<_>>(), ["grand", "moyen", "petit"]);
+    }
+
+    #[test]
+    fn engines_follow_requested_tier() {
+        let all = engines_from(DEFAULT_ENGINES);
+        let names = |tier| engines_for(&all, tier).into_iter().map(|(e, r)| (e.tier, r)).collect::<Vec<_>>();
+        assert_eq!(names(None), [("grand".into(), false), ("moyen".into(), false), ("petit".into(), false)]);
+        assert_eq!(names(Some("moyen")), [("moyen".into(), false), ("petit".into(), false), ("grand".into(), false)]);
+        assert_eq!(names(Some("petit"))[..2], [("petit".into(), false), ("moyen".into(), true)]);
+        // Sans moteur « petit » : le moyen en fenêtre réduite.
+        let two = engines_from("http://a/inference|whisper large-v3-turbo;http://b/inference|whisper small");
+        let r = engines_for(&two, Some("petit"));
+        assert_eq!((r[0].0.tier.as_str(), r[0].1), ("moyen", true));
+        assert_eq!((r[1].0.tier.as_str(), r[1].1), ("grand", false));
+        assert_eq!(tier_from_label("ggml-base"), "petit");
     }
 
     #[test]
@@ -698,6 +765,10 @@ mod tests {
         assert_eq!(ok.mime, "audio/webm");
         assert_eq!(ok.duration_ms, Some(1200));
         assert!(!ok.fast);
+        assert_eq!(ok.tier, None);
+        let t = dictation_from(&json!({"audio": "T1BVUw==", "tier": "moyen"})).unwrap();
+        assert_eq!(t.tier.as_deref(), Some("moyen"));
+        assert_eq!(dictation_from(&json!({"audio": "T1BVUw==", "tier": "énorme"})).unwrap().tier, None);
         assert!(dictation_from(&json!({"audio": "!!"})).is_err());
         assert!(dictation_from(&json!({})).is_err());
         let lang = dictation_from(&json!({"audio": "T1BVUw==", "language": "fr; rm -rf"})).unwrap();

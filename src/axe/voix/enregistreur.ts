@@ -63,6 +63,12 @@ export class EnregistreurVoix {
   private tampon: Float32Array<ArrayBuffer> | null = null;
   private debut = 0;
   private type = "";
+  // axe:0.1.75 — PCM pour la dictée en direct (morceaux WAV de ≈ 3 s).
+  private processeur: ScriptProcessorNode | null = null;
+  private pcm: Float32Array[] = [];
+  private pcmLongueur = 0;
+  private dernierSon = 0;
+  private frequence = 48_000;
 
   async demarrer(): Promise<void> {
     const flux = await navigator.mediaDevices.getUserMedia({
@@ -107,10 +113,56 @@ export class EnregistreurVoix {
         this.analyseur.fftSize = 1024;
         this.tampon = new Float32Array(new ArrayBuffer(this.analyseur.fftSize * 4));
         source.connect(this.analyseur);
+        this.frequence = this.contexte.sampleRate;
+        try {
+          // ScriptProcessor (simple, sans fichier de worklet) : copie du signal ; sortie muette.
+          const proc = this.contexte.createScriptProcessor(4096, 1, 1);
+          proc.onaudioprocess = (event) => {
+            const canal = event.inputBuffer.getChannelData(0);
+            this.pcm.push(new Float32Array(canal));
+            this.pcmLongueur += canal.length;
+            let somme = 0;
+            for (let i = 0; i < canal.length; i += 1) somme += canal[i] * canal[i];
+            if (Math.sqrt(somme / canal.length) > 0.012) this.dernierSon = performance.now();
+          };
+          source.connect(proc);
+          proc.connect(this.contexte.destination);
+          this.processeur = proc;
+          this.dernierSon = performance.now();
+        } catch {
+          /* pas d'aperçu en direct : la transcription finale reste */
+        }
       }
     } catch {
       /* pas de niveau : l'enregistrement continue */
     }
+  }
+
+  /** Durée du son capté depuis la dernière coupe (dictée en direct). */
+  pcmEnAttenteMs(): number {
+    return (this.pcmLongueur / this.frequence) * 1000;
+  }
+
+  /** Durée du silence en cours. */
+  silenceMs(): number {
+    return this.processeur ? performance.now() - this.dernierSon : 0;
+  }
+
+  directPossible(): boolean {
+    return this.processeur !== null;
+  }
+
+  /** Prend le son capté depuis la dernière coupe (fréquence du micro). */
+  prendrePcm(): { echantillons: Float32Array; frequence: number } {
+    const sortie = new Float32Array(this.pcmLongueur);
+    let pos = 0;
+    for (const bloc of this.pcm) {
+      sortie.set(bloc, pos);
+      pos += bloc.length;
+    }
+    this.pcm = [];
+    this.pcmLongueur = 0;
+    return { echantillons: sortie, frequence: this.frequence };
   }
 
   /** Niveau 0..1 (RMS amplifié) pour l'onde. */
@@ -167,6 +219,13 @@ export class EnregistreurVoix {
     this.flux?.getTracks().forEach((piste) => piste.stop());
     this.flux = null;
     this.recorder = null;
+    if (this.processeur) {
+      this.processeur.onaudioprocess = null;
+      try { this.processeur.disconnect(); } catch { /* déjà déconnecté */ }
+    }
+    this.processeur = null;
+    this.pcm = [];
+    this.pcmLongueur = 0;
     const contexte = this.contexte;
     this.contexte = null;
     this.analyseur = null;

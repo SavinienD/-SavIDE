@@ -75,6 +75,9 @@ export const SCENES = [
   { id: "dictee-reglage-modele", sim: { voixLocale: true }, stockage: () => colonnes([ids(3)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='voice']"],
     temoins: ["sel:[data-testid='voix-modele-local'] input[type='radio']:checked", "Moyen (small)", "Petit (base)"] },
+  // axe:0.1.75 — dictée en direct : texte provisoire grisé au-dessus du compositeur pendant l'enregistrement.
+  { id: "dictee-direct", sim: {}, stockage: () => colonnes([ids(3)]), cliquer: ".axe-voix__micro", pauseClics: 4500, temoins: ["sel:.composer__box > .axe-voix__provisoire", "clic:.axe-voix__valider"] },
+  { id: "dictee-direct-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: ".axe-voix__micro", pauseClics: 4500, temoins: ["sel:.composer__box > .axe-voix__provisoire", "clic:.axe-voix__valider", "clic:.axe-voix__annuler"] },
   { id: "dictee-enregistrement-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: ".axe-voix__micro", temoins: ["clic:.axe-voix__valider", "clic:.axe-voix__annuler"] },
   { id: "c1", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["sel:.thinking-block", "sel:.tool-card__err-dot", "sel:.composer__send"] },
   // axe:0.1.75 — capture de Savinien : onglet Git du volet bas, branche au nom long, liste des modifications vide/coupée, onglets tronqués.

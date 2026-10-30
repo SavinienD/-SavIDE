@@ -143,7 +143,7 @@ fn contexte() -> &'static Mutex<Option<(String, WhisperContext)>> {
 }
 
 /// Transcription (bloquante : à lancer dans spawn_blocking).
-pub fn transcrire_pcm(chemin: &std::path::Path, echantillons: &[f32], amorce: &str) -> Result<String, String> {
+pub fn transcrire_pcm(chemin: &std::path::Path, echantillons: &[f32], amorce: &str, audio_ctx: Option<u32>) -> Result<String, String> {
     if echantillons.len() < 1600 {
         return Ok(String::new()); // moins de 0,1 s
     }
@@ -165,6 +165,10 @@ pub fn transcrire_pcm(chemin: &std::path::Path, echantillons: &[f32], amorce: &s
     p.set_print_realtime(false);
     p.set_print_timestamps(false);
     p.set_suppress_blank(true);
+    // axe:0.1.75 — morceau de la dictée en direct : fenêtre réduite (≈ 3× plus rapide).
+    if let Some(ctx) = audio_ctx {
+        p.set_audio_ctx(ctx as _);
+    }
     let fils = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4).clamp(1, 8);
     p.set_n_threads(fils as _);
     etat.full(p, echantillons).map_err(|e| format!("transcription locale\u{a0}: {e}"))?;
@@ -208,7 +212,7 @@ mod tests {
         let (Ok(m), Ok(w)) = (std::env::var("AXE_TEST_WHISPER_MODEL"), std::env::var("AXE_TEST_WAV")) else { return };
         let o = std::fs::read(w).unwrap();
         let pcm: Vec<f32> = o[44..].chunks_exact(2).map(|c| i16::from_le_bytes([c[0], c[1]]) as f32 / 32768.0).collect();
-        let t = transcrire_pcm(std::path::Path::new(&m), &pcm, "").unwrap();
+        let t = transcrire_pcm(std::path::Path::new(&m), &pcm, "", None).unwrap();
         eprintln!("TRANSCRIT: {t}");
         assert!(t.trim().len() > 10);
     }

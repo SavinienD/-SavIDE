@@ -3,6 +3,7 @@
  * Lus à chaque dictée : un changement dans Réglages > Dictée vocale s'applique
  * tout de suite, sans recharger.
  */
+
 export type ReglagesVoix = {
   /** « Nettoyer le texte avec l'IA » : ponctuation + termes techniques, par le modèle du chat. */
   nettoyer: boolean;
@@ -12,16 +13,21 @@ export type ReglagesVoix = {
   repliOpenai: boolean;
   /** Dictée rapide : fenêtre Whisper réduite (≈ 3× plus rapide sur une phrase courte, moins précise). */
   rapide: boolean;
-  /** axe:micro-local — modèle Whisper du poste : « base » (petit, ≈ 148 Mo) ou « small » (moyen, ≈ 488 Mo). */
-  modeleLocal: "base" | "small";
+  /** axe:micro-local — modèle Whisper du poste : « base » (petit, ≈ 148 Mo), « small » (moyen, ≈ 488 Mo)
+   *  ou « auto » (axe:0.1.75 : moyen s'il suit à moins de 2× le temps réel, sinon petit). */
+  modeleLocal: "auto" | "base" | "small";
+  /** axe:0.1.75 — transcription en direct pendant qu'on parle (texte provisoire grisé). */
+  direct: boolean;
 };
 
 export const REGLAGES_VOIX_DEFAUT: ReglagesVoix = {
   nettoyer: true,
   vocabulaire: "",
-  repliOpenai: true,
+  // axe:0.1.75 — moyens gratuits seulement par défaut (OpenAI est payant).
+  repliOpenai: false,
   rapide: false,
-  modeleLocal: "base",
+  modeleLocal: "auto",
+  direct: true,
 };
 
 const CLE = "axe.voix.reglages";
@@ -37,7 +43,8 @@ export function lireReglagesVoix(): ReglagesVoix {
       vocabulaire: typeof lu.vocabulaire === "string" ? lu.vocabulaire : "",
       repliOpenai: typeof lu.repliOpenai === "boolean" ? lu.repliOpenai : REGLAGES_VOIX_DEFAUT.repliOpenai,
       rapide: typeof lu.rapide === "boolean" ? lu.rapide : REGLAGES_VOIX_DEFAUT.rapide,
-      modeleLocal: lu.modeleLocal === "small" ? "small" : "base",
+      modeleLocal: lu.modeleLocal === "small" || lu.modeleLocal === "base" ? lu.modeleLocal : "auto",
+      direct: typeof lu.direct === "boolean" ? lu.direct : REGLAGES_VOIX_DEFAUT.direct,
     };
   } catch {
     return { ...REGLAGES_VOIX_DEFAUT };

@@ -1,0 +1,69 @@
+// axe:0.1.75 — dictée en direct (morceaux de ≈ 3 s) et choix du modèle Whisper (gratuit, local).
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const Module = require("node:module");
+const path = require("node:path");
+const test = require("node:test");
+const ts = require("typescript");
+
+function charger(rel) {
+  const p = path.resolve(__dirname, rel);
+  const js = ts.transpileModule(fs.readFileSync(p, "utf8"), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX },
+  }).outputText;
+  const m = new Module(p, module);
+  m.filename = p;
+  m.paths = Module._nodeModulePaths(path.dirname(p));
+  m._compile(js, p);
+  return m.exports;
+}
+const D = charger("../src/axe/voix/direct.ts");
+const R = charger("../src/axe/voix/reglages.ts");
+
+test("coupe d'un morceau : sur un silence après 2,5 s, d'office à 4,5 s", () => {
+  assert.equal(D.doitCouper(1000, 900), false);
+  assert.equal(D.doitCouper(2600, 100), false);
+  assert.equal(D.doitCouper(2600, 300), true);
+  assert.equal(D.doitCouper(4600, 0), true);
+});
+
+test("WAV 16 kHz mono 16 bits, rééchantillonnage 48 kHz -> 16 kHz", () => {
+  const e = new Float32Array(48000).map((_, i) => Math.sin(i / 10));
+  const r = D.reechantillonner(e, 48000);
+  assert.equal(r.length, 16000);
+  const wav = D.pcmVersWav(r);
+  assert.equal(wav.length, 44 + 32000);
+  assert.equal(String.fromCharCode(...wav.slice(0, 4)), "RIFF");
+  const v = new DataView(wav.buffer);
+  assert.equal(v.getUint32(24, true), 16000);
+  assert.equal(v.getUint16(22, true), 1);
+  assert.equal(D.octetsEnBase64(new Uint8Array([77, 97, 110])), "TWFu");
+});
+
+test("auto : moyen par défaut, petit si le moyen dépasse 2× le temps réel", () => {
+  const t0 = 1_000_000;
+  assert.equal(D.choisirTaille("auto", null, t0), "moyen");
+  assert.equal(D.choisirTaille("grand", null, t0), "grand");
+  let m = D.noterMesure(null, "moyen", 3000, 4500, t0); // 1,5×
+  assert.equal(m.taille, "moyen");
+  m = D.noterMesure(m, "moyen", 3000, 9000, t0); // moyenne 2,25×
+  assert.equal(m.taille, "petit");
+  assert.equal(D.choisirTaille("auto", m, t0 + 1000), "petit");
+  // mesure d'un autre modèle : sans effet ; mesure périmée : on refait l'essai en moyen.
+  assert.equal(D.noterMesure(m, "petit", 3000, 9000, t0), m);
+  assert.equal(D.choisirTaille("auto", m, t0 + D.VALIDITE_MESURE_MS + 1), "moyen");
+  // d’emblée à plus de 3× : petit tout de suite (mesuré sur la VM : small 10 s pour 3 s).
+  assert.equal(D.noterMesure(null, "moyen", 3000, 10160, t0).taille, "petit");
+});
+
+test("texte provisoire et aperçu trop lent", () => {
+  assert.equal(D.assemblerProvisoire([" Bonjour,", "", "fais un  commit. "]), "Bonjour, fais un commit.");
+  assert.equal(D.apercuTropLent([1, 4]), false);
+  assert.equal(D.apercuTropLent([3.5, 4]), true);
+});
+
+test("réglages : gratuits par défaut (pas de repli OpenAI), direct et taille auto", () => {
+  assert.equal(R.REGLAGES_VOIX_DEFAUT.repliOpenai, false);
+  assert.equal(R.REGLAGES_VOIX_DEFAUT.direct, true);
+  assert.equal(R.REGLAGES_VOIX_DEFAUT.modeleLocal, "auto"); // SavIDE : whisper.cpp du poste
+});

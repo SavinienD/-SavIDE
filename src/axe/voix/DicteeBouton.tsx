@@ -44,6 +44,14 @@ function IconeValider() {
   );
 }
 
+/** axe:0.1.75 — seule la fin du texte provisoire est montrée (pas de texte coupé par un cadre). */
+export function finProvisoire(texte: string, max = 200): string {
+  if (texte.length <= max) return texte;
+  const fin = texte.slice(-max);
+  const espace = fin.indexOf(" ");
+  return "…" + (espace > 0 && espace < 40 ? fin.slice(espace + 1) : fin);
+}
+
 function Chrono({ depuis }: { depuis: number }) {
   const [maintenant, setMaintenant] = useState(() => performance.now());
   useEffect(() => {
@@ -79,7 +87,7 @@ export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
         type="button"
         className="composer__iconbtn axe-voix__micro"
         aria-label="Dicter"
-        title="Dicter (Ctrl+Maj+D) : transcription Whisper sur la VM, texte modifiable avant envoi"
+        title="Dicter (Ctrl+Maj+D) : transcription Whisper gratuite (VM ou poste), en direct, texte modifiable avant envoi"
         data-actif={d.phase === "repos" || d.phase === "erreur" ? "false" : "true"}
         onClick={() => void d.demarrer()}
         tabIndex={enregistre || d.phase === "transcription" ? -1 : 0}
@@ -135,6 +143,14 @@ export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
           </button>
         </span>,
         cibles.rangee,
+      )}
+
+      {(enregistre || d.phase === "transcription") && d.provisoire && placer(
+        // axe:0.1.75 — texte provisoire de la dictée en direct, grisé ; le texte final le remplace.
+        <span className="axe-voix__provisoire" role="status" aria-live="polite" title="Texte provisoire : remplacé par la transcription complète à la fin">
+          <span className="axe-voix__provisoire-texte">{finProvisoire(d.provisoire)}<span aria-hidden="true">…</span></span>
+        </span>,
+        cibles.boite,
       )}
 
       {d.phase === "erreur" && d.erreur && placer(

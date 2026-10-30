@@ -92,6 +92,11 @@
       "regle": "hors-conteneur",
       "selecteur": ".git-panel__row-path",
       "raison": "Chemin de fichier tronqué par le début (direction rtl, « …/fin/du/chemin.ts ») : la partie cachée est à gauche par conception ; le chemin complet est dans l'infobulle."
+    },
+    {
+      "regle": "libelle-2-lignes",
+      "selecteur": ".axe-voix__provisoire",
+      "raison": "Texte provisoire de la dictée en direct : un paragraphe qui s'allonge pendant qu'on parle, sur plusieurs lignes par conception (les dernières restent visibles)."
     }
   ]
 }

@@ -49,7 +49,7 @@ test("le micro du compositeur et les réglages suivent la disponibilité", () =>
 
 test("barre et bulles de la dictée placées dans le compositeur (jamais rognées par une colonne étroite)", () => {
   const bouton = fs.readFileSync(path.resolve(__dirname, "../src/axe/voix/DicteeBouton.tsx"), "utf8");
-  assert.equal((bouton.match(/placer\(/g) ?? []).length, 4);
+  assert.equal((bouton.match(/placer\(/g) ?? []).length, 5); // + texte provisoire (0.1.75)
   assert.match(bouton, /closest<HTMLElement>\("\.composer__box"\)/);
   const css = fs.readFileSync(path.resolve(__dirname, "../src/axe/voix/voix.css"), "utf8");
   assert.match(css, /\.composer__box > \.axe-voix__bulle \{[^}]*max-width: calc\(100% - 16px\)/);

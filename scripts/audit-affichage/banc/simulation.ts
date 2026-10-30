@@ -99,7 +99,10 @@ export function installerSimulation(scene: Scene): void {
         ? { services: [], openai: false, local: { ok: true, modeles: [{ nom: "base", octets: 147951465, present: true }, { nom: "small", octets: 487601967, present: false }] } } // axe:micro-local
         : { services: scene.voix === false ? [] : [{ connexion: "service local", ok: true, moteurs: [{ url: "http://127.0.0.1:8179/inference", label: "whisper large-v3-turbo (poste)", ok: true }] }], openai: false },
     voix_modele_local: () => ({ ok: true, modeles: [{ nom: "base", octets: 147951465, present: true }, { nom: "small", octets: 487601967, present: true }] }),
-    voix_transcrire: () => ({ text: "Relance le banc.", moteur: "whisper large-v3-turbo (poste)", ms: 6000, nettoye: true, avertissements: ["Nettoyage : 1 terme technique corrigé."] }),
+    // axe:0.1.75 — dictée en direct : un morceau de ≈ 3 s rend un bout de phrase (texte provisoire grisé).
+    voix_transcrire: (a: any) => (a?.morceau ?? a?.input?.morceau)
+      ? { text: "Je relance le banc d'affichage sur les quatre largeurs et je regarde la colonne étroite,", moteur: "whisper small (poste) de secours", taille: "moyen", transcriptionMs: 1400, ms: 1500 }
+      : ({ text: "Relance le banc.", moteur: "whisper large-v3-turbo (poste)", ms: 6000, nettoye: true, avertissements: ["Nettoyage : 1 terme technique corrigé."] }),
     // API Tauri getVersion (Réglages > À propos).
     "plugin:app|version": () => "0.1.70",
     cloud_state: () =>

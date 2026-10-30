@@ -1,3 +1,4 @@
+import { lireMesure } from "./direct";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 
@@ -29,6 +30,8 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
   const [test, setTest] = useState<"repos" | "en-cours" | "erreur">("repos");
   const [erreurTest, setErreurTest] = useState("");
   const [dispo, setDispo] = useState<boolean | null>(null);
+  const [mesure] = useState(() => lireMesure()); // axe:0.1.75
+  const [mesure] = useState(() => lireMesure()); // axe:0.1.75
   useEffect(() => {
     let fini = false;
     void lireEtatVoix(workspacePath).then((e) => {
@@ -67,7 +70,7 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
     setTelechargement("Téléchargement…");
     setErreurTest("");
     try {
-      const local = await invoke<EtatVoix["local"]>("voix_modele_local", { input: { modele: reglages.modeleLocal } });
+      const local = await invoke<EtatVoix["local"]>("voix_modele_local", { input: { modele: reglages.modeleLocal === "auto" ? "small" : reglages.modeleLocal } });
       setEtat((e) => (e ? { ...e, local } : e));
     } catch (err) {
       setErreurTest(String(err));
@@ -142,6 +145,38 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
           l'ordinateur. Le modèle est téléchargé une fois, au premier usage, puis vérifié
           (empreinte SHA-256).
         </p>
+        <label className="axe-voix-reglages__ligne">
+          <input
+            type="checkbox"
+            checked={reglages.direct}
+            onChange={(e) => changer({ direct: e.target.checked })}
+          />
+          <span>
+            Transcription en direct
+            <br />
+            <span className="axe-appearance__hint">
+              Morceaux d'environ 3 s transcrits pendant que vous parlez (texte provisoire grisé),
+              remplacés à la fin par la transcription complète.
+            </span>
+          </span>
+        </label>
+        <label className="axe-voix-reglages__ligne">
+          <input
+            type="radio"
+            name="axe-voix-modele"
+            checked={reglages.modeleLocal === "auto"}
+            onChange={() => changer({ modeleLocal: "auto" })}
+          />
+          <span>
+            Automatique
+            <br />
+            <span className="axe-appearance__hint">
+              Moyen s'il transcrit en moins de 2× la durée parlée sur ce poste (mesuré pendant les
+              dictées), sinon petit. Le moyen est téléchargé en arrière-plan à la première dictée.
+              {mesure ? ` Dernière mesure : moyen à ${String(mesure.facteur).replace(".", ",")}× le temps réel, ${mesure.taille} retenu.` : ""}
+            </span>
+          </span>
+        </label>
         {MODELES_LOCAUX.map((m) => {
           const present = etat?.local?.modeles?.find((x) => x.nom === m.nom)?.present;
           return (

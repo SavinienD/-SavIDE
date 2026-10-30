@@ -6,7 +6,7 @@
 //      VM (large-v3-turbo, amorce de vocabulaire), tâche de fond lue par
 //      `voice.result` (une longue dictée dépasse la limite de 60 s d'un appel) ;
 //      puis le service local (utile seulement si un whisper-server tourne sur le poste) ;
-//   2. l'API OpenAI (gpt-4o-transcribe, puis whisper-1) si une clé est configurée :
+//   2. (payant, désactivé par défaut depuis 0.1.75) l'API OpenAI (gpt-4o-transcribe, puis whisper-1) si une clé est configurée :
 //      instance « compatible OpenAI » sur api.openai.com dans les fournisseurs, ou
 //      variable OPENAI_API_KEY ;
 //   3. sinon une erreur explicite : l'interface propose la dictée Windows (Win+H).
@@ -80,6 +80,13 @@ pub(crate) struct VoixTranscrireInput {
     /// Identifiant choisi par l'interface pour `voix_annuler`.
     #[serde(default)]
     demande: Option<String>,
+    /// axe:0.1.75 — taille du modèle Whisper : « petit », « moyen », « grand » (None = meilleur d'abord).
+    #[serde(default)]
+    taille: Option<String>,
+    /// axe:0.1.75 — morceau de la dictée en direct (≈ 3 s, WAV) : réponse directe,
+    /// ni repli, ni nettoyage IA (le texte final les aura).
+    #[serde(default)]
+    morceau: bool,
 }
 
 /// Connexions de service à essayer, dans l'ordre : celle de l'espace cloud
@@ -279,6 +286,10 @@ async fn transcrire(app: &AppHandle, input: VoixTranscrireInput) -> std::result:
     // axe:micro-local — 100 % sur le poste : ni espace, ni VM, ni OpenAI.
     if input.local {
         let m = crate::voix_local::modele(input.modele_local.as_deref());
+        // axe:0.1.75 — un morceau de la dictée en direct ne déclenche jamais de téléchargement.
+        if input.morceau && !crate::voix_local::present(app, m) {
+            return Err(format!("modèle {} pas encore sur le poste", m.nom));
+        }
         let chemin = crate::voix_local::assurer(app, m).await?;
         if est_annulee(demande) {
             return Err(ANNULE.into());
@@ -290,9 +301,24 @@ async fn transcrire(app: &AppHandle, input: VoixTranscrireInput) -> std::result:
             amorce.push_str(v);
         }
         let t0 = std::time::Instant::now();
-        let texte = tokio::task::spawn_blocking(move || crate::voix_local::transcrire_pcm(&chemin, &echantillons, &amorce))
+        // Morceau (≈ 3 s) ou dictée rapide : fenêtre réduite à la durée parlée.
+        let ctx = if input.morceau || input.rapide {
+            axecode_daemon::voice_rpc::audio_ctx_for(input.duration_ms)
+        } else {
+            None
+        };
+        let texte = tokio::task::spawn_blocking(move || crate::voix_local::transcrire_pcm(&chemin, &echantillons, &amorce, ctx))
             .await
             .map_err(|e| e.to_string())??;
+        if input.morceau {
+            return Ok(json!({
+                "text": canonical_terms(&tidy_transcript(&texte), vocabulaire),
+                "moteur": format!("whisper {} (local)", m.nom),
+                "taille": if m.nom == "small" { "moyen" } else { "petit" },
+                "transcriptionMs": t0.elapsed().as_millis() as u64,
+                "ms": debut.elapsed().as_millis() as u64,
+            }));
+        }
         obtenu = Some(json!({
             "text": canonical_terms(&tidy_transcript(&texte), vocabulaire),
             "model": format!("whisper {} (local)", m.nom),
@@ -308,7 +334,11 @@ async fn transcrire(app: &AppHandle, input: VoixTranscrireInput) -> std::result:
         "language": "fr",
         "prompt": vocabulaire,
         "fast": input.rapide,
+        "tier": input.taille.as_deref().filter(|t| matches!(*t, "petit" | "moyen" | "grand")),
     });
+    if input.morceau && !input.local {
+        return morceau(app, &input, params).await;
+    }
     let services = if input.local { Vec::new() } else { connexions(input.workspace_path.as_deref()) };
     for connexion in services {
         if est_annulee(demande) {
@@ -324,7 +354,9 @@ async fn transcrire(app: &AppHandle, input: VoixTranscrireInput) -> std::result:
         }
     }
 
-    if obtenu.is_none() && !input.local && input.repli_openai.unwrap_or(true) {
+    // axe:0.1.75 — moyens gratuits seulement par défaut : le repli OpenAI (payant)
+    // n'est tenté que s'il a été activé explicitement dans les réglages.
+    if obtenu.is_none() && !input.local && input.repli_openai.unwrap_or(false) {
         match cle_openai() {
             Some((base, cle)) => {
                 let audio = base64::engine::general_purpose::STANDARD
@@ -382,6 +414,32 @@ async fn transcrire(app: &AppHandle, input: VoixTranscrireInput) -> std::result:
         "echecs": echecs,
         "avertissements": avertissements,
     }))
+}
+
+/// axe:0.1.75 — dictée en direct : un morceau de ≈ 3 s transcrit tout de suite
+/// (`wait: true`) par le premier service qui répond. Texte provisoire, brut.
+async fn morceau(app: &AppHandle, input: &VoixTranscrireInput, mut params: Value) -> std::result::Result<Value, String> {
+    params["wait"] = json!(true);
+    let debut = std::time::Instant::now();
+    let mut echecs: Vec<String> = Vec::new();
+    for connexion in connexions(input.workspace_path.as_deref()) {
+        if est_annulee(input.demande.as_deref()) {
+            return Err(ANNULE.into());
+        }
+        match crate::connections::call_on(app, connexion.as_deref(), "voice.transcribe", params.clone()).await {
+            Ok(valeur) => {
+                return Ok(json!({
+                    "text": valeur.get("text").and_then(Value::as_str).unwrap_or("").trim(),
+                    "moteur": valeur.get("model").cloned().unwrap_or(Value::Null),
+                    "taille": valeur.get("tier").cloned().unwrap_or(Value::Null),
+                    "transcriptionMs": valeur.get("ms").cloned().unwrap_or(Value::Null),
+                    "ms": debut.elapsed().as_millis() as u64,
+                }))
+            }
+            Err(err) => echecs.push(echec_service(&connexion, &err)),
+        }
+    }
+    Err(format!("Transcription impossible. {}", echecs.join(" · ")))
 }
 
 #[derive(Debug, Deserialize)]
