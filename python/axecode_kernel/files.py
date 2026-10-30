@@ -287,7 +287,7 @@ def grep(
             args += ["-g", glob]
         args += ["-e", pattern, base]
         proc = subprocess.run(args, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                              stdin=subprocess.DEVNULL)
+                              stdin=subprocess.DEVNULL, creationflags=0x08000000 if os.name == "nt" else 0)
         for raw in proc.stdout.splitlines():
             try:
                 event = json.loads(raw)

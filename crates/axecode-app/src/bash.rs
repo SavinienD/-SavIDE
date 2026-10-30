@@ -537,7 +537,7 @@ fn spawn_windows_piped_session(
     next_id: impl FnOnce() -> u64,
 ) -> Result<BashSession> {
     let script = powershell_script(&command);
-    let mut cmd = Command::new(&shell_program);
+    let mut cmd = __nw_std(&shell_program);
     cmd.arg("-NoLogo")
         .arg("-NoProfile")
         .arg("-ExecutionPolicy")
@@ -811,6 +811,19 @@ fn final_transcript(mut text: String, truncated: bool, status: &str) -> String {
     text
 }
 
+
+/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+#[allow(dead_code)]
+fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
+    #[allow(unused_mut)]
+    let mut c = std::process::Command::new(p);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x0800_0000);
+    }
+    c
+}
 #[cfg(test)]
 mod tests {
     use super::*;

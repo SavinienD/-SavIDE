@@ -194,7 +194,7 @@ pub async fn ensure_daemon(
 /// Starts the daemon binary detached from the current process so it
 /// survives the IDE.
 pub fn spawn_detached(binary: &Path, prefix_args: &[&str], data_dir: &Path) -> std::io::Result<()> {
-    let mut command = std::process::Command::new(binary);
+    let mut command = __nw_std(binary);
     command
         .args(prefix_args)
         .arg("serve")
@@ -235,4 +235,17 @@ pub fn sibling_binary() -> Option<PathBuf> {
         (file.starts_with("axecode-daemon-") && (!cfg!(windows) || file.ends_with(".exe")))
             .then_some(path)
     })
+}
+
+/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+#[allow(dead_code)]
+fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
+    #[allow(unused_mut)]
+    let mut c = std::process::Command::new(p);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x0800_0000);
+    }
+    c
 }

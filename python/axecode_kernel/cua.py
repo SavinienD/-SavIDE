@@ -19,7 +19,7 @@ def _binaire():
 
 def run(*args, timeout=60):
     """Lance `cua-driver <args>` et renvoie sa sortie (erreur levee si echec)."""
-    r = subprocess.run([_binaire(), *args], capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+    r = subprocess.run([_binaire(), *args], capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL, creationflags=0x08000000 if os.name == "nt" else 0)
     out = r.stdout + (("\n[stderr] " + r.stderr.strip()) if r.stderr.strip() else "")
     if r.returncode:
         raise RuntimeError(out.strip() or f"cua-driver code {r.returncode}")

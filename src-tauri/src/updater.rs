@@ -206,7 +206,7 @@ async fn arreter_noyaux(app: &AppHandle) {
 #[cfg(windows)]
 fn powershell(script: &str) -> String {
     use std::os::windows::process::CommandExt;
-    std::process::Command::new("powershell")
+    __nw_std("powershell")
         .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script])
         .stdin(std::process::Stdio::null())
         .creation_flags(0x0800_0000) // CREATE_NO_WINDOW
@@ -234,7 +234,7 @@ fn processus_du_dossier(dir: &std::path::Path) -> Vec<(u32, String)> {
 #[cfg(windows)]
 fn tuer(pid: u32) {
     use std::os::windows::process::CommandExt;
-    let _ = std::process::Command::new("taskkill")
+    let _ = __nw_std("taskkill")
         .args(["/F", "/T", "/PID", &pid.to_string()])
         .stdin(std::process::Stdio::null())
         .stdout(std::process::Stdio::null())
@@ -448,6 +448,19 @@ pub fn updater_current_version(app: AppHandle) -> String {
     app.package_info().version.to_string()
 }
 
+
+/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+#[allow(dead_code)]
+fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
+    #[allow(unused_mut)]
+    let mut c = std::process::Command::new(p);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x0800_0000);
+    }
+    c
+}
 #[cfg(test)]
 mod tests {
     use super::*;

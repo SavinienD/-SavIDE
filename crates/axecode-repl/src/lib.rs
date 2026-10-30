@@ -208,7 +208,7 @@ impl Kernel {
         {
             if let Some(pid) = child.id() {
                 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-                let _ = tokio::process::Command::new("taskkill")
+                let _ = __nw_tokio("taskkill")
                     .args(["/T", "/F", "/PID", &pid.to_string()])
                     .creation_flags(CREATE_NO_WINDOW)
                     .status()
@@ -220,7 +220,7 @@ impl Kernel {
             if let Some(pid) = child.id() {
                 // The kernel leads its own process group: shell sessions and
                 // subprocesses it started go with it.
-                let _ = tokio::process::Command::new("kill")
+                let _ = __nw_tokio("kill")
                     .args(["-KILL", "--", &format!("-{pid}")])
                     .stdin(std::process::Stdio::null())
                     .stdout(std::process::Stdio::null())
@@ -266,4 +266,25 @@ impl KernelSnapshot for Kernel {
     async fn restore(&self, bytes: &[u8]) -> SessionResult<()> {
         self.restore_vars(bytes).await.map(|_| ())
     }
+}
+
+/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+#[allow(dead_code)]
+fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
+    #[allow(unused_mut)]
+    let mut c = std::process::Command::new(p);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x0800_0000);
+    }
+    c
+}
+#[allow(dead_code)]
+fn __nw_tokio<S: AsRef<std::ffi::OsStr>>(p: S) -> tokio::process::Command {
+    #[allow(unused_mut)]
+    let mut c = tokio::process::Command::new(p);
+    #[cfg(windows)]
+    c.creation_flags(0x0800_0000);
+    c
 }

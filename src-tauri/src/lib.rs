@@ -106,7 +106,7 @@ fn voice_dictation() -> Result<(), String> {
     {
         use std::os::windows::process::CommandExt;
         let ps = "Add-Type -Name K -Namespace W -MemberDefinition '[DllImport(\"user32.dll\")] public static extern void keybd_event(byte b,byte s,uint f,System.UIntPtr e);'; [W.K]::keybd_event(0x5B,0,0,[UIntPtr]::Zero); [W.K]::keybd_event(0x48,0,0,[UIntPtr]::Zero); [W.K]::keybd_event(0x48,0,2,[UIntPtr]::Zero); [W.K]::keybd_event(0x5B,0,2,[UIntPtr]::Zero)";
-        std::process::Command::new("powershell").args(["-NoProfile", "-Command", ps])
+        __nw_std("powershell").args(["-NoProfile", "-Command", ps])
             .creation_flags(0x08000000).spawn().map_err(|e| e.to_string())?;
         return Ok(());
     }
@@ -138,6 +138,19 @@ mod remote;
 mod remote_workspace; // axe:cloud L2
 mod state;
 mod terminal;
+
+/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+#[allow(dead_code)]
+fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
+    #[allow(unused_mut)]
+    let mut c = std::process::Command::new(p);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x0800_0000);
+    }
+    c
+}
 #[cfg(test)]
 mod tests;
 mod turns;

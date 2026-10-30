@@ -89,7 +89,7 @@ pub(crate) fn resolve(root: &Path, s: &str, missing: bool) -> SessionResult<Path
     Ok(p)
 }
 pub(crate) fn git_command(repo: &Path) -> Command {
-    let mut command = Command::new("git");
+    let mut command = __nw_std("git");
     // Do not inherit Git routing/config overrides from the daemon environment.
     for (key, _) in std::env::vars_os() {
         if key.to_string_lossy().starts_with("GIT_") {
@@ -1059,6 +1059,19 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
     }
 }
 
+
+/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+#[allow(dead_code)]
+fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
+    #[allow(unused_mut)]
+    let mut c = std::process::Command::new(p);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x0800_0000);
+    }
+    c
+}
 #[cfg(test)]
 mod tests {
     use super::*;

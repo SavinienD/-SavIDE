@@ -24,7 +24,7 @@ pub async fn run(input: Value) -> ToolRunResult {
     if args.is_empty() { return ToolRunResult::err("cua_driver: args obligatoire", Vec::new()); }
     let delai = input.get("timeoutSecondes").and_then(Value::as_u64).unwrap_or(60).clamp(1, 300);
     let bin = binaire();
-    let fut = tokio::process::Command::new(&bin).args(&args).kill_on_drop(true).output();
+    let fut = __nw_tokio(&bin).args(&args).kill_on_drop(true).output();
     match tokio::time::timeout(Duration::from_secs(delai), fut).await {
         Err(_) => ToolRunResult::err(format!("cua_driver: délai de {delai} s dépassé"), Vec::new()),
         Ok(Err(e)) => ToolRunResult::err(format!("cua_driver: lancement impossible ({bin}) : {e}"), Vec::new()),
@@ -50,4 +50,25 @@ pub fn binaire() -> String {
         }
     }
     "cua-driver".into()
+}
+
+/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+#[allow(dead_code)]
+fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
+    #[allow(unused_mut)]
+    let mut c = std::process::Command::new(p);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x0800_0000);
+    }
+    c
+}
+#[allow(dead_code)]
+fn __nw_tokio<S: AsRef<std::ffi::OsStr>>(p: S) -> tokio::process::Command {
+    #[allow(unused_mut)]
+    let mut c = tokio::process::Command::new(p);
+    #[cfg(windows)]
+    c.creation_flags(0x0800_0000);
+    c
 }

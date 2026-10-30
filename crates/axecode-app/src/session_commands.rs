@@ -382,7 +382,7 @@ fn truncate_bytes(text: &str, max: usize) -> String {
 /// `None` outside a git repository.
 pub fn workspace_change_hash(root: &Path) -> Option<String> {
     use sha2::{Digest, Sha256};
-    let out = std::process::Command::new("git")
+    let out = __nw_std("git")
         .args(["status", "--porcelain", "--untracked-files=all"])
         .current_dir(root)
         .output()
@@ -406,11 +406,11 @@ pub fn workspace_change_hash(root: &Path) -> Option<String> {
 /// Run the gate command in the workspace; `(passed, output ≤ 4 KB)`.
 pub async fn run_gate(root: &Path, command: &str) -> (bool, String) {
     let mut cmd = if cfg!(windows) {
-        let mut c = tokio::process::Command::new("pwsh");
+        let mut c = __nw_tokio("pwsh");
         c.args(["-NoProfile", "-NonInteractive", "-Command", command]);
         c
     } else {
-        let mut c = tokio::process::Command::new("sh");
+        let mut c = __nw_tokio("sh");
         c.args(["-c", command]);
         c
     };
@@ -1522,6 +1522,27 @@ impl TurnHook for SessionCommandsHook {
     }
 }
 
+
+/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+#[allow(dead_code)]
+fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
+    #[allow(unused_mut)]
+    let mut c = std::process::Command::new(p);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x0800_0000);
+    }
+    c
+}
+#[allow(dead_code)]
+fn __nw_tokio<S: AsRef<std::ffi::OsStr>>(p: S) -> tokio::process::Command {
+    #[allow(unused_mut)]
+    let mut c = tokio::process::Command::new(p);
+    #[cfg(windows)]
+    c.creation_flags(0x0800_0000);
+    c
+}
 #[cfg(test)]
 mod tests {
     use super::*;

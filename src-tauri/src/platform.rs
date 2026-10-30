@@ -296,7 +296,7 @@ pub(super) fn reveal_path(path: &Path) -> Result<()> {
 
     #[cfg(target_os = "macos")]
     {
-        let status = Command::new("open")
+        let status = __nw_std("open")
             .arg("-R")
             .arg(path)
             .status()
@@ -313,7 +313,7 @@ pub(super) fn reveal_path(path: &Path) -> Result<()> {
         // axe:explorateur — sans le préfixe « \\?\ » (que explorer.exe ne comprend pas) ;
         // explorer.exe rend souvent le code 1 même quand il a réussi : on ne le lit pas.
         let cible = axecode_app::workspace::os_path(path);
-        Command::new("explorer")
+        __nw_std("explorer")
             .raw_arg(format!("/select,\"{}\"", cible.display()))
             .spawn()
             .context("impossible d'afficher l'élément dans l'Explorateur")?;
@@ -327,7 +327,7 @@ pub(super) fn reveal_path(path: &Path) -> Result<()> {
         } else {
             path.parent().unwrap_or(path)
         };
-        let status = Command::new("xdg-open")
+        let status = __nw_std("xdg-open")
             .arg(target)
             .status()
             .context("impossible d'ouvrir le gestionnaire de fichiers")?;
@@ -430,7 +430,7 @@ pub(super) fn open_external_url(raw_url: &str) -> Result<()> {
 
     #[cfg(target_os = "macos")]
     {
-        let status = Command::new("open")
+        let status = __nw_std("open")
             .arg(url)
             .status()
             .context("impossible d'ouvrir le lien")?;
@@ -442,7 +442,7 @@ pub(super) fn open_external_url(raw_url: &str) -> Result<()> {
 
     #[cfg(target_os = "windows")]
     {
-        let status = Command::new("rundll32")
+        let status = __nw_std("rundll32")
             .args(["url.dll,FileProtocolHandler", url])
             .status()
             .context("impossible d'ouvrir le lien")?;
@@ -454,7 +454,7 @@ pub(super) fn open_external_url(raw_url: &str) -> Result<()> {
 
     #[cfg(all(unix, not(target_os = "macos")))]
     {
-        let status = Command::new("xdg-open")
+        let status = __nw_std("xdg-open")
             .arg(url)
             .status()
             .context("impossible d'ouvrir le lien")?;
@@ -480,7 +480,7 @@ pub(super) fn open_with_chooser(path: &Path) -> Result<()> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
-        Command::new("rundll32.exe")
+        __nw_std("rundll32.exe")
             .raw_arg(format!("shell32.dll,OpenAs_RunDLL {}", cible.display()))
             .spawn()
             .context("impossible d'ouvrir la boîte « Ouvrir avec »")?;
@@ -490,7 +490,7 @@ pub(super) fn open_with_chooser(path: &Path) -> Result<()> {
     #[cfg(target_os = "macos")]
     {
         std::thread::spawn(move || {
-            let choix = Command::new("osascript")
+            let choix = __nw_std("osascript")
                 .args([
                     "-e",
                     "POSIX path of (path to (choose application with prompt \"Ouvrir avec…\"))",
@@ -499,7 +499,7 @@ pub(super) fn open_with_chooser(path: &Path) -> Result<()> {
             if let Ok(sortie) = choix {
                 let appli = String::from_utf8_lossy(&sortie.stdout).trim().to_string();
                 if sortie.status.success() && !appli.is_empty() {
-                    let _ = Command::new("open").arg("-a").arg(appli).arg(&cible).status();
+                    let _ = __nw_std("open").arg("-a").arg(appli).arg(&cible).status();
                 }
             }
         });
@@ -509,7 +509,7 @@ pub(super) fn open_with_chooser(path: &Path) -> Result<()> {
     #[cfg(all(unix, not(target_os = "macos")))]
     {
         std::thread::spawn(move || {
-            let choix = Command::new("zenity")
+            let choix = __nw_std("zenity")
                 .args([
                     "--file-selection",
                     "--title=Ouvrir avec…",
@@ -526,14 +526,14 @@ pub(super) fn open_with_chooser(path: &Path) -> Result<()> {
                         .unwrap_or_default()
                         .to_string();
                     if !nom.is_empty() {
-                        let _ = Command::new("gtk-launch").arg(nom).arg(&cible).status();
+                        let _ = __nw_std("gtk-launch").arg(nom).arg(&cible).status();
                     }
                 }
                 // Choix annulé : rien à faire.
                 Ok(_) => {}
                 // Pas de zenity : application par défaut.
                 Err(_) => {
-                    let _ = Command::new("xdg-open").arg(&cible).status();
+                    let _ = __nw_std("xdg-open").arg(&cible).status();
                 }
             }
         });
@@ -551,7 +551,7 @@ pub(super) fn open_with_default_app(path: &Path) -> Result<()> {
 
     #[cfg(target_os = "macos")]
     {
-        let status = Command::new("open")
+        let status = __nw_std("open")
             .arg(path)
             .status()
             .context("impossible d'ouvrir le fichier avec l'application par défaut")?;
@@ -564,7 +564,7 @@ pub(super) fn open_with_default_app(path: &Path) -> Result<()> {
     #[cfg(target_os = "windows")]
     {
         // `start` is a cmd builtin; the second argument is the window title.
-        let status = Command::new("cmd")
+        let status = __nw_std("cmd")
             .args(["/C", "start", ""])
             .arg(path)
             .status()
@@ -577,7 +577,7 @@ pub(super) fn open_with_default_app(path: &Path) -> Result<()> {
 
     #[cfg(all(unix, not(target_os = "macos")))]
     {
-        let status = Command::new("xdg-open")
+        let status = __nw_std("xdg-open")
             .arg(path)
             .status()
             .context("impossible d'ouvrir le fichier avec l'application par défaut")?;
@@ -678,7 +678,7 @@ end repeat
 set AppleScript's text item delimiters to linefeed
 return output as text
 "#;
-    let output = Command::new("osascript")
+    let output = __nw_std("osascript")
         .arg("-e")
         .arg(script)
         .output()
@@ -711,18 +711,18 @@ pub(super) fn read_clipboard_text_paths() -> Result<Vec<String>> {
 pub(super) fn clipboard_text_command() -> Option<Command> {
     #[cfg(target_os = "macos")]
     {
-        let command = Command::new("pbpaste");
+        let command = __nw_std("pbpaste");
         return Some(command);
     }
     #[cfg(target_os = "windows")]
     {
-        let mut command = Command::new("powershell");
+        let mut command = __nw_std("powershell");
         command.args(["-NoProfile", "-Command", "Get-Clipboard"]);
         return Some(command);
     }
     #[cfg(all(unix, not(target_os = "macos")))]
     {
-        let mut command = Command::new("sh");
+        let mut command = __nw_std("sh");
         command.args([
             "-c",
             "wl-paste 2>/dev/null || xclip -selection clipboard -o 2>/dev/null || xsel -b -o 2>/dev/null",
@@ -776,4 +776,17 @@ pub(super) fn hex_value(byte: u8) -> Option<u8> {
         b'A'..=b'F' => Some(byte - b'A' + 10),
         _ => None,
     }
+}
+
+/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+#[allow(dead_code)]
+fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
+    #[allow(unused_mut)]
+    let mut c = std::process::Command::new(p);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x0800_0000);
+    }
+    c
 }

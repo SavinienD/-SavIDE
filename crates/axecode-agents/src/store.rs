@@ -242,7 +242,7 @@ pub fn pid_alive(pid: u32) -> bool {
 pub fn pid_alive(pid: u32) -> bool {
     // Best effort: no portable check without extra dependencies.
     pid != 0
-        && std::process::Command::new("tasklist")
+        && __nw_std("tasklist")
             .args(["/FI", &format!("PID eq {pid}"), "/NH"])
             .output()
             .map(|out| String::from_utf8_lossy(&out.stdout).contains(&pid.to_string()))
@@ -263,7 +263,7 @@ fn kill_group(pid: u32) {
 
 #[cfg(windows)]
 fn kill_group(pid: u32) {
-    let _ = std::process::Command::new("taskkill")
+    let _ = __nw_std("taskkill")
         .args(["/PID", &pid.to_string(), "/T", "/F"])
         .output();
 }
@@ -382,7 +382,7 @@ impl Inner {
         // axe:migration - /opt/axecode/... else the installation of before the rename.
         let program = crate::config::installed_program(program);
 
-        let mut command = tokio::process::Command::new(&program);
+        let mut command = __nw_tokio(&program);
         command
             .args(args)
             .current_dir(&dir)
@@ -924,4 +924,25 @@ impl Inner {
         }
         *self.tasks.lock().unwrap_or_else(|p| p.into_inner()) = tasks;
     }
+}
+
+/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+#[allow(dead_code)]
+fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
+    #[allow(unused_mut)]
+    let mut c = std::process::Command::new(p);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x0800_0000);
+    }
+    c
+}
+#[allow(dead_code)]
+fn __nw_tokio<S: AsRef<std::ffi::OsStr>>(p: S) -> tokio::process::Command {
+    #[allow(unused_mut)]
+    let mut c = tokio::process::Command::new(p);
+    #[cfg(windows)]
+    c.creation_flags(0x0800_0000);
+    c
 }

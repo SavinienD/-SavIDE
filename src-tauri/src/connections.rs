@@ -212,7 +212,7 @@ fn hidden(command: &mut std::process::Command) {
 }
 
 fn ssh_base(target: &SshTarget) -> std::process::Command {
-    let mut command = std::process::Command::new("ssh");
+    let mut command = __nw_std("ssh");
     command
         .arg("-p")
         .arg(target.port.to_string())
@@ -591,4 +591,17 @@ pub(crate) async fn connections_state(app: AppHandle) -> std::result::Result<Val
         out.insert(connection.id, json!(if connected { "connected" } else { "disconnected" }));
     }
     Ok(Value::Object(out))
+}
+
+/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+#[allow(dead_code)]
+fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
+    #[allow(unused_mut)]
+    let mut c = std::process::Command::new(p);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x0800_0000);
+    }
+    c
 }

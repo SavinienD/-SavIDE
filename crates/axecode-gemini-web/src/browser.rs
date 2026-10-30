@@ -159,7 +159,7 @@ pub(crate) async fn launch_raw(profile: &Path, headless: bool, url: &str) -> Res
     })?;
     std::fs::create_dir_all(profile)?;
     let _ = std::fs::remove_file(profile.join("DevToolsActivePort"));
-    let mut command = tokio::process::Command::new(browser);
+    let mut command = __nw_tokio(browser);
     command
         .arg(format!("--user-data-dir={}", profile.display()))
         .arg("--remote-debugging-port=0")
@@ -307,4 +307,25 @@ pub fn logout() -> Result<()> {
             .map_err(|err| AppError::Provider(format!("Gemini web : profil non supprimé (navigateur encore ouvert ?) : {err}")))?;
     }
     Ok(())
+}
+
+/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+#[allow(dead_code)]
+fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
+    #[allow(unused_mut)]
+    let mut c = std::process::Command::new(p);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x0800_0000);
+    }
+    c
+}
+#[allow(dead_code)]
+fn __nw_tokio<S: AsRef<std::ffi::OsStr>>(p: S) -> tokio::process::Command {
+    #[allow(unused_mut)]
+    let mut c = tokio::process::Command::new(p);
+    #[cfg(windows)]
+    c.creation_flags(0x0800_0000);
+    c
 }

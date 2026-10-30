@@ -183,11 +183,11 @@ pub fn fin_de(texte: &str, max: usize) -> String {
 
 pub fn shell_cmd(cmd: &str) -> tokio::process::Command {
     let mut c = if cfg!(windows) {
-        let mut c = tokio::process::Command::new("pwsh");
+        let mut c = __nw_tokio("pwsh");
         c.args(["-NoProfile", "-NonInteractive", "-Command", cmd]);
         c
     } else {
-        let mut c = tokio::process::Command::new("sh");
+        let mut c = __nw_tokio("sh");
         c.args(["-c", cmd]);
         c
     };
@@ -226,6 +226,27 @@ pub fn vue(g: &Guet) -> Value {
     })
 }
 
+
+/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+#[allow(dead_code)]
+fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
+    #[allow(unused_mut)]
+    let mut c = std::process::Command::new(p);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x0800_0000);
+    }
+    c
+}
+#[allow(dead_code)]
+fn __nw_tokio<S: AsRef<std::ffi::OsStr>>(p: S) -> tokio::process::Command {
+    #[allow(unused_mut)]
+    let mut c = tokio::process::Command::new(p);
+    #[cfg(windows)]
+    c.creation_flags(0x0800_0000);
+    c
+}
 #[cfg(test)]
 mod tests {
     use super::*;
