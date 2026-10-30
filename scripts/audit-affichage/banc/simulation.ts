@@ -211,7 +211,7 @@ export function installerSimulation(scene: Scene): void {
     // axe:explorateur — « Ouvrir avec… » et « Ouvrir dans l'explorateur » (comptés dans __bancAppels).
     open_workspace_entry_with_command: () => null,
     reveal_workspace_entry_command: () => null,
-    git_repository_snapshot_command: () => D.git(),
+    git_repository_snapshot_command: () => D.git(scene as { brancheLongue?: boolean }),
     provider_quota: () => ({
       fetchedAtMs: Date.now(),
       providers: fournisseur

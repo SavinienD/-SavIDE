@@ -10838,3 +10838,19 @@ textarea {
 .axe-journal__head > .axe-agents__muted { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .axe-agents { overflow-x: hidden; min-width: 0; }
 
+
+/* axe:0.1.75 — onglet Git du volet bas : le panneau Git est une colonne flex ;
+   dans un conteneur « block », son corps (flex 1 1 0) tombait à 0 px de haut
+   (liste des modifications invisible, texte gris coupé). */
+.terminal-viewport--git[data-active="true"] { display: flex; flex-direction: column; overflow: hidden; }
+.terminal-viewport--git > .git-panel, .cloud-term__pane > .git-panel { flex: 1 1 0; min-height: 0; min-width: 0; }
+.cloud-term__pane:has(> .git-panel) { flex-direction: column; }
+/* Onglets : le nom de l'onglet passe avant l'étiquette de branche (seule celle-ci se tronque). */
+.terminal-tab .terminal-tab__label { flex: 0 0 auto; max-width: 140px; }
+.terminal-tab[data-tab="git"]:has(> .terminal-tab__git) { max-width: 260px; flex: 0 1 auto; min-width: 72px; }
+.terminal-tab > svg { flex: 0 0 auto; }
+.terminal-tab .terminal-tab__git { display: inline-block; flex: 0 1 auto; min-width: 0; max-width: 170px; margin-left: 0; line-height: 16px; }
+.terminal-tabs__list { container-type: inline-size; }
+@container (max-width: 420px) { .terminal-tab .terminal-tab__git { display: none; } }
+/* 1fr = minmax(auto, 1fr) : un chemin long débordait de la ligne. */
+.git-panel__row--file { grid-template-columns: 14px minmax(0, 1fr); }

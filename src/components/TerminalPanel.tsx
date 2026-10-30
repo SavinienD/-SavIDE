@@ -186,12 +186,18 @@ export function TerminalPanel({
             role="tab"
             aria-selected={gitActive}
             className="terminal-tab"
+            data-tab="git"
             data-active={gitActive ? "true" : "false"}
             onClick={() => setActiveId(GIT_TAB_ID)}
             title={gitBranch ? `Git · ${gitBranch}` : "Git"}
           >
             <GitMark size={13} />
-            <span>Git</span>
+            <span className="terminal-tab__label">Git</span>
+            {gitBranch ? (
+              <span className="terminal-tab__git" title={`Branche git : ${gitBranch}${gitDirty ? ` (${gitDirty} modif.)` : ""}`}>
+                {gitBranch}{gitDirty ? "*" : ""}
+              </span>
+            ) : null}
           </div>
           {sessions.map((session) => (
             <div
@@ -216,13 +222,7 @@ export function TerminalPanel({
               }}
             >
               <Icon icon="solar:command-linear" width={13} height={13} />
-              <span>{session.customTitle ?? session.title}</span>
-              {gitBranch ? (
-                <span className="terminal-tab__git" title={`Branche git : ${gitBranch}${gitDirty ? ` (${gitDirty} modif.)` : ""}`}>
-                  <Icon icon="solar:branching-paths-up-linear" width={11} height={11} />
-                  {gitBranch}{gitDirty ? "*" : ""}
-                </span>
-              ) : null}
+              <span className="terminal-tab__label">{session.customTitle ?? session.title}</span>
               <button
                 type="button"
                 className="terminal-tab__rename"

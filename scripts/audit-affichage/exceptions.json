@@ -87,6 +87,11 @@
       "selecteur": ".settings-pane__subtitle",
       "situation": "libelles30%",
       "raison": "Réglages ouverts dans une colonne de conversation de 170 px avec libellés allongés de 30 % : le titre du fournisseur, sa pastille d'état et le sous-titre (une phrase) ne peuvent pas tenir sur une ligne ; ils sont tronqués avec « … » ou repliés, texte complet au survol. En fenêtre normale ces défauts n'existent pas."
+    },
+    {
+      "regle": "hors-conteneur",
+      "selecteur": ".git-panel__row-path",
+      "raison": "Chemin de fichier tronqué par le début (direction rtl, « …/fin/du/chemin.ts ») : la partie cachée est à gauche par conception ; le chemin complet est dans l'infobulle."
     }
   ]
 }

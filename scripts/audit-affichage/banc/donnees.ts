@@ -189,7 +189,15 @@ export function entrees(dossier: string) {
   });
 }
 
-export function git() {
+export function git(scene: { brancheLongue?: boolean } = {}) {
+  if (scene.brancheLongue) {
+    const status = Array.from({ length: 14 }, (_, i) => ({ path: `src/modules/cluster/upgrade/etape-${i + 1}-migration-des-noeuds-du-cluster.ts`, indexStatus: " ", worktreeStatus: i % 3 ? "M" : "?", kind: i % 3 ? "modified" : "untracked", staged: false }));
+    return {
+      gitAvailable: true, ghAvailable: false, isRepository: true, workspacePath: WS, repoRoot: WS,
+      currentBranch: "feat/issue-1-cluster-upgrade", mainBranch: "main", dirtyCount: status.length, status,
+      worktrees: [], branches: [{ name: "feat/issue-1-cluster-upgrade", kind: "local", current: true, upstream: null }, { name: "main", kind: "local", current: false, upstream: null }], error: null,
+    };
+  }
   return {
     gitAvailable: true,
     ghAvailable: false,

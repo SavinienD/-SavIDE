@@ -77,6 +77,9 @@ export const SCENES = [
     temoins: ["sel:[data-testid='voix-modele-local'] input[type='radio']:checked", "Moyen (small)", "Petit (base)"] },
   { id: "dictee-enregistrement-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: ".axe-voix__micro", temoins: ["clic:.axe-voix__valider", "clic:.axe-voix__annuler"] },
   { id: "c1", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["sel:.thinking-block", "sel:.tool-card__err-dot", "sel:.composer__send"] },
+  // axe:0.1.75 — capture de Savinien : onglet Git du volet bas, branche au nom long, liste des modifications vide/coupée, onglets tronqués.
+  { id: "git-branche-longue", sim: { brancheLongue: true }, stockage: () => colonnes([ids(3)]), terminal: true, cliquer: ".terminal-tab[data-tab='git']", pauseClics: 800, temoins: ["sel:.terminal-shell .git-panel__row", "sel:.terminal-shell .git-panel__commit"] },
+  { id: "git-branche-longue-local", sim: { brancheLongue: true, cloud: false }, stockage: () => colonnes([ids(3)]), terminal: true, cliquer: ".terminal-tab[data-tab='git']", pauseClics: 800, temoins: ["sel:.terminal-shell .git-panel__row", "sel:.terminal-shell .git-panel__commit"] },
   { id: "c1-terminal", sim: {}, stockage: () => colonnes([ids(3)]), terminal: true, temoins: ["sel:.terminal-shell .terminal-tabs"] },
   { id: "explorateur-hauteur", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["sel:.sidebar__section .tree-row"] },
   { id: "c1-terminal-redim", sim: {}, stockage: () => colonnes([ids(3)]), terminal: true, redimTerminal: 37, temoins: ["sel:.terminal-shell .terminal-tabs"] },

@@ -213,6 +213,7 @@ export function CloudTerminalPanel({ connectionId, workspacePath, storageKey }: 
               role="tab"
               aria-selected={tab.name === current?.name}
               className="terminal-tab"
+              data-tab={kindOf(tab)}
               data-active={tab.name === current?.name ? "true" : "false"}
               onClick={() => setActive(tab.name)}
               onDoubleClick={() => rename(tab.name)}

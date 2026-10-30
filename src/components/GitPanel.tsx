@@ -95,6 +95,7 @@ export function GitPanel({
   hasStreamingConversation,
 }: Props) {
   const [snapshot, setSnapshot] = useState<GitRepositorySnapshot | null>(null);
+  const enCoursRef = useRef<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -204,6 +205,10 @@ export function GitPanel({
 
   const refresh = useCallback(async (showSpinner: boolean) => {
     const ws = workspacePathRef.current;
+    // axe:0.1.75 — un relevé périodique ne doit pas annuler un relevé encore en cours
+    // (gros dépôt : `git status` > 6 s, chaque réponse était jetée et la liste restait vide).
+    if (!showSpinner && enCoursRef.current === ws) return;
+    enCoursRef.current = ws;
     const seq = ++requestSeqRef.current;
     if (showSpinner) setLoading(true);
     try {
@@ -253,6 +258,7 @@ export function GitPanel({
         error: stringifyError(err),
       });
     } finally {
+      if (seq === requestSeqRef.current) enCoursRef.current = null;
       if (workspacePathRef.current === ws && seq === requestSeqRef.current) {
         setLoading(false);
       }
