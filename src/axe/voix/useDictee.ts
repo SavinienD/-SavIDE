@@ -143,6 +143,8 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
           nettoyer: false,
           taille: tailleSession.current,
           morceau: true,
+          // Fenêtre réduite à la durée du morceau : small ≈ 1,1× le temps réel au lieu de 3,4× (mesuré sur la VM).
+          rapide: true,
           repliOpenai: false,
         },
       });
