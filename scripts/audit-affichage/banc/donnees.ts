@@ -179,7 +179,16 @@ export function conversationSauvee(id: string, options: { compaction?: boolean; 
 
 export function entrees(dossier: string) {
   const base = dossier ? dossier + "/" : "";
-  const noms = dossier
+  // « src/banc » : les fichiers cités par la conversation « liens ».
+  if (dossier === "src/banc") {
+    return Array.from({ length: 40 }, (_, i) => `etape-${i + 1}.ts`).map((name) => ({
+      name, relativePath: base + name, absolutePath: "\\\\?\\" + WS + "\\src\\banc\\" + name, kind: "file", hasChildren: false,
+      modifiedMs: Date.UTC(2026, 9, 1), size: 400,
+    }));
+  }
+  const noms = dossier === "src"
+    ? ["banc", "Workspace.tsx", "ChatPane.tsx", "stream.ts", "colonnes.ts", "fileAttente.ts", "styles-de-la-barre-de-titre-tres-longues.css"]
+    : dossier
     ? ["Workspace.tsx", "ChatPane.tsx", "stream.ts", "colonnes.ts", "fileAttente.ts", "styles-de-la-barre-de-titre-tres-longues.css"]
     : ["crates", "docs", "scripts", "src", "src-tauri", "tests", "web", "Cargo.toml", "package.json", "README.md", "RAPPORT.md", "un-nom-de-fichier-vraiment-tres-long-pour-voir-le-debordement.md"];
   // explorateur — comme le vrai backend Windows avant correction : chemins « \\?\C:\… »

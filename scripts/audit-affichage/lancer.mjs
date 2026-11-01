@@ -162,6 +162,65 @@ async function cliquerTexte(page, selecteur, texte) {
 // Markdown. Le défilement de la conversation ne bouge pas (au milieu : même scrollTop ; en bas :
 // toujours en bas), le fil n'est pas recréé et le lien s'ouvre (onglet de l'éditeur ou navigateur).
 // Rend null si tout va bien, sinon la description de l'écart.
+// Clic droit sur un chemin de fichier du chat : menu « Afficher dans
+// l'explorateur », « Copier le chemin », « Copier le chemin relatif » ; la conversation ne bouge pas.
+async function clicDroitChemin(page, e) {
+  const corps = `.colonne-chat[data-colonne='${e.col ?? 0}'] .chat-body`;
+  await page.evaluate(() => {
+    window.__bancPresse = null;
+    const presse = { writeText: async (t) => { window.__bancPresse = t; }, readText: async () => window.__bancPresse ?? "" };
+    Object.defineProperty(navigator, "clipboard", { value: presse, configurable: true });
+  });
+  const avant = await page.evaluate((cs) => {
+    const b = document.querySelector(cs);
+    const liens = b ? [...b.querySelectorAll(".md .chat-file-link")] : [];
+    const el = liens[Math.floor(liens.length / 2)];
+    if (!el) return null;
+    const r0 = el.getBoundingClientRect(), rb0 = b.getBoundingClientRect();
+    b.scrollTop += r0.top + r0.height / 2 - (rb0.top + rb0.height / 2);
+    b.dataset.bancDefil = "1";
+    return { texte: (el.textContent ?? "").trim() };
+  }, corps);
+  if (!avant) return "lien de fichier absent";
+  await pause(500);
+  const pos = await page.evaluate((cs, t) => {
+    const b = document.querySelector(cs);
+    const el = [...b.querySelectorAll(".md .chat-file-link")].find((x) => (x.textContent ?? "").trim() === t);
+    const r = el.getBoundingClientRect();
+    return { x: r.x + Math.min(r.width / 2, 24), y: r.y + r.height / 2, top: Math.round(b.scrollTop) };
+  }, corps, avant.texte);
+  await page.mouse.click(pos.x, pos.y, { button: "right" });
+  await pause(400);
+  const ecarts = [];
+  const items = await page.evaluate(() => [...document.querySelectorAll(".chat-path-menu .tree-menu__item")].map((x) => (x.textContent ?? "").trim()));
+  for (const l of ["Afficher dans l'explorateur", "Copier le chemin", "Copier le chemin relatif"]) if (!items.includes(l)) ecarts.push(`menu sans « ${l} »`);
+  if (e.menu && items.includes(e.menu)) {
+    await cliquerTexte(page, ".chat-path-menu .tree-menu__item", e.menu);
+    await pause(900);
+  }
+  const apres = await page.evaluate((cs) => {
+    const b = document.querySelector(cs);
+    return {
+      top: Math.round(b?.scrollTop ?? -1), meme: b?.dataset.bancDefil === "1", presse: window.__bancPresse,
+      choisi: [...document.querySelectorAll(".sidebar__body .tree-row[data-selected='true']")].map((l) => l.dataset.entryPath).join("|"),
+      menu: !!document.querySelector(".chat-path-menu"),
+      onglet: document.querySelector(".editor-col .tabs .tab[data-active='true']")?.getAttribute("title") ?? "",
+    };
+  }, corps);
+  if (!apres.meme) ecarts.push("fil recréé");
+  else if (apres.top !== pos.top) ecarts.push(`défilement ${pos.top} -> ${apres.top}`);
+  const rel = avant.texte;
+  if (e.menu === "Afficher dans l'explorateur" && apres.choisi !== rel) ecarts.push(`explorateur : « ${apres.choisi} » sélectionné au lieu de « ${rel} »`);
+  if (e.menu === "Copier le chemin" && apres.presse !== WS_BANC + "\\" + rel.replace(/\//g, "\\")) ecarts.push(`presse-papiers « ${apres.presse} »`);
+  if (e.menu === "Copier le chemin relatif" && apres.presse !== rel.replace(/\//g, "\\")) ecarts.push(`presse-papiers « ${apres.presse} »`);
+  if (e.menu && apres.menu) ecarts.push("menu resté ouvert");
+  if (e.menu && apres.onglet) ecarts.push(`fichier ouvert (${apres.onglet})`);
+  // Fin de l'étape : retour en bas (le bouton « Aller en bas » ne masque plus une réponse).
+  await page.evaluate((cs) => { const b = document.querySelector(cs); if (b) b.scrollTop = b.scrollHeight; }, corps);
+  console.log(`clic droit ${rel} ${e.menu ?? "(menu)"} :${ecarts.length ? " ✗ " + ecarts.join(", ") : " ✓"}`);
+  return ecarts.length ? ecarts.join(", ") : null;
+}
+
 async function cliquerLienSansDefiler(page, e) {
   const corps = `.colonne-chat[data-colonne='${e.col ?? 0}'] .chat-body`;
   const place = await page.evaluate((cs, sel, rang, position) => {
@@ -398,6 +457,10 @@ async function preparerScene(page, si, sc) {
   delete sc._echecDefil;
   for (const e of sc.defilement ?? []) {
     const ecart = await cliquerLienSansDefiler(page, e);
+    if (ecart) sc._echecDefil = (sc._echecDefil ? sc._echecDefil + " ; " : "") + ecart;
+  }
+  if (sc.cheminChat) {
+    const ecart = await clicDroitChemin(page, sc.cheminChat);
     if (ecart) sc._echecDefil = (sc._echecDefil ? sc._echecDefil + " ; " : "") + ecart;
   }
   if (sc.arretForce) {

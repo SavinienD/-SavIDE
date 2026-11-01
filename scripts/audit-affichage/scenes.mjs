@@ -382,4 +382,14 @@ export const SCENES = [
   // hist169 — prompt envoyé puis flèche HAUT dans le compositeur vide : il revient.
   { id: "historique-prompts", sim: {}, stockage: () => colonnes([ids(1)]), ecrire: "relance le banc à 800 px", touchesCompositeur: ["ArrowUp"],
     temoins: ["valeur:relance le banc à 800 px"] },
+  // Clic droit sur un chemin de fichier du chat (milieu d'une longue conversation) :
+  // menu, puis « Afficher dans l'explorateur » (dossiers dépliés, fichier choisi) et les deux copies.
+  { id: "chemin-chat-menu", sim: { liensHistorique: true }, stockage: () => colonnes([ids(1)]), cheminChat: {},
+    temoins: ["clic:.chat-path-menu .tree-menu__item"] },
+  { id: "chemin-chat-explorateur", sim: { liensHistorique: true }, stockage: () => colonnes([ids(1)]), cheminChat: { menu: "Afficher dans l'explorateur" },
+    temoins: ["sel:.sidebar__body .tree-row[data-selected='true']", "absent:.chat-path-menu"] },
+  { id: "chemin-chat-copier", sim: { liensHistorique: true }, stockage: () => colonnes([ids(1)]), cheminChat: { menu: "Copier le chemin" },
+    temoins: ["absent:.chat-path-menu"] },
+  { id: "chemin-chat-relatif", sim: { liensHistorique: true }, stockage: () => colonnes([ids(1)]), cheminChat: { menu: "Copier le chemin relatif" },
+    temoins: ["absent:.chat-path-menu"] },
 ];

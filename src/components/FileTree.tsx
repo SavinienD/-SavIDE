@@ -123,6 +123,8 @@ type Props = {
 
 export type FileTreeHandle = {
   startCreateRoot: (kind: WorkspaceEntry["kind"]) => void;
+  /** Déplie les dossiers parents puis sélectionne l'entrée (vrai si trouvée). */
+  revealPath: (relativePath: string) => Promise<boolean>;
 };
 
 export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
@@ -502,14 +504,60 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
     [closeMenu, expandDirectory],
   );
 
+  // « Afficher dans l'explorateur » (clic droit sur un chemin du chat) :
+  // chaque dossier parent est listé puis déplié, et l'entrée trouvée est sélectionnée (la
+  // ligne défile dans l'arbre). Si le fichier manque, le dernier dossier trouvé est choisi.
+  const rootsRef = useRef(roots);
+  rootsRef.current = roots;
+  const revealPath = useCallback(
+    async (relativePath: string) => {
+      const parts = relativePath.split("/").filter(Boolean);
+      if (!parts.length) return false;
+      const meme = (a: string, b: string) => a === b || a.toLowerCase() === b.toLowerCase();
+      let liste = rootsRef.current.length
+        ? rootsRef.current
+        : await api.listEntries(workspacePath).catch(() => [] as WorkspaceEntry[]);
+      let trouve: WorkspaceEntry | null = null;
+      for (let i = 0; i < parts.length; i += 1) {
+        const chemin = parts.slice(0, i + 1).join("/");
+        const entree =
+          liste.find((e) => e.relativePath === chemin) ??
+          liste.find((e) => meme(e.relativePath, chemin));
+        if (!entree) break;
+        trouve = entree;
+        if (i === parts.length - 1 || entree.kind !== "directory") break;
+        const key = entree.relativePath;
+        const courant = expandedRef.current[key];
+        let enfants = courant?.children;
+        if (!enfants) {
+          try {
+            enfants = await api.listEntries(workspacePath, key);
+          } catch {
+            break;
+          }
+        }
+        const etat: NodeState = { ...(courant ?? {}), entry: entree, expanded: true, loading: false, children: enfants, error: undefined };
+        expandedRef.current = { ...expandedRef.current, [key]: etat };
+        setExpanded((prev) => ({ ...prev, [key]: etat }));
+        liste = enfants;
+      }
+      if (!trouve) return false;
+      setMenu(null);
+      selectOnly(trouve);
+      return meme(trouve.relativePath, parts.join("/"));
+    },
+    [selectOnly, workspacePath],
+  );
+
   useImperativeHandle(
     ref,
     () => ({
       startCreateRoot: (kind: WorkspaceEntry["kind"]) => {
         void startCreate(kind, null);
       },
+      revealPath,
     }),
-    [startCreate],
+    [startCreate, revealPath],
   );
 
   const startRename = useCallback(

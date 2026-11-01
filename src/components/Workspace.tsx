@@ -109,6 +109,7 @@ import { SkillsBadge } from "../axe/E4Vues"; // e4
 import { SkillSync, type Empreintes } from "../axe/SkillSync"; // e4
 import { QuotaIndicator } from "../axe/QuotaIndicator"; // providers
 import { WindowControls, isWindowsPlatform } from "./WindowControls";
+import { chatPathToRelative, cleanChatFilePath, stripVerbatimPath } from "../lib/cheminsChat";
 import type {
   ActiveTurnSummary,
   ActiveTurnsChangedPayload,
@@ -1262,6 +1263,32 @@ export function Workspace({
       workspacePath,
     ],
   );
+
+  // Clic droit sur un chemin du chat > « Afficher dans l'explorateur » :
+  // volet de gauche affiché, recherche refermée, dossiers dépliés et fichier sélectionné.
+  const [revelationEnAttente, setRevelationEnAttente] = useState<{ chemin: string } | null>(null);
+  const revealChatPath = useCallback(
+    (rawPath: string) => {
+      const relativePath = chatPathToRelative(rawPath, workspacePath);
+      if (!relativePath) {
+        pushNotice("info", `Hors du dossier ouvert : ${cleanChatFilePath(rawPath)}`);
+        return;
+      }
+      setGaucheReduite(false);
+      setFileSearchOpen(false);
+      setRevelationEnAttente({ chemin: relativePath });
+    },
+    [pushNotice, workspacePath],
+  );
+  useEffect(() => {
+    if (!revelationEnAttente) return;
+    const handle = fileTreeRef.current;
+    if (!handle) return;
+    setRevelationEnAttente(null);
+    void handle.revealPath(revelationEnAttente.chemin).then((ok) => {
+      if (!ok) pushNotice("error", `Introuvable dans l'explorateur : ${revelationEnAttente.chemin}`);
+    });
+  });
 
   // Dispatch a raw path picked from the terminal (cmd+click). Resolves
   // the path on the backend and routes to the right editor / file-tree
@@ -2921,6 +2948,7 @@ export function Workspace({
         onBackground={actions.onBackground}
         stopForce={demandesArret.get(conv.id)?.forcee === true}
         onOpenFile={layout === "chat" ? openFreeChatFile : openChatFile}
+        onRevealPath={layout === "chat" ? undefined : revealChatPath}
         mentionScope={layout === "chat" ? conv.id : null}
         onOpenSettings={openSettings}
         externalDrops={externalDropFeed}
@@ -4172,46 +4200,3 @@ function retargetTab(
   };
 }
 
-/** Windows verbatim prefix (`\\?\C:\…`, `\\?\UNC\srv\share\…`), as built by
- * Rust `canonicalize` on the backend: strip it so chat/tool paths look normal
- * and match the workspace path when resolving a click. */
-function stripVerbatimPath(path: string): string {
-  const unc = /^(?:\\\\\?\\|\/\/\?\/)UNC[\\/](.*)$/i.exec(path);
-  if (unc) return `\\\\${unc[1]}`;
-  return path.replace(/^(?:\\\\\?\\|\/\/\?\/)/i, "");
-}
-
-/** Shared cleanup for chat-referenced paths (quotes, line suffixes, verbatim prefix). */
-function cleanChatFilePath(rawPath: string): string {
-  return stripVerbatimPath(
-    rawPath
-      .trim()
-      .replace(/^['"`<]+|['"`>,.;:]+$/g, "")
-      .replace(/#L\d+(?:C\d+)?$/i, "")
-      .replace(/:\d+(?::\d+)?$/, ""),
-  );
-}
-
-function chatPathToRelative(rawPath: string, workspacePath: string): string | null {
-  let path = cleanChatFilePath(rawPath).replace(/\\/g, "/");
-
-  if (!path || path.includes("://")) return null;
-
-  const root = stripVerbatimPath(workspacePath.replace(/\\/g, "/")).replace(/\/+$/, "");
-  const pathKey = path.toLowerCase();
-  const rootKey = root.toLowerCase();
-  if (pathKey === rootKey) return null;
-  if (root && pathKey.startsWith(`${rootKey}/`)) {
-    path = path.slice(root.length + 1);
-  } else if (/^[a-zA-Z]:\//.test(path) || path.startsWith("//")) {
-    // Absolute path outside the workspace: not an editor-relative file.
-    return null;
-  } else if (path.startsWith("/")) {
-    return null;
-  }
-
-  path = path.replace(/^\.\//, "");
-  if (!path || path.startsWith("../") || path.includes("/../")) return null;
-
-  return path;
-}

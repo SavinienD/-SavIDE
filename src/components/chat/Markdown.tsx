@@ -15,6 +15,7 @@ import rehypeHighlight from "rehype-highlight";
 import { api } from "../../lib/ipc";
 import { MermaidDiagram } from "./MermaidDiagram";
 import { PreCopiable } from "./PreCopiable"; // copier-code
+import { useMenuCheminChat } from "./MenuCheminChat";
 import { decouperLiens, estFichier, estUrl, raccourcirUrl } from "./liensChat";
 
 type Props = {
@@ -66,7 +67,9 @@ function FileLink({
   variant?: "code";
   onOpenFile: (path: string) => void;
 }) {
+  const { onContextMenu, menu } = useMenuCheminChat(path);
   return (
+    <>
     <button
       type="button"
       className="chat-file-link"
@@ -76,9 +79,12 @@ function FileLink({
         event.stopPropagation();
         onOpenFile(path);
       }}
+      onContextMenu={onContextMenu}
     >
       {children}
     </button>
+    {menu}
+    </>
   );
 }
 

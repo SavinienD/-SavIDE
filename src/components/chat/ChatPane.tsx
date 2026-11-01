@@ -24,6 +24,8 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { AIThinkingBlock } from "./AIThinkingBlock";
 import { FileChangeBlock } from "./FileChangeBlock";
 import { FileLinkedText, Markdown } from "./Markdown";
+import { ActionsCheminChatContext, type ActionsCheminChat } from "./MenuCheminChat";
+import { cheminsACopier } from "../../lib/cheminsChat";
 import { PlanningNextMoveBlock } from "./PlanningNextMoveBlock";
 import { Questionnaire, type QuestionItem } from "./Questionnaire";
 import {
@@ -216,6 +218,8 @@ type Props = {
   /** stop-force — « Arrêt forcé… » : l'arrêt a été renvoyé, un clic libère la conversation. */
   stopForce?: boolean;
   onOpenFile: (path: string) => void;
+  /** Clic droit sur un chemin : l'afficher dans l'explorateur. */
+  onRevealPath?: (path: string) => void;
   /** mention-libre — conversation sans dossier : « @ » limité à ce sous-dossier. */
   mentionScope?: string | null;
   onOpenSettings: (section?: "providers") => void;
@@ -454,6 +458,7 @@ export function ChatPane({
   onBackground, // arriere-plan
   stopForce = false,
   onOpenFile,
+  onRevealPath,
   mentionScope,
   onOpenSettings,
   externalDrops,
@@ -465,6 +470,23 @@ export function ChatPane({
   const onOpenFileRef = useRef(onOpenFile);
   onOpenFileRef.current = onOpenFile;
   const ouvrirFichier = useCallback((path: string) => onOpenFileRef.current(path), []);
+  // Actions du clic droit sur un chemin (valeur stable : rien n'est recréé).
+  const onRevealPathRef = useRef(onRevealPath);
+  onRevealPathRef.current = onRevealPath;
+  const workspacePathRef = useRef(workspacePath);
+  workspacePathRef.current = workspacePath;
+  const avecExplorateur = Boolean(onRevealPath);
+  const actionsChemin = useMemo<ActionsCheminChat>(
+    () => ({
+      afficher: avecExplorateur ? (chemin) => onRevealPathRef.current?.(chemin) : undefined,
+      copier: (chemin, genre) => {
+        const plateforme = typeof navigator !== "undefined" ? navigator.platform || navigator.userAgent || "" : "";
+        const c = cheminsACopier(chemin, workspacePathRef.current ?? "", /win/i.test(plateforme));
+        void navigator.clipboard?.writeText(genre === "relatif" ? c.relatif ?? c.complet : c.complet).catch(() => {});
+      },
+    }),
+    [avecExplorateur],
+  );
   const conversationViewsRef = useRef<Map<string, ChatViewState>>(new Map());
   // sub-n — sous-agents (descendants) de la conversation active en cours d'execution.
   const [agentsAuTravail, setAgentsAuTravail] = useState(0);
@@ -3468,6 +3490,7 @@ export function ChatPane({
   }, [activeSubAgent, autoCloseSubAgentId]);
 
   return (
+    <ActionsCheminChatContext.Provider value={actionsChemin}>
     <div
       className="chat-col"
       ref={dropZoneRef}
@@ -4292,6 +4315,7 @@ export function ChatPane({
         </>
       )}
     </div>
+    </ActionsCheminChatContext.Provider>
   );
 }
 

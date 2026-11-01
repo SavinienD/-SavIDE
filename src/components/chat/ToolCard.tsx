@@ -13,6 +13,7 @@ import type { FileChange, TodoStatus, ToolResultImage } from "../../types";
 import { canonicalToolName } from "../../lib/tools";
 import { FileChangeBlock } from "./FileChangeBlock";
 import { ReplCard } from "./ReplCard"; // repl
+import { useMenuCheminChat } from "./MenuCheminChat";
 
 function extractEditFilePaths(argsPretty?: string): string[] {
   if (!argsPretty) return [];
@@ -922,6 +923,7 @@ function ReadInlineRow({
   onOpenFile: ToolCardProps["onOpenFile"];
 }) {
   const path = openPath ?? "file";
+  const cheminMenu = useMenuCheminChat(openPath ?? "");
   return (
     <div
       className="tool-read-inline"
@@ -945,9 +947,11 @@ function ReadInlineRow({
             className="chat-file-link tool-read-inline__file"
             title="Ouvrir le fichier"
             onClick={() => onOpenFile(openPath)}
+            onContextMenu={cheminMenu.onContextMenu}
           >
             {path}
           </button>
+          {cheminMenu.menu}
         </span>
       ) : (
         <span className="tool-read-inline__path" title={path}>
