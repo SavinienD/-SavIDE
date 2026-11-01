@@ -92,7 +92,7 @@ export function estUrlLocale(url: string): boolean {
 }
 
 /** Serveur de modèles local : Ollama / LM Studio (`typeLocal`), ou point d'accès compatible
- *  OpenAI sur ce PC. Un compatible Anthropic sur localhost (compteur des espaces) reste cloud. */
+ *  OpenAI sur ce PC. Un compatible Anthropic sur localhost (compteur de coûts) reste cloud. */
 export function fournisseurLocal(kind: string, typeLocal: boolean, baseUrl: string): boolean {
   return typeLocal || (kind !== "anthropic_compatible" && estUrlLocale(baseUrl));
 }

@@ -102,7 +102,7 @@ impl ProviderKind {
 
     /// fenetre-locale — serveur de modèles sur ce PC : Ollama, LM Studio, ou un point d'accès
     /// compatible OpenAI sur localhost / 127.0.0.1 (llama.cpp, vLLM…). Un point d'accès compatible
-    /// Anthropic sur localhost est un relais vers des modèles du cloud (compteur des espaces,
+    /// Anthropic sur localhost est un relais vers des modèles du cloud (compteur de coûts,
     /// 127.0.0.1:8096) : il reste « cloud ».
     pub fn is_local_endpoint(self, base_url: &str) -> bool {
         self.is_local() || (!self.uses_anthropic_wire() && is_local_url(base_url))
@@ -502,7 +502,7 @@ mod tests {
             assert!(!ProviderKind::OpenAiCompatible.is_local_endpoint(url), "{url}");
         }
         assert!(!ProviderKind::Mistral.is_local_endpoint(ProviderKind::Mistral.default_base_url()));
-        // Relais Anthropic local (compteur des espaces) : modèles du cloud.
+        // Relais Anthropic local (compteur de coûts) : modèles du cloud.
         assert!(!ProviderKind::AnthropicCompatible.is_local_endpoint("http://127.0.0.1:8096"));
 
         assert_eq!(default_context_window_for(true, None), 32_768);
