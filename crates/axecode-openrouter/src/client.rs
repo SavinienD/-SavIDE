@@ -525,12 +525,58 @@ struct CompatModelsResponse {
     models: Vec<CompatModelBody>,
 }
 
+// fournisseurs-178 — champs SÉPARÉS : Ollama `/api/tags` donne `name` ET `model` dans le
+// même objet ; avec des alias de `id`, serde refusait tout le corps (« duplicate field `id` ») et
+// « Découvrir » / « Détecter local » ne trouvaient aucun modèle Ollama.
 #[derive(Debug, Deserialize)]
 struct CompatModelBody {
-    #[serde(default, alias = "name", alias = "model")]
-    id: String,
-    #[serde(default, alias = "context_length", alias = "max_context_length")]
+    #[serde(default)]
+    id: Option<String>,
+    #[serde(default)]
+    model: Option<String>,
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
     context_window: Option<u32>,
+    #[serde(default)]
+    context_length: Option<u32>,
+    #[serde(default)]
+    max_context_length: Option<u32>,
+}
+
+impl CompatModelBody {
+    /// Identifiant exact à renvoyer au serveur : `id` (OpenAI, LM Studio), sinon `model` / `name` (Ollama).
+    fn identifier(&self) -> String {
+        [&self.id, &self.model, &self.name]
+            .into_iter()
+            .flatten()
+            .map(|value| value.trim())
+            .find(|value| !value.is_empty())
+            .unwrap_or_default()
+            .to_string()
+    }
+
+    fn window(&self) -> Option<u32> {
+        self.context_window
+            .or(self.context_length)
+            .or(self.max_context_length)
+            .filter(|value| *value > 0)
+    }
+}
+
+fn compatible_models(body: CompatModelsResponse) -> Vec<CompatibleModel> {
+    let mut seen = std::collections::HashSet::new();
+    body.data
+        .into_iter()
+        .chain(body.models)
+        .filter_map(|model| {
+            let id = model.identifier();
+            (!id.is_empty() && seen.insert(id.clone())).then(|| CompatibleModel {
+                id,
+                context_window: model.window(),
+            })
+        })
+        .collect()
 }
 
 /// providers — `GET {base_url}{route}` (default `/models`) and list the ids.
@@ -567,17 +613,7 @@ pub async fn discover_compatible_models(
         .json()
         .await
         .map_err(|err| AppError::Decode(format!("invalid models body: {err}")))?;
-    let mut seen = std::collections::HashSet::new();
-    Ok(body
-        .data
-        .into_iter()
-        .chain(body.models)
-        .filter(|model| !model.id.trim().is_empty() && seen.insert(model.id.clone()))
-        .map(|model| CompatibleModel {
-            id: model.id.trim().to_string(),
-            context_window: model.context_window.filter(|value| *value > 0),
-        })
-        .collect())
+    Ok(compatible_models(body))
 }
 
 fn to_wire_tool(tool: &ToolDescriptor) -> wire::WireTool<'_> {
@@ -1235,7 +1271,38 @@ mod tests {
     use serde_json::json;
     use axecode_core::{ChatMessage, ModelCapabilities, ModelRef, ProviderRequest};
 
-    use super::{build_chat_request, cache_mode_for_model, model_info, CacheMode};
+    use super::{build_chat_request, cache_mode_for_model, compatible_models, model_info, CacheMode};
+
+    // fournisseurs-178 — corps réels : Ollama 0.12 `/api/tags` (name + model), OpenAI / LM Studio `/v1/models`.
+    #[test]
+    fn ollama_tags_with_name_and_model_list_the_real_ids() {
+        let body = serde_json::from_value(json!({"models": [
+            {"name": "qwen3:4b", "model": "qwen3:4b", "modified_at": "2026-10-30T10:00:00Z", "size": 2_497_293_931u64,
+             "digest": "e55aed6fe643", "details": {"family": "qwen3", "parameter_size": "4.0B"}},
+            {"name": "qwen3:8b", "model": "qwen3:8b", "size": 5_225_388_164u64},
+            {"name": "qwen3:4b", "model": "qwen3:4b"}
+        ]}))
+        .expect("corps Ollama lisible");
+        let models = compatible_models(body);
+        let ids: Vec<&str> = models.iter().map(|m| m.id.as_str()).collect();
+        assert_eq!(ids, vec!["qwen3:4b", "qwen3:8b"]);
+        assert!(models.iter().all(|m| m.context_window.is_none()));
+    }
+
+    #[test]
+    fn openai_and_lm_studio_bodies_keep_id_and_window() {
+        let body = serde_json::from_value(json!({"object": "list", "data": [
+            {"id": "qwen/qwen3-8b", "object": "model", "owned_by": "organization_owner"},
+            {"id": "mistral-large-latest", "context_length": 131072, "max_context_length": 131072},
+            {"id": " ", "name": "nom-seul"}
+        ]}))
+        .expect("corps OpenAI lisible");
+        let models = compatible_models(body);
+        assert_eq!(models.len(), 3);
+        assert_eq!(models[0].id, "qwen/qwen3-8b");
+        assert_eq!(models[1].context_window, Some(131_072));
+        assert_eq!(models[2].id, "nom-seul");
+    }
 
     fn caps(model: &str) -> ModelCapabilities {
         model_info::capabilities_from_parts(model, 128_000, 8_192, false, false, true)

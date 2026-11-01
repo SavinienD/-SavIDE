@@ -86,6 +86,25 @@ export function installerSimulation(scene: Scene): void {
   if (scene.accelerer) accelerer(900, 16_001, 25);
   let mcp: any[] = ((scene.mcp as string[] | undefined) ?? []).map((nom) => ({ id: `cat_${nom}`, name: nom, command: "npx", args: ["-y", `@exemple/${nom}`], env: [], headers: [], enabled: true }));
   const statut = (connecte: boolean) => ({ connected: connecte, connectionState: connecte ? "connected" : "disconnected", email: connecte ? "utilisateur@exemple.invalid" : null, error: null });
+  // fournisseurs-178 — scènes « fournisseurs-* » : Ollama local avec qwen3:4b (capture d'un utilisateur) ;
+  // « Enregistrer » garde ce qui est envoyé (window.__bancFournisseurs), « Découvrir » rend les identifiants réels.
+  const typeFournisseur = (kind: string, label: string, builtinId: string | null, defaultBaseUrl: string, local: boolean) =>
+    ({ kind, label, builtinId, defaultBaseUrl, requiresApiKey: !local && !!builtinId, local, defaultModels: [] });
+  const modeleLocal = (id: string, contextWindow = 32768) =>
+    ({ id, label: "", contextWindow, maxOutputTokens: 16384, supportsTools: true, supportsReasoning: id.startsWith("qwen3"), supportsVision: false });
+  let fournisseurs: any = scene.fournisseursLocaux
+    ? {
+        providers: [{ id: "ollama", name: "Ollama", kind: "ollama", baseUrl: "http://localhost:11434", enabled: true, hasApiKey: false, installed: true,
+          models: [modeleLocal("qwen3:4b", Number(scene.fenetreQwen ?? 32768))] }],
+        modelOverrides: {},
+        kinds: [
+          typeFournisseur("open_ai_compatible", "OpenAI-compatible", null, "", false),
+          typeFournisseur("mistral", "Mistral", "mistral", "https://api.mistral.ai/v1", false),
+          typeFournisseur("ollama", "Ollama", "ollama", "http://localhost:11434", true),
+          typeFournisseur("lm_studio", "LM Studio", "lmstudio", "http://localhost:1234/v1", true),
+        ],
+      }
+    : { providers: [], modelOverrides: {}, kinds: [] };
   const h: Record<string, (a: any, brut: any) => unknown> = {
     // Scène « maj-badge » : une version disponible (badge discret, installation sur clic seulement).
     updater_check: () =>
@@ -191,7 +210,15 @@ export function installerSimulation(scene: Scene): void {
     estimate_sub_agent_context: () => D.contexte(40_000),
     list_configured_model_providers: () => (fournisseur ? ["anthropic", "openai"] : []),
     list_openrouter_models: () => [],
-    provider_settings_get: () => ({ providers: [], modelOverrides: {}, kinds: [] }),
+    provider_settings_get: () => fournisseurs,
+    provider_settings_save: (a) => {
+      const s = a.settings ?? {};
+      (window as any).__bancFournisseurs = s;
+      fournisseurs = { ...fournisseurs, providers: (s.providers ?? []).map((p: any) => ({ ...p, hasApiKey: false, installed: true })), modelOverrides: s.modelOverrides ?? {} };
+      return fournisseurs;
+    },
+    // Ollama : identifiants de « ollama list », fenêtre annoncée par /api/show (gemma2:2b : 8 192 < 32 768).
+    provider_discover_models: () => [modeleLocal("gemma2:2b", 8192), modeleLocal("llama3.1:8b"), modeleLocal("qwen3:4b"), modeleLocal("qwen3:8b")],
     get_openai_provider_status: () => statut(fournisseur),
     get_anthropic_provider_status: () => statut(fournisseur),
     get_google_provider_status: () => statut(false),
