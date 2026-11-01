@@ -18,11 +18,13 @@ use serde::Deserialize;
 use serde_json::Value;
 
 use crate::model::ModelCapabilities;
-use crate::provider_config::{ModelCatalogEntry, ModelDefinition, ProviderConfig, ProviderKind};
+use crate::provider_config::{
+    is_local_url, ModelCatalogEntry, ModelDefinition, ProviderConfig, ProviderKind, DEFAULT_CONTEXT_WINDOW,
+    LOCAL_CONTEXT_WINDOW,
+};
 
 /// File shared with the desktop app, inside the account data directory.
 pub const PROVIDERS_FILE: &str = "providers.json";
-const DEFAULT_CONTEXT_WINDOW: u32 = 128_000;
 const SUPPORTED_COMPATIBILITY: &str = "openai";
 
 /// One model declared under a provider.
@@ -291,7 +293,8 @@ fn parse_provider(value: &Value) -> Result<(DeclaredProvider, Vec<String>), Stri
 
     let (models, warnings) = match raw.modeles {
         None | Some(Value::Null) => (Vec::new(), Vec::new()),
-        Some(Value::Array(items)) => parse_models(&items),
+        // fenetre-locale — serveur sur ce PC : 32 768 par défaut (au lieu de 128 000).
+        Some(Value::Array(items)) => parse_models(&items, is_local_url(&url)),
         Some(_) => return Err("`modeles` doit être une liste".into()),
     };
     Ok((
@@ -306,7 +309,7 @@ fn parse_provider(value: &Value) -> Result<(DeclaredProvider, Vec<String>), Stri
     ))
 }
 
-fn parse_models(items: &[Value]) -> (Vec<DeclaredModel>, Vec<String>) {
+fn parse_models(items: &[Value], local: bool) -> (Vec<DeclaredModel>, Vec<String>) {
     let mut models = Vec::new();
     let mut warnings = Vec::new();
     let mut seen = std::collections::HashSet::new();
@@ -344,7 +347,7 @@ fn parse_models(items: &[Value]) -> (Vec<DeclaredModel>, Vec<String>) {
             context_window: raw
                 .fenetre_contexte
                 .filter(|value| *value > 0)
-                .unwrap_or(DEFAULT_CONTEXT_WINDOW),
+                .unwrap_or(if local { LOCAL_CONTEXT_WINDOW } else { DEFAULT_CONTEXT_WINDOW }),
             supports_tools: raw.outils.unwrap_or(true),
         });
     }
@@ -510,6 +513,21 @@ mod tests {
         assert_eq!(provider.models[0].id, "m");
         assert_eq!(provider.models[0].context_window, DEFAULT_CONTEXT_WINDOW);
         assert_eq!(parsed.warnings().len(), 3, "{:?}", parsed.warnings());
+    }
+
+    #[test]
+    fn local_url_gets_the_local_default_window_but_keeps_an_explicit_one() {
+        let parsed = parse(serde_json::json!({
+            "fournisseurs": [
+                {"id": "llama-cpp", "url": "http://127.0.0.1:8080/v1",
+                 "modeles": [{"id": "gguf"}, {"id": "grand", "fenetreContexte": 131072}]},
+                {"id": "cloud", "url": "https://example.com/v1", "modeles": [{"id": "m"}]}
+            ]
+        }));
+        let local = &parsed.providers()[0];
+        assert_eq!(local.models[0].context_window, LOCAL_CONTEXT_WINDOW);
+        assert_eq!(local.models[1].context_window, 131_072);
+        assert_eq!(parsed.providers()[1].models[0].context_window, DEFAULT_CONTEXT_WINDOW);
     }
 
     #[test]

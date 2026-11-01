@@ -284,6 +284,42 @@ export const SCENES = [
   { id: "ide-barre", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["clic:.titlebar__btn[data-action='accueil']", "clic:.titlebar__btn[data-action='reglages']",
     "sel:.titlebar__brand-mark svg[data-logo='wordmark'] rect.logo__fond", "absent:svg linearGradient"] },
   { id: "reglages", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, temoins: ["sel:.settings-pane"] },
+  // fournisseurs-178 — Réglages > Fournisseurs configurables, Ollama local avec qwen3:4b (capture d'un utilisateur) :
+  // l'IDENTIFIANT (nom exact envoyé à Ollama) est une colonne visible et modifiable ; « qwen3:8b » tapé dans la ligne
+  // de qwen3:4b est bien l'identifiant enregistré (avant : seul le libellé changeait, qwen3:4b restait appelé).
+  { id: "fournisseurs-identifiant", sim: { fournisseursLocaux: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row"],
+    taper: [{ sel: ".axe-providers__models input[data-champ='id']", texte: "qwen3:8b" }],
+    cliquer: "[data-action='enregistrer-fournisseurs']",
+    temoins: ["clic:.axe-providers__models input[data-champ='id']", "sel:.axe-providers__models input[data-champ='label']",
+      "champ:.axe-providers__models input[data-champ='id']=qwen3:8b", "enregistre:ollama=qwen3:8b"] },
+  // Identifiant vidé : erreur visible sous le tableau, « Enregistrer » grisé.
+  { id: "fournisseurs-identifiant-vide", sim: { fournisseursLocaux: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row"],
+    taper: [{ sel: ".axe-providers__models input[data-champ='id']", texte: "" }],
+    temoins: ["sel:.axe-providers__model-error[data-erreur='modeles']", "sel:[data-action='enregistrer-fournisseurs']:disabled",
+      "sel:.axe-providers__models input[data-champ='id'][aria-invalid='true']"] },
+  // « Saisir » : champ « Identifiant exact » dans la carte (plus de window.prompt) ; un doublon est refusé.
+  { id: "fournisseurs-saisir-doublon", sim: { fournisseursLocaux: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row", "[data-action='saisir-modele']"],
+    taper: [{ sel: ".axe-providers__saisie input[data-champ='nouvel-id']", texte: "qwen3:4b", entree: true }],
+    temoins: ["sel:.axe-providers__saisie [data-erreur='saisie']", "clic:[data-action='ajouter-modele']"] },
+  // fenetre-locale — « Saisir » sur Ollama : 32 768 jetons de contexte (plus 128 000 : Ollama réservait 22 Go pour qwen3:4b) ;
+  // un modèle qui annonce moins (gemma2:2b, 8 192 par /api/show) garde sa fenêtre ; le contexte reste modifiable.
+  { id: "fournisseurs-saisir-local", sim: { fournisseursLocaux: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row", "[data-action='saisir-modele']"],
+    taper: [{ sel: ".axe-providers__saisie input[data-champ='nouvel-id']", texte: "qwen3:8b", entree: true }],
+    temoins: ["champ:.axe-providers__models input[data-champ='id']=qwen3:8b", "champ:.axe-providers__models input[data-champ='contexte']=32768",
+      "absent:.axe-providers__models input[data-champ='contexte'][value='128000']", "sel:.axe-providers__models input[data-champ='contexte']"] },
+  { id: "fournisseurs-saisir-annonce", sim: { fournisseursLocaux: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row", "[data-action='saisir-modele']"],
+    taper: [{ sel: ".axe-providers__saisie input[data-champ='nouvel-id']", texte: "gemma2:2b", entree: true }],
+    temoins: ["champ:.axe-providers__models input[data-champ='id']=gemma2:2b", "champ:.axe-providers__models input[data-champ='contexte']=8192"] },
+  // « Découvrir » : les identifiants réels du serveur remplissent la colonne Identifiant.
+  { id: "fournisseurs-decouvrir", sim: { fournisseursLocaux: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row", "[data-action='decouvrir-modeles']"],
+    temoins: ["champ:.axe-providers__models input[data-champ='id']=gemma2:2b", "champ:.axe-providers__models input[data-champ='id']=qwen3:8b",
+      "champ:.axe-providers__models input[data-champ='id']=qwen3:4b"] },
   // Réglages > À propos : version lue à l'exécution (getVersion, simulée 0.1.65) sous le titre ; la
   // version lancée avant était la 0.1.64, donc la date de mise à jour est connue et affichée.
   // Lien du site : https://www.axe-international.com (sans « www. » le site ne répond pas).

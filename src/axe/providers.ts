@@ -95,6 +95,10 @@ export const providerApi = {
   detectLocal() {
     return invoke<LocalServerProbe[]>("provider_detect_local");
   },
+  /** fenetre-locale — fenêtre par défaut d'un modèle saisi (Ollama : lue par /api/show). */
+  defaultWindow(kind: ProviderKind, baseUrl: string, model: string) {
+    return invoke<number>("provider_model_default_window", { input: { kind, baseUrl, model } });
+  },
   setModelOverride(provider: string, model: string, contextWindow?: number, maxOutputTokens?: number) {
     return invoke<ProviderSettingsView>("provider_set_model_override", {
       input: { provider, model, contextWindow: contextWindow ?? null, maxOutputTokens: maxOutputTokens ?? null },

@@ -146,6 +146,59 @@
 .axe-providers__icon-btn:hover { color: var(--danger); }
 .axe-providers__footer { display: flex; gap: 6px; justify-content: flex-end; }
 
+/* fournisseurs-178 — identifiant réel modifiable (colonne « Identifiant »), saisie en ligne, erreurs.
+   Tableau des modèles : une ligne par modèle si la carte fait 700 px ou plus ; en dessous, chaque
+   modèle passe sur 3 lignes avec le libellé au-dessus de chaque champ (pas de défilement horizontal). */
+.axe-providers__card { container: fournisseur / inline-size; }
+.axe-providers__header { flex-wrap: wrap; }
+.axe-providers__header > div:first-child { flex: 1 1 260px; min-width: 0; }
+.axe-providers__models-head, .axe-providers__footer { flex-wrap: wrap; }
+.axe-providers__case { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; min-height: 20px; cursor: pointer; }
+.axe-providers__icon-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; min-height: 20px; padding: 2px; }
+@container fournisseur (max-width: 520px) {
+  .axe-providers__grid { grid-template-columns: minmax(0, 1fr); }
+  .axe-providers__row { flex-wrap: wrap; row-gap: 4px; }
+  .axe-providers__count { margin-left: 0; }
+}
+.axe-providers__models-wrap { overflow-x: auto; min-width: 0; }
+.axe-providers__models input.axe-providers__model-id { font-family: var(--font-mono); }
+.axe-providers__models input[aria-invalid="true"], .axe-providers__saisie input[aria-invalid="true"] { border-color: var(--danger); }
+.axe-providers__model-error { color: var(--danger); font-size: var(--fs-xs); }
+.axe-providers__grid .axe-providers__check { min-height: 20px; }
+@container fournisseur (min-width: 700px) {
+  .axe-providers__models th:nth-child(1), .axe-providers__models td:nth-child(1) { min-width: 140px; }
+  .axe-providers__models th:nth-child(2), .axe-providers__models td:nth-child(2) { min-width: 100px; }
+  .axe-providers__models td input[type="number"] { min-width: 64px; }
+}
+@container fournisseur (max-width: 699.98px) {
+  .axe-providers__models thead { display: none; }
+  .axe-providers__models, .axe-providers__models tbody { display: block; width: 100%; }
+  .axe-providers__models tr {
+    display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px 8px;
+    padding: 6px 0; border-top: 1px solid var(--line-soft);
+  }
+  .axe-providers__models td { display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 0; border-top: 0; }
+  .axe-providers__models td::before {
+    content: attr(data-label); color: var(--text-3); font-size: var(--fs-xs);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.2em;
+  }
+  .axe-providers__models td:nth-child(1) { grid-column: span 7; }
+  .axe-providers__models td:nth-child(2) { grid-column: span 5; }
+  .axe-providers__models td:nth-child(3), .axe-providers__models td:nth-child(4), .axe-providers__models td:nth-child(5) { grid-column: span 4; }
+  .axe-providers__models td:nth-child(n + 6) { grid-column: span 3; align-items: flex-start; }
+  .axe-providers__models td:nth-child(9) { align-items: flex-end; }
+}
+.axe-providers__saisie { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: flex-end; }
+.axe-providers__saisie label { display: flex; flex-direction: column; gap: 4px; flex: 1 1 220px; min-width: 0; color: var(--text-2); font-size: var(--fs-xs); }
+.axe-providers__saisie input {
+  padding: 5px 8px; border: 1px solid var(--line); border-radius: var(--r-small);
+  background: var(--bg-2); color: var(--text-0); font-size: var(--fs-sm); font-family: var(--font-mono); min-width: 0;
+}
+.axe-providers__hint { flex: 1 1 100%; min-width: 0; color: var(--text-3); font-size: var(--fs-xs); }
+.axe-providers__saisie-titre, .axe-providers__champ-titre { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-providers__models-head .settings-pane__btn { min-width: 0; max-width: 100%; }
+.axe-providers__models-head .settings-pane__btn > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* providers — QuotaIndicator (titlebar) */
 .axe-quota { position: relative; display: flex; align-items: center; margin-right: 6px; -webkit-app-region: no-drag; }
 .axe-quota__pill {

@@ -333,6 +333,16 @@ async function preparerScene(page, si, sc) {
     await page.evaluate((s) => document.querySelector(s)?.click(), sel);
     await pause(400);
   }
+  // fournisseurs-178 — « taper » : texte tapé au clavier dans un champ (son contenu remplacé,
+  // ou complété avec « ajouter »), puis Entrée si « entree ».
+  for (const t of sc.taper ?? []) {
+    await page.waitForSelector(t.sel, { visible: true, timeout: 5000 }).catch(() => undefined);
+    await page.click(t.sel, { clickCount: t.ajouter ? 1 : 3 }).catch(() => undefined);
+    if (!t.ajouter) await page.keyboard.press("Backspace");
+    await page.keyboard.type(t.texte);
+    if (t.entree) await page.keyboard.press("Enter");
+    await pause(300);
+  }
   if (sc.arretForce) {
     const stop = "[data-focus=true] .composer__send[data-variant='stop']";
     await page.waitForSelector(stop, { visible: true, timeout: 6000 }).catch(() => undefined);
@@ -461,8 +471,21 @@ async function auditer(page, si, sc, journal, preparation) {
     // explorateur — « presse:<texte> » : texte copié dans le presse-papiers ;
     // « premier:<chemin> » : première ligne de l'explorateur ; « choisi:<chemin> » : seule ligne sélectionnée.
     const lignes = () => [...document.querySelectorAll(".sidebar__body .tree-row[data-entry-path]")];
+    // fournisseurs-178 — « champ:<sélecteur>=<valeur> » : un champ visible du sélecteur contient cette valeur ;
+    // « enregistre:<fournisseur>=<id1,id2> » : identifiants des modèles reçus par provider_settings_save.
+    const champ = (spec) => {
+      const i = spec.lastIndexOf("=");
+      return visibles(spec.slice(0, i)).some((e) => e.value === spec.slice(i + 1));
+    };
+    const enregistre = (spec) => {
+      const [f, liste] = spec.split("=");
+      const p = (window.__bancFournisseurs?.providers ?? []).find((x) => x.id === f);
+      return !!p && p.models.map((m) => m.id).join(",") === liste;
+    };
     const special = (t) =>
-      t.startsWith("presse:") ? window.__bancPresse === t.slice(7)
+      t.startsWith("champ:") ? champ(t.slice(6))
+      : t.startsWith("enregistre:") ? enregistre(t.slice(11))
+      : t.startsWith("presse:") ? window.__bancPresse === t.slice(7)
       : t.startsWith("premier:") ? lignes()[0]?.dataset.entryPath === t.slice(8)
       : t.startsWith("choisi:") ? lignes().filter((l) => l.dataset.selected === "true").map((l) => l.dataset.entryPath).join("|") === t.slice(7)
       : null;
