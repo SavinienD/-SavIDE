@@ -5,7 +5,7 @@ const path = require("node:path");
 const test = require("node:test");
 const ts = require("typescript");
 
-// axe:reprise-tour — un tour de continuation enchaîné juste après un autre (rien
+// reprise-tour — un tour de continuation enchaîné juste après un autre (rien
 // entre les deux : pas de message, pas d'outil), puis coupé (« stream_retry ») :
 // le texte final du tour précédent ne doit pas disparaître de l'écran
 // (src/components/chat/stream.ts, applyEvent / dropLiveResponse).

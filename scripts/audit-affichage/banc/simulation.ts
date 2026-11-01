@@ -78,7 +78,7 @@ export function installerSimulation(scene: Scene): void {
   const inconnues: Record<string, unknown> = {};
   window.__bancAppels = appels;
   window.__bancInconnues = inconnues;
-  const filesBanc: Record<string, any[]> = {}; // axe:file-demon
+  const filesBanc: Record<string, any[]> = {}; // file-demon
   const fournisseur = scene.fournisseur !== false;
   const active = scene.active ?? D.idConv(0);
   const tourActif = scene.tour === "en_cours" || scene.tour === "erreur";
@@ -93,13 +93,13 @@ export function installerSimulation(scene: Scene): void {
         ? { available: true, currentVersion: "0.1.70", version: String(scene.majDispo), notes: "Badge de mise à jour discret : plus d'installation forcée.\nCorrection de l'installeur relancé après une mise à jour réussie.", date: null }
         : { available: false, currentVersion: "0.1.57", version: null, notes: null, date: null },
     updater_current_version: () => "0.1.57",
-    // axe:0.1.71 — dictée : un moteur répond (sauf scène voix: false) ; transcription simulée.
+    // 0.1.71 — dictée : un moteur répond (sauf scène voix: false) ; transcription simulée.
     voix_etat: () =>
       scene.voixLocale
-        ? { services: [], openai: false, local: { ok: true, modeles: [{ nom: "base", octets: 147951465, present: true }, { nom: "small", octets: 487601967, present: false }] } } // axe:micro-local
+        ? { services: [], openai: false, local: { ok: true, modeles: [{ nom: "base", octets: 147951465, present: true }, { nom: "small", octets: 487601967, present: false }] } } // micro-local
         : { services: scene.voix === false ? [] : [{ connexion: "service local", ok: true, moteurs: [{ url: "http://127.0.0.1:8179/inference", label: "whisper large-v3-turbo (poste)", ok: true }] }], openai: false },
     voix_modele_local: () => ({ ok: true, modeles: [{ nom: "base", octets: 147951465, present: true }, { nom: "small", octets: 487601967, present: true }] }),
-    // axe:0.1.75 — dictée en direct : un morceau de ≈ 3 s rend un bout de phrase (texte provisoire grisé).
+    // 0.1.75 — dictée en direct : un morceau de ≈ 3 s rend un bout de phrase (texte provisoire grisé).
     voix_transcrire: (a: any) => (a?.morceau ?? a?.input?.morceau)
       ? { text: "Je relance le banc d'affichage sur les quatre largeurs et je regarde la colonne étroite,", moteur: "whisper small (poste) de secours", taille: "moyen", transcriptionMs: 1400, ms: 1500 }
       : ({ text: "Relance le banc.", moteur: "whisper large-v3-turbo (poste)", ms: 6000, nettoye: true, avertissements: ["Nettoyage : 1 terme technique corrigé."] }),
@@ -109,7 +109,7 @@ export function installerSimulation(scene: Scene): void {
       cloud
         ? { connected: true, base: "https://cloud.exemple.invalid", email: "utilisateur@exemple.invalid", role: "admin", expireLe: "2026-11-21T08:00:00Z", poste: "PC-POSTE", connectionId: "cloud" }
         : { connected: false, base: "https://cloud.exemple.invalid", email: "", role: "", expireLe: "", poste: "", connectionId: "cloud" },
-    // axe:file-demon — file d'attente tenue par le service (copie simulée, par conversation).
+    // file-demon — file d'attente tenue par le service (copie simulée, par conversation).
     queue_push: (a) => {
       const i = a?.input ?? a ?? {};
       const id = i.message?.conversationId ?? "";
@@ -136,14 +136,14 @@ export function installerSimulation(scene: Scene): void {
           return { agents: [] };
         case "sessions.history":
           return [];
-        // axe:commandes — indicateurs /heartbeat et /goal (scène « commandes »).
+        // commandes — indicateurs /heartbeat et /goal (scène « commandes »).
         case "sessions.commands_state":
           return scene.commandes ?? { goal: null, heartbeat: null, autonomous: null };
         case "sessions.commands_set": {
           const etat: any = { ...((scene.commandes as any) ?? {}) };
           if (a.params?.op === "heartbeat_off") etat.heartbeat = null;
           if (a.params?.op === "goal_clear") etat.goal = null;
-          // axe:guet — Annuler / Tout annuler.
+          // guet — Annuler / Tout annuler.
           if (typeof a.params?.op === "string" && a.params.op.startsWith("guet_annuler")) {
             const cible = a.params.op.split(":")[1];
             etat.guets = cible ? (etat.guets ?? []).filter((g: any) => g.id !== cible) : [];
@@ -201,7 +201,7 @@ export function installerSimulation(scene: Scene): void {
     list_workspace_entries_command: (a) => {
       const dossier = a.relativePath ?? a.input?.relativePath ?? "";
       const liste = D.entrees(dossier);
-      // axe:html — scènes « html-* » : une page HTML à la racine de l'espace.
+      // html — scènes « html-* » : une page HTML à la racine de l'espace.
       if (scene.fichierHtml && !dossier) liste.push({ name: "page.html", relativePath: "page.html", absolutePath: D.WS + "\\page.html", kind: "file", hasChildren: false });
       return liste;
     },
@@ -211,7 +211,7 @@ export function installerSimulation(scene: Scene): void {
       return { name: rel.split("/").pop(), relativePath: rel, absolutePath: D.WS + "\\" + rel.replace(/\//g, "\\"), editable: true, content, reason: null, size: content.length, lastModifiedMs: D.T0, imageMediaType: null, imageData: null };
     },
     list_workspace_files_command: () => D.entrees(""),
-    // axe:explorateur — « Ouvrir avec… » et « Ouvrir dans l'explorateur » (comptés dans __bancAppels).
+    // explorateur — « Ouvrir avec… » et « Ouvrir dans l'explorateur » (comptés dans __bancAppels).
     open_workspace_entry_with_command: () => null,
     reveal_workspace_entry_command: () => null,
     git_repository_snapshot_command: () => D.git(scene as { brancheLongue?: boolean }),
@@ -252,7 +252,7 @@ export function installerSimulation(scene: Scene): void {
       planModePrompt: "", defaultPlanModePrompt: "", imageProvider: "gptImage2", openaiImageUseSubscription: true,
       openaiImageApiKey: "", nanoBananaApiKey: "", webSearchProvider: "classic", linkupApiKey: "",
     }),
-    // axe:couleurs — skills activés de l'espace (scène « couleurs »).
+    // couleurs — skills activés de l'espace (scène « couleurs »).
     list_installed_skills_command: () =>
       ((scene.skills as string[] | undefined) ?? []).map((name) => ({
         name, description: "Skill du banc", source: "workspace", rootLabel: "Espace",

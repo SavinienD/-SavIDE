@@ -1,4 +1,4 @@
-// axe:viewers — font preview (ttf/otf/woff/woff2): the file is loaded as a
+// viewers — font preview (ttf/otf/woff/woff2): the file is loaded as a
 // FontFace from its bytes (no install), then shown with an editable sample,
 // a size waterfall and a glyph grid of common character ranges. Name and
 // metadata come from the OpenType `name` table when readable.

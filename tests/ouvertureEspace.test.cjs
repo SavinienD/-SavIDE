@@ -1,4 +1,4 @@
-// axe:parcours-collegue (D5) — à l'ouverture d'un espace Axe Cloud, la liste est celle de l'espace.
+// parcours-collegue (D5) — à l'ouverture d'un espace Axe Cloud, la liste est celle de l'espace.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const Module = require("node:module");

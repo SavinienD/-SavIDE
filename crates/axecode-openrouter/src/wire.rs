@@ -15,7 +15,7 @@ pub struct ChatCompletionsRequest<'a> {
     pub temperature: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reasoning: Option<ReasoningConfig>,
-    // axe:providers — plain OpenAI dialect (`low` | `medium` | `high`).
+    // providers — plain OpenAI dialect (`low` | `medium` | `high`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reasoning_effort: Option<&'static str>,
     pub stream: bool,

@@ -1,4 +1,4 @@
-// axe:cloud L4 — espace commun (perso -> commun).
+// cloud L4 — espace commun (perso -> commun).
 // Les chemins restent confinés au service ; l'appli ne connaît que kind/name.
 import { invoke } from "@tauri-apps/api/core";
 

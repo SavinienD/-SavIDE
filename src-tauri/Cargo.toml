@@ -15,8 +15,8 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { workspace = true }
 
 [dependencies]
-directories = { workspace = true } # axe:providers
-async-trait = { workspace = true } # axe:providers
+directories = { workspace = true } # providers
+async-trait = { workspace = true } # providers
 axecode-anthropic = { workspace = true }
 axecode-app = { workspace = true }
 axecode-core = { workspace = true }
@@ -24,10 +24,10 @@ axecode-google = { workspace = true }
 axecode-kimi = { workspace = true }
 axecode-openai = { workspace = true }
 axecode-openrouter = { workspace = true }
-axecode-harness = { workspace = true } # axe:harness
-axecode-daemon = { workspace = true } # axe:daemon
-axecode-repl = { workspace = true } # axe:daemon
-axecode-gemini-web = { workspace = true } # axe:gemini-web
+axecode-harness = { workspace = true } # harness
+axecode-daemon = { workspace = true } # daemon
+axecode-repl = { workspace = true } # daemon
+axecode-gemini-web = { workspace = true } # gemini-web
 
 anyhow = { workspace = true }
 base64 = { workspace = true }
@@ -42,13 +42,13 @@ futures-util = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 url = { workspace = true }
-rusqlite = { workspace = true } # axe:viewers
-zip = { workspace = true } # axe:viewers
+rusqlite = { workspace = true } # viewers
+zip = { workspace = true } # viewers
 ring = { workspace = true }
 portable-pty = "0.9.0"
 reqwest = { workspace = true }
-whisper-rs = "0.16" # axe:micro-local
-sha2 = { workspace = true } # axe:micro-local
+whisper-rs = "0.16" # micro-local
+sha2 = { workspace = true } # micro-local
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6.4"

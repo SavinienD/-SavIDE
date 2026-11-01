@@ -1,4 +1,4 @@
-// axe:parcours-collegue — section des Réglages demandée par un bouton (par ex. « Connect a
+// parcours-collegue — section des Réglages demandée par un bouton (par ex. « Connect a
 // provider » du compositeur). Avant, l'événement partait avant le montage du volet des
 // Réglages : personne ne l'écoutait et le volet s'ouvrait sur « About ». La demande est donc
 // aussi gardée ici et lue par le volet à son montage. Module pur, testé par

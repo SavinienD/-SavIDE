@@ -427,7 +427,7 @@ impl PowerShellPackage {
 }
 
 
-/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+/// 0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
 #[allow(dead_code)]
 fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
     #[allow(unused_mut)]

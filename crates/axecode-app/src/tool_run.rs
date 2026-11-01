@@ -69,7 +69,7 @@ pub struct ToolRunImage {
 }
 
 /// Shrinks images larger than `axecode_core::image_fit::MAX_IMAGE_SIDE`
-/// (axe:images). Images that cannot be decoded are kept: the provider
+/// (images). Images that cannot be decoded are kept: the provider
 /// replaces them by a note if they are still too large.
 pub fn fit_tool_run_images(images: Vec<ToolRunImage>) -> Vec<ToolRunImage> {
     images

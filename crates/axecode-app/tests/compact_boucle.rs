@@ -1,4 +1,4 @@
-//! axe:compact169 — /compact bouclait (capture du 26/10 : l'IA appelait compact.run()
+//! compact169 — /compact bouclait (capture du 26/10 : l'IA appelait compact.run()
 //! 9 fois, chaque réponse « Compaction runs before the next request », tour sans fin).
 //! Vrai démon + vrai noyau + crochet des commandes ; l'IA est simulée « obéissante » :
 //! elle appelle compact.run() tant que le prompt le lui demande.

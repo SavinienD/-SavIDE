@@ -13,9 +13,9 @@ const MODES = ["act", "goal", "plan"];
 const MODE_LABELS = { act: "Act", goal: "Goal", plan: "Plan" };
 const INSTALL_HINT_KEY = "axecode.remote.installHintDismissed.v1";
 
-// axe:migration — keys of before the rename copied once under the new prefix,
+// migration — keys of before the rename copied once under the new prefix,
 // before the first render (same rules as src/lib/legacyStorage.ts, keep in sync).
-// axe:storage-migration-begin
+// storage-migration-begin
 const STORAGE_MIGRATION_MARKER = "axecode:storage-migration";
 // rebrand:keep-begin (old prefixes, read only)
 const LEGACY_STORAGE_PREFIX = /^(?:(?:axe|Axe|AXE)[-_.: ]?)?(?:atelier|Atelier|ATELIER)(?![a-z])/;
@@ -61,7 +61,7 @@ function migrateLegacyStorage(getStorage) {
   }
   return copied;
 }
-// axe:storage-migration-end
+// storage-migration-end
 migrateLegacyStorage(() => globalThis.localStorage);
 
 const THINKING_LABELS = { off: "Off", low: "Low", medium: "Medium", high: "High", xhigh: "XHigh", max: "Max" };

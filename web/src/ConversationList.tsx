@@ -10,7 +10,7 @@ type Props = {
   onOpen: (id: string) => void;
 };
 
-/** axe:freechat — project filter value of free conversations. */
+/** freechat — project filter value of free conversations. */
 const FREE = "__free__";
 
 /** Root conversations (sub-agents live in the Agents view). */
@@ -37,7 +37,7 @@ export function ConversationList({ sessions, activeId, onOpen }: Props) {
       .sort((a, b) => b.updatedAtMs - a.updatedAtMs);
   }, [sessions, query, project, showArchived]);
 
-  // axe:freechat — free conversations first, under their own heading.
+  // freechat — free conversations first, under their own heading.
   const free = visible.filter((s) => s.scratch);
   const others = visible.filter((s) => !s.scratch);
 

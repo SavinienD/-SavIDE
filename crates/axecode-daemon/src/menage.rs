@@ -1,4 +1,4 @@
-//! axe:menage — finished sub-agents do not take room for nothing.
+//! menage — finished sub-agents do not take room for nothing.
 //!
 //! * A sub-agent (session with a parent) frees its runtime and Python kernel
 //!   `subagent_idle_unload` after its last turn (2 min by default, see

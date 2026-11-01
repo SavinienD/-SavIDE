@@ -1,4 +1,4 @@
-//! axe:commandes — état des commandes de session (`/goal`, `/heartbeat`) pour
+//! commandes — état des commandes de session (`/goal`, `/heartbeat`) pour
 //! les indicateurs de l'IDE (à côté du sélecteur de modèle).
 //!
 //! L'état est tenu par le crochet de session (`axecode_app::session_commands`)
@@ -26,7 +26,7 @@ fn state_path(data_dir: &Path, id: &str) -> SessionResult<PathBuf> {
 pub fn view(state: &Value) -> Value {
     let get = |k: &str| state.get(k).cloned().unwrap_or(Value::Null);
     json!({"goal": get("goal"), "heartbeat": get("heartbeat"), "autonomous": get("autonomous"),
-        // axe:guet — guets en cours (indicateur à côté du modèle).
+        // guet — guets en cours (indicateur à côté du modèle).
         "guets": state.get("guets").cloned().filter(Value::is_array).unwrap_or_else(|| json!([]))})
 }
 
@@ -42,7 +42,7 @@ pub fn apply(state: &mut Value, op: &str) -> SessionResult<()> {
         "goal_clear" => {
             obj.insert("goal".into(), Value::Null);
         }
-        // axe:guet — `guet_annuler:<id>` (ou `guet_annuler` : tous). La tâche du guet
+        // guet — `guet_annuler:<id>` (ou `guet_annuler` : tous). La tâche du guet
         // relit l'état et s'arrête (la commande lancée est tuée).
         op if op == "guet_annuler" || op.starts_with("guet_annuler:") => {
             let cible = op.strip_prefix("guet_annuler:").unwrap_or("");
@@ -73,7 +73,7 @@ pub fn apply(state: &mut Value, op: &str) -> SessionResult<()> {
     Ok(())
 }
 
-// axe:goal165 — same store, same lock and atomic write as the session hook
+// goal165 — same store, same lock and atomic write as the session hook
 // (`axecode_app::session_commands`): one source of truth for the objective.
 pub fn state(daemon: &Daemon, id: &str) -> SessionResult<Value> {
     state_path(daemon.data_dir(), id)?;

@@ -1,4 +1,4 @@
-// axe:providers — subscription quota indicator (titlebar). Polls the
+// providers — subscription quota indicator (titlebar). Polls the
 // `provider_quota` IPC; hides itself when no provider exposes a quota.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";

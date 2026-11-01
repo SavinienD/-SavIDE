@@ -1,4 +1,4 @@
-// axe:e4 — écran « Registre » (étape 4) + « Publier vers Prime » (étape 1), via l'API du portail
+// e4 — écran « Registre » (étape 4) + « Publier vers Prime » (étape 1), via l'API du portail
 // /prime/api/registre/v1 (le jeton de l'app est ajouté côté Rust par cloudApi).
 import { useCallback, useEffect, useState } from "react";
 import { errorText, getJson, postJson } from "../cloud/cloudApi";

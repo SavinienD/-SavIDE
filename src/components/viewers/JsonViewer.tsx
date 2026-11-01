@@ -1,4 +1,4 @@
-// axe:viewers — collapsible JSON tree. Only expanded nodes render their
+// viewers — collapsible JSON tree. Only expanded nodes render their
 // children and long arrays/objects are paged, so large documents stay fast.
 // The source stays editable in Monaco ("Code"); the tree follows the buffer.
 

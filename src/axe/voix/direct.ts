@@ -1,4 +1,4 @@
-// axe:0.1.75 — dictée en direct (moyens gratuits : Whisper local de la VM ou du poste).
+// 0.1.75 — dictée en direct (moyens gratuits : Whisper local de la VM ou du poste).
 // Pendant qu'on parle, l'audio est découpé en morceaux de ≈ 3 s (de préférence sur un
 // court silence), transcrits au fil de l'eau : texte provisoire grisé, remplacé à la fin
 // par la transcription de tout l'enregistrement (puis, en option, le nettoyage par l'IA

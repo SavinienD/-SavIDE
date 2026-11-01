@@ -1,6 +1,6 @@
 mod auth;
 mod client;
-// axe:providers — declared OpenAI-compatible endpoints.
+// providers — declared OpenAI-compatible endpoints.
 pub mod compatible;
 mod model_info;
 mod responses_stream;

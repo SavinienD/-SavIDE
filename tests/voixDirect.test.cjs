@@ -1,4 +1,4 @@
-// axe:0.1.75 — dictée en direct (morceaux de ≈ 3 s) et choix du modèle Whisper (gratuit, local).
+// 0.1.75 — dictée en direct (morceaux de ≈ 3 s) et choix du modèle Whisper (gratuit, local).
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const Module = require("node:module");
@@ -68,7 +68,7 @@ test("réglages : gratuits par défaut (pas de repli OpenAI), direct et taille a
   assert.equal(R.REGLAGES_VOIX_DEFAUT.modeleLocal, "auto"); // SavIDE : whisper.cpp du poste
 });
 
-// axe:0.1.77 — direct sans WebAudio : segments MediaRecorder relancés toutes les 3 s ;
+// 0.1.77 — direct sans WebAudio : segments MediaRecorder relancés toutes les 3 s ;
 // erreurs des morceaux montrées (avant : avalées, aperçu vide sans explication).
 test("secours du direct : segments MediaRecorder complets, relancés, arrêtés avec l'enregistrement", async () => {
   const minuteries = [];

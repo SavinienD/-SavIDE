@@ -3,9 +3,9 @@ import { auth, service, type AuthState, type SessionMeta } from "./api";
 import { Conversation } from "./Conversation";
 import { ConversationList } from "./ConversationList";
 import { Login } from "./Login";
-import { NewConversation } from "./NewConversation"; // axe:freechat
+import { NewConversation } from "./NewConversation"; // freechat
 
-// axe:freechat — `#/new` starts a free conversation.
+// freechat — `#/new` starts a free conversation.
 const NEW_ROUTE = "#/new";
 
 function useRoute(): [string | null, (id: string | null) => void, boolean] {
@@ -113,7 +113,7 @@ function Shell({ auth: authState, onLogout }: { auth: AuthState; onLogout: () =>
 
   const active = sessions.find((s) => s.id === activeId) ?? null;
 
-  // axe:freechat — the new session is shown right away (its `status` event
+  // freechat — the new session is shown right away (its `status` event
   // may arrive after the reply of `sessions.create`).
   const created = (meta: SessionMeta) => {
     setSessions((list) => (list.some((s) => s.id === meta.id) ? list : [...list, meta]));
@@ -134,7 +134,7 @@ function Shell({ auth: authState, onLogout }: { auth: AuthState; onLogout: () =>
           )}
         </header>
         {problem && <p className="error sidebar__problem">{problem}</p>}
-        {/* axe:freechat */}
+        {/* freechat */}
         <button
           type="button"
           className="sidebar__new"

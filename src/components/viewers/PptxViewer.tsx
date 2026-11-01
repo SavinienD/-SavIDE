@@ -1,4 +1,4 @@
-// axe:viewers — PowerPoint (.pptx) viewer. Slides are rebuilt from the XML
+// viewers — PowerPoint (.pptx) viewer. Slides are rebuilt from the XML
 // (positioned text, pictures, tables) and scaled to the available width; a
 // "Texte" mode lists every slide with its text. The rendering is
 // approximate and the toolbar says so.

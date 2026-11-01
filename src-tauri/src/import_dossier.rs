@@ -1,4 +1,4 @@
-// axe:import — « Importer ce dossier dans mon espace » : lit un dossier LOCAL (fichiers texte,
+// import — « Importer ce dossier dans mon espace » : lit un dossier LOCAL (fichiers texte,
 // sans .git / node_modules / target, ≤ 2 Mo par fichier, ≤ 5000 fichiers) pour que l'interface
 // le recopie dans l'espace cloud via les écritures habituelles.
 use std::path::Path;
@@ -39,7 +39,7 @@ pub(crate) fn local_folder_files(dir: String) -> Result<serde_json::Value, Strin
 }
 
 
-// axe:push-dossier - pousse un dossier ENTIER (binaires compris) dans l'espace cloud.
+// push-dossier - pousse un dossier ENTIER (binaires compris) dans l'espace cloud.
 fn lister(d: &Path, out: &mut Vec<std::path::PathBuf>) {
     let Ok(it) = std::fs::read_dir(d) else { return };
     for e in it.flatten() {

@@ -205,7 +205,7 @@ export function GitPanel({
 
   const refresh = useCallback(async (showSpinner: boolean) => {
     const ws = workspacePathRef.current;
-    // axe:0.1.75 — un relevé périodique ne doit pas annuler un relevé encore en cours
+    // 0.1.75 — un relevé périodique ne doit pas annuler un relevé encore en cours
     // (gros dépôt : `git status` > 6 s, chaque réponse était jetée et la liste restait vide).
     if (!showSpinner && enCoursRef.current === ws) return;
     enCoursRef.current = ws;

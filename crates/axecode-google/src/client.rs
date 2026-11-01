@@ -22,7 +22,7 @@ const PROD_BASE_URL: &str = "https://cloudcode-pa.googleapis.com/v1internal";
 const SANDBOX_BASE_URL: &str = "https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal";
 const AUTOPUSH_BASE_URL: &str = "https://autopush-cloudcode-pa.sandbox.googleapis.com/v1internal";
 const USER_AGENT: &str = "axecode/0.1";
-// axe:providers — Antigravity gates models by client version: 2.5 and below
+// providers — Antigravity gates models by client version: 2.5 and below
 // get 404 on the daily endpoint (then a misleading 429 on prod). Verified
 // 2026-10-15: 3.0.0 accepted. Override with PI_AI_ANTIGRAVITY_VERSION.
 const DEFAULT_ANTIGRAVITY_VERSION: &str = "3.0.0";
@@ -339,7 +339,7 @@ impl Provider for GoogleProvider {
     }
 
     async fn stream(&self, mut request: ProviderRequest) -> Result<ProviderStream> {
-        // axe:images — same 2000 px cap as Anthropic (smaller payloads,
+        // images — same 2000 px cap as Anthropic (smaller payloads,
         // and old transcripts with huge images stay usable).
         axecode_core::image_fit::fit_transcript_images_in_place(
             &mut request.transcript,
@@ -388,7 +388,7 @@ impl GoogleProvider {
                 status,
                 reqwest::StatusCode::FORBIDDEN | reqwest::StatusCode::NOT_FOUND
             ) {
-                // axe:providers — a 404 on the daily endpoint means the client
+                // providers — a 404 on the daily endpoint means the client
                 // version is refused; prod then answers a misleading 429. Keep
                 // the first, meaningful error.
                 if last_error.is_none() {

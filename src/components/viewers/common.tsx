@@ -1,4 +1,4 @@
-// axe:viewers — small building blocks shared by the viewers.
+// viewers — small building blocks shared by the viewers.
 
 import { useState, type ReactNode } from "react";
 import { Icon } from "@iconify/react";

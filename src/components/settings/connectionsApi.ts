@@ -1,4 +1,4 @@
-// axe:remote — typed wrappers over the connection registry IPC and the
+// remote — typed wrappers over the connection registry IPC and the
 // active connection shared by the sidebar, the Agents view and Settings > Service.
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";

@@ -1,4 +1,4 @@
-// axe:copier-code — bouton « Copier » au survol (en haut à droite) de chaque bloc de code
+// copier-code — bouton « Copier » au survol (en haut à droite) de chaque bloc de code
 // du chat et des blocs de commande / sortie des outils ; retour « Copié ».
 import { useRef, useState, type HTMLAttributes, type ReactNode } from "react";
 

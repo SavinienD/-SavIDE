@@ -1,4 +1,4 @@
-// axe:journal-espace — ouverture du journal (lecture seule) d'un agent depuis la vue Agents.
+// journal-espace — ouverture du journal (lecture seule) d'un agent depuis la vue Agents.
 // Un journal demandé au PC alors que l'agent vit dans l'espace (ancienne ouverture sans
 // machine) est relu sur la machine active ; jamais « session not found » brut à l'écran.
 const INTROUVABLE = /session not found/i;

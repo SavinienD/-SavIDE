@@ -23,7 +23,7 @@ pub struct MessagesRequest<'a> {
 pub struct CacheControl {
     #[serde(rename = "type")]
     pub kind: &'static str,
-    /// axe:cache — `"1h"` for the 1-hour cache; absent = 5 minutes.
+    /// cache — `"1h"` for the 1-hour cache; absent = 5 minutes.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ttl: Option<&'static str>,
 }

@@ -310,7 +310,7 @@ pub(super) fn reveal_path(path: &Path) -> Result<()> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
-        // axe:explorateur — sans le préfixe « \\?\ » (que explorer.exe ne comprend pas) ;
+        // explorateur — sans le préfixe « \\?\ » (que explorer.exe ne comprend pas) ;
         // explorer.exe rend souvent le code 1 même quand il a réussi : on ne le lit pas.
         let cible = axecode_app::workspace::os_path(path);
         __nw_std("explorer")
@@ -401,7 +401,7 @@ pub(super) fn skill_roots(workspace_root: &Path) -> Vec<PathBuf> {
     let mut roots = vec![
         workspace_root.join(".agents/skills"),
         workspace_root.join(".axecode/skills"),
-        axecode_harness::legacy_dirs::project_skills_dir(workspace_root), // axe:dossiers-anciens
+        axecode_harness::legacy_dirs::project_skills_dir(workspace_root), // dossiers-anciens
     ];
     if let Some(home) = home_dir() {
         roots.push(home.join(".agents/skills"));
@@ -468,7 +468,7 @@ pub(super) fn open_external_url(raw_url: &str) -> Result<()> {
     Ok(())
 }
 
-/// axe:explorateur — « Ouvrir avec… » : laisse l'utilisateur choisir l'application.
+/// explorateur — « Ouvrir avec… » : laisse l'utilisateur choisir l'application.
 /// Windows : boîte « Ouvrir avec » du système ; macOS : choix d'une application puis `open -a` ;
 /// Linux : choix d'un lanceur .desktop (zenity) puis `gtk-launch`, sinon `xdg-open`.
 pub(super) fn open_with_chooser(path: &Path) -> Result<()> {
@@ -778,7 +778,7 @@ pub(super) fn hex_value(byte: u8) -> Option<u8> {
     }
 }
 
-/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+/// 0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
 #[allow(dead_code)]
 fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
     #[allow(unused_mut)]

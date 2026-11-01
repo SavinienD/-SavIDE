@@ -23,12 +23,12 @@ use crate::{
 };
 
 pub const DEFAULT_IDLE_UNLOAD: Duration = Duration::from_secs(30 * 60);
-/// axe:menage — a finished sub-agent (session with a parent) frees its kernel
+/// menage — a finished sub-agent (session with a parent) frees its kernel
 /// after 2 minutes; the other sessions keep [`DEFAULT_IDLE_UNLOAD`].
 pub const DEFAULT_SUBAGENT_IDLE_UNLOAD: Duration = Duration::from_secs(2 * 60);
-/// axe:menage — a sub-agent finished for longer than this goes to the archive.
+/// menage — a sub-agent finished for longer than this goes to the archive.
 pub const DEFAULT_SUBAGENT_ARCHIVE_AFTER: Duration = Duration::from_secs(60 * 60);
-/// axe:menage — archived files untouched for this long are compressed (`.gz`).
+/// menage — archived files untouched for this long are compressed (`.gz`).
 pub const DEFAULT_ARCHIVE_COMPRESS_AFTER: Duration = Duration::from_secs(7 * 24 * 60 * 60);
 pub const DEFAULT_SHUTDOWN_GRACE: Duration = Duration::from_secs(60);
 /// End-of-turn kernel snapshot deadline: past it the kernel is dropped and the
@@ -46,11 +46,11 @@ pub struct DaemonConfig {
     pub endpoint: String,
     pub version: String,
     pub idle_unload: Duration,
-    /// axe:menage — idle window before a sub-agent's runtime is unloaded.
+    /// menage — idle window before a sub-agent's runtime is unloaded.
     pub subagent_idle_unload: Duration,
-    /// axe:menage — idle time after which a finished sub-agent is archived.
+    /// menage — idle time after which a finished sub-agent is archived.
     pub subagent_archive_after: Duration,
-    /// axe:menage — age after which an archived file is compressed.
+    /// menage — age after which an archived file is compressed.
     pub archive_compress_after: Duration,
     pub shutdown_grace: Duration,
     /// See [`DEFAULT_SNAPSHOT_TIMEOUT`].
@@ -63,7 +63,7 @@ pub struct DaemonConfig {
     pub workspace_root: Option<PathBuf>,
     /// V2 L4: service-wide shared space (Git repository); None disables `share.*`.
     pub shared_root: Option<PathBuf>,
-    /// axe:remote — WebSocket listener (`--listen`), off by default.
+    /// remote — WebSocket listener (`--listen`), off by default.
     pub listen: Option<crate::listen::ListenConfig>,
 }
 
@@ -75,16 +75,16 @@ impl DaemonConfig {
             endpoint,
             version: env!("CARGO_PKG_VERSION").to_string(),
             idle_unload: DEFAULT_IDLE_UNLOAD,
-            subagent_idle_unload: DEFAULT_SUBAGENT_IDLE_UNLOAD, // axe:menage
-            subagent_archive_after: DEFAULT_SUBAGENT_ARCHIVE_AFTER, // axe:menage
-            archive_compress_after: DEFAULT_ARCHIVE_COMPRESS_AFTER, // axe:menage
+            subagent_idle_unload: DEFAULT_SUBAGENT_IDLE_UNLOAD, // menage
+            subagent_archive_after: DEFAULT_SUBAGENT_ARCHIVE_AFTER, // menage
+            archive_compress_after: DEFAULT_ARCHIVE_COMPRESS_AFTER, // menage
             shutdown_grace: DEFAULT_SHUTDOWN_GRACE,
             snapshot_timeout: DEFAULT_SNAPSHOT_TIMEOUT,
             stop_grace: DEFAULT_STOP_GRACE,
             auto_shutdown: true,
             workspace_root: None,
             shared_root: None, // v2-l4
-            listen: None, // axe:remote
+            listen: None, // remote
         }
     }
 }
@@ -121,20 +121,20 @@ pub struct Daemon {
     pub(crate) shutting_down: AtomicBool,
     started_at_ms: i64,
     pub(crate) last_activity: Mutex<Instant>,
-    /// axe:eveil — Windows kept awake while a session runs.
+    /// eveil — Windows kept awake while a session runs.
     pub(crate) keep_awake: crate::keep_awake::KeepAwake,
-    /// axe:menage — archived sub-agents (sessions with a parent), by id. The
+    /// menage — archived sub-agents (sessions with a parent), by id. The
     /// runtimes still see them (`SessionHost::list_sessions`), and a request
     /// on one of them restores it first: a parent never notices the archive.
     pub(crate) archived_subagents: Mutex<HashMap<String, SessionMeta>>,
-    /// axe:menage — serialises the moves in and out of the archive folder.
+    /// menage — serialises the moves in and out of the archive folder.
     pub(crate) archive_lock: Mutex<()>,
-    /// axe:menage — `Slot::last_active` of the sessions loaded at startup and
+    /// menage — `Slot::last_active` of the sessions loaded at startup and
     /// not touched since: their last activity is the journal's.
     pub(crate) boot: Instant,
-    /// axe:menage — last compression pass of the archives (startup, then daily).
+    /// menage — last compression pass of the archives (startup, then daily).
     pub(crate) last_compress: Mutex<Option<Instant>>,
-    /// axe:file-demon — files d'attente des messages, par session.
+    /// file-demon — files d'attente des messages, par session.
     pub(crate) queues: crate::queue_rpc::QueuesState,
 }
 
@@ -148,7 +148,7 @@ impl Daemon {
         Self::with_keep_awake(config, factory, crate::keep_awake::KeepAwake::system())
     }
 
-    /// axe:eveil — [`Daemon::new`] with the keep-awake requests sent to
+    /// eveil — [`Daemon::new`] with the keep-awake requests sent to
     /// `keep_awake` (a test recorder; `new` uses [`KeepAwake::system`]).
     ///
     /// [`KeepAwake::system`]: crate::keep_awake::KeepAwake::system
@@ -186,7 +186,7 @@ impl Daemon {
                                 cancel: None,
                                 queue: VecDeque::new(),
                                 held: Vec::new(),
-                                last_active: boot, // axe:menage — untouched since the start
+                                last_active: boot, // menage — untouched since the start
                             },
                         );
                     }
@@ -231,11 +231,11 @@ impl Daemon {
             started_at_ms: now_ms(),
             last_activity: Mutex::new(Instant::now()),
             keep_awake,
-            archived_subagents: Mutex::new(archived_subagents), // axe:menage
-            archive_lock: Mutex::new(()),                         // axe:menage
-            boot,                                                 // axe:menage
-            last_compress: Mutex::new(None),                      // axe:menage
-            queues: Mutex::new(Default::default()),               // axe:file-demon
+            archived_subagents: Mutex::new(archived_subagents), // menage
+            archive_lock: Mutex::new(()),                         // menage
+            boot,                                                 // menage
+            last_compress: Mutex::new(None),                      // menage
+            queues: Mutex::new(Default::default()),               // file-demon
         })
     }
 
@@ -344,7 +344,7 @@ impl Daemon {
             "version": self.config.version,
             "protocol": crate::protocol::PROTOCOL_VERSION,
             "endpoint": self.config.endpoint,
-            "listen": self.config.listen.as_ref().map(|l| l.addr.to_string()), // axe:remote
+            "listen": self.config.listen.as_ref().map(|l| l.addr.to_string()), // remote
             "dataDir": self.config.data_dir,
             "startedAtMs": self.started_at_ms,
             "clients": clients,

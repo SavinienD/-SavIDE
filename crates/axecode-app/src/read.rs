@@ -118,7 +118,7 @@ impl ReadTool {
         let bytes =
             fs::read(&path).with_context(|| format!("unable to read file {}", path.display()))?;
         if let Some(media_type) = image_media_type {
-            // axe:images — larger than 2000 px: shrunk before it reaches the model.
+            // images — larger than 2000 px: shrunk before it reaches the model.
             let original_size = bytes.len();
             let (media_type, bytes, note) = match axecode_core::image_fit::shrink_image_bytes(
                 &bytes,

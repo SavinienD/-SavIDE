@@ -1,4 +1,4 @@
-// axe:v2-e12 — onglet « Prime Agent » epingle : l'application s'attache a la session que
+// v2-e12 — onglet « Prime Agent » epingle : l'application s'attache a la session que
 // Prime occupe DEJA en production, a travers le WebSocket terminal du portail
 // (`wss://<hote>/prime/ws/terminal?mode=prime`). Aucune seconde instance de Prime n'est
 // lancee : on ne fait que relayer des octets de terminal, comme le navigateur le fait.

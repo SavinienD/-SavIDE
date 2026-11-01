@@ -7,7 +7,7 @@ import {
   type ServiceStatus,
 } from "./connectionsApi";
 
-// axe:e5 — « Joindre un autre appareil » : ce n'est pas « choisir où tourne
+// e5 — « Joindre un autre appareil » : ce n'est pas « choisir où tourne
 // l'application » (l'application travaille toujours dans l'espace Axe Cloud),
 // c'est ajouter un service SavIDE déjà installé ailleurs pour lui confier
 // du calcul. Les appareils sont de vrais services distants : SSH ou adresse.

@@ -1,4 +1,4 @@
-// axe:daemon — the app executable doubles as the background service
+// daemon — the app executable doubles as the background service
 // (`axecode --daemon serve`) and, in IDE mode, as a client attached to it.
 
 use crate::*;
@@ -27,7 +27,7 @@ fn daemon_registry() -> Registry {
     if let Ok(provider) = KimiProvider::from_default_sources() {
         providers.insert("kimi".into(), Arc::new(provider));
     }
-    // axe:gemini-web
+    // gemini-web
     if let Ok(provider) = axecode_gemini_web::GeminiWebProvider::from_default_sources() {
         providers.insert(axecode_gemini_web::PROVIDER_ID.into(), Arc::new(provider));
     }
@@ -105,7 +105,7 @@ fn resource_dirs() -> Vec<PathBuf> {
         dir.join("../Resources"),
         dir.join("../lib/axecode"),
         dir.join("../lib/SavIDE"),
-        // axe:migration - installation of before the rename (read only).
+        // migration - installation of before the rename (read only).
     ]
 }
 
@@ -133,11 +133,11 @@ pub(crate) fn run_daemon_if_requested() -> bool {
 
 /// Turn hooks contributed by other chantiers (goal, heartbeat, refine...).
 fn daemon_hooks() -> Vec<Arc<dyn axecode_app::repl::TurnHook>> {
-    // axe:goal — /goal, /autonomous, /heartbeat, /refine, /compact.
+    // goal — /goal, /autonomous, /heartbeat, /refine, /compact.
     let providers: Arc<dyn ProviderResolver> =
         Arc::new(DaemonProviders::new());
     vec![axecode_app::session_commands::SessionCommandsHook::new(providers)]
-    // axe:goal end
+    // goal end
 }
 
 // ----- IDE client -----------------------------------------------------------
@@ -147,7 +147,7 @@ pub(crate) struct DaemonState {
     pub(crate) client: Mutex<Option<DaemonClient>>,
 }
 
-/// axe:flux-unique — identifiant propre à chaque client démon (une reconnexion = nouvelle source).
+/// flux-unique — identifiant propre à chaque client démon (une reconnexion = nouvelle source).
 pub(crate) fn next_source_id() -> u64 {
     static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
     NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
@@ -185,7 +185,7 @@ async fn connect(app: &AppHandle) -> std::result::Result<DaemonClient, String> {
 }
 
 /// Starts (or attaches to) the daemon at IDE startup, in the background.
-// axe:miroir-vm - option (b) : les conversations locales tournent sur le PC mais sont
+// miroir-vm - option (b) : les conversations locales tournent sur le PC mais sont
 // recopiees sur la VM (espace axe-cloud, dossier .axe-conversations/) toutes les 60 s.
 fn start_vm_mirror(app: &AppHandle) {
     if crate::EDITION_LOCALE {
@@ -205,12 +205,12 @@ fn start_vm_mirror(app: &AppHandle) {
                 if ws.starts_with("axe-cloud://") { continue; }
                 let Ok(Some(conv)) = state.store.load_conversation(&ws, &id) else { continue };
                 let body = serde_json::json!({"workspace": ws, "conversation": conv}).to_string().into_bytes();
-                // axe:miroir-vm - creation du dossier tant qu'elle n'a pas reussi.
+                // miroir-vm - creation du dossier tant qu'elle n'a pas reussi.
                 if !dossier_ok {
                     dossier_ok = crate::connections::call_on(&app, Some("axe-cloud"), "fs.mkdir",
                         json!({"path": ".axe-conversations"})).await.is_ok();
                 }
-                // axe:sub-n - grosses conversations (> 1 Mo) : la trame unique bloquait le miroir.
+                // sub-n - grosses conversations (> 1 Mo) : la trame unique bloquait le miroir.
                 // Envoi en morceaux de 512 Ko (1er tronque, suivants en append) ; un fichier
                 // incomplet est reecrit au tour suivant car `since` n'avance que si TOUT a reussi.
                 let part = format!(".axe-conversations/{id}.json");
@@ -227,13 +227,13 @@ fn start_vm_mirror(app: &AppHandle) {
                     }
                 }
                 if let Err(e) = &res { tracing::warn!(conversation = %id, error = %e, "miroir VM"); }
-                // axe:miroir-vm - etat visible dans l'appli (badge) : ok / erreur exacte.
+                // miroir-vm - etat visible dans l'appli (badge) : ok / erreur exacte.
                 let _ = tauri::Emitter::emit(&app, "axe://mirror-status", json!({
                     "ok": res.is_ok(), "id": id, "error": res.as_ref().err(),
                     "atMs": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0)}));
                 if res.is_ok() { ok_max = ok_max.max(upd); } else { echec_min = echec_min.min(upd); }
             }
-            // axe:sub-n - ne pas depasser une conversation en echec : on la retentera.
+            // sub-n - ne pas depasser une conversation en echec : on la retentera.
             since = since.max(if echec_min == i64::MAX { ok_max } else { ok_max.min(echec_min - 1) });
         }
     });
@@ -241,7 +241,7 @@ fn start_vm_mirror(app: &AppHandle) {
 
 pub(crate) fn attach_on_startup(app: &AppHandle) {
     start_vm_mirror(app);
-    // axe:providers — in-session model changes are journaled (model_switch)
+    // providers — in-session model changes are journaled (model_switch)
     // when the conversation already lives in the daemon.
     let listener_app = app.clone();
     tauri::Listener::listen(app, "axe://model-switch", move |event| {
@@ -274,16 +274,16 @@ pub(crate) fn attach_on_startup(app: &AppHandle) {
 #[tauri::command]
 pub(crate) async fn daemon_status(
     app: AppHandle,
-    connection: Option<String>, // axe:remote
+    connection: Option<String>, // remote
 ) -> std::result::Result<Value, String> {
-    // axe:remote
+    // remote
     if let Some(id) = connection.as_deref().filter(|id| *id != crate::connections::LOCAL_ID) {
         let mut status = crate::connections::call_on(&app, Some(id), "status", json!({})).await?;
         status["running"] = json!(true);
         status["remote"] = json!(true);
         return Ok(status);
     }
-    // axe:remote end
+    // remote end
     let lock = axecode_daemon::protocol::read_lock(&data_dir()?);
     let state = app.state::<DaemonState>();
     let connected = state.client.lock().await.as_ref().is_some_and(|c| !c.is_closed());
@@ -301,7 +301,7 @@ pub(crate) struct DaemonShutdownInput {
     #[serde(default)]
     force: bool,
     #[serde(default)]
-    connection: Option<String>, // axe:remote
+    connection: Option<String>, // remote
 }
 
 #[tauri::command]
@@ -309,11 +309,11 @@ pub(crate) async fn daemon_shutdown(
     app: AppHandle,
     input: DaemonShutdownInput,
 ) -> std::result::Result<Value, String> {
-    // axe:remote
+    // remote
     if let Some(id) = input.connection.as_deref().filter(|id| *id != crate::connections::LOCAL_ID) {
         return crate::connections::call_on(&app, Some(id), "shutdown", json!({"force": input.force})).await;
     }
-    // axe:remote end
+    // remote end
     let client = connect(&app).await?;
     let result = client.call("shutdown", json!({"force": input.force})).await?;
     *app.state::<DaemonState>().client.lock().await = None;
@@ -323,7 +323,7 @@ pub(crate) async fn daemon_shutdown(
 #[tauri::command]
 pub(crate) async fn daemon_sessions(
     app: AppHandle,
-    connection: Option<String>, // axe:remote
+    connection: Option<String>, // remote
 ) -> std::result::Result<Value, String> {
     crate::connections::call_on(&app, connection.as_deref(), "sessions.list", json!({})).await
 }
@@ -334,7 +334,7 @@ pub(crate) struct DaemonCallInput {
     #[serde(default)]
     params: Value,
     #[serde(default)]
-    connection: Option<String>, // axe:remote
+    connection: Option<String>, // remote
 }
 
 /// Generic passthrough for the Agents view, `/tree`, etc.
@@ -346,7 +346,7 @@ pub(crate) async fn daemon_call(
     crate::connections::call_on(&app, input.connection.as_deref(), &input.method, input.params).await
 }
 
-/// axe:harness — direct daemon call for other IDE modules.
+/// harness — direct daemon call for other IDE modules.
 pub(crate) async fn daemon_call_value(
     app: &AppHandle,
     method: &str,
@@ -362,13 +362,13 @@ pub(crate) struct BridgeTurn {
     workspace_id: String,
     in_text: bool,
     in_thinking: bool,
-    /// axe:parcours-collegue — dernière erreur affichée (journal puis flux : une seule fois).
+    /// parcours-collegue — dernière erreur affichée (journal puis flux : une seule fois).
     last_error: Option<String>,
-    /// axe:flux-unique — source (client démon) qui alimente ce tour, et dernier événement reçu.
+    /// flux-unique — source (client démon) qui alimente ce tour, et dernier événement reçu.
     stream_owner: Option<(String, std::time::Instant)>,
 }
 
-/// axe:flux-unique — le même tour peut arriver par plusieurs clients démon (démon local
+/// flux-unique — le même tour peut arriver par plusieurs clients démon (démon local
 /// + une ou plusieurs connexions distantes vers la même VM, ou une connexion rouverte
 /// pendant que l'ancienne vit encore). Chaque client relaie les mêmes deltas avec son
 /// propre retard : le texte s'affichait en double, entremêlé (« Ça corÇa corrige »).
@@ -393,12 +393,12 @@ pub(crate) fn accept_stream_source(
 #[derive(Default)]
 pub(crate) struct Bridge {
     turns: StdMutex<HashMap<String, BridgeTurn>>,
-    /// axe:commandes — conversation -> dossier, pour suivre les tours lancés par le
+    /// commandes — conversation -> dossier, pour suivre les tours lancés par le
     /// service lui-même (réveil /heartbeat, /autonomous) : avant, ils étaient ignorés.
     known: StdMutex<HashMap<String, String>>,
 }
 
-/// axe:commandes — `(message, at_ms)` si l'entrée de journal est un réveil /heartbeat.
+/// commandes — `(message, at_ms)` si l'entrée de journal est un réveil /heartbeat.
 pub(crate) fn heartbeat_from_entry(data: &Value) -> Option<(String, i64)> {
     if data.get("kind").and_then(Value::as_str) != Some("message") {
         return None;
@@ -415,7 +415,7 @@ pub(crate) fn heartbeat_from_entry(data: &Value) -> Option<(String, i64)> {
         .filter_map(|p| p.get("text").and_then(Value::as_str))
         .collect();
     let ts = data.get("ts").and_then(Value::as_i64).unwrap_or(0);
-    // axe:guet — réveil d'un guet : même bulle discrète « guet g… : terminée ».
+    // guet — réveil d'un guet : même bulle discrète « guet g… : terminée ».
     if let Some((id, statut, _)) = axecode_app::guet::lire_reveil(&text) {
         return Some((format!("guet {id} : {}", axecode_app::guet::libelle_statut(&statut)), ts));
     }
@@ -423,7 +423,7 @@ pub(crate) fn heartbeat_from_entry(data: &Value) -> Option<(String, i64)> {
     Some((body, at_ms.unwrap_or(ts)))
 }
 
-/// axe:commandes — un tour que l'IDE n'a pas lancé commence (réveil, continuation) :
+/// commandes — un tour que l'IDE n'a pas lancé commence (réveil, continuation) :
 /// il faut le suivre si la conversation est connue de ce poste.
 fn adopts_turn(event: &DaemonEvent) -> bool {
     match event.event.as_str() {
@@ -444,7 +444,7 @@ pub(crate) fn repl_agent_enabled() -> bool {
         .unwrap_or(true)
 }
 
-// axe:v2-l2.4c — espace cloud : l'IDE travaille sur un identifiant virtuel
+// v2-l2.4c — espace cloud : l'IDE travaille sur un identifiant virtuel
 // `axe-cloud://<connexion>/<racine>` qui n'existe pas sur le poste. L'agent doit
 // alors tourner sur le service, dans le dossier réel exposé par `fs.root`.
 
@@ -475,7 +475,7 @@ pub(crate) async fn cloud_service_workspace(
     if path.is_empty() {
         None
     } else {
-        // axe:cloud-sous-dossier — `axe-cloud://<connexion>/<racine>/<sous/dossier>` ouvert
+        // cloud-sous-dossier — `axe-cloud://<connexion>/<racine>/<sous/dossier>` ouvert
         // depuis l'accueil : l'agent travaille dans le sous-dossier, pas à la racine.
         let mut out = PathBuf::from(path);
         for part in cloud_subdir_parts(workspace_path).unwrap_or_default() {
@@ -514,7 +514,7 @@ pub(crate) fn is_bridged(app: &AppHandle, conversation_id: &str) -> bool {
 }
 
 /// Runs a chat turn in the daemon. `conversation_id` is the session id.
-/// axe:file-demon — prépare la session du service et le message (commun à
+/// file-demon — prépare la session du service et le message (commun à
 /// l'envoi direct et à la file d'attente tenue par le service).
 async fn prepare_repl(
     app: &AppHandle,
@@ -527,7 +527,7 @@ async fn prepare_repl(
         .store
         .load_conversation(&workspace_id, &input.conversation_id)
         .map_err(error_to_string)?;
-    // axe:parcours-collegue — conversation d'espace créée par « + » : pas de ligne locale.
+    // parcours-collegue — conversation d'espace créée par « + » : pas de ligne locale.
     let (mut conversation, adopted) = conversation_to_send(
         stored,
         cloud_connection_id(&workspace_root).is_some(),
@@ -540,7 +540,7 @@ async fn prepare_repl(
         input.model.as_ref().map(|m| ModelInput { provider: m.provider.clone(), name: m.name.clone() }),
         input.thinking,
     );
-    // axe:v2-l2.4c — sur un chemin virtuel cloud, le prompt additionnel peut
+    // v2-l2.4c — sur un chemin virtuel cloud, le prompt additionnel peut
     // rester vide : cela ne doit pas bloquer l'envoi.
     let extra = system_prompt_for_workspace(&workspace_root, "").unwrap_or_default();
     let message = build_user_message(
@@ -550,15 +550,15 @@ async fn prepare_repl(
         None,
         input.message_visibility.unwrap_or(MessageVisibilityInput::Normal),
     );
-    // axe:un-seul-espace - conversation d'un espace cloud : le tour part sur le daemon
+    // un-seul-espace - conversation d'un espace cloud : le tour part sur le daemon
     // de la VM (avant : daemon LOCAL du PC, d'ou les messages sans reponse).
     let client = match cloud_connection_id(&workspace_root) {
         Some(id) => crate::connections::connect_remote(app, &id).await?,
         None => connect(app).await?,
     };
-    // axe:v2-l2.4c — espace cloud : l'agent tourne sur le service, dans le
+    // v2-l2.4c — espace cloud : l'agent tourne sur le service, dans le
     // chemin réel (`fs.root`) ; l'IDE ne garde que l'identifiant virtuel.
-    // axe:freechat — sinon, une conversation libre travaille dans son dossier privé.
+    // freechat — sinon, une conversation libre travaille dans son dossier privé.
     let session_workspace = match cloud_service_workspace(app, &workspace_root).await {
         Some(service_root) => service_root,
         None => crate::freechat::session_workspace(&workspace_root, &conversation.id),
@@ -579,7 +579,7 @@ async fn prepare_repl(
             }),
         )
         .await?;
-    // axe:parcours-collegue — conversation adoptée : son modèle n'est connu que du service,
+    // parcours-collegue — conversation adoptée : son modèle n'est connu que du service,
     // le modèle choisi dans le compositeur lui est toujours appliqué.
     if adopted || conversation.model != model {
         client
@@ -589,7 +589,7 @@ async fn prepare_repl(
     Ok((client, conversation, message, model, adopted, workspace_id))
 }
 
-/// axe:reecrire-repl — « Modifier » un message déjà envoyé dans une conversation REPL
+/// reecrire-repl — « Modifier » un message déjà envoyé dans une conversation REPL
 /// (sans dossier, dossier en mode REPL) : la branche du journal repart du parent
 /// du message visé (`sessions.move_leaf`), puis le nouveau texte est envoyé au REPL.
 /// Avant, la réécriture repassait par l'agent classique, sans le REPL.
@@ -672,7 +672,7 @@ pub(crate) async fn send_repl_message(
     Ok(())
 }
 
-/// axe:parcours-collegue — la conversation à envoyer, et si elle est « adoptée ».
+/// parcours-collegue — la conversation à envoyer, et si elle est « adoptée ».
 /// Une conversation d'un espace Axe Cloud créée par « + » (`sessions.create` sur la VM)
 /// n'a pas de ligne dans le magasin du PC : avant, l'envoi s'arrêtait sur
 /// « conversation introuvable ». Le service la connaît (historique, titre) : on l'envoie
@@ -705,7 +705,7 @@ pub(crate) fn conversation_to_send(
     }
 }
 
-/// axe:parcours-collegue — message d'une entrée de journal « turn_error » (événement `entry`).
+/// parcours-collegue — message d'une entrée de journal « turn_error » (événement `entry`).
 pub(crate) fn journal_turn_error(data: &Value) -> Option<String> {
     if data.get("kind").and_then(Value::as_str) != Some("extension")
         || data.get("name").and_then(Value::as_str) != Some("turn_error")
@@ -721,7 +721,7 @@ pub(crate) fn journal_turn_error(data: &Value) -> Option<String> {
     (!message.is_empty()).then(|| message.to_string())
 }
 
-/// axe:parcours-collegue — la même erreur arrive deux fois (entrée de journal puis flux) :
+/// parcours-collegue — la même erreur arrive deux fois (entrée de journal puis flux) :
 /// elle n'est transmise qu'une fois.
 fn first_turn_error(turn: &mut BridgeTurn, message: String) -> Option<String> {
     if turn.last_error.as_deref() == Some(message.as_str()) {
@@ -732,7 +732,7 @@ fn first_turn_error(turn: &mut BridgeTurn, message: String) -> Option<String> {
 }
 
 pub(crate) async fn cancel_repl_turn(app: &AppHandle, conversation_id: &str) -> bool {
-    // axe:un-seul-espace - arreter aussi le tour s'il tourne sur la VM.
+    // un-seul-espace - arreter aussi le tour s'il tourne sur la VM.
     let ids: Vec<String> = app.state::<crate::connections::ConnectionsState>().clients.lock().await.keys().cloned().collect();
     let mut stopped = false;
     for id in ids {
@@ -769,7 +769,7 @@ pub(crate) fn bridge_event(app: &AppHandle, event: &DaemonEvent, source: &str) {
     let workspace_id = {
         let bridge = bridge(app);
         let Ok(mut turns) = bridge.turns.lock() else { return };
-        // axe:commandes — tour lancé par le service (réveil /heartbeat, /autonomous).
+        // commandes — tour lancé par le service (réveil /heartbeat, /autonomous).
         if !turns.contains_key(session_id) && adopts_turn(event) {
             let known = bridge.known.lock().ok().and_then(|k| k.get(session_id).cloned());
             let workspace = known.or_else(|| {
@@ -854,7 +854,7 @@ pub(crate) fn bridge_event(app: &AppHandle, event: &DaemonEvent, source: &str) {
                             events.push(AgentEvent::Error { message });
                         }
                     }
-                    // axe:reprise — stream cut, the daemon sends the request
+                    // reprise — stream cut, the daemon sends the request
                     // again: the live message starts over.
                     "stream_retry" => {
                         turn.in_text = false;
@@ -864,7 +864,7 @@ pub(crate) fn bridge_event(app: &AppHandle, event: &DaemonEvent, source: &str) {
                     _ => {}
                 }
             }
-            // axe:parcours-collegue — erreur de tour seulement journalisée (fournisseur absent de
+            // parcours-collegue — erreur de tour seulement journalisée (fournisseur absent de
             // l'espace, moteur Python arrêté, worker relancé trop souvent : daemon worker.rs) :
             // avant, le tour se terminait sans rien afficher.
             "entry" => {
@@ -928,7 +928,7 @@ async fn finish_turn(app: AppHandle, workspace_id: String, session_id: String) {
 mod tests {
     use super::*;
 
-    // axe:reecrire-repl — « Modifier » le 2e message : la branche repart de la réponse 1.
+    // reecrire-repl — « Modifier » le 2e message : la branche repart de la réponse 1.
     #[test]
     fn reecriture_repart_du_parent_du_message() {
         use axecode_core::session::{JournalEntry, JournalEntryKind};
@@ -949,7 +949,7 @@ mod tests {
         assert!(rewrite_parent_entry(&history, &tree, 1).is_err());
     }
 
-    // axe:flux-unique — reproduit la capture : deux clients démon relaient le même flux
+    // flux-unique — reproduit la capture : deux clients démon relaient le même flux
     // avec un décalage ; sans filtre « Ça corÇa corrige », avec filtre le texte exact.
     #[test]
     fn doubled_stream_from_two_clients_is_filtered() {
@@ -972,7 +972,7 @@ mod tests {
         assert!(!accept_stream_source(&mut owner, "A", later));
     }
 
-    // axe:v2-l2.4c — analyse pure du chemin d'espace virtuel cloud.
+    // v2-l2.4c — analyse pure du chemin d'espace virtuel cloud.
     #[test]
     fn cloud_connection_id_reads_the_virtual_path() {
         assert_eq!(
@@ -1062,7 +1062,7 @@ mod conversation_to_send_tests {
         ModelRef::new("google", "gemini-3.8-flash")
     }
 
-    // axe:parcours-collegue — « + » dans l'espace d'un collègue : session créée sur la VM,
+    // parcours-collegue — « + » dans l'espace d'un collègue : session créée sur la VM,
     // aucune ligne dans le magasin du PC. Avant : « conversation not found ».
     #[test]
     fn espace_cloud_conversation_absente_du_pc_est_envoyee() {
@@ -1110,7 +1110,7 @@ mod cloud_subdir_tests {
     }
 }
 
-/// axe:file-demon — met un message dans la file du service (envoyé par le
+/// file-demon — met un message dans la file du service (envoyé par le
 /// service à la fin du tour, même si l'IDE montre un autre dossier).
 #[derive(Debug, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]

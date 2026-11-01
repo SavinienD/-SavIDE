@@ -9,8 +9,8 @@ import {
   type HarnessScope,
   type RefinementRecord,
 } from "./harnessApi";
-import { CLOUD_CONNECTION, cloudApi } from "../cloud/cloudApi"; // axe:e13
-import { cloudConnectionFromPath } from "../../lib/ipc"; // axe:e13
+import { CLOUD_CONNECTION, cloudApi } from "../cloud/cloudApi"; // e13
+import { cloudConnectionFromPath } from "../../lib/ipc"; // e13
 import "./harness.css";
 
 type Props = { workspacePath: string };
@@ -30,7 +30,7 @@ function modelTag(tags: string[]): string {
 }
 
 /** Settings > Harness: browse, edit, promote/demote entries and roll back refinements. */
-/// axe:e13 — la connexion Axe Cloud, quand la session est ouverte. Le poste ne
+/// e13 — la connexion Axe Cloud, quand la session est ouverte. Le poste ne
 /// garde aucun secret : c'est le service qui répond.
 async function connexionCloud(): Promise<string | null> {
   try {
@@ -44,10 +44,10 @@ async function connexionCloud(): Promise<string | null> {
 
 export function HarnessPane({ workspacePath }: Props) {
   const [tab, setTab] = useState<Tab>("prompt_note");
-  // axe:cleanup — harness Python skills live in Settings > Skills.
+  // cleanup — harness Python skills live in Settings > Skills.
   const kinds = HARNESS_KINDS.filter((kind) => kind.id !== "skill");
   const [entries, setEntries] = useState<HarnessEntry[]>([]);
-  // axe:e13 — le harnais de l'espace Axe Cloud (lecture seule ici).
+  // e13 — le harnais de l'espace Axe Cloud (lecture seule ici).
   const [serviceEntries, setServiceEntries] = useState<HarnessEntry[]>([]);
   const [serviceConnexion, setServiceConnexion] = useState<string | null>(null);
   const [serviceNote, setServiceNote] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export function HarnessPane({ workspacePath }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftBody, setDraftBody] = useState("");
-  // axe:cleanup — sub-agent profile fields stored as tags (`model:provider/name`, `disabled`).
+  // cleanup — sub-agent profile fields stored as tags (`model:provider/name`, `disabled`).
   const [draftModel, setDraftModel] = useState("");
   const [draftEnabled, setDraftEnabled] = useState(true);
   const [status, setStatus] = useState<string | null>(null);
@@ -75,7 +75,7 @@ export function HarnessPane({ workspacePath }: Props) {
     } catch (e) {
       setError(String(e));
     }
-    // axe:e13 — depuis le poste, le harnais de l'espace Axe Cloud se lit aussi
+    // e13 — depuis le poste, le harnais de l'espace Axe Cloud se lit aussi
     // (c'est la même source : rien à recopier, rien à synchroniser).
     if (cloudConnectionFromPath(workspacePath)) {
       // Dans l'espace lui-même, le harnais affiché EST le harnais de l'espace.
@@ -94,7 +94,7 @@ export function HarnessPane({ workspacePath }: Props) {
     try {
       setServiceEntries(await harnessApi.listFrom(connexion));
       setServiceNote(null);
-      // axe:shared-brain — les globales de l'espace sont injectées dans les tours
+      // shared-brain — les globales de l'espace sont injectées dans les tours
       // du poste via un miroir local, rafraîchi à chaque ouverture du panneau.
       try {
         const mirror = await harnessApi.cloudSync(connexion);
@@ -172,7 +172,7 @@ export function HarnessPane({ workspacePath }: Props) {
     }
   };
 
-  // axe:shared-brain - pousse le harnais global du poste vers l'espace.
+  // shared-brain - pousse le harnais global du poste vers l'espace.
   const publish = async () => {
     if (!serviceConnexion) return;
     setBusy(true);
@@ -236,7 +236,7 @@ export function HarnessPane({ workspacePath }: Props) {
     );
   };
 
-  // axe:refine-run — un affinage en cours se suit ici et peut être arrêté.
+  // refine-run — un affinage en cours se suit ici et peut être arrêté.
   const hasRunning = records.some((record) => record.outcome === "running");
   useEffect(() => {
     if (!hasRunning) return;

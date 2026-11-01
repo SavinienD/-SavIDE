@@ -1,4 +1,4 @@
-// axe:parcours-collegue — erreur d'un tour d'IA d'un espace Axe Cloud, en français lisible.
+// parcours-collegue — erreur d'un tour d'IA d'un espace Axe Cloud, en français lisible.
 //
 // Le compteur Axe Cloud (127.0.0.1:8096) répond au format Anthropic
 // {"type":"error","error":{"type":"api_error","message":"…"}} ; le client Rust en fait

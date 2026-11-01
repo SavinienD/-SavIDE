@@ -1,4 +1,4 @@
-// axe:viewers — zoomable image: fit / 1:1 / steps, Ctrl+wheel zoom, drag to
+// viewers — zoomable image: fit / 1:1 / steps, Ctrl+wheel zoom, drag to
 // pan when zoomed. Used for raster images and the SVG preview.
 
 import { useEffect, useRef, useState, type ReactNode } from "react";

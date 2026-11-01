@@ -1,4 +1,4 @@
-// axe:gemini-web — Gemini through the gemini.google.com web app: sign-in in a
+// gemini-web — Gemini through the gemini.google.com web app: sign-in in a
 // dedicated browser profile, status, sign-out, provider registration.
 
 use crate::*;

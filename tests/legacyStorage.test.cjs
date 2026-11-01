@@ -20,8 +20,8 @@ function charger(rel) {
 // Same block as the phone app (remote/public/app.js imports React from esm.sh).
 function blocDuMobile() {
   const source = fs.readFileSync(path.resolve(__dirname, "../remote/public/app.js"), "utf8");
-  const debut = source.indexOf("// axe:storage-migration-begin");
-  const fin = source.indexOf("// axe:storage-migration-end");
+  const debut = source.indexOf("// storage-migration-begin");
+  const fin = source.indexOf("// storage-migration-end");
   assert.ok(debut > 0 && fin > debut, "bloc de migration de remote/public/app.js");
   return new Function(
     `${source.slice(debut, fin)}\nreturn { legacyStorageKey, migrateLegacyStorage, STORAGE_MIGRATION_MARKER };`,

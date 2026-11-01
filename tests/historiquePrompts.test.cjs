@@ -5,7 +5,7 @@ const path = require("node:path");
 const test = require("node:test");
 const ts = require("typescript");
 
-// axe:hist169 - historique des prompts (src/components/chat/historiquePrompts.ts).
+// hist169 - historique des prompts (src/components/chat/historiquePrompts.ts).
 const sourcePath = path.resolve(__dirname, "../src/components/chat/historiquePrompts.ts");
 const js = ts.transpileModule(fs.readFileSync(sourcePath, "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },

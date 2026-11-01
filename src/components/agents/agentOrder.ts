@@ -1,4 +1,4 @@
-// axe:agents-ordre - ordre de la liste des agents : ceux qui travaillent (pastille orange) en tête,
+// agents-ordre - ordre de la liste des agents : ceux qui travaillent (pastille orange) en tête,
 // puis ceux qui attendent, puis les terminés, puis les archivés ; à rang égal, le plus récent d'abord.
 // Un parent dont un sous-agent travaille remonte avec lui.
 export type NoeudOrdre = {

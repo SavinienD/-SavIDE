@@ -1,4 +1,4 @@
-// axe:freechat — IPC of free conversations (src-tauri/src/freechat.rs).
+// freechat — IPC of free conversations (src-tauri/src/freechat.rs).
 import { invoke } from "@tauri-apps/api/core";
 import type { WorkspaceBootstrap } from "../../types";
 

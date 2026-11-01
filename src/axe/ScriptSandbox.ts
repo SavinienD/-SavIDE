@@ -1,4 +1,4 @@
-// axe:e4 — sandbox par ticket.
+// e4 — sandbox par ticket.
 //
 // Chaque exécution reçoit un ticket (affiché dans le panneau « Exécutions »).
 // Production : `systemd-run --scope --uid=savide-bac --pipe` (utilisateur isolé,

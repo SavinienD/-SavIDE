@@ -1,4 +1,4 @@
-// axe:cleanup — periodic harness backup (Settings > Harness > Sauvegarde).
+// cleanup — periodic harness backup (Settings > Harness > Sauvegarde).
 //
 // Copies the global harness (`~/.axecode/harness/`) and the project harness
 // of every workspace registered here into `<dir>/<timestamp>/{global,projects/<name>}`.

@@ -1,4 +1,4 @@
-// axe:viewers — EPUB reader (text). Follows container.xml -> OPF -> spine,
+// viewers — EPUB reader (text). Follows container.xml -> OPF -> spine,
 // sanitizes each chapter and inlines its images as data URLs. Only the
 // chapters are read from the archive (viewer_zip_read), one at a time.
 

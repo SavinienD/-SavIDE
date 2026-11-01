@@ -1,4 +1,4 @@
-// axe:e6 — volets séparables, duplicables, réancrables.
+// e6 — volets séparables, duplicables, réancrables.
 //
 // Un « volet » est une des cinq zones de travail de l'écran IDE : l'explorateur,
 // le panneau bas (conversations / git / agents), l'éditeur, le terminal et le chat.

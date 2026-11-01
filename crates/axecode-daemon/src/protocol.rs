@@ -61,7 +61,7 @@ pub struct LockInfo {
     pub version: String,
     pub protocol: u32,
     pub started_at_ms: i64,
-    /// axe:remote — network listen address when `--listen` is active.
+    /// remote — network listen address when `--listen` is active.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub listen: Option<String>,
 }
@@ -113,7 +113,7 @@ pub mod methods {
     pub const SESSIONS_GET: &str = "sessions.get";
     pub const SESSIONS_CREATE: &str = "sessions.create";
     pub const SESSIONS_ENSURE: &str = "sessions.ensure";
-    pub const SESSIONS_RELOCATE: &str = "sessions.relocate"; // axe:freechat
+    pub const SESSIONS_RELOCATE: &str = "sessions.relocate"; // freechat
     pub const SESSIONS_ATTACH: &str = "sessions.attach";
     pub const SESSIONS_DETACH: &str = "sessions.detach";
     pub const SESSIONS_SEND: &str = "sessions.send";
@@ -127,11 +127,11 @@ pub mod methods {
     pub const SESSIONS_RECORD: &str = "sessions.record";
     pub const SESSIONS_UNLOAD: &str = "sessions.unload";
     pub const SESSIONS_MESSAGE: &str = "sessions.message";
-    // axe:e3 — archivage des conversations, puis suppression depuis l'archive seule.
+    // e3 — archivage des conversations, puis suppression depuis l'archive seule.
     pub const SESSIONS_ARCHIVE: &str = "sessions.archive";
     pub const SESSIONS_DELETE: &str = "sessions.delete";
     pub const SESSIONS_RESTORE: &str = "sessions.restore";
-    // axe:commandes — indicateurs /goal et /heartbeat de l'IDE
+    // commandes — indicateurs /goal et /heartbeat de l'IDE
     pub const SESSIONS_COMMANDS_STATE: &str = "sessions.commands_state";
     pub const SESSIONS_COMMANDS_SET: &str = "sessions.commands_set";
 }

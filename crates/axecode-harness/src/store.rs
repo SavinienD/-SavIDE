@@ -31,7 +31,7 @@ use crate::model::{
 
 pub const GLOBAL_DIR_NAME: &str = ".savide"; // SavIDE : harnais global distinct de SavIDE
 pub const PROJECT_DIR_NAME: &str = ".axecode";
-/// axe:migration - project folder of before the rename: copied ONCE into the
+/// migration - project folder of before the rename: copied ONCE into the
 /// app data (see [`migrate_legacy_project`]), then never read nor written.
 pub const LEGACY_PROJECT_DIR_NAME: &str = ".atelier"; // rebrand:keep
 pub const HARNESS_DIR_NAME: &str = "harness";
@@ -45,12 +45,12 @@ pub const SKILL_INIT_FILE_NAME: &str = "__init__.py";
 pub struct HarnessPaths {
     pub global_root: PathBuf,
     pub project_root: PathBuf,
-    /// axe:migration - project harness of before the rename
+    /// migration - project harness of before the rename
     /// (`<workspace>/<LEGACY_PROJECT_DIR_NAME>/harness`): read after
     /// `project_root`, never written.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub legacy_project_root: Option<PathBuf>,
-    /// axe:harnais-equipe - harnais global d'ÉQUIPE, commun à tous les espaces
+    /// harnais-equipe - harnais global d'ÉQUIPE, commun à tous les espaces
     /// (variable [`TEAM_ENV`]) : lu en plus de `global_root`, et toute entrée
     /// globale écrite y est aussi publiée. Absent = comportement d'avant.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -73,7 +73,7 @@ impl HarnessPaths {
     }
 
     /// Harnais « projet » : toujours dans les données de l'appli
-    /// (`project_data/harness`). axe:dossiers-anciens — les anciens
+    /// (`project_data/harness`). dossiers-anciens — les anciens
     /// `<workspace>/.axecode/` et `.atelier/` (rebrand:keep) y sont déplacés une
     /// seule fois ([`crate::legacy_dirs`]) ; si un fichier n'a pas pu être
     /// déplacé, l'ancien harnais reste lu (jamais écrit) en secours.
@@ -94,7 +94,7 @@ impl HarnessPaths {
         }
     }
 
-    /// axe:migration - folder of a kind in the project harness of before the
+    /// migration - folder of a kind in the project harness of before the
     /// rename (project scope only).
     pub fn legacy_kind_dir(&self, scope: Scope, kind: EntryKind) -> Option<PathBuf> {
         match scope {
@@ -103,7 +103,7 @@ impl HarnessPaths {
         }
     }
 
-    /// axe:migration - whether `path` lies in the project harness of before the
+    /// migration - whether `path` lies in the project harness of before the
     /// rename (read only).
     pub fn is_legacy_path(&self, path: &Path) -> bool {
         self.legacy_project_root
@@ -125,7 +125,7 @@ impl HarnessPaths {
     /// Folders the kernel should add to `sys.path` (global first, then project).
     pub fn skills_paths(&self) -> Vec<PathBuf> {
         let mut paths = vec![self.kind_dir(Scope::Global, EntryKind::Skill)];
-        // axe:harnais-equipe - compétences de l'équipe, après celles de l'espace.
+        // harnais-equipe - compétences de l'équipe, après celles de l'espace.
         if let Some(team) = &self.team_root {
             paths.push(team.join(EntryKind::Skill.dir_name()));
         }
@@ -134,7 +134,7 @@ impl HarnessPaths {
     }
 }
 
-/// axe:harnais-equipe - dossier du harnais d'équipe (ex. /srv/axe/harnais-equipe).
+/// harnais-equipe - dossier du harnais d'équipe (ex. /srv/axe/harnais-equipe).
 pub const TEAM_ENV: &str = "AXE_HARNESS_EQUIPE";
 /// Auteur noté dans les entrées publiées vers l'équipe (sinon `USER`).
 pub const TEAM_AUTHOR_ENV: &str = "AXE_HARNESS_AUTEUR";
@@ -250,7 +250,7 @@ impl HarnessStore {
         if let Some(entry) = self.load_kind(scope, kind)?.into_iter().find(|e| hit(e)) {
             return Ok(Some(entry));
         }
-        // axe:harnais-equipe - entrée masquée par une version plus récente
+        // harnais-equipe - entrée masquée par une version plus récente
         // (même titre) : toujours joignable par son id.
         let mut dirs = vec![self.paths.kind_dir(scope, kind)];
         if let (Scope::Global, Some(team)) = (scope, &self.paths.team_root) {
@@ -264,7 +264,7 @@ impl HarnessStore {
 
     fn load_kind(&self, scope: Scope, kind: EntryKind) -> Result<Vec<Entry>> {
         let mut entries = self.load_kind_dir(&self.paths.kind_dir(scope, kind), scope, kind);
-        // axe:migration - entries of the project harness of before the rename
+        // migration - entries of the project harness of before the rename
         // that the new folder does not have (same id: the new one wins). Not in
         // `skills_paths`: the kernel never writes `__pycache__` there.
         if let Some(legacy) = self.paths.legacy_kind_dir(scope, kind) {
@@ -275,7 +275,7 @@ impl HarnessStore {
                     .filter(|entry| !known.contains(&entry.meta.id)),
             );
         }
-        // axe:harnais-equipe - même id, ou même type + même titre : la dernière
+        // harnais-equipe - même id, ou même type + même titre : la dernière
         // écriture (`updated`) gagne ; à égalité, l'entrée de l'espace.
         if let (Scope::Global, Some(team)) = (scope, &self.paths.team_root) {
             for shared in self.load_kind_dir(&team.join(kind.dir_name()), scope, kind) {
@@ -324,7 +324,7 @@ impl HarnessStore {
         entries
     }
 
-    /// axe:migration - entries of the project harness of before the rename are
+    /// migration - entries of the project harness of before the rename are
     /// read only: never deleted or moved from there.
     fn ensure_not_legacy(&self, entry: &Entry) -> Result<()> {
         if self.paths.is_legacy_path(Path::new(&entry.path)) {
@@ -430,7 +430,7 @@ impl HarnessStore {
         meta.updated = now_ms();
         let mut file = PathBuf::from(&existing.path);
         let mut package_dir = existing.package_dir.clone().map(PathBuf::from);
-        // axe:migration - an entry of the project harness of before the rename
+        // migration - an entry of the project harness of before the rename
         // is written into the new folder; the old file stays as it is and the
         // new one hides it.
         if self.paths.is_legacy_path(&file) {
@@ -533,7 +533,7 @@ impl HarnessStore {
         }
     }
 
-    /// axe:harnais-equipe - copie une entrée globale dans le harnais d'équipe,
+    /// harnais-equipe - copie une entrée globale dans le harnais d'équipe,
     /// avec l'auteur. Une erreur (droits, dossier absent) n'empêche pas
     /// l'écriture locale : elle est seulement journalisée.
     fn publish_team(&self, entry: &Entry) {

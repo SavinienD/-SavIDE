@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { RACCOURCIS } from "./raccourcis";
 
-/** axe:raccourcis — Settings > Raccourcis : pense-bête en lecture seule, lu
+/** raccourcis — Settings > Raccourcis : pense-bête en lecture seule, lu
  *  directement dans le registre (axe/raccourcis.ts), avec recherche. */
 export function RaccourcisSection() {
   const [q, setQ] = useState("");

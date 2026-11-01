@@ -1,4 +1,4 @@
-// axe:e7 — catalogue des serveurs MCP courants.
+// e7 — catalogue des serveurs MCP courants.
 // Chaque entrée décrit un serveur prêt à l'emploi : identifiant, nom, courte
 // description, commande d'installation canonique, commande réelle de lancement
 // et variables attendues (clé API, dossier, chaîne de connexion…).
@@ -447,7 +447,7 @@ export function restoreMcpSecrets(
   };
 }
 
-// axe:mcp-supprimer — Réglages > MCP « Supprimer » : liste sans le serveur, serveur
+// mcp-supprimer — Réglages > MCP « Supprimer » : liste sans le serveur, serveur
 // à sélectionner ensuite (le suivant, sinon le précédent, sinon aucun) et secrets
 // gardés pour ce serveur oubliés du coffre.
 export function retirerServeurMcp(

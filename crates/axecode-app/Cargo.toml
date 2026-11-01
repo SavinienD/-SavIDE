@@ -9,9 +9,9 @@ description = "Headless desktop runtime for axecode"
 [dependencies]
 axecode-core = { workspace = true }
 axecode-openai = { workspace = true }
-axecode-harness = { workspace = true } # axe:rlm
-axecode-repl = { workspace = true } # axe:repl
-axecode-agents = { workspace = true } # axe:ds16
+axecode-harness = { workspace = true } # rlm
+axecode-repl = { workspace = true } # repl
+axecode-agents = { workspace = true } # ds16
 
 anyhow = { workspace = true }
 base64 = { workspace = true }
@@ -26,7 +26,7 @@ sha2 = { workspace = true }
 tar = { workspace = true }
 portable-pty = "0.9.0"
 rand = { workspace = true }
-rusqlite = { workspace = true, features = ["backup"] } # axe:migration
+rusqlite = { workspace = true, features = ["backup"] } # migration
 serde = { workspace = true }
 serde_json = { workspace = true }
 similar = { workspace = true }
@@ -35,7 +35,7 @@ tracing = { workspace = true }
 uuid = { workspace = true }
 walkdir = { workspace = true }
 zip = { workspace = true }
-async-trait = { workspace = true } # axe:rlm
+async-trait = { workspace = true } # rlm
 
 [dev-dependencies]
 tempfile = "3"

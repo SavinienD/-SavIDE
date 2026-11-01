@@ -1,4 +1,4 @@
-// axe:remote — what a remote conversation shows, built from the session
+// remote — what a remote conversation shows, built from the session
 // journal (`sessions.tree`) instead of the bare message history, so that turn
 // errors (provider missing, AI credit exhausted, monthly cap…) are visible.
 // Also the models proposed for a remote session: the service protocol has no

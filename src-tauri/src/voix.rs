@@ -1,4 +1,4 @@
-// axe:voix — dictée vocale « comme le message vocal de ChatGPT ».
+// voix — dictée vocale « comme le message vocal de ChatGPT ».
 //
 // L'interface (src/axe/voix) enregistre la voix (MediaRecorder, webm/opus) puis
 // appelle `voix_transcrire`, qui essaie dans l'ordre :
@@ -71,7 +71,7 @@ pub(crate) struct VoixTranscrireInput {
     /// Repli OpenAI autorisé (défaut : oui, seulement si une clé existe).
     #[serde(default)]
     repli_openai: Option<bool>,
-    /// axe:micro-local — transcription sur ce poste (whisper.cpp embarqué), sans aucun service.
+    /// micro-local — transcription sur ce poste (whisper.cpp embarqué), sans aucun service.
     #[serde(default)]
     local: bool,
     /// Modèle local : « base » (défaut) ou « small ».
@@ -80,10 +80,10 @@ pub(crate) struct VoixTranscrireInput {
     /// Identifiant choisi par l'interface pour `voix_annuler`.
     #[serde(default)]
     demande: Option<String>,
-    /// axe:0.1.75 — taille du modèle Whisper : « petit », « moyen », « grand » (None = meilleur d'abord).
+    /// 0.1.75 — taille du modèle Whisper : « petit », « moyen », « grand » (None = meilleur d'abord).
     #[serde(default)]
     taille: Option<String>,
-    /// axe:0.1.75 — morceau de la dictée en direct (≈ 3 s, WAV) : réponse directe,
+    /// 0.1.75 — morceau de la dictée en direct (≈ 3 s, WAV) : réponse directe,
     /// ni repli, ni nettoyage IA (le texte final les aura).
     #[serde(default)]
     morceau: bool,
@@ -283,12 +283,12 @@ async fn transcrire(app: &AppHandle, input: VoixTranscrireInput) -> std::result:
     let mut echecs: Vec<String> = Vec::new();
     let mut obtenu: Option<Value> = None;
 
-    // axe:micro-local — 100 % sur le poste : ni espace, ni VM, ni OpenAI.
+    // micro-local — 100 % sur le poste : ni espace, ni VM, ni OpenAI.
     if input.local {
         let m = crate::voix_local::modele(input.modele_local.as_deref());
-        // axe:0.1.75 — un morceau de la dictée en direct ne déclenche jamais de téléchargement.
+        // 0.1.75 — un morceau de la dictée en direct ne déclenche jamais de téléchargement.
         if input.morceau && !crate::voix_local::present(app, m) {
-            // axe:0.1.77 — message montré dans l'encadré du direct (téléchargement lancé par l'interface).
+            // 0.1.77 — message montré dans l'encadré du direct (téléchargement lancé par l'interface).
             return Err(format!("modèle {} pas encore sur le poste (téléchargement au premier usage)", m.nom));
         }
         let chemin = crate::voix_local::assurer(app, m).await?;
@@ -355,7 +355,7 @@ async fn transcrire(app: &AppHandle, input: VoixTranscrireInput) -> std::result:
         }
     }
 
-    // axe:0.1.75 — moyens gratuits seulement par défaut : le repli OpenAI (payant)
+    // 0.1.75 — moyens gratuits seulement par défaut : le repli OpenAI (payant)
     // n'est tenté que s'il a été activé explicitement dans les réglages.
     if obtenu.is_none() && !input.local && input.repli_openai.unwrap_or(false) {
         match cle_openai() {
@@ -417,7 +417,7 @@ async fn transcrire(app: &AppHandle, input: VoixTranscrireInput) -> std::result:
     }))
 }
 
-/// axe:0.1.75 — dictée en direct : un morceau de ≈ 3 s transcrit tout de suite
+/// 0.1.75 — dictée en direct : un morceau de ≈ 3 s transcrit tout de suite
 /// (`wait: true`) par le premier service qui répond. Texte provisoire, brut.
 async fn morceau(app: &AppHandle, input: &VoixTranscrireInput, mut params: Value) -> std::result::Result<Value, String> {
     params["wait"] = json!(true);
@@ -491,7 +491,7 @@ pub(crate) struct VoixModeleInput {
     modele: Option<String>,
 }
 
-/// axe:micro-local — télécharge (si besoin) le modèle local choisi, empreinte vérifiée.
+/// micro-local — télécharge (si besoin) le modèle local choisi, empreinte vérifiée.
 #[tauri::command]
 pub(crate) async fn voix_modele_local(app: AppHandle, input: VoixModeleInput) -> std::result::Result<Value, String> {
     let m = crate::voix_local::modele(input.modele.as_deref());

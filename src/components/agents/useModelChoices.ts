@@ -1,4 +1,4 @@
-// axe:sub-m — models of the configured providers, as `provider/model` choices.
+// sub-m — models of the configured providers, as `provider/model` choices.
 import { useEffect, useState } from "react";
 import { api } from "../../lib/ipc";
 import { availableModelsForProviders, modelRefFromId } from "../../lib/models";

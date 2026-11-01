@@ -19,7 +19,7 @@ function charger(rel) {
 const J = charger("../src/components/agents/journalAgent.ts");
 const src = (rel) => fs.readFileSync(path.resolve(__dirname, rel), "utf8");
 
-// axe:journal-espace — capture 0.1.71 : journal ouvert sur le PC (« local ») alors que l'agent
+// journal-espace — capture 0.1.71 : journal ouvert sur le PC (« local ») alors que l'agent
 // vit dans l'espace -> « session not found: b845… », 0 entrées.
 const ID = "b845673c-2661-4761-94fb-63966992dc9b";
 const lire = (machines) => async (id, conn) => {

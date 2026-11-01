@@ -1,4 +1,4 @@
-// axe:html — document rendu par la visionneuse HTML (iframe srcdoc sandbox).
+// html — document rendu par la visionneuse HTML (iframe srcdoc sandbox).
 // - <base> sur le dossier du fichier : images, styles, polices et scripts
 //   RELATIFS se chargent depuis le disque (protocole asset de Tauri) ;
 // - CSP en tête : aucun accès réseau (ni http(s), ni fetch/XHR/WebSocket,

@@ -1,9 +1,9 @@
-// axe:sub-m — read-only journal of a session (sub-agents included, even inactive):
+// sub-m — read-only journal of a session (sub-agents included, even inactive):
 // messages, tool calls and results along the current branch, shown in the chat column.
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { agentsApi, describeEntry, type JournalEntry, type JournalTree } from "./agentsApi";
 import "./agents.css";
-import { getActiveConnection } from "../settings/connectionsApi"; // axe:journal-espace
+import { getActiveConnection } from "../settings/connectionsApi"; // journal-espace
 import { chargerJournal, messageJournal } from "./journalAgent";
 import { erreurMoteurEnFrancais } from "../../lib/erreursMoteur";
 
@@ -31,7 +31,7 @@ function messageText(entry: JournalEntry): { role: string; text: string } {
 export function SessionJournal({ sessionId, connectionId = "local", title, onClose }: Props) {
   const [tree, setTree] = useState<JournalTree | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // axe:journal-bas - le journal d'un agent s'ouvre sur son dernier message et suit les nouveaux,
+  // journal-bas - le journal d'un agent s'ouvre sur son dernier message et suit les nouveaux,
   // sauf si l'utilisateur est remonté lire plus haut.
   const corpsRef = useRef<HTMLDivElement | null>(null);
   const collerEnBas = useRef(true);

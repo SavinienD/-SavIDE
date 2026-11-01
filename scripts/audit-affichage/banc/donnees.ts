@@ -176,7 +176,7 @@ export function entrees(dossier: string) {
   const noms = dossier
     ? ["Workspace.tsx", "ChatPane.tsx", "stream.ts", "colonnes.ts", "fileAttente.ts", "styles-de-la-barre-de-titre-tres-longues.css"]
     : ["crates", "docs", "scripts", "src", "src-tauri", "tests", "web", "Cargo.toml", "package.json", "README.md", "RAPPORT.md", "un-nom-de-fichier-vraiment-tres-long-pour-voir-le-debordement.md"];
-  // axe:explorateur — comme le vrai backend Windows avant correction : chemins « \\?\C:\… »
+  // explorateur — comme le vrai backend Windows avant correction : chemins « \\?\C:\… »
   // (canonicalize) ; l'explorateur doit les copier sans ce préfixe. Dates et tailles pour le tri.
   return noms.map((name, i) => {
     const dir = !name.includes(".");
@@ -231,7 +231,7 @@ export function contexte(used = 168_000) {
   };
 }
 
-// axe:html — page des scènes « html-* » : image et style locaux, image distante
+// html — page des scènes « html-* » : image et style locaux, image distante
 // (doit être bloquée par la CSP de l'aperçu) et script (coupé par défaut).
 export const PAGE_HTML = `<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><title>Rapport client</title>

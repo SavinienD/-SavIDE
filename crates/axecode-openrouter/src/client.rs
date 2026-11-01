@@ -21,7 +21,7 @@ const USER_AGENT: &str = "SavIDE/0.1";
 const APP_REFERER: &str = "https://github.com/AxeInternational/axecode";
 const APP_TITLE: &str = "SavIDE";
 const CACHE_BREAKPOINTS: usize = 4;
-// axe:ollama — wait for the first byte of an answer.
+// ollama — wait for the first byte of an answer.
 const LOCAL_FIRST_RESPONSE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(600);
 const REMOTE_FIRST_RESPONSE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(300);
 
@@ -35,7 +35,7 @@ fn is_local_url(url: &str) -> bool {
         || host.starts_with("0.0.0.0")
 }
 
-// axe:providers — wire dialect. This crate doubles as the shared adapter for
+// providers — wire dialect. This crate doubles as the shared adapter for
 // every OpenAI-compatible endpoint (custom instances, Mistral, DeepSeek, xAI,
 // Groq, Prime Inference, Ollama, LM Studio); the dialect switches off the
 // OpenRouter-only extensions that strict servers reject.
@@ -57,12 +57,12 @@ pub struct OpenRouterConfig {
     pub app_referer: String,
     pub app_title: String,
     pub models: Vec<ModelCapabilities>,
-    // axe:providers
+    // providers
     pub provider_id: String,
     pub dialect: Dialect,
     /// Whether `stream_options.include_usage` is accepted by the server.
     pub stream_usage: bool,
-    // axe:ollama
+    // ollama
     /// Talk to Ollama's native `/api/chat` (NDJSON, `num_ctx`) instead of `/v1`.
     pub ollama_native: bool,
     /// Longest silence while an answer streams.
@@ -89,7 +89,7 @@ impl OpenRouterConfig {
         }
     }
 
-    // axe:providers — any OpenAI-compatible endpoint.
+    // providers — any OpenAI-compatible endpoint.
     pub fn compatible(
         provider_id: impl Into<String>,
         base_url: impl Into<String>,
@@ -112,7 +112,7 @@ impl OpenRouterConfig {
         }
     }
 
-    // axe:ollama — native Ollama route (see `ollama.rs`).
+    // ollama — native Ollama route (see `ollama.rs`).
     pub fn with_ollama_native(mut self) -> Self {
         self.ollama_native = true;
         self
@@ -188,7 +188,7 @@ impl OpenRouterProvider {
         Self::new(OpenRouterConfig::from_default_sources(models)?)
     }
 
-    // axe:ollama — send with a bounded wait for the first answer; a local
+    // ollama — send with a bounded wait for the first answer; a local
     // server that is not running fails at once (no silent retries).
     async fn send(&self, builder: reqwest::RequestBuilder, url: &str) -> Result<reqwest::Response> {
         let limit = self.config.first_response_timeout();
@@ -305,7 +305,7 @@ impl Provider for OpenRouterProvider {
         }
 
         let mut body = build_chat_request(&request, &caps)?;
-        // axe:providers — strip OpenRouter-only extensions for other endpoints.
+        // providers — strip OpenRouter-only extensions for other endpoints.
         if self.config.dialect != Dialect::OpenRouter {
             adapt_for_dialect(&mut body, self.config.dialect, &caps, &request);
         }
@@ -313,7 +313,7 @@ impl Provider for OpenRouterProvider {
             body.stream_options = None;
         }
 
-        // axe:ollama — native route: the whole prompt fits (`num_ctx`).
+        // ollama — native route: the whole prompt fits (`num_ctx`).
         if self.config.ollama_native {
             let openai = serde_json::to_value(&body)?;
             let native = ollama::native_body(openai, ollama::num_ctx_for(caps.context_window));
@@ -438,7 +438,7 @@ fn reasoning_config(
     })
 }
 
-// axe:providers — downgrade an OpenRouter-shaped request to strict OpenAI
+// providers — downgrade an OpenRouter-shaped request to strict OpenAI
 // `/chat/completions`: no cache_control, no `reasoning` object, no replayed
 // reasoning (DeepSeek rejects `reasoning_content` in history).
 fn adapt_for_dialect(
@@ -533,7 +533,7 @@ struct CompatModelBody {
     context_window: Option<u32>,
 }
 
-/// axe:providers — `GET {base_url}{route}` (default `/models`) and list the ids.
+/// providers — `GET {base_url}{route}` (default `/models`) and list the ids.
 /// Works for OpenAI-compatible servers, LM Studio and Ollama (`/api/tags`).
 pub async fn discover_compatible_models(
     base_url: &str,
@@ -1187,7 +1187,7 @@ async fn read_http_error(response: reqwest::Response) -> AppError {
     let status = response.status();
     let body = response.text().await.unwrap_or_default();
     let parsed: std::result::Result<wire::ApiErrorEnvelope, _> = serde_json::from_str(&body);
-    // axe:ollama — `{"error": "text"}` (Ollama and a few servers).
+    // ollama — `{"error": "text"}` (Ollama and a few servers).
     let plain = serde_json::from_str::<Value>(&body)
         .ok()
         .and_then(|value| value.get("error").and_then(Value::as_str).map(str::to_string));

@@ -1,4 +1,4 @@
-/* axe:commandes — indicateurs /heartbeat et /goal (à côté du sélecteur de modèle) */
+/* commandes — indicateurs /heartbeat et /goal (à côté du sélecteur de modèle) */
 .axe-indicateurs {
   position: relative;
   display: inline-flex;
@@ -99,14 +99,14 @@
   color: var(--text-3);
 }
 
-/* axe:goal165 — objectif en poursuite automatique : point discret animé. */
+/* goal165 — objectif en poursuite automatique : point discret animé. */
 .axe-indicateur[data-kind="goal"][data-auto="true"] {
   color: var(--accent, #e5484d);
 }
 .axe-indicateurs__poursuite {
   color: var(--text-1);
 }
-/* axe:guet — icône des guets avec leur nombre ; un bloc par guet dans le détail */
+/* guet — icône des guets avec leur nombre ; un bloc par guet dans le détail */
 .axe-indicateur[data-kind="guet"] {
   color: var(--text-2);
   gap: 2px;

@@ -106,7 +106,7 @@ fn owner_of(d: &Daemon, id: &str) -> Option<u64> {
     lock(&d.terminals).get(id).map(|t| t.owner)
 }
 
-/// axe:e8 — onglets epingles : nom de session et binaire de l'agent a y
+/// e8 — onglets epingles : nom de session et binaire de l'agent a y
 /// lancer. Le portail (`~/portail-prime/terminal.py`) utilise les memes noms
 /// sur le meme socket : un onglet epingle ouvre donc **la meme session**, donc
 /// le meme agent, que le terminal du portail.
@@ -174,7 +174,7 @@ fn command(root: &Path, dir: &Path, id: &str, tmux: bool) -> CommandBuilder {
     };
     c.env_clear();
     c.env("HOME", home.as_os_str().to_owned());
-    // axe:e8 — l'agent de l'espace a ses binaires dans ~/.local/bin et ~/.opencode/bin.
+    // e8 — l'agent de l'espace a ses binaires dans ~/.local/bin et ~/.opencode/bin.
     c.env(
         "PATH",
         format!(
@@ -440,7 +440,7 @@ mod tests {
     use super::*;
     use tokio::sync::mpsc;
 
-    /// axe:e8 — un onglet epingle vise la session du portail ; tout autre nom
+    /// e8 — un onglet epingle vise la session du portail ; tout autre nom
     /// reste une session a nous ; binaire absent = simple shell (pas de mensonge).
     #[test]
     fn pinned_tabs_use_the_portal_session() {

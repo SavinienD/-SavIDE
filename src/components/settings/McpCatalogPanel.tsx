@@ -1,4 +1,4 @@
-// axe:e7 — formulaire d'ajout d'un serveur MCP depuis le catalogue.
+// e7 — formulaire d'ajout d'un serveur MCP depuis le catalogue.
 // On choisit une entrée, on colle la clé API (saisie masquée) et on ajoute :
 // la configuration réelle est écrite et l'état est ensuite affiché sans jamais
 // montrer la clé.

@@ -1,4 +1,4 @@
-// axe:viewers — native audio/video player. The asset protocol answers HTTP
+// viewers — native audio/video player. The asset protocol answers HTTP
 // range requests, so media are streamed from disk, never loaded whole.
 
 import { useState } from "react";

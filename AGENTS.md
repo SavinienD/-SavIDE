@@ -19,7 +19,7 @@ Code map:
 ├── RAPPORT-AXECODE.md # état du projet au point d'arrêt (15/10/2026) : fait, reste à faire, tests, actions
 ├── RETOURS-AXECODE.md # retours utilisateur (16/10) : correctifs et vérifications à traiter par Prime
 ├── README.md
-├── remote # axe:cleanup — relais auto-hébergé (Docker derrière reverse proxy TLS)
+├── remote # cleanup — relais auto-hébergé (Docker derrière reverse proxy TLS)
 │   ├── .dockerignore
 │   ├── Dockerfile # node:20-alpine, port 8787, healthcheck /healthz
 │   ├── docker-compose.yml # 127.0.0.1:8787, variables VAPID via .env
@@ -51,32 +51,32 @@ Code map:
 ├── test-stop.md
 ├── scripts
 │   ├── capture-refero-heroes.mjs
-│   ├── prepare-python.mjs # axe:repl — python-build-standalone 3.12 + IPython/dill + openpyxl/python-docx/pypdf (axe:viewers) -> src-tauri/binaries/python-runtime
+│   ├── prepare-python.mjs # repl — python-build-standalone 3.12 + IPython/dill + openpyxl/python-docx/pypdf (viewers) -> src-tauri/binaries/python-runtime
 │   └── prepare-sidecars.mjs
-├── python # axe:repl — kernel IPython du REPL (python -m axecode_kernel)
+├── python # repl — kernel IPython du REPL (python -m axecode_kernel)
 │   ├── axecode_kernel
 │   │   ├── __init__.py
 │   │   ├── __main__.py # boucle JSON-lines stdin/stdout, exec, catalog, snapshot/restore dill, gc
 │   │   ├── bridge.py # RPC kernel→Rust bridge.call(method, params), images, file changes
 │   │   ├── files.py / shell.py / web.py / images.py / context.py / question.py / todo.py / skills.py / mcp.py / compact.py # modules préchargés
-│   │   ├── _documents.py # axe:viewers — texte des xlsx/docx/pdf/pptx/odt/epub pour files.read (privé, non préchargé)
+│   │   ├── _documents.py # viewers — texte des xlsx/docx/pdf/pptx/odt/epub pour files.read (privé, non préchargé)
 │   │   └── rlm.py / messages.py / harness.py / refine.py / goal.py / heartbeat.py # modules E/D/F (brain)
 │   └── tests # pytest files + shell + documents
-├── web # axe:webui — app web des conversations (Vite + React, npm run build:web -> web/dist, embarquée dans le service)
+├── web # webui — app web des conversations (Vite + React, npm run build:web -> web/dist, embarquée dans le service)
 │   ├── index.html / vite.config.ts / tsconfig.json
 │   ├── public # manifest.webmanifest, icon.svg, sw.js (PWA)
 │   └── src
 │       ├── api.ts # login HTTP + client WebSocket /ws (protocole JSON-lines du service)
-│       ├── App.tsx # garde de connexion, coquille liste/conversation (responsive), route #/new (axe:freechat)
-│       ├── ConversationList.tsx # recherche, filtre projet, archivées, section « Conversations libres » (axe:freechat)
-│       ├── NewConversation.tsx # axe:freechat — démarrer une conversation libre (sessions.create sans dossier)
+│       ├── App.tsx # garde de connexion, coquille liste/conversation (responsive), route #/new (freechat)
+│       ├── ConversationList.tsx # recherche, filtre projet, archivées, section « Conversations libres » (freechat)
+│       ├── NewConversation.tsx # freechat — démarrer une conversation libre (sessions.create sans dossier)
 │       ├── Conversation.tsx # journal live (entry/stream), streaming
 │       ├── Transcript.tsx # messages, cartes Python dépliables, réflexion repliée
 │       ├── items.ts # journal -> éléments affichables
 │       ├── Login.tsx / Markdown.tsx / main.tsx / styles.css
 ├── tsconfig.json
 ├── tsconfig.node.json
-├── vite.config.ts # axe:viewers — plugin pdfjsAssets (cmaps/polices/wasm de pdf.js servis sous /pdfjs/)
+├── vite.config.ts # viewers — plugin pdfjsAssets (cmaps/polices/wasm de pdf.js servis sous /pdfjs/)
 ├── .github
 │   ├── assets
 │   │   ├── architecture.png
@@ -94,7 +94,7 @@ Code map:
 │   │       ├── auth.rs
 │   │       ├── cli_version.rs # version Claude Code annoncée (npm registry + auto-réparation sur erreur serveur)
 │   │       ├── client.rs # requêtes HTTP Anthropic, user-agent claude-cli dynamique
-│   │       ├── compat.rs # axe:providers — découverte de modèles Anthropic-compatibles, usage OAuth
+│   │       ├── compat.rs # providers — découverte de modèles Anthropic-compatibles, usage OAuth
 │   │       ├── lib.rs
 │   │       ├── model_info.rs
 │   │       ├── stream.rs
@@ -128,7 +128,7 @@ Code map:
 │   │       ├── powershell.rs
 │   │       ├── question.rs
 │   │       ├── read.rs
-│   │       ├── repl # axe:repl — agent à outil unique python(code)
+│   │       ├── repl # repl — agent à outil unique python(code)
 │   │       │   ├── mod.rs # ReplDeps, ProviderResolver, TurnHook
 │   │       │   ├── runtime.rs # ReplRuntime/ReplFactory (SessionRuntime), kernel, routage host calls
 │   │       │   ├── turn.rs # boucle de tour, streaming, exécution python
@@ -137,8 +137,8 @@ Code map:
 │   │       │   ├── output.rs # troncature des sorties + résumé
 │   │       │   ├── compaction.rs # compaction (résumé ; variables du kernel gardées)
 │   │       │   └── settings.rs # repl-settings.json (modules, seuil, max_tokens, plafond)
-│   │       ├── rlm.rs # axe:rlm — sous-agents persistants rlm.* + messagerie famille nucléaire messages.* (FamilyHost), garde-fou quota
-│   │       ├── session_commands.rs # axe:goal — TurnHook /goal /autonomous (budgets + gate) /heartbeat /refine /compact
+│   │       ├── rlm.rs # rlm — sous-agents persistants rlm.* + messagerie famille nucléaire messages.* (FamilyHost), garde-fou quota
+│   │       ├── session_commands.rs # goal — TurnHook /goal /autonomous (budgets + gate) /heartbeat /refine /compact
 │   │       ├── skill.rs
 │   │       ├── store.rs
 │   │       ├── subagent.rs
@@ -172,13 +172,13 @@ Code map:
 │   │       ├── model.rs
 │   │       ├── provider.rs
 │   │       ├── stream.rs
-│   │       ├── session.rs # axe:daemon — traits SessionRuntime/KernelSnapshot/TurnSink/SessionHost, journal
+│   │       ├── session.rs # daemon — traits SessionRuntime/KernelSnapshot/TurnSink/SessionHost, journal
 │   │       └── tool.rs
-│   ├── axecode-daemon # axe:daemon — service d'arrière-plan
+│   ├── axecode-daemon # daemon — service d'arrière-plan
 │   │   ├── Cargo.toml
-│   │   ├── build.rs # axe:webui — ré-embarque web/dist quand il change
+│   │   ├── build.rs # webui — ré-embarque web/dist quand il change
 │   │   ├── src
-│   │   │   ├── auth.rs # axe:remote — remote-auth.json : mots de passe argon2, jetons SHA-256, CLI set-password/token/auth
+│   │   │   ├── auth.rs # remote — remote-auth.json : mots de passe argon2, jetons SHA-256, CLI set-password/token/auth
 │   │   │   ├── cli.rs # serve [--listen host:port --allow-host h]/status/shutdown/set-password/token partagés
 │   │   │   ├── client.rs # DaemonClient (pipe + connect_ws distant), ensure_daemon, lancement détaché
 │   │   │   ├── brain_rpc.rs # v2-l2.4 — RPC skills.*/harness.* : cerveau commun (skills + harnais) de l'espace du service, réglages skill-settings.json
@@ -188,29 +188,29 @@ Code map:
 │   │   │   ├── term_rpc.rs # v2-l3 — RPC term.* : terminaux PTY du service
 │   │   │   ├── workspace_rpc.rs # v2-l2/l2.4 — RPC fs.* (dont index « ouvrir vite », corbeille trash/trash_list/restore) et git.* (status/commit/repos + branches/checkout/push/pull/worktrees), confinés à la racine
 │   │   │   ├── lib.rs
-│   │   │   ├── listen.rs # axe:remote — écoute WebSocket /ws authentifiée, contrôle Host/Origin, /healthz, HttpFallback (web UI)
+│   │   │   ├── listen.rs # remote — écoute WebSocket /ws authentifiée, contrôle Host/Origin, /healthz, HttpFallback (web UI)
 │   │   │   ├── main.rs # binaire de dev (runtime echo)
 │   │   │   ├── migrate.rs # import SQLite -> JSONL
 │   │   │   ├── protocol.rs # JSON-lines, lock daemon.json, méthodes
-│   │   │   ├── scratch.rs # axe:freechat — dossiers privés des conversations libres (<data>/scratch/<id>), détection is_scratch
+│   │   │   ├── scratch.rs # freechat — dossiers privés des conversations libres (<data>/scratch/<id>), détection is_scratch
 │   │   │   ├── server.rs # socket, dispatch, arrêt auto, SessionHost
-│   │   │   ├── sessions.rs # create/ensure/fork/set_model/send/stop, relocate (axe:freechat)
+│   │   │   ├── sessions.rs # create/ensure/fork/set_model/send/stop, relocate (freechat)
 │   │   │   ├── stub.rs # EchoRuntime
 │   │   │   ├── transport.rs # named pipe / unix socket
 │   │   │   ├── util.rs
-│   │   │   ├── webui # axe:webui — interface web servie sur --listen (HttpFallback)
+│   │   │   ├── webui # webui — interface web servie sur --listen (HttpFallback)
 │   │   │   │   ├── mod.rs # assets embarqués (rust-embed web/dist), login cookie, CSP, CSRF, /api/*, méthodes webui.sessions/revoke
 │   │   │   │   └── session.rs # sessions navigateur (web-sessions.json, SHA-256), limitation des tentatives
 │   │   │   └── worker.rs # workers supervisés, snapshots (le kernel REPL les restaure lui-même), relance
 │   │   └── tests/daemon.rs + tests/remote.rs
-│   ├── axecode-repl # axe:repl — process kernel, exec, RPC inverse, KernelSnapshot
+│   ├── axecode-repl # repl — process kernel, exec, RPC inverse, KernelSnapshot
 │   │   ├── Cargo.toml
 │   │   ├── src
 │   │   │   ├── lib.rs
 │   │   │   ├── process.rs
 │   │   │   └── python.rs # découverte python + paquet axecode_kernel
 │   │   └── tests/kernel.rs
-│   ├── axecode-harness # axe:harness — Continual Harness
+│   ├── axecode-harness # harness — Continual Harness
 │   │   ├── Cargo.toml
 │   │   └── src
 │   │       ├── host.rs # host calls harness.* / refine.history|rollback, archivage des plans
@@ -340,31 +340,31 @@ Code map:
 │   │       └── AppIcon-83.5x83.5@2x.png
 │   └── src
 │       ├── context.rs
-│       ├── cloud.rs # axe:cloud — connexion Axe Cloud (boucle locale + PKCE S256, /app/jeton), jeton dans connection-secrets.json, IPC cloud_login/state/logout/api/open_web, connexion « Axe Cloud » (wss /ws, Bearer)
+│       ├── cloud.rs # cloud — connexion Axe Cloud (boucle locale + PKCE S256, /app/jeton), jeton dans connection-secrets.json, IPC cloud_login/state/logout/api/open_web, connexion « Axe Cloud » (wss /ws, Bearer)
 │       ├── cloud_tests.rs # tests du mode cloud (boucle locale 127.0.0.1) + cloud_e2e ignoré (contre la porte déployée)
-│       ├── connections.rs # axe:remote — registre Local/Distante/SSH (connections.json + connection-secrets.json), tunnels ssh, IPC connections_*, call_on(connexion)
+│       ├── connections.rs # remote — registre Local/Distante/SSH (connections.json + connection-secrets.json), tunnels ssh, IPC connections_*, call_on(connexion)
 │       ├── conversations.rs
-│       ├── daemon_client.rs # axe:daemon — mode --daemon (service + REPL), attache IDE, IPC daemon_* (param connection), bridge chat -> sessions ; axe:v2-l2.4c — cloud_connection_id/cloud_service_workspace (espace cloud -> chemin réel du service)
-│       ├── freechat.rs # axe:freechat — conversations libres : espace partagé <data>/scratch côté IDE, IPC freechat_index/open/relocate, synchro service -> store (conversations libres créées sur le web / la Vue Agents), renommage/suppression répercutés
-│       ├── custom_providers.rs # axe:providers — instances configurables (providers.json + provider-keys.json), IPC provider_*, modelOverrides, détection Ollama/LM Studio
+│       ├── daemon_client.rs # daemon — mode --daemon (service + REPL), attache IDE, IPC daemon_* (param connection), bridge chat -> sessions ; v2-l2.4c — cloud_connection_id/cloud_service_workspace (espace cloud -> chemin réel du service)
+│       ├── freechat.rs # freechat — conversations libres : espace partagé <data>/scratch côté IDE, IPC freechat_index/open/relocate, synchro service -> store (conversations libres créées sur le web / la Vue Agents), renommage/suppression répercutés
+│       ├── custom_providers.rs # providers — instances configurables (providers.json + provider-keys.json), IPC provider_*, modelOverrides, détection Ollama/LM Studio
 │       ├── git.rs
-│       ├── harness.rs # axe:harness — IPC harness_* (CRUD, promote/demote, refinements, rollback, import brain, refine start/status), couche harness par tour
-│       ├── harness_backup.rs # axe:cleanup — sauvegarde périodique du harness (config harness-backup.json, IPC harness_backup_*)
+│       ├── harness.rs # harness — IPC harness_* (CRUD, promote/demote, refinements, rollback, import brain, refine start/status), couche harness par tour
+│       ├── harness_backup.rs # cleanup — sauvegarde périodique du harness (config harness-backup.json, IPC harness_backup_*)
 │       ├── lib.rs
 │       ├── main.rs
 │       ├── models.rs
-│       ├── offline.rs # axe:v2-l6 — mode désynchronisé : miroir local + journal (<data>/offline/<connexion>) et IPC offline_* (prepare, list, read, write, create, delete, rename, journal, sync, resolve, forget)
+│       ├── offline.rs # v2-l6 — mode désynchronisé : miroir local + journal (<data>/offline/<connexion>) et IPC offline_* (prepare, list, read, write, create, delete, rename, journal, sync, resolve, forget)
 │       ├── platform.rs
 │       ├── providers.rs
-│       ├── quota.rs # axe:providers — IPC provider_quota (usage OAuth Anthropic + historique d'épuisement)
+│       ├── quota.rs # providers — IPC provider_quota (usage OAuth Anthropic + historique d'épuisement)
 │       ├── remote.rs
-│       ├── repl_settings.rs # axe:repl — IPC repl_settings_get/save, repl_catalog
+│       ├── repl_settings.rs # repl — IPC repl_settings_get/save, repl_catalog
 │       ├── state.rs
 │       ├── terminal.rs # PTY multi-onglets ; sélection PowerShell/WSL bash
 │       ├── tests.rs
-│       ├── turns.rs # axe:v2-l2.4c — send_message force le pont REPL en cloud (agent sur le service)
+│       ├── turns.rs # v2-l2.4c — send_message force le pont REPL en cloud (agent sur le service)
 │       ├── updater.rs
-│       ├── viewers.rs # axe:viewers — viewer_read_bytes (plages, ArrayBuffer brut), viewer_zip_list/read/extract, viewer_sqlite_tables/rows (lecture seule, query_only)
+│       ├── viewers.rs # viewers — viewer_read_bytes (plages, ArrayBuffer brut), viewer_zip_list/read/extract, viewer_sqlite_tables/rows (lecture seule, query_only)
 │       ├── workflow.rs
 │       └── workspace.rs
 └── src
@@ -382,36 +382,36 @@ Code map:
     │   ├── theme.css # accent orange Axe + styles des composants axe
     │   └── theme.ts # tons dérivés de --axe-bg par luminance, persistance
     ├── components
-    │   ├── agents # axe:agents
-    │   │   ├── AgentsView.tsx # Vue Agents : arbre des sessions running/idle/inactive, connexion active ou toutes les machines groupées, conversations libres (axe:freechat), ouvrir, message, arrêt
-    │   │   ├── ExternalAgents.tsx # axe:agents — agents externes du service (agents.*) : liste 2 s, lancement (brief/libellé/modèle/commande), journal en direct, arrêt, résultat ; lecture seule hors ligne, inerte en local
-    │   │   ├── ConnectionSelector.tsx # axe:remote — sélecteur de connexion de la barre latérale (masqué s'il n'y a que Local)
-    │   │   ├── RemoteConversations.tsx # axe:remote — sessions d'une connexion distante : liste, création (modèles Axe Cloud proposés), fil depuis sessions.tree (erreurs de tour visibles), changement de modèle, envoi, arrêt
+    │   ├── agents # agents
+    │   │   ├── AgentsView.tsx # Vue Agents : arbre des sessions running/idle/inactive, connexion active ou toutes les machines groupées, conversations libres (freechat), ouvrir, message, arrêt
+    │   │   ├── ExternalAgents.tsx # agents — agents externes du service (agents.*) : liste 2 s, lancement (brief/libellé/modèle/commande), journal en direct, arrêt, résultat ; lecture seule hors ligne, inerte en local
+    │   │   ├── ConnectionSelector.tsx # remote — sélecteur de connexion de la barre latérale (masqué s'il n'y a que Local)
+    │   │   ├── RemoteConversations.tsx # remote — sessions d'une connexion distante : liste, création (modèles Axe Cloud proposés), fil depuis sessions.tree (erreurs de tour visibles), changement de modèle, envoi, arrêt
     │   │   ├── SessionTree.tsx # /tree : arbre du journal, revenir à un point, fork (par connexion)
     │   │   ├── agents.css
     │   │   ├── agentsApi.ts # wrappers daemon_call / daemon_sessions / axe://daemon, routage par connexion ; serviceAgentsApi (agents.list/spawn/status/stop/result en cloud)
-    │   │   └── remoteItems.ts # axe:remote — modèles proposés pour une session distante (axe-cloud d'abord, mémorisés par connexion), fil affichable (messages + erreurs), explications lisibles des erreurs
-    │   ├── cloud # axe:cloud — mode Axe Cloud (connexion Google, onglets Prime Agent / Atelier / Terminal)
+    │   │   └── remoteItems.ts # remote — modèles proposés pour une session distante (axe-cloud d'abord, mémorisés par connexion), fil affichable (messages + erreurs), explications lisibles des erreurs
+    │   ├── cloud # cloud — mode Axe Cloud (connexion Google, onglets Prime Agent / Atelier / Terminal)
     │   │   ├── CloudLogin.tsx # écran « Se connecter avec Google » (attente, refus, Mode local)
     │   │   ├── CloudShell.tsx # barre + onglets Prime Agent / Atelier (RemoteConversations sur la connexion axe-cloud) / Terminal + menu compte
     │   │   ├── PrimeAgentTab.tsx # chat avec Prime (tâche + relecture), tickets, liens rapides
     │   │   ├── TerminalTab.tsx # Prime / OpenCode / bash : lien unique /app/code-web ouvert dans le navigateur système
     │   │   ├── cloud.css # classes axc-*
     │   │   └── cloudApi.ts # IPC cloud_* + API JSON /prime/api/* et /app/*
-    │   ├── settings # axe:harness (fichiers harness)
+    │   ├── settings # harness (fichiers harness)
     │   │   ├── BrainImportWizard.tsx # import unique du kit brain dans le harness
     │   │   ├── HarnessPane.tsx # Settings > Harness
 │   │   ├── harness.css
-│   │   ├── harnessApi.ts # wrappers IPC harness_* ; RPC harness.* en cloud (axe:v2-l2.4)
-│   │   ├── ApiKeyField.tsx # axe:cleanup — champ de clé API masqué
-│   │   ├── ConnectionsPane.tsx # axe:remote — Settings > Connexions (ajout, test, état, connexion active)
-│   │   ├── connectionsApi.ts # axe:remote — IPC connections_*, connexion active partagée (useActiveConnection)
-│   │   ├── PythonSkillPreview.tsx # axe:cleanup — Settings > Skills : aperçu d'un skill Python du harness
-│   │   ├── ReplServicesSection.tsx # axe:cleanup — Outils REPL : fournisseurs recherche web / images + clés
-│   │   ├── ReplToolsPane.tsx # axe:repl — Settings > Outils REPL
-│   │   ├── ServicePane.tsx # axe:daemon — Settings > Service
+│   │   ├── harnessApi.ts # wrappers IPC harness_* ; RPC harness.* en cloud (v2-l2.4)
+│   │   ├── ApiKeyField.tsx # cleanup — champ de clé API masqué
+│   │   ├── ConnectionsPane.tsx # remote — Settings > Connexions (ajout, test, état, connexion active)
+│   │   ├── connectionsApi.ts # remote — IPC connections_*, connexion active partagée (useActiveConnection)
+│   │   ├── PythonSkillPreview.tsx # cleanup — Settings > Skills : aperçu d'un skill Python du harness
+│   │   ├── ReplServicesSection.tsx # cleanup — Outils REPL : fournisseurs recherche web / images + clés
+│   │   ├── ReplToolsPane.tsx # repl — Settings > Outils REPL
+│   │   ├── ServicePane.tsx # daemon — Settings > Service
 │   │   └── repl.css
-    │   ├── NouvelleConversation.tsx # axe:e13 — champ de création d'une conversation (le nom est exigé)
+    │   ├── NouvelleConversation.tsx # e13 — champ de création d'une conversation (le nom est exigé)
     │   ├── ConversationList.tsx
     │   ├── EditorPane.tsx
     │   ├── FileTree.tsx
@@ -424,7 +424,7 @@ Code map:
     │   ├── Splitter.tsx
     │   ├── UpdateBadge.tsx
     │   ├── UpdaterLockScreen.tsx
-    │   ├── viewers # axe:viewers — visionneuses multiformat de l'éditeur, chargées à la demande
+    │   ├── viewers # viewers — visionneuses multiformat de l'éditeur, chargées à la demande
     │   │   ├── registry.ts # extension -> visionneuse (overlay sur Monaco ou remplacement)
     │   │   ├── ViewerHost.tsx # point d'entrée (React.lazy par famille), usesFileViewer, message .doc/.ppt
     │   │   ├── bytes.ts # readBytes/readAllBytes par morceaux, entrées zip (readZipEntry/listZip), assetDirUrl
@@ -444,17 +444,17 @@ Code map:
     │   │   ├── FallbackViewer.tsx / HexViewer.tsx # repli : texte paginé (gros fichiers) ou vue hexadécimale virtualisée, lecture par plages
     │   │   ├── pdf # pdfDoc.ts (worker + transport par plages), PdfViewer.tsx (pages virtualisées, zoom, recherche, miniatures), PdfPage.tsx
     │   │   └── viewers.css
-    │   ├── Welcome.tsx # axe:freechat — écran d'accueil : « Nouvelle conversation » / « Ouvrir un dossier », conversations libres et dossiers récents
+    │   ├── Welcome.tsx # freechat — écran d'accueil : « Nouvelle conversation » / « Ouvrir un dossier », conversations libres et dossiers récents
     │   ├── WindowControls.tsx
-    │   ├── Workspace.tsx # dispositions « ide » et « chat » (axe:freechat : même ChatPane, FreechatView)
-    │   ├── freechat # axe:freechat — mode conversation libre
+    │   ├── Workspace.tsx # dispositions « ide » et « chat » (freechat : même ChatPane, FreechatView)
+    │   ├── freechat # freechat — mode conversation libre
     │   │   ├── FreechatView.tsx # vue plein écran : barre latérale (libres + par projet, recherche), chat centré, ouvrir un dossier pour la conversation
     │   │   ├── freechatApi.ts # IPC freechat_*, utilitaires (titres, chemins, dates relatives)
     │   │   └── freechat.css
     │   └── chat
     │       ├── AIThinkingBlock.tsx
     │       ├── ChatPane.tsx
-    │       ├── actionsConversation.ts # axe:e17a — callbacks du chat liés explicitement à un fil
+    │       ├── actionsConversation.ts # e17a — callbacks du chat liés explicitement à un fil
     │       ├── DotmSquare2.tsx
     │       ├── DotmSquare5.tsx
     │       ├── FileChangeBlock.tsx
@@ -462,8 +462,8 @@ Code map:
     │       ├── MermaidDiagram.tsx
     │       ├── PlanningNextMoveBlock.tsx
     │       ├── Questionnaire.tsx
-    │       ├── ReplCard.tsx # axe:repl — carte condensée d'une exécution python
-    │       ├── SlashCommands.tsx # axe:slash — parseur + autocomplétion /goal /autonomous /heartbeat /compact /refine /tree /login /settings
+    │       ├── ReplCard.tsx # repl — carte condensée d'une exécution python
+    │       ├── SlashCommands.tsx # slash — parseur + autocomplétion /goal /autonomous /heartbeat /compact /refine /tree /login /settings
     │       ├── TodoStrip.tsx
     │       ├── ToolCard.tsx
     │       ├── dotmatrix-core.tsx
@@ -471,10 +471,10 @@ Code map:
     │       ├── slash.css
     │       └── stream.ts
     ├── lib
-    │   ├── cloudOnline.ts # axe:v2-l6 — état de joignabilité du service cloud, sondes 15→60 s, garde d'écriture hors ligne
-    │   ├── cloudOffline.ts # axe:v2-l6 (tranche 2) — copie locale (miroir) hors ligne : offline_* , état en attente, sync/conflits
+    │   ├── cloudOnline.ts # v2-l6 — état de joignabilité du service cloud, sondes 15→60 s, garde d'écriture hors ligne
+    │   ├── cloudOffline.ts # v2-l6 (tranche 2) — copie locale (miroir) hors ligne : offline_* , état en attente, sync/conflits
     │   ├── fileIcon.ts
-    │   ├── ipc.ts # IPC local + remote_* ; cloudRpc et routage skills.* en cloud (axe:v2-l2.4) ; lectures/écritures via le miroir hors ligne ; conversations (list/load/rename) routées vers le service en cloud (axe:v2-l7)
+    │   ├── ipc.ts # IPC local + remote_* ; cloudRpc et routage skills.* en cloud (v2-l2.4) ; lectures/écritures via le miroir hors ligne ; conversations (list/load/rename) routées vers le service en cloud (v2-l7)
     │   ├── language.ts
     │   ├── models.ts
     │   ├── recents.ts

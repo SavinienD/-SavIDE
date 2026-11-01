@@ -1,4 +1,4 @@
-//! axe:menage — les sous-agents finis ne gardent pas leur noyau pour rien.
+//! menage — les sous-agents finis ne gardent pas leur noyau pour rien.
 //!
 //! Runtimes factices (comme `tests/daemon.rs`) : chaque runtime note l'arrêt
 //! de sa session, comme un vrai runtime arrêterait son noyau Python.

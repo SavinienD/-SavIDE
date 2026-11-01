@@ -20,7 +20,7 @@ const MODELS: &[GoogleModelInfo] = &[
         max_output_tokens: GEMINI_MAX_OUTPUT,
         supports_images: true,
     },
-    // axe:providers — other models served by the Antigravity subscription
+    // providers — other models served by the Antigravity subscription
     // (ids checked against `v1internal:fetchAvailableModels`).
     GoogleModelInfo {
         id: "gemini-3-flash-agent",

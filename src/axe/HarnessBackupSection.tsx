@@ -1,4 +1,4 @@
-// axe:cleanup — Settings > Harness: periodic harness backup to a chosen folder.
+// cleanup — Settings > Harness: periodic harness backup to a chosen folder.
 import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";

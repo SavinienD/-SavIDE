@@ -1,4 +1,4 @@
-// axe:stop-force — Stop ne reste jamais sans effet.
+// stop-force — Stop ne reste jamais sans effet.
 //
 // Le démon abandonne un tour qui ignore Stop au bout de 8 s
 // (DaemonConfig.stop_grace) et tue son noyau. Si la conversation est encore

@@ -646,7 +646,7 @@ impl AppStore {
         })
     }
 
-    /// axe:miroir-vm - (workspace_id, id) des conversations modifiees depuis `since_ms`.
+    /// miroir-vm - (workspace_id, id) des conversations modifiees depuis `since_ms`.
     pub fn conversations_updated_since(&self, since_ms: i64) -> Result<Vec<(String, String, i64)>> {
         let conn = self.connection()?;
         let mut st = conn.prepare("select workspace_id, id, updated_at_ms from conversations where updated_at_ms > ?1")?;
@@ -1334,7 +1334,7 @@ impl AppStore {
         Ok(())
     }
 
-    /// axe:archive-locale - supprimer = archiver : la conversation quitte la liste active.
+    /// archive-locale - supprimer = archiver : la conversation quitte la liste active.
     pub fn set_conversation_archived(&self, workspace_id: &str, id: &str, archived: bool) -> Result<()> {
         let conn = self.connection()?;
         conn.execute(
@@ -1345,7 +1345,7 @@ impl AppStore {
         Ok(())
     }
 
-    /// axe:archive-locale - conversations archivees de l'espace local.
+    /// archive-locale - conversations archivees de l'espace local.
     pub fn list_archived_conversations(&self, workspace_id: &str) -> Result<Vec<ConversationSummary>> {
         let conn = self.connection()?;
         let mut statement = conn
@@ -1371,7 +1371,7 @@ impl AppStore {
         Ok(conversations)
     }
 
-    /// axe:archive-locale - suppression definitive, seulement depuis l'archive.
+    /// archive-locale - suppression definitive, seulement depuis l'archive.
     pub fn delete_archived_conversation(&self, workspace_id: &str, id: &str) -> Result<bool> {
         let conn = self.connection()?;
         let n = conn
@@ -1393,7 +1393,7 @@ impl AppStore {
         Ok(())
     }
 
-    /// axe:commandes — dossier (workspace) d'une conversation connue par son seul id.
+    /// commandes — dossier (workspace) d'une conversation connue par son seul id.
     pub fn conversation_workspace_by_id(&self, id: &str) -> Result<Option<String>> {
         let conn = self.connection()?;
         conn.query_row(
@@ -1480,7 +1480,7 @@ impl AppStore {
         ensure_conversations_title_initialized_column(&conn)?;
         ensure_app_settings_table(&conn)?;
         ensure_turn_checkpoints_table(&conn)?;
-        ensure_conversations_archived_column(&conn)?; // axe:archive-locale
+        ensure_conversations_archived_column(&conn)?; // archive-locale
         if version < 8 {
             conn.execute("delete from turn_checkpoints", [])
                 .context("unable to clear legacy turn checkpoints")?;

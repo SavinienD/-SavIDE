@@ -1,4 +1,4 @@
-//! axe:refine169 — affinage bout à bout avec le VRAI flux : l'IA appelle
+//! refine169 — affinage bout à bout avec le VRAI flux : l'IA appelle
 //! `refine.run()` dans le noyau d'une vraie session du démon (crochet des commandes),
 //! le planificateur tourne en arrière-plan, et l'affinage finit TOUJOURS en
 //! appliqué / rien à changer / échec avec raison / arrêté (délai et bouton Arrêter).

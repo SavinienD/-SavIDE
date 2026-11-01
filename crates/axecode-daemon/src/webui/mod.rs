@@ -1,4 +1,4 @@
-//! axe:webui — web interface of the conversations, served by the service on
+//! webui — web interface of the conversations, served by the service on
 //! the `--listen` address (see [`crate::listen`]): static app embedded in the
 //! binary, cookie login, then the browser talks the regular protocol over
 //! the authenticated `/ws` WebSocket.

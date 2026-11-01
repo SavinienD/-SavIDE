@@ -1,11 +1,11 @@
-// axe:cloud — signed-in shell of the cloud mode: top bar (tabs + account
+// cloud — signed-in shell of the cloud mode: top bar (tabs + account
 // menu) and the three tabs. Tabs stay mounted once opened so a running chat
 // or SavIDE session keeps its state when switching.
 import { useEffect, useRef, useState } from "react";
 import { AxeLogo } from "../../axe/Logo";
 import { WindowControls, isWindowsPlatform } from "../WindowControls";
 import { RemoteConversations } from "../agents/RemoteConversations";
-import { ErrorBoundary } from "../ErrorBoundary"; // axe:robustesse
+import { ErrorBoundary } from "../ErrorBoundary"; // robustesse
 import { PrimeAgentTab } from "./PrimeAgentTab";
 import { TerminalTab } from "./TerminalTab";
 import { CLOUD_CONNECTION, cloudApi, errorText, primeApi, roleLabel, type CloudState } from "./cloudApi";

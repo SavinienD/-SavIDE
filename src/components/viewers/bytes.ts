@@ -1,4 +1,4 @@
-// axe:viewers — chunked binary reads through the `viewer_read_bytes` command.
+// viewers — chunked binary reads through the `viewer_read_bytes` command.
 // Large files never travel through JSON: each call returns a raw ArrayBuffer.
 
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";

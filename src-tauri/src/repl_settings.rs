@@ -1,4 +1,4 @@
-// axe:repl — Settings > Outils (REPL modules/functions), compaction threshold
+// repl — Settings > Outils (REPL modules/functions), compaction threshold
 // and per-model output caps. Shared with the daemon through
 // `<data>/repl-settings.json`.
 

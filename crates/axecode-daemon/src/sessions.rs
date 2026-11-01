@@ -25,7 +25,7 @@ use crate::{
     util::new_id,
 };
 
-/// axe:e3 — un identifiant de session ne peut pas porter de syntaxe de chemin
+/// e3 — un identifiant de session ne peut pas porter de syntaxe de chemin
 /// (l'identifiant sert de nom de fichier, y compris dans le dossier d'archive).
 pub(crate) fn valid_session_id(id: &str) -> SessionResult<()> {
     if id.is_empty()
@@ -39,7 +39,7 @@ pub(crate) fn valid_session_id(id: &str) -> SessionResult<()> {
     Ok(())
 }
 
-/// axe:e3 — déplacement même-volume, avec repli copie+suppression hors volume.
+/// e3 — déplacement même-volume, avec repli copie+suppression hors volume.
 fn move_file(src: &Path, dst: &Path) -> SessionResult<()> {
     match std::fs::rename(src, dst) {
         Ok(()) => Ok(()),
@@ -62,7 +62,7 @@ impl Daemon {
         metas
     }
 
-    /// axe:e3 — visibilité d'une métadonnée (racine de l'espace configurée).
+    /// e3 — visibilité d'une métadonnée (racine de l'espace configurée).
     fn visible_meta(&self, meta: &SessionMeta, root: Option<&Path>) -> bool {
         let Some(root) = root else {
             return true;
@@ -73,7 +73,7 @@ impl Daemon {
         path.is_dir() && path.starts_with(root)
     }
 
-    /// axe:e3 — racine de l'espace de travail, canonisée (contrôle de visibilité).
+    /// e3 — racine de l'espace de travail, canonisée (contrôle de visibilité).
     fn workspace_root_canon(&self) -> SessionResult<Option<PathBuf>> {
         self.config
             .workspace_root
@@ -83,14 +83,14 @@ impl Daemon {
             .map_err(|e| SessionError::Io(e.to_string()))
     }
 
-    /// axe:e3 — conversations archivées, avec leur état. Le chemin d'archive
+    /// e3 — conversations archivées, avec leur état. Le chemin d'archive
     /// n'est jamais renvoyé : seuls l'identifiant, les métadonnées et l'état
     /// sortent du daemon.
     pub fn list_archived_entries(&self) -> SessionResult<Value> {
         let root = self.workspace_root_canon()?;
         let mut out: Vec<Value> = Vec::new();
         for id in journal::list_archived_ids(&self.config.data_dir) {
-            // axe:menage — plain or compressed archive.
+            // menage — plain or compressed archive.
             let Ok(journal) = journal::open_archived(&self.config.data_dir, &id) else {
                 continue;
             };
@@ -119,7 +119,7 @@ impl Daemon {
         Ok(Value::Array(out))
     }
 
-    /// axe:journal-archive — journal d'une conversation archivée, en lecture seule,
+    /// journal-archive — journal d'une conversation archivée, en lecture seule,
     /// si elle existe et reste visible dans l'espace (sinon `None` / introuvable).
     pub(crate) fn archived_journal_readonly(&self, id: &str) -> SessionResult<Option<Journal>> {
         valid_session_id(id)?;
@@ -184,7 +184,7 @@ impl Daemon {
         }
     }
 
-    /// axe:eveil — Windows stays awake while at least one session runs.
+    /// eveil — Windows stays awake while at least one session runs.
     fn refresh_keep_awake(&self, sessions: &std::collections::HashMap<String, crate::daemon::Slot>) {
         let running = sessions
             .values()
@@ -287,7 +287,7 @@ impl Daemon {
         mut request: CreateSessionRequest,
         history: Vec<ChatMessage>,
     ) -> SessionResult<SessionMeta> {
-        self.prepare_workspace(&id, &mut request)?; // axe:freechat
+        self.prepare_workspace(&id, &mut request)?; // freechat
         let mut journal = Journal::create(
             &self.config.data_dir,
             &id,
@@ -313,7 +313,7 @@ impl Daemon {
         self.meta(&id)
     }
 
-    // axe:v2-l7 — l'IDE manipule un identifiant virtuel `axe-cloud://<connexion>/<racine>`
+    // v2-l7 — l'IDE manipule un identifiant virtuel `axe-cloud://<connexion>/<racine>`
     // (ex. `axe-cloud://axe-cloud/work`) qui n'existe pas sur le service. On ignore la
     // connexion (le service a une racine fixe) et on exige que le reste commence par le
     // nom de base de la racine de travail configurée. `None` = chemin local, inchangé.
@@ -363,7 +363,7 @@ impl Daemon {
         mut request: CreateSessionRequest,
     ) -> SessionResult<CreateSessionRequest> {
         let raw = request.workspace_id.trim().to_string();
-        // axe:v2-l7 — traduire d'abord les identifiants cloud, y compris pour
+        // v2-l7 — traduire d'abord les identifiants cloud, y compris pour
         // refuser explicitement quand aucune racine n'est configurée.
         let cloud = self.cloud_workspace(&raw)?;
         let Some(configured) = self.config.workspace_root.as_ref() else {
@@ -378,7 +378,7 @@ impl Daemon {
             ));
         }
         if raw.is_empty() {
-            // axe:v2-e10 — le dossier n'est JAMAIS demandé à l'utilisateur : il ne
+            // v2-e10 — le dossier n'est JAMAIS demandé à l'utilisateur : il ne
             // connaît pas la machine distante. Sans dossier, la session prend la
             // racine de travail du compte, que seul le service connaît (une seule
             // racine par compte, imposée par l'unité systemd).
@@ -403,7 +403,7 @@ impl Daemon {
         Ok(request)
     }
 
-    // axe:freechat
+    // freechat
     /// A request without folder is a free conversation: its workspace is a
     /// private, persistent scratch folder named after the session.
     fn prepare_workspace(&self, id: &str, request: &mut CreateSessionRequest) -> SessionResult<()> {
@@ -432,7 +432,7 @@ impl Daemon {
         if workspace_id.trim().is_empty() {
             return Err(SessionError::Protocol("missing workspaceId".into()));
         }
-        // axe:v2-l7 — même traduction que `sessions.create` : un identifiant
+        // v2-l7 — même traduction que `sessions.create` : un identifiant
         // `axe-cloud://...` reçu du front devient le chemin réel sous la racine.
         let cloud = self.cloud_workspace(workspace_id.trim())?;
         let workspace_id = if let Some(configured) = self.config.workspace_root.as_ref() {
@@ -477,7 +477,7 @@ impl Daemon {
         self.unload(id).await;
         self.meta(id)
     }
-    // axe:freechat end
+    // freechat end
 
     fn insert_loaded(&self, journal: Journal, parent: Option<&str>) -> SessionResult<()> {
         let mut meta = journal
@@ -513,7 +513,7 @@ impl Daemon {
     }
 
     /// Clones the session at `entry` (default: current leaf) into a new one.
-    /// axe:arriere-plan — `parent` : session parente du clone (défaut : le
+    /// arriere-plan — `parent` : session parente du clone (défaut : le
     /// parent de la source) ; l'instantané du noyau de la source est copié,
     /// le clone garde donc ses variables.
     pub fn fork(
@@ -601,7 +601,7 @@ impl Daemon {
         Ok(())
     }
 
-    /// axe:e3 — archiver une conversation **et celles qui en découlent** : un
+    /// e3 — archiver une conversation **et celles qui en découlent** : un
     /// fil archivé ne doit pas laisser d'enfants orphelins dans les
     /// conversations actives. Les enfants partent d'abord, le parent ensuite.
     pub fn archive(&self, id: &str) -> SessionResult<Value> {
@@ -613,7 +613,7 @@ impl Daemon {
         Ok(value)
     }
 
-    /// axe:e3 — identifiants d'une conversation active et de ses descendantes,
+    /// e3 — identifiants d'une conversation active et de ses descendantes,
     /// les enfants d'abord. Refuse une conversation qui n'est pas active.
     fn subtree_ids(&self, id: &str) -> SessionResult<Vec<String>> {
         valid_session_id(id)?;
@@ -634,14 +634,14 @@ impl Daemon {
         Ok(out)
     }
 
-    /// axe:e3 — archiver une seule conversation : elle quitte les conversations
+    /// e3 — archiver une seule conversation : elle quitte les conversations
     /// actives et son journal part dans le dossier d'archive, dont le chemin
     /// n'est jamais communiqué. Le déplacement est un `rename` : l'inode ne
     /// change pas, donc une écriture résiduelle du tour en cours atterrit dans
     /// le fichier archivé au lieu d'être perdue.
     pub(crate) fn archive_one(&self, id: &str) -> SessionResult<Value> {
         valid_session_id(id)?;
-        let _archive = lock(&self.archive_lock); // axe:menage
+        let _archive = lock(&self.archive_lock); // menage
         let root = self.workspace_root_canon()?;
         let journal_path = journal::journal_path(&self.config.data_dir, id);
         let journal = Journal::open_path(&journal_path)
@@ -696,12 +696,12 @@ impl Daemon {
                 }
             }
             sessions.remove(id);
-            // axe:eveil — a session archived while running no longer counts.
+            // eveil — a session archived while running no longer counts.
             self.refresh_keep_awake(&sessions);
         }
         meta.archived = true;
         meta.status = SessionStatus::Inactive;
-        // axe:menage — an archived sub-agent stays visible to the runtimes.
+        // menage — an archived sub-agent stays visible to the runtimes.
         if meta.parent_id.is_some() {
             lock(&self.archived_subagents)
                 .insert(id.to_string(), crate::menage::index_entry(meta.clone()));
@@ -714,16 +714,16 @@ impl Daemon {
         Ok(value)
     }
 
-    /// axe:e3 — rétablir une conversation archivée : elle revient dans les
+    /// e3 — rétablir une conversation archivée : elle revient dans les
     /// conversations actives, journal à l'appui. Rien ne peut être rétabli qui
     /// n'ait été archivé.
     pub fn restore_archived(&self, id: &str) -> SessionResult<Value> {
         valid_session_id(id)?;
-        let _archive = lock(&self.archive_lock); // axe:menage
+        let _archive = lock(&self.archive_lock); // menage
         self.restore_archived_locked(id)
     }
 
-    /// axe:menage — [`Self::restore_archived`] with `archive_lock` held.
+    /// menage — [`Self::restore_archived`] with `archive_lock` held.
     pub(crate) fn restore_archived_locked(&self, id: &str) -> SessionResult<Value> {
         valid_session_id(id)?;
         let archived = journal::archive_path(&self.config.data_dir, id);
@@ -740,7 +740,7 @@ impl Daemon {
         if !self.visible_meta(&meta, root.as_deref()) {
             return Err(SessionError::NotFound(id.to_string()));
         }
-        // axe:menage — a compressed archive comes back to its plain form
+        // menage — a compressed archive comes back to its plain form
         // first (the `.gz` stays untouched if it cannot be read).
         journal::inflate_archive(&self.config.data_dir, id)?;
 
@@ -763,7 +763,7 @@ impl Daemon {
             move_file(&snapshot, &journal::snapshot_path(&self.config.data_dir, id))?;
             duplicates.push(journal::gz_path(&snapshot));
         }
-        // axe:menage — a `.gz` left next to its plain file (compression cut
+        // menage — a `.gz` left next to its plain file (compression cut
         // before removing the original) is a checked copy: it goes. A `.gz`
         // without plain file (unreadable snapshot) stays where it is.
         for gz in duplicates.iter().filter(|gz| gz.exists()) {
@@ -779,7 +779,7 @@ impl Daemon {
         {
             let mut sessions = lock(&self.sessions);
             meta.children.clear();
-            // axe:menage — the meta was read before the « active » mark: it
+            // menage — the meta was read before the « active » mark: it
             // must not stay flagged archived in memory (lists would hide it).
             meta.archived = false;
             if let Some(parent) = meta.parent_id.clone() {
@@ -802,7 +802,7 @@ impl Daemon {
             );
         }
 
-        lock(&self.archived_subagents).remove(id); // axe:menage
+        lock(&self.archived_subagents).remove(id); // menage
         meta.archived = false;
         meta.status = SessionStatus::Inactive;
         let mut value = serde_json::to_value(&meta)?;
@@ -812,12 +812,12 @@ impl Daemon {
         Ok(value)
     }
 
-    /// axe:e3 — supprimer une conversation **archivée**. Toute autre demande
+    /// e3 — supprimer une conversation **archivée**. Toute autre demande
     /// est refusée : la suppression n'est possible que depuis l'archive, pour
     /// qu'un geste ne détruise jamais une conversation en cours de travail.
     pub fn delete_archived(&self, id: &str) -> SessionResult<Value> {
         valid_session_id(id)?;
-        let _archive = lock(&self.archive_lock); // axe:menage
+        let _archive = lock(&self.archive_lock); // menage
         if !journal::archive_exists(&self.config.data_dir, id) {
             return Err(SessionError::Protocol(
                 "suppression refusée : archivez d'abord la conversation".into(),
@@ -831,13 +831,13 @@ impl Daemon {
         if !self.visible_meta(&meta, root.as_deref()) {
             return Err(SessionError::NotFound(id.to_string()));
         }
-        // axe:menage — plain and compressed files alike.
+        // menage — plain and compressed files alike.
         for file in journal::archive_files(&self.config.data_dir, id) {
             if file.exists() {
                 std::fs::remove_file(&file)?;
             }
         }
-        lock(&self.archived_subagents).remove(id); // axe:menage
+        lock(&self.archived_subagents).remove(id); // menage
         Ok(json!({"ok": true, "id": id, "state": "supprime"}))
     }
 
@@ -911,7 +911,7 @@ impl Daemon {
         Ok(entry)
     }
 
-    /// axe:bg-a — like [`Self::post_peer`] but never starts a turn: the
+    /// bg-a — like [`Self::post_peer`] but never starts a turn: the
     /// message is delivered with the next one (system note to a conversation).
     pub fn post_peer_quiet(&self, from: &str, to: &str, text: String) -> SessionResult<EntryId> {
         self.append(
@@ -923,7 +923,7 @@ impl Daemon {
         )
     }
 
-    /// axe:bg-a — a sub-agent (or background session) whose turn ended on a
+    /// bg-a — a sub-agent (or background session) whose turn ended on a
     /// service-side failure still reports to its parent, which would
     /// otherwise wait for a result that never comes.
     pub(crate) fn report_failure_to_parent(&self, id: &str, error: &str) {
@@ -1002,7 +1002,7 @@ mod tests {
         }
     }
 
-    /// axe:v2-e12f — une seule notion d'archive : demander `archived: true`
+    /// v2-e12f — une seule notion d'archive : demander `archived: true`
     /// par `sessions.update` range **vraiment** la conversation (le journal
     /// quitte les conversations actives) au lieu de poser un drapeau qui la
     /// laissait lisible. `archived: false` la retablit par la meme porte.
@@ -1048,7 +1048,7 @@ mod tests {
         assert!(!archive.exists(), "l'archive est videe");
     }
 
-    /// axe:arriere-plan — « Arrière-plan » : le clone est l'enfant de la
+    /// arriere-plan — « Arrière-plan » : le clone est l'enfant de la
     /// conversation (vue Agents), garde les variables du noyau (instantané
     /// copié) et l'historique compacté de la conversation.
     #[tokio::test(flavor = "multi_thread")]
@@ -1138,7 +1138,7 @@ mod tests {
         assert_eq!(meta.workspace_id, canonical.display().to_string());
     }
 
-    /// axe:v2-e10 — aucun dossier n'est demandé à l'utilisateur : une session
+    /// v2-e10 — aucun dossier n'est demandé à l'utilisateur : une session
     /// créée sans dossier atterrit dans la racine de travail du compte, que seul
     /// le service connaît. Avant, le service refusait (« require a workspace »)
     /// et l'utilisateur devait taper un chemin sur une machine qu'il ne voit pas.
@@ -1212,7 +1212,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&base);
     }
 
-    /// axe:e3 — archiver sort la conversation des actives ; la suppression
+    /// e3 — archiver sort la conversation des actives ; la suppression
     /// n'est possible qu'à partir de l'archive.
     #[test]
     fn archiver_puis_supprimer_depuis_l_archive() {
@@ -1246,7 +1246,7 @@ mod tests {
         );
     }
 
-    /// axe:e3 — archiver un fil archive aussi ce qui en découle : aucun enfant
+    /// e3 — archiver un fil archive aussi ce qui en découle : aucun enfant
     /// orphelin ne reste dans les conversations actives.
     #[test]
     fn archiver_un_fil_archive_les_enfants() {
@@ -1294,7 +1294,7 @@ mod tests {
         assert_eq!(daemon.meta(&parent.id).unwrap().children, vec![enfant.id.clone()]);
     }
 
-    /// axe:e3 — une conversation archivée peut être rétablie : elle revient
+    /// e3 — une conversation archivée peut être rétablie : elle revient
     /// dans la liste active, et peut de nouveau être archivée puis supprimée.
     #[test]
     fn retablir_une_conversation_archivee() {
@@ -1329,7 +1329,7 @@ mod tests {
         daemon.delete_archived(&conversation.id).unwrap();
     }
 
-    /// axe:e3 — la liste des archives ne laisse fuir aucun chemin de fichier.
+    /// e3 — la liste des archives ne laisse fuir aucun chemin de fichier.
     #[test]
     fn la_liste_des_archives_ne_montre_aucun_chemin() {
         let f = Fixture::new();
@@ -1353,7 +1353,7 @@ mod tests {
         );
     }
 
-    /// axe:e3 — un identifiant ne peut pas sortir du dossier d'archive.
+    /// e3 — un identifiant ne peut pas sortir du dossier d'archive.
     #[test]
     fn un_identifiant_ne_sort_pas_du_dossier() {
         let f = Fixture::new();

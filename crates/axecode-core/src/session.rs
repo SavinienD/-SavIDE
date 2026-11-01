@@ -1,4 +1,4 @@
-// axe:daemon — shared contracts between the background service (axecode-daemon),
+// daemon — shared contracts between the background service (axecode-daemon),
 // the REPL runtime (chantier C) and the agents layer (chantier E).
 //
 // Everything here is provider-agnostic and serialisable: the daemon owns the
@@ -93,7 +93,7 @@ pub struct SessionMeta {
     /// Legacy conversation id when the session was imported from SQLite.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub imported_from: Option<String>,
-    /// axe:freechat — free conversation (no project folder): the workspace is
+    /// freechat — free conversation (no project folder): the workspace is
     /// a private scratch folder `<data>/scratch/<session-id>/`. Derived from
     /// the workspace path when the metadata is rebuilt.
     #[serde(default)]
@@ -200,11 +200,11 @@ pub enum JournalEntryKind {
         name: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         archived: Option<bool>,
-        /// axe:freechat — the session moved to another folder (a free
+        /// freechat — the session moved to another folder (a free
         /// conversation opened in a project).
         #[serde(default, skip_serializing_if = "Option::is_none")]
         workspace_id: Option<String>,
-        /// axe:freechat — replaces the extra system prompt (project rules of
+        /// freechat — replaces the extra system prompt (project rules of
         /// the new folder).
         #[serde(default, skip_serializing_if = "Option::is_none")]
         system_prompt_extra: Option<String>,
@@ -393,7 +393,7 @@ impl std::fmt::Debug for RuntimeContext {
 pub trait SessionRuntimeFactory: Send + Sync {
     async fn create(&self, context: RuntimeContext) -> SessionResult<Arc<dyn SessionRuntime>>;
 
-    /// axe:voix — one-shot text completion without tools (clean-up of a
+    /// voix — one-shot text completion without tools (clean-up of a
     /// dictation, `voice.clean`). Factories without providers refuse.
     async fn complete_text(
         &self,

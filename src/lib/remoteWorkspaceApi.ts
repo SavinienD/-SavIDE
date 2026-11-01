@@ -1,4 +1,4 @@
-// axe:cloud L2 — typed wrappers over the remote workspace commands (fs.* / git.*
+// cloud L2 — typed wrappers over the remote workspace commands (fs.* / git.*
 // RPC of a cloud connection). All paths are relative to the service root.
 import { invoke } from "@tauri-apps/api/core";
 import type { FileDocument, WorkspaceEntry, WorkspaceSearchResult } from "../types";

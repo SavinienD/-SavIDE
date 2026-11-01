@@ -14,14 +14,14 @@ import {
 } from "./remoteItems";
 import "./agents.css";
 
-// axe:remote — Conversations of a remote connection: sessions live on the
+// remote — Conversations of a remote connection: sessions live on the
 // remote service (they keep running when the IDE closes). Transcript built
 // from the journal (errors included), new session with a model the service
 // can serve (Axe Cloud first), model switch, send, stop, live updates.
 
 type Props = {
   connectionId: string;
-  /** axe:v2-e10 — dossier du compte, donné par le service ; jamais demandé à
+  /** v2-e10 — dossier du compte, donné par le service ; jamais demandé à
    *  l'utilisateur (vide = le service prend la racine de travail du compte). */
   defaultWorkspace?: string;
 };
@@ -30,7 +30,7 @@ const OTHER = "__autre__";
 
 export function RemoteConversations({ connectionId, defaultWorkspace }: Props) {
   const [sessions, setSessions] = useState<SessionMeta[]>([]);
-  // axe:v2-e12 — les archives se gerent ICI, la ou vivent les conversations
+  // v2-e12 — les archives se gerent ICI, la ou vivent les conversations
   // (avant, seul l'espace local avait « Archives » : on ne trouvait rien sur un espace).
   const [archives, setArchives] = useState<SessionMeta[]>([]);
   const [archivesOpen, setArchivesOpen] = useState(false);
@@ -96,7 +96,7 @@ export function RemoteConversations({ connectionId, defaultWorkspace }: Props) {
     if (!selectedId) return;
     setTree(null);
     setStreaming("");
-    // axe:v2-e12 — une conversation archivee n'est plus lisible cote service :
+    // v2-e12 — une conversation archivee n'est plus lisible cote service :
     // on la montre sans journal, avec seulement « Rétablir » et « Supprimer ».
     if (archivesRef.current.some((s) => s.id === selectedId)) return;
     void loadTree(selectedId);
@@ -136,7 +136,7 @@ export function RemoteConversations({ connectionId, defaultWorkspace }: Props) {
         } else if (event.event === "stream") {
           const data = (event.data as { event?: { type?: string; delta?: string } } | undefined)?.event;
           if (data?.type === "text_delta" && data.delta) setStreaming((s) => s + data.delta);
-          // axe:reprise — stream cut, request sent again: the reply starts over.
+          // reprise — stream cut, request sent again: the reply starts over.
           else if (data?.type === "stream_retry") setStreaming("");
         }
       })
@@ -148,7 +148,7 @@ export function RemoteConversations({ connectionId, defaultWorkspace }: Props) {
   }, [connectionId, load, loadTree]);
 
   const items = useMemo(() => (tree ? buildRemoteItems(branchEntries(tree)) : []), [tree]);
-  // axe:robustesse — défiler la zone des messages ELLE-MÊME : scrollIntoView fait aussi défiler tous les conteneurs parents
+  // robustesse — défiler la zone des messages ELLE-MÊME : scrollIntoView fait aussi défiler tous les conteneurs parents
   // (y compris la racine de l'appli, en overflow:hidden), ce qui peut sortir toute l'interface de l'écran.
   useEffect(() => {
     const log = logRef.current;
@@ -192,7 +192,7 @@ export function RemoteConversations({ connectionId, defaultWorkspace }: Props) {
     }
   };
 
-  // axe:v2-e12 — archiver / rétablir / supprimer une conversation distante, là
+  // v2-e12 — archiver / rétablir / supprimer une conversation distante, là
   // où on la lit. Le service impose l'ordre : on archive d'abord, on ne supprime
   // que depuis l'archive (rien ne disparaît par surprise).
   const archiver = async (id: string) => {
@@ -227,7 +227,7 @@ export function RemoteConversations({ connectionId, defaultWorkspace }: Props) {
   };
 
   const create = async () => {
-    // axe:v2-e12 — le modèle ne se choisit PAS à la création : il se change dans
+    // v2-e12 — le modèle ne se choisit PAS à la création : il se change dans
     // la conversation, une fois qu'elle existe. On part du dernier modèle utilisé.
     const premier = choices[0];
     const model =
@@ -238,7 +238,7 @@ export function RemoteConversations({ connectionId, defaultWorkspace }: Props) {
       return;
     }
     try {
-      // axe:v2-e10 — le dossier n'est pas demandé : quand la porte le donne
+      // v2-e10 — le dossier n'est pas demandé : quand la porte le donne
       // (`defaultWorkspace`), on l'envoie ; sinon on envoie vide et le service
       // prend la racine de travail du compte connecté.
       const meta = await agentsApi.create(newName.trim() || "Nouvelle conversation", defaultWorkspace ?? "", model, connectionId);
@@ -264,7 +264,7 @@ export function RemoteConversations({ connectionId, defaultWorkspace }: Props) {
     const running = selected.status === "running";
     const sessionChoices = modelChoices(sessions, selected.model);
     if (selected.archived) {
-      // axe:v2-e12 — une conversation archivee n'est plus lisible : on ne propose
+      // v2-e12 — une conversation archivee n'est plus lisible : on ne propose
       // que les deux suites logiques (retablir, ou supprimer pour de bon).
       return (
         <div className="axe-agents axe-remote-conv">
@@ -304,7 +304,7 @@ export function RemoteConversations({ connectionId, defaultWorkspace }: Props) {
               <option key={modelKey(m)} value={modelKey(m)}>{m.label}</option>
             ))}
           </select>
-          {/* axe:v2-e12 — archiver se fait ici, sur la conversation ouverte. */}
+          {/* v2-e12 — archiver se fait ici, sur la conversation ouverte. */}
           <button
             type="button"
             className="axe-agents__icon-btn"
@@ -385,7 +385,7 @@ export function RemoteConversations({ connectionId, defaultWorkspace }: Props) {
               if (e.key === "Enter") void create();
             }}
           />
-          {/* axe:v2-e12 — une seule chose à faire ici : lui donner un nom. Le
+          {/* v2-e12 — une seule chose à faire ici : lui donner un nom. Le
               dossier est choisi par le service, et le modèle se choisit ensuite
               dans la conversation : rien d'autre n'est demandé à la création. */}
           <div className="axe-agents__actions">
@@ -417,7 +417,7 @@ export function RemoteConversations({ connectionId, defaultWorkspace }: Props) {
             </div>
           </li>
         ))}
-        {/* axe:v2-e12 — les archives se trouvent et se traitent ici : rétablir,
+        {/* v2-e12 — les archives se trouvent et se traitent ici : rétablir,
             ou supprimer définitivement (le service n'efface que ce qui est archivé). */}
         {archives.length > 0 ? (
           <li className="axe-agents__archives">

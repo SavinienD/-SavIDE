@@ -1,4 +1,4 @@
-// axe:cloud — typed wrappers over the Axe Cloud IPC (src-tauri/src/cloud.rs)
+// cloud — typed wrappers over the Axe Cloud IPC (src-tauri/src/cloud.rs)
 // and the JSON API of the Prime portal (/prime/api/*) and of the porte (/app/*).
 // The app token never reaches this side: Rust adds it to every call.
 import { invoke } from "@tauri-apps/api/core";

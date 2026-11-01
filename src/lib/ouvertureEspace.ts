@@ -1,4 +1,4 @@
-// axe:parcours-collegue (D5) — liste des conversations à l'ouverture d'un espace Axe Cloud.
+// parcours-collegue (D5) — liste des conversations à l'ouverture d'un espace Axe Cloud.
 //
 // `open_cloud_workspace` (src-tauri/src/workspace.rs) construit la liste depuis le magasin du
 // PC : les conversations de l'espace (par ex. « test », créée par « + » sur la VM) n'y étaient

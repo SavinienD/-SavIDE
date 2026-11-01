@@ -14,11 +14,11 @@ import {
 } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { api } from "../lib/ipc";
-import { GitPanel, GitMark } from "./GitPanel"; // axe:git-onglet
-import { GIT_TAB_ID, cycleTab, isExecutablePathTitle, resolveActiveTab } from "./terminalTabs"; // axe:terminal-onglets
-import { onThemeChange } from "../axe/theme"; // axe:theme
-import { xtermTheme } from "../axe/themeTargets"; // axe:theme
-import { MONO_BASE_PX } from "../axe/zoom"; // axe:zoom — taille fixe (e19 : le reglage ne concerne que le chat et les documents)
+import { GitPanel, GitMark } from "./GitPanel"; // git-onglet
+import { GIT_TAB_ID, cycleTab, isExecutablePathTitle, resolveActiveTab } from "./terminalTabs"; // terminal-onglets
+import { onThemeChange } from "../axe/theme"; // theme
+import { xtermTheme } from "../axe/themeTargets"; // theme
+import { MONO_BASE_PX } from "../axe/zoom"; // zoom — taille fixe (e19 : le reglage ne concerne que le chat et les documents)
 import type { TerminalDataPayload, TerminalExitPayload } from "../types";
 
 type TerminalStatus = "idle" | "starting" | "running" | "exited" | "error";
@@ -93,7 +93,7 @@ export function TerminalPanel({
 }: Props) {
   const [sessions, setSessions] = useState<TerminalSession[]>(() => loadTerminalSessions(workspacePath));
   const [activeId, setActiveId] = useState(() => loadTerminalSessions(workspacePath)[0]?.id ?? "terminal-1");
-  // axe:git-tabs - branche git du dossier affichee dans chaque onglet.
+  // git-tabs - branche git du dossier affichee dans chaque onglet.
   const [gitBranch, setGitBranch] = useState<string | null>(null);
   const [gitDirty, setGitDirty] = useState(0);
   useEffect(() => {
@@ -128,7 +128,7 @@ export function TerminalPanel({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [active, activeId, sessions]);
 
-  // axe:terminal-onglets - id d'onglet reellement affiche (jamais orphelin) ; Git est un onglet a part.
+  // terminal-onglets - id d'onglet reellement affiche (jamais orphelin) ; Git est un onglet a part.
   const shownId = resolveActiveTab(activeId, sessions.map((session) => session.id));
   const activeSession =
     sessions.find((session) => session.id === shownId) ?? sessions[0];
@@ -173,7 +173,7 @@ export function TerminalPanel({
     onCloseLastSession();
   }, [onCloseLastSession, sessions, workspacePath]);
 
-  // axe:git-onglet - onglet Git epingle (comme dans CloudTerminalPanel).
+  // git-onglet - onglet Git epingle (comme dans CloudTerminalPanel).
   const gitActive = shownId === GIT_TAB_ID;
 
   if (!activeSession) return null;
@@ -354,7 +354,7 @@ function TerminalSurface({
   // updates without having to re-register every time the parent re-renders.
   const onOpenTerminalPathRef = useRef(onOpenTerminalPath);
   onOpenTerminalPathRef.current = onOpenTerminalPath;
-  // axe:terminal-onglets - valeur courante de `active` pour les observateurs
+  // terminal-onglets - valeur courante de `active` pour les observateurs
   // crees une seule fois (le ResizeObserver gardait la valeur du demarrage).
   const activeRef = useRef(active);
   activeRef.current = active;
@@ -391,7 +391,7 @@ function TerminalSurface({
   const startTerminal = useCallback(() => {
     const container = containerRef.current;
     if (!container || terminalRef.current) return;
-    // axe:terminal-onglets - ne jamais ouvrir xterm dans un conteneur invisible
+    // terminal-onglets - ne jamais ouvrir xterm dans un conteneur invisible
     // ou de taille 0 (onglet Git affiche, panneau en cours de mise en page) :
     // le rendu resterait vide. On attend qu'il ait une taille.
     const firstRect = container.getBoundingClientRect();
@@ -425,9 +425,9 @@ function TerminalSurface({
       "--font-mono",
       '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
     );
-    // axe:zoom — `--fs-mono` is a calc() expression now: scale the base
+    // zoom — `--fs-mono` is a calc() expression now: scale the base
     // ourselves so xterm keeps exact cell metrics.
-    // axe:e19 — le terminal ne suit plus le reglage « taille du texte » : seuls le
+    // e19 — le terminal ne suit plus le reglage « taille du texte » : seuls le
     // chat et les documents s'agrandissent.
     const fontSize = MONO_BASE_PX;
 
@@ -486,7 +486,7 @@ function TerminalSurface({
     // automatically falls back to the DOM renderer.
     const tryEnableWebgl = () => {
       if (webglRef.current) return;
-      // axe:terminal-onglets - sous Windows (WebView2) le canvas WebGL de xterm
+      // terminal-onglets - sous Windows (WebView2) le canvas WebGL de xterm
       // peut rester vide alors que le shell tourne : rendu DOM, toujours fiable.
       if (/windows/i.test(navigator.userAgent)) return;
       try {
@@ -636,7 +636,7 @@ function TerminalSurface({
     return () => cancelAnimationFrame(id);
   }, [active, fitTerminal]);
 
-  // axe:theme — follow the background colour picked in Settings > Apparence.
+  // theme — follow the background colour picked in Settings > Apparence.
   useEffect(
     () =>
       onThemeChange(() => {
@@ -646,7 +646,7 @@ function TerminalSurface({
     [],
   );
 
-  // axe:e19 — le reglage « taille du texte » ne concerne plus le terminal : son
+  // e19 — le reglage « taille du texte » ne concerne plus le terminal : son
   // texte garde 12 px, quelle que soit la valeur choisie pour le chat et les documents.
 
   useEffect(() => {
@@ -704,7 +704,7 @@ function loadTerminalSessions(workspacePath: string): TerminalSession[] {
         id: `terminal-${item.index}`,
         index: item.index!,
         // "Prime Agent" was the old default name of the first tab: it only ever ran PowerShell.
-        // axe:terminal-onglets - ancien titre = chemin de pwsh.exe : on revient a « Terminal N ».
+        // terminal-onglets - ancien titre = chemin de pwsh.exe : on revient a « Terminal N ».
         title: item.title === "Prime Agent" || isExecutablePathTitle(item.title!) ? `Terminal ${item.index}` : item.title!,
         customTitle: typeof item.customTitle === "string" && item.customTitle ? item.customTitle : undefined,
         shell: item.shell === "bash" ? "bash" : "powershell",
@@ -733,7 +733,7 @@ function createTerminalToken(sessionId: string): string {
   return `${sessionId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-// axe:theme — derived from the Axe theme so light backgrounds get a light terminal.
+// theme — derived from the Axe theme so light backgrounds get a light terminal.
 function terminalTheme() {
   return xtermTheme();
 }

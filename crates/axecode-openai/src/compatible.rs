@@ -1,4 +1,4 @@
-//! axe:providers — declared OpenAI-compatible endpoints.
+//! providers — declared OpenAI-compatible endpoints.
 //!
 //! The OpenAI crate speaks the Responses API; endpoints declared in
 //! `<data_dir>/providers.json` speak plain `/chat/completions`. Rather than

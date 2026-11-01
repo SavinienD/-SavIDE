@@ -1,4 +1,4 @@
-// axe:providers — configurable provider instances (OpenAI/Anthropic-compatible,
+// providers — configurable provider instances (OpenAI/Anthropic-compatible,
 // Mistral, DeepSeek, xAI, Groq, Prime Inference, Ollama, LM Studio).
 //
 // Settings live in `<data>/providers.json`; API keys in a separate
@@ -84,7 +84,7 @@ fn load_keys() -> std::result::Result<HashMap<String, String>, String> {
     read_json(&data_dir()?.join(KEYS_FILE))
 }
 
-/// axe:voix — URL de base et clé d'une instance activée qui pointe sur l'API
+/// voix — URL de base et clé d'une instance activée qui pointe sur l'API
 /// OpenAI (api.openai.com) : repli de la dictée (gpt-4o-transcribe / whisper-1).
 pub(crate) fn openai_api_credentials() -> Option<(String, String)> {
     let settings = load_provider_settings().ok()?;
@@ -215,7 +215,7 @@ fn capabilities_for(config: &ProviderConfig, settings: &ProviderSettings) -> Vec
         .iter()
         .map(|model| {
             let mut caps = model.capabilities(&config.id);
-            // axe:compaction — real window of a known Claude model.
+            // compaction — real window of a known Claude model.
             if config.kind.uses_anthropic_wire() {
                 axecode_anthropic::apply_known_window(&mut caps);
             }
@@ -251,7 +251,7 @@ fn build_provider(
             caps,
             dialect_for(config.kind),
         );
-        // axe:ollama — native /api/chat: Ollama's /v1 route cannot raise the
+        // ollama — native /api/chat: Ollama's /v1 route cannot raise the
         // context size, so it cut Axecode's prompt to its default 2-4k tokens.
         if config.kind == ProviderKind::Ollama {
             openai = openai.with_ollama_native();

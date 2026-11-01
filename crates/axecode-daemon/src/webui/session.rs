@@ -1,4 +1,4 @@
-//! axe:webui — browser sessions (HttpOnly cookie) and login throttling.
+//! webui — browser sessions (HttpOnly cookie) and login throttling.
 //!
 //! Cookies carry a random token; only its SHA-256 is kept, in
 //! `<data_dir>/web-sessions.json`, so sessions survive a service restart and

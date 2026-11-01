@@ -1,4 +1,4 @@
-//! Image size limits shared by the providers (axe:images).
+//! Image size limits shared by the providers (images).
 //!
 //! Anthropic rejects a whole request (400 "image dimensions exceed max allowed
 //! size for many-image requests: 2000 pixels") as soon as ONE image of a

@@ -1,4 +1,4 @@
-//! axe:voix — `voice.*` de bout en bout sur un service réel (runtime d'écho),
+//! voix — `voice.*` de bout en bout sur un service réel (runtime d'écho),
 //! avec un faux serveur whisper.cpp : chaîne de repli, multipart, tâche de fond.
 
 use std::{sync::Arc, time::Duration};

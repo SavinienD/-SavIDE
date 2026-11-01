@@ -1,5 +1,5 @@
 /**
- * axe:voix — enregistrement du micro dans la WebView (getUserMedia + MediaRecorder,
+ * voix — enregistrement du micro dans la WebView (getUserMedia + MediaRecorder,
  * webm/opus) et niveau sonore (AnalyserNode) pour l'onde affichée.
  *
  * WebView2 (Windows) : la première demande ouvre l'invite d'autorisation du micro
@@ -63,13 +63,13 @@ export class EnregistreurVoix {
   private tampon: Float32Array<ArrayBuffer> | null = null;
   private debut = 0;
   private type = "";
-  // axe:0.1.75 — PCM pour la dictée en direct (morceaux WAV de ≈ 3 s).
+  // 0.1.75 — PCM pour la dictée en direct (morceaux WAV de ≈ 3 s).
   private processeur: ScriptProcessorNode | null = null;
   private pcm: Float32Array[] = [];
   private pcmLongueur = 0;
   private dernierSon = 0;
   private frequence = 48_000;
-  // axe:0.1.77 — PCM reçu depuis le début (0 = WebAudio muet) et secours par segments MediaRecorder.
+  // 0.1.77 — PCM reçu depuis le début (0 = WebAudio muet) et secours par segments MediaRecorder.
   private pcmTotal = 0;
   private segment: MediaRecorder | null = null;
   private minuterieSegment: number | null = null;
@@ -112,7 +112,7 @@ export class EnregistreurVoix {
         (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (Contexte) {
         this.contexte = new Contexte();
-        // axe:0.1.77 — contexte créé après l'attente du micro : il peut naître « suspendu »
+        // 0.1.77 — contexte créé après l'attente du micro : il peut naître « suspendu »
         // (règle d'autoplay de WebView2) ; suspendu, il ne livre ni niveau ni PCM.
         if (this.contexte.state === "suspended") void this.contexte.resume().catch(() => undefined);
         const source = this.contexte.createMediaStreamSource(flux);
@@ -156,12 +156,12 @@ export class EnregistreurVoix {
     return this.processeur ? performance.now() - this.dernierSon : 0;
   }
 
-  /** axe:0.1.77 — le direct marche aussi sans WebAudio (segments MediaRecorder). */
+  /** 0.1.77 — le direct marche aussi sans WebAudio (segments MediaRecorder). */
   directPossible(): boolean {
     return this.flux !== null;
   }
 
-  /** axe:0.1.77 — le WebAudio livre-t-il du son ? (faux : passer aux segments) */
+  /** 0.1.77 — le WebAudio livre-t-il du son ? (faux : passer aux segments) */
   pcmLivre(): boolean {
     return this.processeur !== null && this.pcmTotal > 0;
   }
@@ -171,7 +171,7 @@ export class EnregistreurVoix {
   }
 
   /**
-   * axe:0.1.77 — secours du direct quand le WebAudio ne livre rien : un second
+   * 0.1.77 — secours du direct quand le WebAudio ne livre rien : un second
    * MediaRecorder sur le même flux, arrêté et relancé toutes les `dureeMs`. Chaque
    * segment est un fichier webm/opus complet, transcrit à part.
    */

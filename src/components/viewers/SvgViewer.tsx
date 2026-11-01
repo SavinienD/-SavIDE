@@ -1,4 +1,4 @@
-// axe:viewers — SVG preview. The live editor buffer (or the file on disk when
+// viewers — SVG preview. The live editor buffer (or the file on disk when
 // it is too large for Monaco) is shown through an <img>, a context where SVG
 // scripts and external resources never run.
 

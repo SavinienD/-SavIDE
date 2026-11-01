@@ -379,7 +379,7 @@ impl Inner {
         let brief = dir.join(BRIEF_FILE);
         let argv = self.render(template, &dir, &brief, &task.modele);
         let (program, args) = argv.split_first().ok_or(AgentsError::UnknownCommand)?;
-        // axe:migration - /opt/axecode/... else the installation of before the rename.
+        // migration - /opt/axecode/... else the installation of before the rename.
         let program = crate::config::installed_program(program);
 
         let mut command = __nw_tokio(&program);
@@ -926,7 +926,7 @@ impl Inner {
     }
 }
 
-/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+/// 0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
 #[allow(dead_code)]
 fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
     #[allow(unused_mut)]

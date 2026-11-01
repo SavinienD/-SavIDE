@@ -1,4 +1,4 @@
-// axe:viewers — fallback for files Monaco cannot take (binary, or text over
+// viewers — fallback for files Monaco cannot take (binary, or text over
 // the editor limit). The first bytes are sniffed: text files open in a paged
 // read-only text view, everything else in the hex dump; both are reachable
 // from the toolbar. Nothing is read beyond the page on screen.

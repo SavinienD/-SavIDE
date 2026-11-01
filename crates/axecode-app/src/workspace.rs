@@ -1,7 +1,7 @@
 use std::{
     cmp::Ordering,
     fs,
-    io::Read as _, // axe:viewers
+    io::Read as _, // viewers
     path::{Component, Path, PathBuf},
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -15,7 +15,7 @@ use crate::text::{decode_text, encode_text, TextEncoding};
 
 const MAX_EDITABLE_BYTES: u64 = 1024 * 1024;
 const MAX_PREVIEW_IMAGE_BYTES: u64 = 25 * 1024 * 1024;
-// axe:viewers — bytes sniffed from files too large for the text editor.
+// viewers — bytes sniffed from files too large for the text editor.
 const SNIFF_BYTES: u64 = 8 * 1024;
 const MAX_INDEXED_FILES: usize = 10_000;
 const MAX_SEARCH_FILES: usize = 80;
@@ -70,15 +70,15 @@ pub struct WorkspaceEntry {
     pub absolute_path: String,
     pub kind: WorkspaceEntryKind,
     pub has_children: bool,
-    /// axe:explorateur — date de dernière modification (ms depuis 1970), pour le tri.
+    /// explorateur — date de dernière modification (ms depuis 1970), pour le tri.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub modified_ms: Option<u64>,
-    /// axe:explorateur — taille en octets (fichiers seulement), pour le tri.
+    /// explorateur — taille en octets (fichiers seulement), pour le tri.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<u64>,
 }
 
-/// axe:explorateur — date de modification d'une entrée en millisecondes (tri de l'explorateur).
+/// explorateur — date de modification d'une entrée en millisecondes (tri de l'explorateur).
 fn modified_ms(metadata: &fs::Metadata) -> Option<u64> {
     metadata
         .modified()
@@ -152,7 +152,7 @@ pub struct WorkspaceDeletedEntry {
 }
 
 pub fn normalize_workspace_root(path: impl AsRef<Path>) -> Result<PathBuf> {
-    // axe:v2-l2.3 — un espace de travail CLOUD n'existe pas sur ce poste : son identifiant
+    // v2-l2.3 — un espace de travail CLOUD n'existe pas sur ce poste : son identifiant
     // `axe-cloud://<connexion><racine>` sert de cle (conversations, reglages, outils) et les
     // fichiers vivent sur le serveur (operations de fichiers routees vers le daemon).
     if path.as_ref().to_string_lossy().starts_with("axe-cloud://") {
@@ -626,7 +626,7 @@ pub fn read_external_file(path: &Path) -> Result<FileDocument> {
         .and_then(|value| value.duration_since(UNIX_EPOCH).ok())
         .map(|value| value.as_millis() as i64);
 
-    let bytes = read_document_bytes(path, size)?; // axe:viewers
+    let bytes = read_document_bytes(path, size)?; // viewers
     let image_media_type = detect_image_media_type(&bytes)
         .or_else(|| preview_image_media_type(path))
         .map(str::to_string);
@@ -1319,7 +1319,7 @@ fn read_document(root: &Path, path: &Path) -> Result<FileDocument> {
         .and_then(|value| value.duration_since(UNIX_EPOCH).ok())
         .map(|value| value.as_millis() as i64);
 
-    let bytes = read_document_bytes(path, size)?; // axe:viewers
+    let bytes = read_document_bytes(path, size)?; // viewers
     let image_media_type = detect_image_media_type(&bytes)
         .or_else(|| preview_image_media_type(path))
         .map(str::to_string);
@@ -1362,7 +1362,7 @@ fn read_document(root: &Path, path: &Path) -> Result<FileDocument> {
     })
 }
 
-// axe:viewers — files too large for the text editor are only sniffed (first
+// viewers — files too large for the text editor are only sniffed (first
 // bytes) unless they are previewable images: the editor viewers stream the
 // rest by byte ranges, so a 500 MB file is never read whole here.
 fn read_document_bytes(path: &Path, size: u64) -> Result<Vec<u8>> {

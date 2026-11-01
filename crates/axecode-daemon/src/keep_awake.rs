@@ -1,4 +1,4 @@
-//! axe:eveil — garde Windows éveillé tant qu'au moins une session tourne.
+//! eveil — garde Windows éveillé tant qu'au moins une session tourne.
 //!
 //! Pourquoi : la nuit du 20/10/2026, le PC de l'utilisateur (sur batterie) s'est mis
 //! en veille après 3 min sans clavier ni souris et tous les agents en cours

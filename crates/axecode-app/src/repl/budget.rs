@@ -1,4 +1,4 @@
-//! axe:compaction — when the loop compacts automatically.
+//! compaction — when the loop compacts automatically.
 //!
 //! The trigger used to be "input tokens of the PREVIOUS call ≥ N % of the
 //! window": it ignored what was added since (tool results, the answer) and

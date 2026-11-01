@@ -1,4 +1,4 @@
-// axe:providers — helpers for Anthropic-compatible endpoints: model discovery
+// providers — helpers for Anthropic-compatible endpoints: model discovery
 // and key validation. The native OAuth provider never calls these.
 
 use serde::Deserialize;
@@ -83,7 +83,7 @@ pub async fn discover_models(base_url: &str, api_key: &str) -> Result<Vec<ModelD
         .collect())
 }
 
-/// axe:providers — Claude subscription usage windows
+/// providers — Claude subscription usage windows
 /// (`GET https://api.anthropic.com/api/oauth/usage`). Returned raw: every
 /// top-level object carrying a `utilization` field is a quota window
 /// (`five_hour`, `seven_day`, `seven_day_opus`, …).

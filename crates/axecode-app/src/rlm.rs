@@ -94,10 +94,10 @@ fn session_json(meta: &SessionMeta) -> Value {
     })
 }
 
-/// axe:bg-d — how often a long turn gets a fresh status of its sub-agents.
+/// bg-d — how often a long turn gets a fresh status of its sub-agents.
 pub const SUBAGENTS_STATUS_EVERY: Duration = Duration::from_secs(180);
 
-/// axe:bg-d — automatic status of the sub-agents still at work under
+/// bg-d — automatic status of the sub-agents still at work under
 /// `parent_id` (descendants, depth shown by indentation): name, id, model,
 /// how long since they started and since their last activity. `None` when
 /// none is running.
@@ -309,7 +309,7 @@ impl FamilyHost {
             None => profile
                 .as_ref()
                 .and_then(|p| p.model.clone())
-                // axe:sub-m — default sub-agent model from the REPL settings.
+                // sub-m — default sub-agent model from the REPL settings.
                 .or_else(|| {
                     crate::repl::ReplSettings::load(&self.data_dir)
                         .subagent_default_model

@@ -1,4 +1,4 @@
-// axe:0.1.71 — la dictée n'est proposée que si un moteur de transcription répond.
+// 0.1.71 — la dictée n'est proposée que si un moteur de transcription répond.
 // Avant, le micro s'affichait toujours : sans moteur, on obtenait « Transcription
 // impossible… connexion refusée (service arrêté ou port non permis…) ; whisper small
 // (VM)… » (SavIDE, Axecode sans espace). Module pur : testé par tests/voixDisponible.test.cjs.
@@ -17,7 +17,7 @@ export type OptionsDisponibilite = {
 /** Un service joignable dont au moins un moteur Whisper répond (ou, hors mode local, une clé OpenAI). */
 export function dicteeDisponible(etat: EtatVoix | null | undefined, options: OptionsDisponibilite = {}): boolean {
   if (!etat) return false;
-  // axe:micro-local — whisper.cpp embarqué : toujours disponible (modèle téléchargé au premier usage).
+  // micro-local — whisper.cpp embarqué : toujours disponible (modèle téléchargé au premier usage).
   if (options.localSeulement && etat.local?.ok) return true;
   const services = (etat.services ?? []).filter((s) => !options.localSeulement || s.connexion === SERVICE_LOCAL);
   if (services.some((s) => s.ok && (s.moteurs ?? []).some((m) => m.ok))) return true;

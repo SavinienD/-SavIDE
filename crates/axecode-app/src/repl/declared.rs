@@ -1,4 +1,4 @@
-//! axe:providers — declared providers wired into the REPL runtime.
+//! providers — declared providers wired into the REPL runtime.
 //!
 //! `ReplRuntime::new` wraps the host resolver in a [`DeclaredProviderResolver`]
 //! built from the session's `data_dir`, so the service can use models declared

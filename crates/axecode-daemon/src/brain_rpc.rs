@@ -1,4 +1,4 @@
-//! axe:v2-l2.4 — `skills.*` and `harness.*` RPC: read and write the workspace
+//! v2-l2.4 — `skills.*` and `harness.*` RPC: read and write the workspace
 //! brain (installed skills + continual harness) from a remote client.
 //!
 //! The daemon uses ITS OWN workspace root (`config.workspace_root`): no path
@@ -110,7 +110,7 @@ fn save_skill_settings(d: &Daemon, settings: &SkillSettings) -> SessionResult<Sk
     Ok(normalized)
 }
 
-/// axe:v2-l7 — compétences de l'espace partagé (`<shared-root>/skills`).
+/// v2-l7 — compétences de l'espace partagé (`<shared-root>/skills`).
 /// Elles sont ajoutées après celles de l'espace de travail et du HOME ; un
 /// doublon de nom est masqué (la version locale gagne). `rootLabel` vaut
 /// « Partagé » et la source reste `Global` : `InstalledSkill` ne change pas.
@@ -184,7 +184,7 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
                 .and_then(Value::as_str)
                 .unwrap_or_default();
             let content = p.get("content").and_then(Value::as_str).unwrap_or_default();
-            // axe:v2-l7 — la recherche inclut l'espace partagé : si la
+            // v2-l7 — la recherche inclut l'espace partagé : si la
             // compétence y vit, `write_installed_skill` refuse le chemin hors
             // des racines autorisées (aucune écriture dans le partagé).
             let existing = all_skills(d, &root)
@@ -208,7 +208,7 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
         }
         "skills.delete" => {
             let name = name_of(p)?;
-            // axe:v2-l7 — même confinement : une compétence partagée est
+            // v2-l7 — même confinement : une compétence partagée est
             // trouvée ici puis refusée par `delete_installed_skill`.
             let skill = all_skills(d, &root)
                 .into_iter()
@@ -222,7 +222,7 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
             let raw = p.get("settings").cloned().unwrap_or_else(|| json!({}));
             let parsed: SkillSettings = serde_json::from_value(raw)
                 .map_err(|e| SessionError::Protocol(format!("invalid skill settings: {e}")))?;
-            // axe:v2-l7 — seuls des noms et des drapeaux entrent ici : le
+            // v2-l7 — seuls des noms et des drapeaux entrent ici : le
             // fichier écrit est celui du service (`data_dir`), jamais un
             // `SKILL.md`. Tout nom qui ressemble à un chemin (ou à un dossier
             // caché) est refusé, y compris vers l'espace partagé.
@@ -289,7 +289,7 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
             Ok(serde_json::to_value(store.demote(&id).map_err(err)?)?)
         }
         "harness.refinements" => Ok(serde_json::to_value(refine::history(&store).map_err(err)?)?),
-        // axe:refine-run — stop a running refinement (the task polls the journal).
+        // refine-run — stop a running refinement (the task polls the journal).
         "harness.refine_cancel" => {
             let id = id_of(p)?;
             Ok(serde_json::to_value(refine::cancel(&store, &id).map_err(err)?)?)
@@ -525,7 +525,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&base);
     }
 
-    // axe:v2-l7 — compétences de l'espace partagé.
+    // v2-l7 — compétences de l'espace partagé.
     #[test]
     fn shared_skills_are_listed_after_local_ones() {
         let f = Fixture::with_shared(true);

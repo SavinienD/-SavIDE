@@ -38,7 +38,7 @@ pub(super) async fn open_workspace(
     Ok(bootstrap)
 }
 
-/// axe:v2-l2.3 — entree « espace cloud » : l'IDE ouvre l'espace de travail de la connexion
+/// v2-l2.3 — entree « espace cloud » : l'IDE ouvre l'espace de travail de la connexion
 /// distante au lieu d'un dossier local. L'identifiant d'espace `axe-cloud://<connexion>/<racine>`
 /// ne touche aucun chemin du poste : il sert de cle aux conversations, et les commandes de
 /// fichiers de l'IDE sont routees vers le daemon (voir src/lib/ipc.ts).
@@ -46,7 +46,7 @@ pub(super) async fn open_workspace(
 #[serde(rename_all = "camelCase")]
 pub(super) struct CloudWorkspaceInput {
     pub connection_id: String,
-    /// axe:accueil-3-choix - sous-dossier de la racine (facultatif).
+    /// accueil-3-choix - sous-dossier de la racine (facultatif).
     #[serde(default)]
     pub folder: Option<String>,
 }
@@ -534,7 +534,7 @@ pub(super) async fn open_path_with_default_app_command(
     open_with_default_app(&path).map_err(error_to_string)
 }
 
-// axe:explorateur — « Ouvrir avec… » sur une entrée de l'explorateur.
+// explorateur — « Ouvrir avec… » sur une entrée de l'explorateur.
 #[tauri::command]
 pub(super) async fn open_workspace_entry_with_command(
     input: WorkspaceFileInput,

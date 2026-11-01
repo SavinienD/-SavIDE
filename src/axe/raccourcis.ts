@@ -1,4 +1,4 @@
-// axe:raccourcis — registre UNIQUE des raccourcis clavier de SavIDE.
+// raccourcis — registre UNIQUE des raccourcis clavier de SavIDE.
 // Chaque raccourci est déclaré ici une seule fois (touches, libellé, catégorie) ;
 // les composants ne font que fournir l'action (`fournirActions`). Un seul
 // écouteur `keydown` (phase de capture) sur window applique le registre, et
@@ -85,7 +85,7 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "zoomPlus", categorie: "Affichage", libelle: "Zoom avant (toute l'interface)", combinaison: "Ctrl + +", touche: { ctrl: true, touches: ["+", "=", "code:NumpadAdd", "code:Equal"] } },
   { id: "zoomMoins", categorie: "Affichage", libelle: "Zoom arrière", combinaison: "Ctrl + −", touche: { ctrl: true, touches: ["-", "code:Minus", "code:NumpadSubtract"] } },
   { id: "zoomReset", categorie: "Affichage", libelle: "Zoom à 100 %", combinaison: "Ctrl + 0", touche: { ctrl: true, touches: ["code:Digit0", "code:Numpad0"] } },
-  // axe:gestes - pense-bete : gestes de saisie et de souris (aucune touche interceptee).
+  // gestes - pense-bete : gestes de saisie et de souris (aucune touche interceptee).
   { id: "entreeEnvoyer", categorie: "Conversations", libelle: "Envoyer le message (mis en file si l'agent travaille)", combinaison: "Entrée", touche: { touches: [] } },
   { id: "entreeForcer", categorie: "Conversations", libelle: "Forcer la file : le dernier message en attente part tout de suite et le tour en cours s'arrête (deux appuis rapides pendant que l'agent travaille)", combinaison: "Entrée × 2 (rapide)", touche: { touches: [] } },
   { id: "nouvelleLigne", categorie: "Conversations", libelle: "Nouvelle ligne dans le message", combinaison: "Maj + Entrée", touche: { touches: [] } },

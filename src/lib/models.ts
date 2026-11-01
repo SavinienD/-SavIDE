@@ -7,7 +7,7 @@ import type {
 } from "../types";
 
 export type ModelId = string;
-// axe:providers — configurable instances use their own (dynamic) ids.
+// providers — configurable instances use their own (dynamic) ids.
 export type ProviderId =
   | "anthropic"
   | "openai"
@@ -25,7 +25,7 @@ export type ModelEntry = {
   thinking: readonly ThinkingLevel[];
   defaultThinking: ThinkingLevel;
   supportsFast?: boolean;
-  // axe:providers
+  // providers
   providerLabel?: string;
   icon?: string;
 };
@@ -151,7 +151,7 @@ export const MODELS: ModelEntry[] = [
     thinking: ["minimal", "low", "medium", "high"],
     defaultThinking: "high",
   },
-  // axe:providers — other models included in the Google (Antigravity) subscription,
+  // providers — other models included in the Google (Antigravity) subscription,
   // each verified to answer (2026-10-15). Gemini 3.6 Flash / 3.1 Pro are listed for
   // the account but refused to third-party clients (404), so they are not offered.
   {
@@ -182,7 +182,7 @@ export const MODELS: ModelEntry[] = [
     thinking: ["medium"],
     defaultThinking: "medium",
   },
-  // axe:gemini-web — models of the Google AI subscription through
+  // gemini-web — models of the Google AI subscription through
   // gemini.google.com (ids = app categories, resolved per account at runtime).
   // Thinking: low = standard, high = extended thinking.
   {
@@ -238,7 +238,7 @@ export function sanitizeOpenRouterName(name: string | null | undefined): string 
 
 export function modelsWithOpenRouter(
   openRouterModels: readonly OpenRouterModel[] = [],
-  customModels: readonly ModelEntry[] = [], // axe:providers
+  customModels: readonly ModelEntry[] = [], // providers
 ): ModelEntry[] {
   return [...MODELS, ...openRouterModelEntries(openRouterModels), ...customModels];
 }
@@ -246,7 +246,7 @@ export function modelsWithOpenRouter(
 export function availableModelsForProviders(
   configuredProviders: readonly string[],
   openRouterModels: readonly OpenRouterModel[] = [],
-  customModels: readonly ModelEntry[] = [], // axe:providers
+  customModels: readonly ModelEntry[] = [], // providers
 ): ModelEntry[] {
   const configured = new Set(configuredProviders);
   return [
@@ -256,7 +256,7 @@ export function availableModelsForProviders(
   ];
 }
 
-/** axe:providers — icon for a model entry (native provider icon or entry icon). */
+/** providers — icon for a model entry (native provider icon or entry icon). */
 export function modelEntryIcon(entry: ModelEntry): string | undefined {
   return PROVIDERS.find((p) => p.value === entry.provider)?.icon ?? entry.icon;
 }

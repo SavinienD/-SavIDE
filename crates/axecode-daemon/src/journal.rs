@@ -22,7 +22,7 @@ use axecode_core::{
 use crate::util::{new_id, now_ms};
 
 pub const SESSIONS_DIR: &str = "sessions";
-/// axe:e3 — conversations archivées. Chemin jamais montré à l'utilisateur.
+/// e3 — conversations archivées. Chemin jamais montré à l'utilisateur.
 pub const ARCHIVE_DIR: &str = "archive";
 
 /// In-memory handle on one session journal.
@@ -33,7 +33,7 @@ pub struct Journal {
     entries: Vec<JournalEntry>,
     index: HashMap<EntryId, usize>,
     leaf: Option<EntryId>,
-    /// axe:menage — read from a compressed archive: never written.
+    /// menage — read from a compressed archive: never written.
     read_only: bool,
 }
 
@@ -49,22 +49,22 @@ pub fn snapshot_path(data_dir: &Path, session_id: &str) -> PathBuf {
     sessions_dir(data_dir).join(format!("{session_id}.snapshot"))
 }
 
-/// axe:e3 — dossier d'archive (sous les données du service, jamais affiché).
+/// e3 — dossier d'archive (sous les données du service, jamais affiché).
 pub fn archive_dir(data_dir: &Path) -> PathBuf {
     data_dir.join(ARCHIVE_DIR)
 }
 
-/// axe:e3 — journal d'une conversation archivée.
+/// e3 — journal d'une conversation archivée.
 pub fn archive_path(data_dir: &Path, session_id: &str) -> PathBuf {
     archive_dir(data_dir).join(format!("{session_id}.jsonl"))
 }
 
-/// axe:e3 — snapshot de kernel d'une conversation archivée.
+/// e3 — snapshot de kernel d'une conversation archivée.
 pub fn archive_snapshot_path(data_dir: &Path, session_id: &str) -> PathBuf {
     archive_dir(data_dir).join(format!("{session_id}.snapshot"))
 }
 
-/// axe:menage — compressed form of an archived file (`<name>.gz`).
+/// menage — compressed form of an archived file (`<name>.gz`).
 pub fn gz_path(path: &Path) -> PathBuf {
     with_suffix(path, ".gz")
 }
@@ -75,13 +75,13 @@ fn with_suffix(path: &Path, suffix: &str) -> PathBuf {
     PathBuf::from(name)
 }
 
-/// axe:menage — whether an archive exists for this session (plain or `.gz`).
+/// menage — whether an archive exists for this session (plain or `.gz`).
 pub fn archive_exists(data_dir: &Path, session_id: &str) -> bool {
     let plain = archive_path(data_dir, session_id);
     plain.exists() || gz_path(&plain).exists()
 }
 
-/// axe:menage — reader on an archived journal, plain or compressed. The
+/// menage — reader on an archived journal, plain or compressed. The
 /// plain file wins when both exist: it is never older than the `.gz`.
 fn archive_reader(data_dir: &Path, session_id: &str) -> io::Result<(PathBuf, Box<dyn BufRead>)> {
     let plain = archive_path(data_dir, session_id);
@@ -95,7 +95,7 @@ fn archive_reader(data_dir: &Path, session_id: &str) -> io::Result<(PathBuf, Box
     Ok((gz, Box::new(BufReader::new(GzDecoder::new(BufReader::new(file))))))
 }
 
-/// axe:menage — metadata of an archived session read from its first
+/// menage — metadata of an archived session read from its first
 /// entries only (no full read, even compressed): enough for the family view
 /// of the runtimes. `updated_at_ms` is the date of the file; a rename or a
 /// model switch made after the creation is not seen. `None`: unreadable.
@@ -145,13 +145,13 @@ pub fn archived_head(data_dir: &Path, session_id: &str) -> Option<SessionMeta> {
     })
 }
 
-/// axe:menage — parent of an archived session (`None`: not a sub-agent, or
+/// menage — parent of an archived session (`None`: not a sub-agent, or
 /// unreadable).
 pub fn archived_parent(data_dir: &Path, session_id: &str) -> Option<SessionId> {
     archived_head(data_dir, session_id)?.parent_id
 }
 
-/// axe:menage — opens an archived journal, plain or compressed. A journal
+/// menage — opens an archived journal, plain or compressed. A journal
 /// read from a `.gz` refuses any append ([`inflate_archive`] first).
 pub fn open_archived(data_dir: &Path, session_id: &str) -> SessionResult<Journal> {
     let (path, reader) = match archive_reader(data_dir, session_id) {
@@ -169,8 +169,8 @@ pub fn open_archived(data_dir: &Path, session_id: &str) -> SessionResult<Journal
     journal
 }
 
-/// axe:e3 — identifiants des conversations archivées sur disque
-/// (axe:menage : `<id>.jsonl` ou `<id>.jsonl.gz`).
+/// e3 — identifiants des conversations archivées sur disque
+/// (menage : `<id>.jsonl` ou `<id>.jsonl.gz`).
 pub fn list_archived_ids(data_dir: &Path) -> Vec<SessionId> {
     let Ok(read) = fs::read_dir(archive_dir(data_dir)) else {
         return Vec::new();
@@ -189,7 +189,7 @@ pub fn list_archived_ids(data_dir: &Path) -> Vec<SessionId> {
     ids
 }
 
-// ----- axe:menage — compression of old archives ----------------------------
+// ----- menage — compression of old archives ----------------------------
 
 /// Result of a compression pass.
 #[derive(Debug, Default)]
@@ -401,7 +401,7 @@ impl Journal {
         Self::open_path(&journal_path(data_dir, session_id))
     }
 
-    /// axe:e3 — opens a journal from an explicit path (active or archive).
+    /// e3 — opens a journal from an explicit path (active or archive).
     pub fn open_path(path: &Path) -> SessionResult<Self> {
         let session_id = path
             .file_stem()
@@ -411,7 +411,7 @@ impl Journal {
         Self::from_reader(path, session_id, Box::new(BufReader::new(file)), false)
     }
 
-    /// Replays a journal from any reader (axe:menage: plain file or `.gz`).
+    /// Replays a journal from any reader (menage: plain file or `.gz`).
     /// `read_only` journals refuse every append.
     fn from_reader(
         path: &Path,
@@ -701,7 +701,7 @@ impl Journal {
                     if let Some(archived) = archived {
                         meta.archived = *archived;
                     }
-                    // axe:freechat
+                    // freechat
                     if let Some(workspace_id) = workspace_id {
                         meta.workspace_id = workspace_id.clone();
                     }
@@ -717,7 +717,7 @@ impl Journal {
         }
         meta.leaf = self.leaf.clone();
         meta.entry_count = self.entries.len();
-        // axe:freechat
+        // freechat
         meta.scratch = crate::scratch::data_dir_of_journal(&self.path)
             .is_some_and(|data_dir| crate::scratch::is_scratch(data_dir, &meta.workspace_id));
         Some(meta)
@@ -761,7 +761,7 @@ impl Journal {
             },
         )?;
         let mut derniere = child.append(created)?;
-        // axe:arriere-plan — une compaction copiée désigne des entrées de la
+        // arriere-plan — une compaction copiée désigne des entrées de la
         // source : ses bornes sont réécrites vers les entrées du clone (sinon
         // `history_from_path` l'ignorait et le clone repartait de tout
         // l'historique). Une borne posée sur une entrée non copiée (racine,
@@ -1054,7 +1054,7 @@ mod tests {
         fs::remove_dir_all(dir).ok();
     }
 
-    /// axe:arriere-plan — une compaction copiée garde son effet dans le clone
+    /// arriere-plan — une compaction copiée garde son effet dans le clone
     /// (avant : bornes inconnues du clone => historique complet).
     #[test]
     fn fork_garde_la_compaction() {

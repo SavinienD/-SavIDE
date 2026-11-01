@@ -1,4 +1,4 @@
-// axe:agents-ordre - ordre de la liste des agents : ceux qui travaillent en tête.
+// agents-ordre - ordre de la liste des agents : ceux qui travaillent en tête.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const Module = require("node:module");

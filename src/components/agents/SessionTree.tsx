@@ -4,7 +4,7 @@ import "./agents.css";
 
 type Props = {
   sessionId: string;
-  /** axe:remote — machine the session lives on (default: local). */
+  /** remote — machine the session lives on (default: local). */
   connectionId?: string;
   onClose?: () => void;
 };

@@ -1,4 +1,4 @@
-// axe:remote — WebSocket listener: auth, Host check, healthz, same protocol.
+// remote — WebSocket listener: auth, Host check, healthz, same protocol.
 
 use std::{sync::Arc, time::Duration};
 

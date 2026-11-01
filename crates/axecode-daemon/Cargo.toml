@@ -21,19 +21,19 @@ portable-pty = "0.9.0" # v2-l3: terminal in the service
 axecode-app = { workspace = true } # v2-l2: confined workspace filesystem helpers
 axecode-harness = { workspace = true } # v2-l2.4: harness (brain) RPC in the service
 axecode-agents = { workspace = true } # v2-l7c: external agents RPC
-reqwest = { workspace = true } # axe:voix: whisper.cpp server of the machine
+reqwest = { workspace = true } # voix: whisper.cpp server of the machine
 
 anyhow = { workspace = true }
-argon2 = { workspace = true } # axe:remote
-httparse = "1" # axe:remote
-rust-embed = { version = "8", features = ["debug-embed"] } # axe:webui
-rand = { workspace = true } # axe:remote
-sha2 = { workspace = true } # axe:remote
-tokio-tungstenite = { workspace = true } # axe:remote
+argon2 = { workspace = true } # remote
+httparse = "1" # remote
+rust-embed = { version = "8", features = ["debug-embed"] } # webui
+rand = { workspace = true } # remote
+sha2 = { workspace = true } # remote
+tokio-tungstenite = { workspace = true } # remote
 async-trait = { workspace = true }
 base64 = { workspace = true }
 directories = { workspace = true }
-flate2 = { workspace = true } # axe:menage: archives older than 7 days are compressed
+flate2 = { workspace = true } # menage: archives older than 7 days are compressed
 futures-util = { workspace = true }
 rusqlite = { workspace = true }
 serde = { workspace = true }

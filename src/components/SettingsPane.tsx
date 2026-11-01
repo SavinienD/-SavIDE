@@ -2,30 +2,30 @@ import { EDITION_LOCALE } from "../lib/edition";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Editor, { type OnMount } from "@monaco-editor/react";
 import { Icon } from "@iconify/react";
-import { api, cloudRpc } from "../lib/ipc"; // axe:e16
+import { api, cloudRpc } from "../lib/ipc"; // e16
 import { Markdown } from "./chat/Markdown";
 import { AxeLogo } from "../axe/Logo";
-import { dateMajLisible, noterLancement, versionAppli } from "../lib/versionAppli"; // axe:apropos
-import { RaccourcisSection } from "../axe/RaccourcisSection"; // axe:raccourcis
-import { VoixSection } from "../axe/voix/VoixSection"; // axe:voix
-import { AppearanceSection } from "../axe/AppearanceSection"; // axe:theme
-import { monacoThemeData } from "../axe/themeTargets"; // axe:theme
+import { dateMajLisible, noterLancement, versionAppli } from "../lib/versionAppli"; // apropos
+import { RaccourcisSection } from "../axe/RaccourcisSection"; // raccourcis
+import { VoixSection } from "../axe/voix/VoixSection"; // voix
+import { AppearanceSection } from "../axe/AppearanceSection"; // theme
+import { monacoThemeData } from "../axe/themeTargets"; // theme
 import {
   loadTextScale,
   MONO_BASE_PX,
   MONO_LINE_BASE_PX,
   onTextScaleChange,
-} from "../axe/zoom"; // axe:zoom
-import { CustomProvidersPanel } from "../axe/CustomProvidersPanel"; // axe:providers
-import { GeminiWebCard } from "../axe/GeminiWebCard"; // axe:gemini-web
-import { HarnessBackupSection } from "../axe/HarnessBackupSection"; // axe:cleanup
-import { customModelEntries, providerApi } from "../axe/providers"; // axe:providers
-import { HarnessPane } from "./settings/HarnessPane"; // axe:harness
-import { ReplToolsPane } from "./settings/ReplToolsPane"; // axe:repl
-import { RegistrePane } from "./settings/RegistrePane"; // axe:e4
-import { ServicePane } from "./settings/ServicePane"; // axe:daemon
-import { ConnectionsPane } from "./settings/ConnectionsPane"; // axe:remote
-import { McpCatalogPanel } from "./settings/McpCatalogPanel"; // axe:e7
+} from "../axe/zoom"; // zoom
+import { CustomProvidersPanel } from "../axe/CustomProvidersPanel"; // providers
+import { GeminiWebCard } from "../axe/GeminiWebCard"; // gemini-web
+import { HarnessBackupSection } from "../axe/HarnessBackupSection"; // cleanup
+import { customModelEntries, providerApi } from "../axe/providers"; // providers
+import { HarnessPane } from "./settings/HarnessPane"; // harness
+import { ReplToolsPane } from "./settings/ReplToolsPane"; // repl
+import { RegistrePane } from "./settings/RegistrePane"; // e4
+import { ServicePane } from "./settings/ServicePane"; // daemon
+import { ConnectionsPane } from "./settings/ConnectionsPane"; // remote
+import { McpCatalogPanel } from "./settings/McpCatalogPanel"; // e7
 import {
   collectMcpSecrets,
   redactCommand,
@@ -33,11 +33,11 @@ import {
   restoreMcpSecrets,
   retirerServeurMcp,
   type McpSecretVault,
-} from "../axe/mcpCatalog"; // axe:e7
-// axe:cleanup — unified Skills tab (Markdown recipes + harness Python skills)
+} from "../axe/mcpCatalog"; // e7
+// cleanup — unified Skills tab (Markdown recipes + harness Python skills)
 import { harnessApi, type HarnessEntry } from "./settings/harnessApi";
-import { CLOUD_CONNECTION, cloudApi } from "./cloud/cloudApi"; // axe:e16
-import { oublierSectionReglages, sectionReglagesDemandee } from "../lib/sectionReglages"; // axe:parcours-collegue
+import { CLOUD_CONNECTION, cloudApi } from "./cloud/cloudApi"; // e16
+import { oublierSectionReglages, sectionReglagesDemandee } from "../lib/sectionReglages"; // parcours-collegue
 import { PythonSkillPreview, isPySkillEnabled } from "./settings/PythonSkillPreview";
 type SkillKindFilter = "all" | "recipe" | "python";
 import { sanitizeOpenRouterName, type ModelEntry } from "../lib/models";
@@ -69,19 +69,19 @@ type Props = {
 
 type Section =
   | "about"
-  | "appearance" // axe:theme
+  | "appearance" // theme
   | "providers"
   | "mcp"
   | "skills"
-  | "harness" // axe:harness
-  | "repl" // axe:repl
-  | "service" // axe:daemon
-  | "connections" // axe:remote
-  | "shortcuts" // axe:raccourcis
-  | "voice"; // axe:voix
+  | "harness" // harness
+  | "repl" // repl
+  | "service" // daemon
+  | "connections" // remote
+  | "shortcuts" // raccourcis
+  | "voice"; // voix
 
 export function SettingsPane({ workspacePath }: Props) {
-  // axe:parcours-collegue — section demandée avant le montage (« Connect a provider ») : avant, « About ».
+  // parcours-collegue — section demandée avant le montage (« Connect a provider ») : avant, « About ».
   const [section, setSection] = useState<Section>(
     () => (sectionReglagesDemandee() as Section | null) ?? "about",
   );
@@ -101,7 +101,7 @@ export function SettingsPane({ workspacePath }: Props) {
 
   const [probing, setProbing] = useState(false);
 
-  // axe:e7 — catalogue d'ajout : la configuration affichée est expurgée des
+  // e7 — catalogue d'ajout : la configuration affichée est expurgée des
   // secrets (clés API, jetons, chaînes de connexion) ; les valeurs réelles
   // restent dans ce coffre en mémoire et sont réinjectées à l'enregistrement.
   const [adding, setAdding] = useState(false);
@@ -116,7 +116,7 @@ export function SettingsPane({ workspacePath }: Props) {
   const [oauthBusyId, setOauthBusyId] = useState<string | null>(null);
 
   const [skills, setSkills] = useState<InstalledSkill[] | null>(null);
-  // axe:e16 — les competences de l'espace Axe Cloud (celles de Prime Agent).
+  // e16 — les competences de l'espace Axe Cloud (celles de Prime Agent).
   // L'interface classique les lit au service : c'est la meme source, rien a
   // recopier. Lecture seule ici, les modifications passent par l'espace.
   const [serviceSkills, setServiceSkills] = useState<InstalledSkill[]>([]);
@@ -157,7 +157,7 @@ export function SettingsPane({ workspacePath }: Props) {
   const [savedSkillsJson, setSavedSkillsJson] = useState("");
   const [selectedSkillName, setSelectedSkillName] = useState<string | null>(null);
   const [skillFilter, setSkillFilter] = useState("");
-  // axe:cleanup — harness Python skills
+  // cleanup — harness Python skills
   const [pySkills, setPySkills] = useState<HarnessEntry[]>([]);
   const [selectedPySkillId, setSelectedPySkillId] = useState<string | null>(null);
   const [skillKind, setSkillKind] = useState<SkillKindFilter>("all");
@@ -206,7 +206,7 @@ export function SettingsPane({ workspacePath }: Props) {
       ),
     [runPySkill, workspacePath],
   );
-  // axe:cleanup end
+  // cleanup end
 
   const [openAiStatus, setOpenAiStatus] = useState<OpenAiProviderStatus | null>(null);
   const [anthropicStatus, setAnthropicStatus] = useState<AnthropicProviderStatus | null>(null);
@@ -218,7 +218,7 @@ export function SettingsPane({ workspacePath }: Props) {
   const [providersBusy, setProvidersBusy] = useState(false);
   const [providersMessage, setProvidersMessage] = useState<string | null>(null);
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
-  const [customModels, setCustomModels] = useState<ModelEntry[]>([]); // axe:providers
+  const [customModels, setCustomModels] = useState<ModelEntry[]>([]); // providers
 
   useEffect(() => {
     setSkills(null);
@@ -233,11 +233,11 @@ export function SettingsPane({ workspacePath }: Props) {
   // listen unconditionally so it works whether or not the pane has been
   // opened before.
   useEffect(() => {
-    oublierSectionReglages(); // axe:parcours-collegue — demande prise en compte au montage
+    oublierSectionReglages(); // parcours-collegue — demande prise en compte au montage
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<{ section?: Section }>).detail;
       if (detail?.section) setSection(detail.section);
-      oublierSectionReglages(); // axe:parcours-collegue
+      oublierSectionReglages(); // parcours-collegue
     };
     window.addEventListener("axecode:open-settings-section", handler);
     return () =>
@@ -344,7 +344,7 @@ export function SettingsPane({ workspacePath }: Props) {
       const [providers, models, custom] = await Promise.all([
         api.listConfiguredModelProviders(),
         api.listOpenRouterModels().catch(() => []),
-        providerApi.get().catch(() => null), // axe:providers
+        providerApi.get().catch(() => null), // providers
       ]);
       setConfiguredProviders(providers);
       setOpenRouterModels(models);
@@ -357,7 +357,7 @@ export function SettingsPane({ workspacePath }: Props) {
 
   useEffect(() => {
     void loadConfiguredProviders();
-    // axe:providers — refresh when configurable providers change.
+    // providers — refresh when configurable providers change.
     const refresh = () => void loadConfiguredProviders();
     window.addEventListener(PROVIDERS_CHANGED_EVENT, refresh);
     return () => window.removeEventListener(PROVIDERS_CHANGED_EVENT, refresh);
@@ -738,7 +738,7 @@ export function SettingsPane({ workspacePath }: Props) {
     }
   }, [jsonText]);
 
-  // axe:e7 — ajout depuis le catalogue : nom + cle, la configuration reelle
+  // e7 — ajout depuis le catalogue : nom + cle, la configuration reelle
   // est ecrite (secrets compris) puis l'etat du serveur est verifie.
   const addServerFromCatalog = useCallback(
     async (server: McpServerConfig): Promise<boolean> => {
@@ -820,7 +820,7 @@ export function SettingsPane({ workspacePath }: Props) {
     [parseError, saving, settings],
   );
 
-  // axe:mcp-supprimer — « Supprimer » (confirmé dans le détail) : le moteur
+  // mcp-supprimer — « Supprimer » (confirmé dans le détail) : le moteur
   // retire l'entrée de la config et arrête sa connexion ; la liste suit.
   const [deletingServerId, setDeletingServerId] = useState<string | null>(null);
   const deleteServer = useCallback(
@@ -1210,7 +1210,7 @@ export function SettingsPane({ workspacePath }: Props) {
           <span className="settings-pane__nav-label">À propos</span>
           <span className="settings-pane__nav-count" />
         </button>
-        {/* axe:theme */}
+        {/* theme */}
         <button
           type="button"
           className="settings-pane__nav-item"
@@ -1277,7 +1277,7 @@ export function SettingsPane({ workspacePath }: Props) {
           <span className="settings-pane__nav-label">Skills</span>
           <span className="settings-pane__nav-count">{skills ? skills.length + pySkills.length : "·"}</span>
         </button>
-        {/* axe:harness */}
+        {/* harness */}
         <button
           type="button"
           className="settings-pane__nav-item"
@@ -1294,8 +1294,8 @@ export function SettingsPane({ workspacePath }: Props) {
           <span className="settings-pane__nav-label">Harnais</span>
           <span className="settings-pane__nav-count" />
         </button>
-        {/* axe:harness end */}
-        {/* axe:repl */}
+        {/* harness end */}
+        {/* repl */}
         <button
           type="button"
           className="settings-pane__nav-item"
@@ -1312,7 +1312,7 @@ export function SettingsPane({ workspacePath }: Props) {
           <span className="settings-pane__nav-label">Outils REPL</span>
           <span className="settings-pane__nav-count" />
         </button>
-        {/* axe:daemon — section cloud : masquée dans l'édition locale */}
+        {/* daemon — section cloud : masquée dans l'édition locale */}
         {EDITION_LOCALE ? null : <button
           type="button"
           className="settings-pane__nav-item"
@@ -1329,7 +1329,7 @@ export function SettingsPane({ workspacePath }: Props) {
           <span className="settings-pane__nav-label">Service</span>
           <span className="settings-pane__nav-count" />
         </button>}
-        {/* axe:e5 — joindre un autre appareil pour lui confier du calcul */}
+        {/* e5 — joindre un autre appareil pour lui confier du calcul */}
         {EDITION_LOCALE ? null : <button
           type="button"
           className="settings-pane__nav-item"
@@ -1346,8 +1346,8 @@ export function SettingsPane({ workspacePath }: Props) {
           <span className="settings-pane__nav-label">Appareils</span>
           <span className="settings-pane__nav-count" />
         </button>}
-        {/* axe:e5 end */}
-        {/* axe:raccourcis */}
+        {/* e5 end */}
+        {/* raccourcis */}
         <button
           type="button"
           className="settings-pane__nav-item"
@@ -1364,7 +1364,7 @@ export function SettingsPane({ workspacePath }: Props) {
           <span className="settings-pane__nav-label">Raccourcis</span>
           <span className="settings-pane__nav-count" />
         </button>
-        {/* axe:voix */}
+        {/* voix */}
         <button
           type="button"
           className="settings-pane__nav-item"
@@ -1387,7 +1387,7 @@ export function SettingsPane({ workspacePath }: Props) {
         {section === "about" ? (
           <AboutSection />
         ) : section === "appearance" ? (
-          <AppearanceSection /> /* axe:theme */
+          <AppearanceSection /> /* theme */
         ) : section === "providers" ? (
           <ProvidersSection
             openAiStatus={openAiStatus}
@@ -1464,19 +1464,19 @@ export function SettingsPane({ workspacePath }: Props) {
           />
         ) : section === "harness" ? (
           <>
-            <HarnessPane workspacePath={workspacePath} /> {/* axe:harness */}
-            <HarnessBackupSection workspacePath={workspacePath} /> {/* axe:cleanup */}
+            <HarnessPane workspacePath={workspacePath} /> {/* harness */}
+            <HarnessBackupSection workspacePath={workspacePath} /> {/* cleanup */}
           </>
         ) : section === "repl" ? (
-          <><ReplToolsPane workspacePath={workspacePath} /><RegistrePane /></> /* axe:repl + axe:e4 */
+          <><ReplToolsPane workspacePath={workspacePath} /><RegistrePane /></> /* repl + e4 */
         ) : section === "service" ? (
-          <ServicePane /> /* axe:daemon */
+          <ServicePane /> /* daemon */
         ) : section === "shortcuts" ? (
-          <RaccourcisSection /> /* axe:raccourcis */
+          <RaccourcisSection /> /* raccourcis */
         ) : section === "voice" ? (
-          <VoixSection workspacePath={workspacePath} /> /* axe:voix */
+          <VoixSection workspacePath={workspacePath} /> /* voix */
         ) : section === "connections" ? (
-          <ConnectionsPane /> /* axe:e5 */
+          <ConnectionsPane /> /* e5 */
         ) : section === "skills" ? (
           <SkillsSection
             skills={skillKind === "python" ? [] : filteredSkills}
@@ -1722,7 +1722,7 @@ function ProvidersSection({
           onCancel={onCancelGoogle}
           onDisconnect={onDisconnectGoogle}
         />
-        <GeminiWebCard /> {/* axe:gemini-web */}
+        <GeminiWebCard /> {/* gemini-web */}
         <ProviderCard
           name="Kimi"
           icon="local:kimi"
@@ -1745,7 +1745,7 @@ function ProvidersSection({
           onModelsChange={onOpenRouterModelsChange}
           onChanged={onOpenRouterChanged}
         />
-        <CustomProvidersPanel /> {/* axe:providers */}
+        <CustomProvidersPanel /> {/* providers */}
       </div>
     </>
   );
@@ -2214,7 +2214,7 @@ type McpSectionProps = {
   deletingServerId: string | null;
   onDeleteServer: (id: string) => void;
   onMount: OnMount;
-  // axe:e7 — catalogue d'ajout (formulaire minimal, cle API masquee).
+  // e7 — catalogue d'ajout (formulaire minimal, cle API masquee).
   catalogOpen: boolean;
   onOpenCatalog: () => void;
   onCloseCatalog: () => void;
@@ -2253,7 +2253,7 @@ function McpSection({
   onCloseCatalog,
   onAddServer,
 }: McpSectionProps) {
-  // axe:zoom — the JSON editor follows the text size (only chars grow).
+  // zoom — the JSON editor follows the text size (only chars grow).
   const [textScale, setTextScale] = useState<number>(() => loadTextScale());
   useEffect(() => onTextScaleChange(setTextScale), []);
 
@@ -2289,7 +2289,7 @@ function McpSection({
             <Icon icon="solar:add-circle-linear" width={13} height={13} />
             <span>Ajouter un serveur</span>
           </button>
-          {/* axe:e7 — la configuration avancee reste disponible, en second recours. */}
+          {/* e7 — la configuration avancee reste disponible, en second recours. */}
           <button
             type="button"
             className="settings-pane__btn"
@@ -2533,7 +2533,7 @@ function ServerDetail({
   deleteDisabled,
   onDelete,
 }: ServerDetailProps) {
-  // axe:mcp-supprimer — un premier clic arme, le second (dans les 3 s) supprime.
+  // mcp-supprimer — un premier clic arme, le second (dans les 3 s) supprime.
   const [confirmDelete, setConfirmDelete] = useState(false);
   useEffect(() => {
     if (!confirmDelete) return;
@@ -2572,7 +2572,7 @@ function ServerDetail({
       : !probe.ok
         ? "en erreur"
         : `${probe.tools.length} outil${probe.tools.length === 1 ? "" : "s"}`;
-  // axe:e7 — une chaine de connexion (PostgreSQL) contient le mot de passe :
+  // e7 — une chaine de connexion (PostgreSQL) contient le mot de passe :
   // elle est masquee a l'affichage, comme dans le JSON.
   const command = redactCommand([server.command, ...server.args]);
 
@@ -2826,10 +2826,10 @@ type SkillsSectionProps = {
   onRevealSkill: (skill: InstalledSkill) => void;
   onDeleteSkill: (skill: InstalledSkill) => void;
   onSaveSkillContent: (skill: InstalledSkill, content: string) => Promise<boolean>;
-  // axe:e16 — competences lues au service (lecture seule)
+  // e16 — competences lues au service (lecture seule)
   serviceSkills: InstalledSkill[];
   serviceNote: string | null;
-  // axe:cleanup
+  // cleanup
   pySkills: HarnessEntry[];
   pyTotal: number;
   selectedPySkill: HarnessEntry | null;
@@ -2875,7 +2875,7 @@ function SkillsSection({
 }: SkillsSectionProps) {
   const total = (allSkills?.length ?? 0) + pyTotal;
   const visible = skills.length + pySkills.length;
-  // axe:e16 — le filtre s'applique aussi aux competences du service.
+  // e16 — le filtre s'applique aussi aux competences du service.
   const serviceVisible = serviceSkills.filter((skill) => {
     const needle = filter.trim().toLowerCase();
     if (!needle) return true;
@@ -2974,7 +2974,7 @@ function SkillsSection({
             </div>
           )}
 
-          {/* axe:e16 — les competences de Prime Agent, telles que le service
+          {/* e16 — les competences de Prime Agent, telles que le service
               les voit : la meme liste que dans l'espace Axe Cloud. */}
           {serviceVisible.length > 0 || serviceNote ? (
             <div className="settings-pane__skill-service">
@@ -3170,7 +3170,7 @@ function SkillPreview({
   const body = stripFrontmatter(skill.content);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editing, setEditing] = useState(false);
-  // axe:zoom — the markdown editor follows the text size (only chars grow).
+  // zoom — the markdown editor follows the text size (only chars grow).
   const [textScale, setTextScale] = useState<number>(() => loadTextScale());
   useEffect(() => onTextScaleChange(setTextScale), []);
   const [draftName, setDraftName] = useState(skill.name);
@@ -3395,7 +3395,7 @@ function stripFrontmatter(content: string): string {
 
 type MonacoNs = Parameters<OnMount>[1];
 
-// axe:theme — Settings editors share the Axe theme (light/dark follows the background).
+// theme — Settings editors share the Axe theme (light/dark follows the background).
 function defineAxecodeCoolTheme(monaco: MonacoNs): void {
   monaco.editor.defineTheme("axecode-cool", monacoThemeData());
   monaco.editor.setTheme("axecode-cool");
@@ -3531,7 +3531,7 @@ function normalizeSettings(settings: McpSettings): McpSettings {
   };
 }
 
-/// axe:e7 — JSON affiché dans la configuration avancée : les valeurs secrètes
+/// e7 — JSON affiché dans la configuration avancée : les valeurs secrètes
 /// (clés API, jetons, chaînes de connexion) sont remplacées par des étoiles.
 /// Les vraies valeurs restent dans le coffre en mémoire et repartent au
 /// prochain enregistrement.

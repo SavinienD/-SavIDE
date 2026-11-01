@@ -68,7 +68,7 @@ pub(super) async fn rename_conversation(
         .store
         .rename_conversation(&workspace_id, &input.conversation_id, title)
         .map_err(error_to_string)?;
-    crate::freechat::mirror_rename(&app, &workspace_root, &input.conversation_id, title).await; // axe:freechat
+    crate::freechat::mirror_rename(&app, &workspace_root, &input.conversation_id, title).await; // freechat
     state
         .store
         .list_conversations(&workspace_id)
@@ -94,14 +94,14 @@ pub(super) async fn delete_conversation(
         .store
         .delete_conversation(&workspace_id, &input.conversation_id)
         .map_err(error_to_string)?;
-    crate::freechat::forget_session(&app, &workspace_root, &input.conversation_id).await; // axe:freechat
+    crate::freechat::forget_session(&app, &workspace_root, &input.conversation_id).await; // freechat
     state
         .store
         .bootstrap_workspace(&workspace_root, &state.default_model, &state.system_prompt)
         .map_err(error_to_string)
 }
 
-/// axe:archive-locale - archiver une conversation locale ; renvoie la liste active.
+/// archive-locale - archiver une conversation locale ; renvoie la liste active.
 #[tauri::command]
 pub(super) async fn archive_local(
     state: State<'_, DesktopState>,
@@ -123,7 +123,7 @@ pub(super) async fn archive_local(
     state.store.list_conversations(&workspace_id).map_err(error_to_string)
 }
 
-/// axe:archive-locale - conversations locales archivees.
+/// archive-locale - conversations locales archivees.
 #[tauri::command]
 pub(super) async fn list_archived_local(
     state: State<'_, DesktopState>,
@@ -137,7 +137,7 @@ pub(super) async fn list_archived_local(
         .map_err(error_to_string)
 }
 
-/// axe:archive-locale - retablir ; renvoie la liste des archives a jour.
+/// archive-locale - retablir ; renvoie la liste des archives a jour.
 #[tauri::command]
 pub(super) async fn restore_local(
     state: State<'_, DesktopState>,
@@ -156,7 +156,7 @@ pub(super) async fn restore_local(
         .map_err(error_to_string)
 }
 
-/// axe:archive-locale - suppression definitive depuis l'archive ; renvoie les archives.
+/// archive-locale - suppression definitive depuis l'archive ; renvoie les archives.
 #[tauri::command]
 pub(super) async fn delete_archived_local(
     app: AppHandle,
@@ -171,7 +171,7 @@ pub(super) async fn delete_archived_local(
         .delete_archived_conversation(&workspace_id, &input.conversation_id)
         .map_err(error_to_string)?;
     if deleted {
-        crate::freechat::forget_session(&app, &workspace_root, &input.conversation_id).await; // axe:freechat
+        crate::freechat::forget_session(&app, &workspace_root, &input.conversation_id).await; // freechat
     }
     state
         .store
@@ -227,7 +227,7 @@ pub(super) async fn set_conversation_mode(
 
 #[tauri::command]
 pub(super) async fn set_conversation_model_preference(
-    app: AppHandle, // axe:providers
+    app: AppHandle, // providers
     state: State<'_, DesktopState>,
     input: ConversationModelPreferenceInput,
 ) -> std::result::Result<ModeModelSettings, String> {
@@ -260,7 +260,7 @@ pub(super) async fn set_conversation_model_preference(
         .ok_or_else(|| format!("modèle `{}` non pris en charge", selected.name))?;
 
     conversation.mode_model_settings.set(mode, selected.clone());
-    // axe:providers — in-session model switch, journaled by the session runtime.
+    // providers — in-session model switch, journaled by the session runtime.
     let previous = conversation.model.clone();
     if conversation_active_mode(&conversation) == mode {
         conversation.model = selected.clone();
@@ -310,7 +310,7 @@ pub(super) async fn save_mcp_settings(
     Ok(input.settings)
 }
 
-/// axe:mcp-supprimer — Réglages > MCP « Supprimer » : arrête la connexion OAuth
+/// mcp-supprimer — Réglages > MCP « Supprimer » : arrête la connexion OAuth
 /// en cours pour ce serveur, oublie son jeton, retire l'entrée de la config.
 /// Les serveurs stdio sont lancés à chaque appel (kill_on_drop) : retiré de la
 /// config, le serveur n'est plus relancé (les sessions REPL rechargent la config).

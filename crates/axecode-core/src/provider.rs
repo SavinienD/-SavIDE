@@ -33,7 +33,7 @@ pub struct ProviderRequest {
     pub cache_key: Option<String>,
     pub cache_stable_message_count: Option<usize>,
     pub service_tier: Option<ServiceTier>,
-    /// axe:cache — byte offset in `system_prompt` where per-request state
+    /// cache — byte offset in `system_prompt` where per-request state
     /// starts (todo list, goal budget, peer messages, notices). Everything
     /// before it stays the same for the whole session. Providers with prompt
     /// caching send the tail outside the cached prefix (see
@@ -97,13 +97,13 @@ impl ProviderRequest {
         self
     }
 
-    /// axe:cache — marks `system_prompt[offset..]` as per-request state.
+    /// cache — marks `system_prompt[offset..]` as per-request state.
     pub fn with_volatile_system_from(mut self, offset: usize) -> Self {
         self.volatile_system_from = Some(offset);
         self
     }
 
-    /// axe:cache — `(stable, volatile)` parts of the system prompt. `volatile`
+    /// cache — `(stable, volatile)` parts of the system prompt. `volatile`
     /// is `None` when there is no marker, nothing after it, or a bad offset.
     pub fn system_parts(&self) -> (Option<&str>, Option<&str>) {
         let Some(system) = self.system_prompt.as_deref() else {

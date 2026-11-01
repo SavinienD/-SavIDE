@@ -1,4 +1,4 @@
-// axe:commandes — indicateurs /heartbeat et /goal à côté du sélecteur de modèle
+// commandes — indicateurs /heartbeat et /goal à côté du sélecteur de modèle
 // (logique pure, testée par tests/commandesSlash.test.cjs).
 
 export type HeartbeatEtat = { interval_ms: number; message: string; next_at_ms: number; last_at_ms?: number | null };
@@ -6,13 +6,13 @@ export type GoalEtat = {
   text: string;
   status: string;
   summary?: string | null;
-  /** axe:goal165 — prochaine relance automatique prévue (ms), sinon null. */
+  /** goal165 — prochaine relance automatique prévue (ms), sinon null. */
   next_relaunch_ms?: number | null;
   relaunches?: number;
   /** Raison d'une pause automatique (aucun avancement). */
   auto_pause?: string | null;
 };
-/** axe:guet — un guet en cours (état brut du service, normalisé). */
+/** guet — un guet en cours (état brut du service, normalisé). */
 export type GuetEtat = {
   id: string;
   genre: string;
@@ -27,7 +27,7 @@ export type EtatCommandes = { goal: GoalEtat | null; heartbeat: HeartbeatEtat | 
 
 export const ETAT_VIDE: EtatCommandes = { goal: null, heartbeat: null, guets: [] };
 
-/** axe:guet — guets de `sessions.commands_state` (entrées illisibles ignorées). */
+/** guet — guets de `sessions.commands_state` (entrées illisibles ignorées). */
 export function normaliserGuets(brut: unknown): GuetEtat[] {
   if (!Array.isArray(brut)) return [];
   const out: GuetEtat[] = [];
@@ -52,7 +52,7 @@ export function normaliserGuets(brut: unknown): GuetEtat[] {
   return out;
 }
 
-/** axe:guet — lignes du détail d'un guet (commande, depuis quand, prochain essai). */
+/** guet — lignes du détail d'un guet (commande, depuis quand, prochain essai). */
 export function detailGuet(g: GuetEtat, maintenant = Date.now()): string[] {
   const lignes: string[] = [];
   const genre = g.genre === "condition" ? "Condition" : g.genre === "fichier" ? "Fichier" : "Commande";
@@ -164,7 +164,7 @@ export function vientDeSeDeclencher(avant: EtatCommandes, apres: EtatCommandes):
   );
 }
 
-/** axe:goal165 — ligne « objectif : poursuite automatique » de l'indicateur. */
+/** goal165 — ligne « objectif : poursuite automatique » de l'indicateur. */
 export function textePoursuite(goal: GoalEtat): string | null {
   if (goal.status === "active") {
     return goal.next_relaunch_ms
@@ -185,7 +185,7 @@ export function lirePoursuite(texte: string): { message: string; atMs: number | 
 
 /** Message injecté par un réveil : `<heartbeat at_ms="…">\nmessage\n</heartbeat>`. */
 export function lireReveil(texte: string): { message: string; atMs: number | null } | null {
-  // axe:guet — réveil d'un guet : `<guet id="…" statut="…" at_ms="…">…</guet>`.
+  // guet — réveil d'un guet : `<guet id="…" statut="…" at_ms="…">…</guet>`.
   const g = /^<guet((?:\s+[a-z_]+="[^"]*")*)\s*>[\s\S]*<\/guet>$/.exec(texte.trim());
   if (g) {
     const attr = (k: string) => new RegExp(`${k}="([^"]*)"`).exec(g[1])?.[1] ?? "";
@@ -205,7 +205,7 @@ export function texteReveil(message: string, atMs: number | null | undefined): s
   return atMs ? `réveil : ${message} · ${formatHeure(atMs)}` : `réveil : ${message}`;
 }
 
-/** axe:guet — la bulle « réveil » vient d'un guet (icône différente). */
+/** guet — la bulle « réveil » vient d'un guet (icône différente). */
 export function estReveilGuet(message: string): boolean {
   return /^guet g[0-9a-f]{6}[ \u00a0]:[ \u00a0]/.test(message);
 }

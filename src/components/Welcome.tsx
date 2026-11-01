@@ -1,4 +1,4 @@
-// axe:freechat — home screen: « Nouvelle conversation » or « Ouvrir un
+// freechat — home screen: « Nouvelle conversation » or « Ouvrir un
 // dossier », plus recent free conversations and recent folders.
 import { useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -30,7 +30,7 @@ type Props = {
   onPick: (path: string) => void;
   /** Opens the free conversation view (new or existing conversation). */
   onFreeChat: (options: { conversationId?: string; fresh?: boolean }) => void;
-  /** axe:accueil-3-choix - ouvre l'IDE sur un dossier de l'espace cloud partage. */
+  /** accueil-3-choix - ouvre l'IDE sur un dossier de l'espace cloud partage. */
   onCloudFolder?: (folder: string) => void;
   error: string | null;
   deriveName: (path: string) => string;
@@ -49,7 +49,7 @@ function activeSets(turns: ActiveTurnSummary[]) {
 }
 
 export function Welcome({ onPick, onFreeChat, onCloudFolder, error, deriveName }: Props) {
-  // axe:accueil-3-choix - dossiers a la racine de l'espace cloud partage (fs.list).
+  // accueil-3-choix - dossiers a la racine de l'espace cloud partage (fs.list).
   const cloud = useCloudState();
   const [cloudDirs, setCloudDirs] = useState<string[] | null>(null);
   const [cloudErr, setCloudErr] = useState<string | null>(null);

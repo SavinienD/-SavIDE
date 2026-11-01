@@ -1,23 +1,23 @@
-import { comparerAgents } from "./agentOrder"; // axe:agents-ordre
+import { comparerAgents } from "./agentOrder"; // agents-ordre
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SessionTree } from "./SessionTree";
-import { ExternalAgents } from "./ExternalAgents"; // axe:agents — agents externes du service
+import { ExternalAgents } from "./ExternalAgents"; // agents — agents externes du service
 import { STATUS_LABEL, agentsApi, type SessionMeta as BaseMeta } from "./agentsApi";
-import { connectionsApi, LOCAL_CONNECTION, useActiveConnection } from "../settings/connectionsApi"; // axe:remote
-import { useModelChoices } from "./useModelChoices"; // axe:sub-m
+import { connectionsApi, LOCAL_CONNECTION, useActiveConnection } from "../settings/connectionsApi"; // remote
+import { useModelChoices } from "./useModelChoices"; // sub-m
 import "./agents.css";
 
 type Props = {
   workspacePath: string;
   /** Open a session's conversation in the chat (session id = conversation id). */
   onOpenConversation?: (sessionId: string) => void;
-  /** axe:freechat — open a free conversation (free conversation view). */
+  /** freechat — open a free conversation (free conversation view). */
   onOpenFreeConversation?: (sessionId: string) => void;
-  /** axe:sub-m — open a session's journal read-only in the chat column (sub-agents). */
+  /** sub-m — open a session's journal read-only in the chat column (sub-agents). */
   onOpenJournal?: (sessionId: string, connectionId: string, title: string) => void;
 };
 
-// axe:remote — each session remembers the connection (machine) it lives on.
+// remote — each session remembers the connection (machine) it lives on.
 type SessionMeta = BaseMeta & { conn: string; connName: string };
 const key = (s: { conn: string; id: string }) => `${s.conn}:${s.id}`;
 
@@ -33,7 +33,7 @@ function buildTree(sessions: SessionMeta[]): TreeNode[] {
     else roots.push(node);
   }
   const sort = (list: TreeNode[]) => {
-    // axe:agents-ordre - ceux qui travaillent (orange) en tête, puis ceux qui attendent, puis les terminés.
+    // agents-ordre - ceux qui travaillent (orange) en tête, puis ceux qui attendent, puis les terminés.
     list.forEach((n) => sort(n.children));
     list.sort(comparerAgents);
   };
@@ -46,7 +46,7 @@ function countRunning(node: TreeNode): number {
 }
 
 /** Agents view: every session of the workspace as a tree (parents → sub-agents),
- *  plus the free conversations (axe:freechat). */
+ *  plus the free conversations (freechat). */
 export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConversation, onOpenJournal }: Props) {
   const [sessions, setSessions] = useState<SessionMeta[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -57,10 +57,10 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
   const [showTree, setShowTree] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // axe:remote
+  // remote
   const active = useActiveConnection();
   const [allMachines, setAllMachines] = useState(false);
-  // axe:sub-m — task (1st line of the first user message) of each sub-agent, by key.
+  // sub-m — task (1st line of the first user message) of each sub-agent, by key.
   const [tasks, setTasks] = useState<Record<string, string>>({});
   const modelChoices = useModelChoices();
 
@@ -81,7 +81,7 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
         try {
           const all = await agentsApi.list(t.id);
           // Local sessions are scoped to the open project (+ free conversations,
-          // axe:freechat); remote ones live in remote folders.
+          // freechat); remote ones live in remote folders.
           const scoped =
             t.id === LOCAL_CONNECTION
               ? all.filter((s) => s.scratch || norm(s.workspaceId) === norm(workspacePath))
@@ -96,7 +96,7 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
     setSessions(lists.flat());
     setError(errors.length ? `Service indisponible — ${errors.join(" · ")}` : null);
   }, [workspacePath, active, allMachines]);
-  // axe:remote end
+  // remote end
 
   useEffect(() => {
     void load();
@@ -118,7 +118,7 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
     [sessions, showArchived],
   );
   const forest = useMemo(() => buildTree(visibleSessions), [visibleSessions]);
-  // axe:remote — roots grouped by machine
+  // remote — roots grouped by machine
   const machines = useMemo(() => {
     const groups = new Map<string, { name: string; nodes: TreeNode[] }>();
     for (const node of forest) {
@@ -130,7 +130,7 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
   }, [forest]);
   const selected = sessions.find((s) => key(s) === selectedId) ?? null;
 
-  // axe:sub-m — fetch each sub-agent's task once (first user message of its journal).
+  // sub-m — fetch each sub-agent's task once (first user message of its journal).
   useEffect(() => {
     const missing = sessions.filter((s) => s.parentId && !(key(s) in tasks));
     if (!missing.length) return;
@@ -172,9 +172,9 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
       return next;
     });
 
-  // axe:freechat — a free conversation opens in the free conversation view.
+  // freechat — a free conversation opens in the free conversation view.
   const openSession = (meta: SessionMeta) => {
-    // axe:sub-m — sub-agents (and remote sessions) open as a read-only journal.
+    // sub-m — sub-agents (and remote sessions) open as a read-only journal.
     if (onOpenJournal && (meta.parentId || meta.conn !== LOCAL_CONNECTION)) {
       onOpenJournal(meta.id, meta.conn, meta.name || meta.id.slice(0, 8));
       return;
@@ -188,7 +188,7 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
     (meta.conn === LOCAL_CONNECTION &&
     Boolean(meta.scratch ? onOpenFreeConversation ?? onOpenConversation : onOpenConversation));
 
-  // axe:sub-m — change the model of an idle session (sessions.set_model).
+  // sub-m — change the model of an idle session (sessions.set_model).
   const changeModel = async (meta: SessionMeta, value: string) => {
     const slash = value.indexOf("/");
     if (slash < 0) return;
@@ -215,7 +215,7 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
       </>
     );
   };
-  // axe:freechat end
+  // freechat end
 
   const send = async () => {
     if (!selected || !draft.trim()) return;
@@ -253,7 +253,7 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
           style={{ paddingLeft: 8 + depth * 14 }}
           onClick={() => {
             setSelectedId(key(meta));
-            if (meta.parentId) openSession(meta); // axe:sub-m — one click opens a sub-agent
+            if (meta.parentId) openSession(meta); // sub-m — one click opens a sub-agent
           }}
           onDoubleClick={() => openSession(meta)}
         >
@@ -295,7 +295,7 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
 
   return (
     <div className="axe-agents">
-      {/* axe:agents-ui - entete compacte pour la barre laterale etroite */}
+      {/* agents-ui - entete compacte pour la barre laterale etroite */}
       <header className="axe-agents__head axe-agents__head--compact">
         <span className="axe-agents__counts" title={`${counts.running} en cours, ${counts.idle} inactif(s), ${counts.inactive} déchargé(s)`}>
           <span className="axe-agents__dot" data-status="running" /> {counts.running}
@@ -312,7 +312,7 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
       {error ? <p className="axe-agents__error">{error}</p> : null}
       {status ? <p className="axe-agents__status">{status}</p> : null}
 
-      {/* axe:agents — external agent CLIs launched by the service */}
+      {/* agents — external agent CLIs launched by the service */}
 
       <ul className="axe-agents__list">
         {forest.length === 0 ? <li className="axe-agents__muted">Aucune session pour ce projet.</li> : null}

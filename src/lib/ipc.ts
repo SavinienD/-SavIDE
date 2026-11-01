@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { resumesConversations } from "../components/chat/arrierePlan"; // axe:0.1.71
+import { resumesConversations } from "../components/chat/arrierePlan"; // 0.1.71
 import type {
   AttachmentInput,
   ActiveTurnReplay,
@@ -63,7 +63,7 @@ import {
   isCloudTransportError,
   markCloudOffline,
   markCloudOnline,
-} from "./cloudOnline"; // axe:v2-l6
+} from "./cloudOnline"; // v2-l6
 import {
   createOfflineDirectory,
   createOfflineFile,
@@ -73,10 +73,10 @@ import {
   readOfflineFile,
   renameOfflineEntry,
   writeOfflineFile,
-} from "./cloudOffline"; // axe:v2-l6 (tranche 2)
-import { ouvertureEspace } from "./ouvertureEspace"; // axe:parcours-collegue
+} from "./cloudOffline"; // v2-l6 (tranche 2)
+import { ouvertureEspace } from "./ouvertureEspace"; // parcours-collegue
 
-/// axe:v2-l2.3 — un espace de travail CLOUD porte sa connexion dans son identifiant
+/// v2-l2.3 — un espace de travail CLOUD porte sa connexion dans son identifiant
 /// (`axe-cloud://<connexion><racine>`) : aucun etat global a interroger, l'IDE sait toujours ou il ecrit.
 export const CLOUD_WORKSPACE_PREFIX = "axe-cloud://";
 
@@ -89,7 +89,7 @@ export function cloudConnectionFromPath(workspacePath: string): string | null {
   return connexion || null;
 }
 
-/// axe:cloud-sous-dossier — `axe-cloud://<connexion>/<racine>/<sous/dossier>` : le service ne
+/// cloud-sous-dossier — `axe-cloud://<connexion>/<racine>/<sous/dossier>` : le service ne
 /// connait que sa racine (`fs.*` relatifs a /work). Ces aides prefixent les chemins envoyes
 /// par le sous-dossier ouvert depuis l'accueil et le retirent des chemins recus.
 export function cloudSubdirFromPath(workspacePath: string): string {
@@ -133,8 +133,8 @@ function cloudStripRel<T>(workspacePath: string, value: T): T {
   return { ...(value as object), relativePath: cloudFromService(workspacePath, v.relativePath) } as T;
 }
 
-/// axe:v2-l2.4 — appel direct d'une methode du daemon sur une connexion cloud.
-/// axe:v2-l6 — alimente l'etat de joignabilite : un succes (ou une erreur
+/// v2-l2.4 — appel direct d'une methode du daemon sur une connexion cloud.
+/// v2-l6 — alimente l'etat de joignabilite : un succes (ou une erreur
 /// metier renvoyee par le service) = en ligne, un echec de transport = hors ligne.
 export async function cloudRpc<T>(connection: string, method: string, params: unknown = {}): Promise<T> {
   try {
@@ -151,7 +151,7 @@ export async function cloudRpc<T>(connection: string, method: string, params: un
   }
 }
 
-/// axe:v2-l6 — ecriture cloud : refusee d'emblee hors ligne, et echec de
+/// v2-l6 — ecriture cloud : refusee d'emblee hors ligne, et echec de
 /// transport traduit en message court plutot qu'en erreur brute.
 async function cloudWriteRpc<T>(
   connection: string,
@@ -167,7 +167,7 @@ async function cloudWriteRpc<T>(
   }
 }
 
-/// axe:v2-l6 — meme garde pour les commandes Tauri d'ecriture dediees.
+/// v2-l6 — meme garde pour les commandes Tauri d'ecriture dediees.
 async function cloudWrite<T>(connection: string, run: () => Promise<T>): Promise<T> {
   assertCloudWritable(connection);
   try {
@@ -183,7 +183,7 @@ async function cloudWrite<T>(connection: string, run: () => Promise<T>): Promise
   }
 }
 
-/// axe:v2-l6 (tranche 2) — lecture cloud : hors ligne (ou transport rompu en
+/// v2-l6 (tranche 2) — lecture cloud : hors ligne (ou transport rompu en
 /// cours de route) on repond depuis la copie locale (miroir).
 async function cloudRead<T>(
   connection: string,
@@ -204,7 +204,7 @@ async function cloudRead<T>(
   }
 }
 
-/// axe:v2-l6 (tranche 2) — ecriture cloud : hors ligne (ou transport rompu) la
+/// v2-l6 (tranche 2) — ecriture cloud : hors ligne (ou transport rompu) la
 /// modification part dans le miroir et reste en attente de synchronisation.
 async function cloudWriteMirrored<T>(
   connection: string,
@@ -225,7 +225,7 @@ async function cloudWriteMirrored<T>(
   }
 }
 
-/// axe:v2-l2.4 — nom d'un skill deduit de son chemin (`.../<nom>/SKILL.md`).
+/// v2-l2.4 — nom d'un skill deduit de son chemin (`.../<nom>/SKILL.md`).
 function skillNameFromPath(path: string): string {
   const segments = path.split(/[\\/]+/).filter(Boolean);
   const file = segments.pop() ?? "";
@@ -233,7 +233,7 @@ function skillNameFromPath(path: string): string {
   return file.replace(/\.md$/i, "");
 }
 
-/// axe:v2-l2.4 — valeur d'un champ du frontmatter YAML (name/description).
+/// v2-l2.4 — valeur d'un champ du frontmatter YAML (name/description).
 function skillFrontmatterValue(content: string, key: string): string | null {
   const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(content);
   if (!frontmatter) return null;
@@ -243,7 +243,7 @@ function skillFrontmatterValue(content: string, key: string): string | null {
   return value.replace(/^["']|["']$/g, "").trim() || null;
 }
 
-/// axe:v2-l2.4 — nom libre pour un nouveau skill (`new-skill`, `new-skill-1`, ...).
+/// v2-l2.4 — nom libre pour un nouveau skill (`new-skill`, `new-skill-1`, ...).
 function nextSkillName(skills: InstalledSkill[]): string {
   const taken = new Set(skills.map((skill) => skill.name));
   if (!taken.has("new-skill")) return "new-skill";
@@ -252,7 +252,7 @@ function nextSkillName(skills: InstalledSkill[]): string {
   return `new-skill-${index}`;
 }
 
-/// axe:v2-l2.4 — contenu initial identique au modele local.
+/// v2-l2.4 — contenu initial identique au modele local.
 function newSkillContent(name: string): string {
   return `---\nname: ${name}\ndescription: Décrivez à quoi sert ce skill\n---\n\n# ${name}\n\nÉcrivez les consignes que l'agent doit suivre quand ce skill est activé.\n`;
 }
@@ -305,7 +305,7 @@ async function cloudGitSnapshot(connection: string): Promise<GitRepositorySnapsh
     });
     const status = parseCloudGitStatus(res.output ?? "");
     const currentBranch = /^##\s+([^\s.]+)/.exec(res.output ?? "")?.[1] ?? null;
-    // axe:v2-l2.4b — branches et worktrees du service (sections du panneau Git).
+    // v2-l2.4b — branches et worktrees du service (sections du panneau Git).
     let branches: GitBranch[] = [];
     let worktrees: GitWorktree[] = [];
     try {
@@ -355,7 +355,7 @@ async function cloudRepoFor(connection: string): Promise<string> {
   }
 }
 
-/// axe:v2-l2.4b — element de la corbeille du service.
+/// v2-l2.4b — element de la corbeille du service.
 export type CloudTrashEntry = {
   id: string;
   path: string;
@@ -363,7 +363,7 @@ export type CloudTrashEntry = {
   trashedAtMs: number;
 };
 
-/// axe:v2-l2.4b — entree d'index cloud : meme forme que `list_workspace_files_command`.
+/// v2-l2.4b — entree d'index cloud : meme forme que `list_workspace_files_command`.
 function cloudFileEntry(workspacePath: string, relativePath: string): WorkspaceEntry {
   const clean = relativePath.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
   const segments = clean.split("/").filter(Boolean);
@@ -376,7 +376,7 @@ function cloudFileEntry(workspacePath: string, relativePath: string): WorkspaceE
   };
 }
 
-/// axe:v2-l2.4b — reponses du service pour les operations Git.
+/// v2-l2.4b — reponses du service pour les operations Git.
 type CloudGitBranches = {
   current?: string | null;
   branches?: { name: string; current?: boolean; upstream?: string | null }[];
@@ -427,7 +427,7 @@ function cloudWorktrees(
   });
 }
 
-/// axe:v2-l2.4b — corbeille du service. Le mode local restaure par lot
+/// v2-l2.4b — corbeille du service. Le mode local restaure par lot
 /// (Ctrl+Z dans l'explorateur), il n'a pas de liste persistante.
 export async function listTrash(workspacePath: string): Promise<CloudTrashEntry[]> {
   const conn = cloudConnectionFromPath(workspacePath);
@@ -435,7 +435,7 @@ export async function listTrash(workspacePath: string): Promise<CloudTrashEntry[
   return cloudRpc<CloudTrashEntry[]>(conn, "fs.trash_list", {});
 }
 
-/// axe:v2-l2.4b — restaure une entree de corbeille cloud par son identifiant.
+/// v2-l2.4b — restaure une entree de corbeille cloud par son identifiant.
 export async function restoreFromTrash(
   workspacePath: string,
   id: string,
@@ -446,7 +446,7 @@ export async function restoreFromTrash(
   return cloudFileEntry(workspacePath, res?.path ?? "");
 }
 
-/// axe:v2-l7 — une session du service (meme forme que `SessionMeta` de l'API Agents).
+/// v2-l7 — une session du service (meme forme que `SessionMeta` de l'API Agents).
 type CloudSessionMeta = {
   id?: unknown;
   name?: unknown;
@@ -456,7 +456,7 @@ type CloudSessionMeta = {
   archived?: unknown;
 };
 
-/// axe:v2-l7 — modele du service (`{ provider, name }`), jamais invente : les
+/// v2-l7 — modele du service (`{ provider, name }`), jamais invente : les
 /// champs manquants restent vides.
 function cloudModel(raw: unknown): ModelRef {
   const model = (raw ?? {}) as { provider?: unknown; name?: unknown };
@@ -466,7 +466,7 @@ function cloudModel(raw: unknown): ModelRef {
   };
 }
 
-/// axe:v2-l7 — convertit une part du service ; un type inconnu est ignore proprement.
+/// v2-l7 — convertit une part du service ; un type inconnu est ignore proprement.
 function cloudPart(raw: unknown): Part | null {
   if (!raw || typeof raw !== "object") return null;
   const part = raw as Record<string, unknown>;
@@ -505,7 +505,7 @@ function cloudPart(raw: unknown): Part | null {
   }
 }
 
-/// axe:v2-l7 — convertit un message du service ; role inconnu ignore proprement.
+/// v2-l7 — convertit un message du service ; role inconnu ignore proprement.
 function cloudChatMessage(raw: unknown): ChatMessage | null {
   if (!raw || typeof raw !== "object") return null;
   const message = raw as { role?: unknown; parts?: unknown };
@@ -516,20 +516,20 @@ function cloudChatMessage(raw: unknown): ChatMessage | null {
   return { role: message.role, parts };
 }
 
-/// axe:v2-l7 — `ConversationSummary` a partir des sessions du service (tri recent -> ancien,
+/// v2-l7 — `ConversationSummary` a partir des sessions du service (tri recent -> ancien,
 /// sessions archivees ignorees).
 function cloudConversationSummaries(sessions: CloudSessionMeta[]): ConversationSummary[] {
-  // axe:0.1.71 — sous-agents et clones « … — arrière-plan » hors de la liste (vue Agents).
+  // 0.1.71 — sous-agents et clones « … — arrière-plan » hors de la liste (vue Agents).
   return resumesConversations(sessions);
 }
 
-/// axe:v2-l7 — liste des conversations du service (seules a exister en cloud).
+/// v2-l7 — liste des conversations du service (seules a exister en cloud).
 async function cloudListConversations(connection: string): Promise<ConversationSummary[]> {
   const sessions = await cloudRpc<CloudSessionMeta[]>(connection, "sessions.list", {});
   return cloudConversationSummaries(sessions);
 }
 
-/// axe:e3 — conversations rangées dans l'archive. Le service est le seul à
+/// e3 — conversations rangées dans l'archive. Le service est le seul à
 /// savoir où elles sont : il ne renvoie que des métadonnées, jamais un chemin.
 async function cloudListArchivedConversations(
   connection: string,
@@ -539,7 +539,7 @@ async function cloudListArchivedConversations(
     "sessions.list",
     { archived: true },
   );
-  // axe:archives-cloud : resumesConversations ecarte les sessions marquees
+  // archives-cloud : resumesConversations ecarte les sessions marquees
   // `archived` ; sans ce retrait, la liste des archives de l'espace restait vide.
   const liste = (Array.isArray(sessions) ? sessions : []).map((s) => ({ ...s, archived: false }));
   return cloudConversationSummaries(liste).map((conversation) => ({
@@ -548,7 +548,7 @@ async function cloudListArchivedConversations(
   }));
 }
 
-/// axe:v2-l7 — conversation du service : historique par `sessions.history`, metadonnees
+/// v2-l7 — conversation du service : historique par `sessions.history`, metadonnees
 /// par `sessions.get` (titre, modele). Rien n'est invente : sans meta, titre et modele vides.
 async function cloudLoadConversation(
   connection: string,
@@ -584,8 +584,8 @@ export const api = {
       input: { workspacePath },
     });
   },
-  /// axe:v2-l2.3 — ouvre l'IDE sur l'espace cloud (fichiers sur la VM, aucun dossier local).
-  /// axe:parcours-collegue (D5) — liste des conversations de l'espace (sessions.list), pas du PC.
+  /// v2-l2.3 — ouvre l'IDE sur l'espace cloud (fichiers sur la VM, aucun dossier local).
+  /// parcours-collegue (D5) — liste des conversations de l'espace (sessions.list), pas du PC.
   async openCloudWorkspace(connectionId: string, folder?: string) {
     const bootstrap = await invoke<WorkspaceBootstrap>("open_cloud_workspace", {
       input: { connectionId, folder: folder ?? null },
@@ -785,10 +785,10 @@ export const api = {
     });
   },
   async listAllFiles(workspacePath: string) {
-    // axe:v2-l2.4b — l'index « ouvrir vite » vient de fs.index cote service.
+    // v2-l2.4b — l'index « ouvrir vite » vient de fs.index cote service.
     const conn = cloudConnectionFromPath(workspacePath);
     if (conn) {
-      // axe:v2-l6 — hors ligne : l'index du miroir fait office d'index.
+      // v2-l6 — hors ligne : l'index du miroir fait office d'index.
       return cloudRead<WorkspaceEntry[]>(
         conn,
         async () => {
@@ -931,7 +931,7 @@ export const api = {
   async trashEntry(workspacePath: string, relativePath: string): Promise<WorkspaceDeletedEntry> {
     const conn = cloudConnectionFromPath(workspacePath);
     if (conn) {
-      // axe:v2-l2.4b — corbeille du service : fs.trash, meme forme que le local.
+      // v2-l2.4b — corbeille du service : fs.trash, meme forme que le local.
       // `trashPath` porte l'identifiant de corbeille (seule prise pour restaurer).
       const trashed = await cloudWriteRpc<CloudTrashEntry>(conn, "fs.trash", {
         path: cloudToService(workspacePath, relativePath),
@@ -956,7 +956,7 @@ export const api = {
   ): Promise<WorkspaceEntry[]> {
     const conn = cloudConnectionFromPath(workspacePath);
     if (conn) {
-      // axe:v2-l2.4b — restauration cloud par identifiant (Ctrl+Z de l'explorateur).
+      // v2-l2.4b — restauration cloud par identifiant (Ctrl+Z de l'explorateur).
       const restored: WorkspaceEntry[] = [];
       for (const entry of entries) {
         if (!entry.trashPath) continue;
@@ -973,7 +973,7 @@ export const api = {
       input: { workspacePath, entries },
     });
   },
-  // axe:explorateur — « Ouvrir avec… » (choix de l'application par le système).
+  // explorateur — « Ouvrir avec… » (choix de l'application par le système).
   openEntryWith(workspacePath: string, relativePath: string) {
     return invoke<void>("open_workspace_entry_with_command", {
       input: { workspacePath, relativePath },
@@ -1110,7 +1110,7 @@ export const api = {
     );
   },
   async listConversations(workspacePath: string) {
-    // axe:v2-l7 — en cloud, la liste vient du service (sessions.list), pas du poste.
+    // v2-l7 — en cloud, la liste vient du service (sessions.list), pas du poste.
     const conn = cloudConnectionFromPath(workspacePath);
     if (conn) return cloudListConversations(conn);
     return invoke<ConversationSummary[]>("list_conversations", {
@@ -1123,7 +1123,7 @@ export const api = {
     });
   },
   async loadConversation(workspacePath: string, conversationId: string) {
-    // axe:v2-l7 — en cloud, l'historique vient de `sessions.history`.
+    // v2-l7 — en cloud, l'historique vient de `sessions.history`.
     const conn = cloudConnectionFromPath(workspacePath);
     if (conn) return cloudLoadConversation(conn, workspacePath, conversationId);
     return invoke<SavedConversation>("load_conversation", {
@@ -1135,7 +1135,7 @@ export const api = {
     conversationId: string,
     title: string,
   ) {
-    // axe:v2-l7 — `sessions.update` accepte un nouveau nom : on le route en cloud.
+    // v2-l7 — `sessions.update` accepte un nouveau nom : on le route en cloud.
     const conn = cloudConnectionFromPath(workspacePath);
     if (conn) {
       await cloudWriteRpc<{ ok?: boolean }>(conn, "sessions.update", {
@@ -1149,7 +1149,7 @@ export const api = {
     });
   },
   deleteConversation(workspacePath: string, conversationId: string) {
-    // axe:e3 — la suppression d'une conversation active passe par ce chemin
+    // e3 — la suppression d'une conversation active passe par ce chemin
     // local uniquement : sur un espace, le service refuse `sessions.delete`
     // tant que la conversation n'est pas archivée (voir
     // `deleteArchivedConversation`), et l'interface ne propose donc plus ce
@@ -1158,13 +1158,13 @@ export const api = {
       input: { workspacePath, conversationId },
     });
   },
-  /// axe:e3 — archiver une conversation : elle quitte la liste active et part
+  /// e3 — archiver une conversation : elle quitte la liste active et part
   /// dans l'archive, dont le chemin n'est jamais montré. Renvoie la liste
   /// active rafraîchie.
   async archiveConversation(workspacePath: string, conversationId: string) {
     const conn = cloudConnectionFromPath(workspacePath);
     if (!conn) {
-      // axe:archive-locale — en local aussi, supprimer = archiver.
+      // archive-locale — en local aussi, supprimer = archiver.
       return invoke<ConversationSummary[]>("archive_local", {
         input: { workspacePath, conversationId },
       });
@@ -1174,13 +1174,13 @@ export const api = {
         sessionId: conversationId,
       });
     } catch (err) {
-      // axe:archives-cloud : deja archivee (liste perimee) -> on rafraichit au lieu d'echouer.
+      // archives-cloud : deja archivee (liste perimee) -> on rafraichit au lieu d'echouer.
       const archives = await cloudListArchivedConversations(conn).catch(() => []);
       if (!archives.some((c) => c.id === conversationId)) throw err;
     }
     return cloudListConversations(conn);
   },
-  /// axe:e3 — conversations rangées dans l'archive.
+  /// e3 — conversations rangées dans l'archive.
   async listArchivedConversations(workspacePath: string) {
     const conn = cloudConnectionFromPath(workspacePath);
     if (!conn) {
@@ -1191,7 +1191,7 @@ export const api = {
     }
     return cloudListArchivedConversations(conn);
   },
-  /// axe:e3 — rétablir une conversation archivée : elle revient dans la liste
+  /// e3 — rétablir une conversation archivée : elle revient dans la liste
   /// active. Renvoie la liste des archives à jour.
   async restoreArchivedConversation(
     workspacePath: string,
@@ -1209,7 +1209,7 @@ export const api = {
     });
     return cloudListArchivedConversations(conn);
   },
-  /// axe:e3 — supprimer une conversation **archivée**. Le service refuse toute
+  /// e3 — supprimer une conversation **archivée**. Le service refuse toute
   /// autre conversation : la suppression n'existe que depuis l'archive.
   async deleteArchivedConversation(workspacePath: string, conversationId: string) {
     const conn = cloudConnectionFromPath(workspacePath);
@@ -1360,7 +1360,7 @@ export const api = {
       input: { serverId },
     });
   },
-  // axe:mcp-supprimer — retire le serveur de la config (jeton OAuth compris).
+  // mcp-supprimer — retire le serveur de la config (jeton OAuth compris).
   // Le nom sert de repli : l'identifiant affiché est recalculé depuis le JSON.
   deleteMcpServer(serverId: string, serverName: string) {
     return invoke<McpSettings>("delete_mcp_server", {
@@ -1580,7 +1580,7 @@ export const api = {
       input: { sessionId, token },
     });
   },
-  // axe:v2-e12 — onglet « Prime Agent » epingle : la session de production, servie par le
+  // v2-e12 — onglet « Prime Agent » epingle : la session de production, servie par le
   // portail. C'est l'application qui ouvre le WebSocket (l'en-tete d'autorisation ne peut pas
   // venir d'une page), puis les octets arrivent par les evenements `prime-term-data` /
   // `prime-term-exit`.

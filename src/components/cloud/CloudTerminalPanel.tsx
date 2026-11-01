@@ -1,10 +1,10 @@
-// axe:e8 / axe:v2-e12 — le terminal, a onglets :
+// e8 / v2-e12 — le terminal, a onglets :
 //   • « Bash » = une session du service (elle survit a la deconnexion et se reprend) ;
 //   • « Terminal local » = un shell du poste ou tourne l'appli ;
 //   • « Prime Agent » = epingle : on s'ATTACHE a la session de production de Prime
 //     (le portail la garde ouverte), on ne la relance jamais.
 //
-// axe:e15 — deux changements demandes par l'utilisateur :
+// e15 — deux changements demandes par l'utilisateur :
 //   1. les onglets se voient aussi depuis l'interface classique (le panneau n'est
 //      plus reserve a l'espace : il suffit d'une session Axe Cloud ouverte) ;
 //   2. un onglet se DETACHE comme dans un navigateur : il part devant dans sa
@@ -13,11 +13,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { RemoteTerminal } from "./RemoteTerminal";
-import { cloudSubdirFromPath } from "../../lib/ipc"; // axe:cloud-sous-dossier
+import { cloudSubdirFromPath } from "../../lib/ipc"; // cloud-sous-dossier
 import { LocalTerminal } from "./LocalTerminal";
 import { PrimeTerminal } from "./PrimeTerminal";
-import { GitPanel } from "../GitPanel"; // axe:git-onglet
-import { FenetreOnglet } from "../onglets/FenetreOnglet"; // axe:e15
+import { GitPanel } from "../GitPanel"; // git-onglet
+import { FenetreOnglet } from "../onglets/FenetreOnglet"; // e15
 
 type Kind = "cloud" | "local" | "prime" | "git";
 
@@ -28,14 +28,14 @@ type Tab = {
   /** Un onglet epingle ne peut pas etre ferme. */
   pinned?: boolean;
   kind?: Kind;
-  /** axe:e15 — l'onglet vit dans sa propre fenetre, devant le reste. */
+  /** e15 — l'onglet vit dans sa propre fenetre, devant le reste. */
   detached?: boolean;
 };
 
 type Props = {
   connectionId: string;
   workspacePath: string;
-  /** axe:e6 — un volet dupliqué garde ses propres onglets (clé distincte dans
+  /** e6 — un volet dupliqué garde ses propres onglets (clé distincte dans
    *  localStorage) au lieu de reprendre ceux du terminal ancré. */
   storageKey?: string;
 };
@@ -44,7 +44,7 @@ const STORAGE_PREFIX = "axe:e8:terminaux:";
 
 /// L'agent de la machine : epingle, non fermable.
 const PINNED: Tab = { name: "prime", title: "Prime Agent", pinned: true, kind: "prime" };
-// axe:git-onglet - Git en onglet epingle a cote de Prime Agent et des bash.
+// git-onglet - Git en onglet epingle a cote de Prime Agent et des bash.
 const GIT_TAB: Tab = { name: "git", title: "Git", pinned: true, kind: "git" };
 
 function kindOf(tab: Tab): Kind {
@@ -64,7 +64,7 @@ function load(workspacePath: string): Tab[] | null {
     if (!raw) return null;
     const list = JSON.parse(raw) as Tab[];
     if (!Array.isArray(list) || list.length === 0) return null;
-    // axe:v2-e12 — les onglets deja enregistres s'appelaient « Terminal N » :
+    // v2-e12 — les onglets deja enregistres s'appelaient « Terminal N » :
     // ce sont des bash du service, ils prennent leur vrai nom.
     const migres = list.map((t) => {
       if (!t || typeof t.name !== "string" || t.name.length === 0) return t;
@@ -89,9 +89,9 @@ function save(workspacePath: string, tabs: Tab[]) {
 }
 
 export function CloudTerminalPanel({ connectionId, workspacePath, storageKey }: Props) {
-  const cleStockage = storageKey ?? workspacePath; // axe:e6
+  const cleStockage = storageKey ?? workspacePath; // e6
   const [tabs, setTabs] = useState<Tab[]>(() => {
-    // axe:e15 — les onglets deja enregistres sous l'ancienne cle (le chemin de
+    // e15 — les onglets deja enregistres sous l'ancienne cle (le chemin de
     // l'espace) sont repris : on ne perd pas les sessions ouvertes en changeant
     // de cle de stockage.
     const stored =
@@ -174,7 +174,7 @@ export function CloudTerminalPanel({ connectionId, workspacePath, storageKey }: 
     [tabs],
   );
 
-  // axe:e15 — detacher / reancrer. Une session cloud ou Prime se rattache par son
+  // e15 — detacher / reancrer. Une session cloud ou Prime se rattache par son
   // nom (tmux garde tout) ; un shell local repart, c'est le seul compromis.
   const detacher = useCallback((name: string) => {
     setTabs((list) => list.map((t) => (t.name === name ? { ...t, detached: true } : t)));

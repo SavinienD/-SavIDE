@@ -1,4 +1,4 @@
-//! axe:dossiers-anciens — migration UNE FOIS des anciens dossiers cachés du
+//! dossiers-anciens — migration UNE FOIS des anciens dossiers cachés du
 //! projet (`<projet>/.axecode/`, `<projet>/.atelier/`) vers les données de
 //! l'appli (`<données>/projects/<nom>-<empreinte>/`).
 //!

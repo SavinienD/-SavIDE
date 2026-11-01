@@ -28,7 +28,7 @@ import subprocess
 from typing import Iterable, Optional, Union
 
 from axecode_kernel import bridge
-from axecode_kernel import _documents  # axe:viewers
+from axecode_kernel import _documents  # viewers
 
 __all__ = ["read", "write", "edit", "glob", "grep", "ls", "exists", "delete", "move"]
 
@@ -68,7 +68,7 @@ def _read_bytes(path: str) -> Optional[bytes]:
 
 
 def _decode(data: bytes) -> str:
-    if data.startswith((b"\xff\xfe", b"\xfe\xff")):  # axe:viewers — UTF-16 with BOM
+    if data.startswith((b"\xff\xfe", b"\xfe\xff")):  # viewers — UTF-16 with BOM
         return data.decode("utf-16")
     try:
         return data.decode("utf-8")
@@ -76,7 +76,7 @@ def _decode(data: bytes) -> str:
         return data.decode("latin-1")
 
 
-# axe:viewers — documents are read as extracted text; other binaries fail.
+# viewers — documents are read as extracted text; other binaries fail.
 def _document_text(path: str, full: str, data: bytes) -> Optional[str]:
     extractor = _documents.extractor_for(full)
     if extractor is not None:
@@ -117,7 +117,7 @@ def read(path: str, offset: int = 0, limit: Optional[int] = None, numbered: bool
     if data is None:
         raise FileNotFoundError(f"{path} : fichier introuvable")
     _fingerprints[full] = _digest(data)
-    text = _document_text(path, full, data)  # axe:viewers
+    text = _document_text(path, full, data)  # viewers
     if text is None:
         text = _decode(data)
     if offset or limit is not None or numbered:
@@ -162,7 +162,7 @@ def write(path: str, content: str, force: bool = False) -> str:
     """
     full = _abs(path)
     before = _read_bytes(full)
-    if _documents.extractor_for(full) and not force:  # axe:viewers
+    if _documents.extractor_for(full) and not force:  # viewers
         raise ValueError(
             f"{path} est un format de document : y écrire du texte brut le corromprait. "
             "Construisez-le avec Python (openpyxl, python-docx…) ou passez force=True"
@@ -187,7 +187,7 @@ def edit(path: str, edits: Union[list, tuple], force: bool = False) -> str:
     before = _read_bytes(full)
     if before is None:
         raise FileNotFoundError(f"{path} : fichier introuvable (utilisez files.write pour le créer)")
-    if _documents.extractor_for(full) or _documents.looks_binary(before):  # axe:viewers
+    if _documents.extractor_for(full) or _documents.looks_binary(before):  # viewers
         raise ValueError(
             f"{path} est un document binaire : edit ne peut pas le modifier. Générez plutôt un "
             "nouveau fichier avec Python (openpyxl, python-docx…) et files.write/shell"

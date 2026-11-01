@@ -2,7 +2,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { cloudConnectionFromPath, cloudRpc } from "../../lib/ipc";
 
-/// axe:v2-l2.4 — operations du harnais sans RPC daemon : refus explicite en cloud
+/// v2-l2.4 — operations du harnais sans RPC daemon : refus explicite en cloud
 /// (sinon elles ecriraient un dossier local `axe-cloud:/...` sur le poste).
 function cloudUnsupported(workspacePath: string, action: string): Promise<never> | null {
   if (!cloudConnectionFromPath(workspacePath)) return null;
@@ -85,7 +85,7 @@ export type BrainDetection = {
 };
 
 export type BrainImportOptions = { memoryScope?: HarnessScope; exclude?: string[] };
-/// axe:shared-brain — miroir local du harnais global de l'espace (injecté à chaque tour).
+/// shared-brain — miroir local du harnais global de l'espace (injecté à chaque tour).
 export type CloudMirror = { connection: string; fetchedAt: number; entries: HarnessEntry[] };
 export type PublishReport = { created: string[]; updated: string[]; unchanged: string[]; errors: string[] };
 export type BrainImportReport = { created: string[]; skipped: string[]; errors: string[] };
@@ -103,7 +103,7 @@ export const harnessApi = {
     if (conn) return cloudRpc<HarnessEntry[]>(conn, "harness.list", { kind, scope });
     return invoke<HarnessEntry[]>("harness_list", { input: { workspacePath, kind, scope } });
   },
-  /// axe:e13 — lit le harnais d'un espace Axe Cloud depuis l'interface
+  /// e13 — lit le harnais d'un espace Axe Cloud depuis l'interface
   /// classique (volet Réglages > Harnais) : lecture seule, l'écriture reste
   /// dans l'espace, donc rien n'est recopié sur le poste.
   listFrom: (connection: string, kind?: HarnessKind, scope?: HarnessScope) =>
@@ -148,7 +148,7 @@ export const harnessApi = {
     if (conn) return cloudRpc<RefinementRecord>(conn, "harness.rollback", { id });
     return invoke<RefinementRecord>("harness_rollback", { input: { workspacePath, id } });
   },
-  // axe:refine-run — stop a running refinement.
+  // refine-run — stop a running refinement.
   refineCancel: (workspacePath: string, id: string) => {
     const conn = cloudConnectionFromPath(workspacePath);
     if (conn) return cloudRpc<RefinementRecord>(conn, "harness.refine_cancel", { id });

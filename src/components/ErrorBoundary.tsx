@@ -1,4 +1,4 @@
-// axe:robustesse — Filet de sécurité de l'interface (18/10/2026).
+// robustesse — Filet de sécurité de l'interface (18/10/2026).
 // Sans lui, une exception pendant l'affichage démonte TOUTE l'appli (React) : il ne reste que le fond de la fenêtre
 // (« écran bleu ») et il faut fermer l'appli. Avec lui : la zone touchée affiche l'erreur, le reste reste utilisable,
 // et le détail peut être copié pour le support.
@@ -51,7 +51,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-// axe:robustesse — La racine (html, body, #root) ne doit jamais défiler : la mise en page est en hauteur fixe et sans
+// robustesse — La racine (html, body, #root) ne doit jamais défiler : la mise en page est en hauteur fixe et sans
 // barre de défilement. Si un scrollIntoView ou le focus d'un champ la fait défiler, toute l'interface sort de l'écran
 // (fond seul visible, impossible de revenir). On la remet en place aussitôt.
 export function verrouillerRacine(): void {

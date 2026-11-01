@@ -1,8 +1,8 @@
-// axe:cloud L3 — terminal running inside the cloud service (PTY confined to the
+// cloud L3 — terminal running inside the cloud service (PTY confined to the
 // workspace root). Bytes travel base64-encoded both ways; output arrives on the
 // `axe://daemon` event stream tagged with the connection id.
 //
-// axe:e12b — deux règles apprises du terrain :
+// e12b — deux règles apprises du terrain :
 //   1. on n'ouvre RIEN tant que le volet n'a pas une taille mesurable (un volet
 //      caché ouvrait la session à 80×24, taille qu'elle gardait) ;
 //   2. c'est le PTY du service qui pilote tmux : après chaque changement de
@@ -95,7 +95,7 @@ export function RemoteTerminal({ connectionId, cwd, name }: Props) {
             await invoke("remote_term_attach", { input: { connectionId, terminalId: previousId } });
             terminalId = previousId;
             await invoke("remote_term_resize", { input: { connectionId, terminalId, cols: term.cols, rows: term.rows } });
-            setStatus("Session reprise."); // axe:v2-l2.3 — pas de nom technique dans l'interface
+            setStatus("Session reprise."); // v2-l2.3 — pas de nom technique dans l'interface
             term.focus();
             return;
           } catch {

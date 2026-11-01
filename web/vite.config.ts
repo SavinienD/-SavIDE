@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 
-// axe:webui — web interface served by the session service (`--listen`).
+// webui — web interface served by the session service (`--listen`).
 // Built into web/dist and embedded in the binary (crates/axecode-daemon/src/webui).
 const root = fileURLToPath(new URL(".", import.meta.url));
 

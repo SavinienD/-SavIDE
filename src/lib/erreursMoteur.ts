@@ -1,4 +1,4 @@
-// axe:fr — erreurs du moteur (crates/axecode-core, démon des espaces, commandes Tauri) affichées en
+// fr — erreurs du moteur (crates/axecode-core, démon des espaces, commandes Tauri) affichées en
 // français. Le texte brut reste tel quel dans l'état : il est comparé ailleurs (Workspace.tsx,
 // cloudOnline.ts, agentsApi.ts, remoteItems.ts, offline.rs). Seul l'affichage passe par ici.
 // Le détail technique (réseau, HTTP, bibliothèques) est gardé tel quel : il sert au support.

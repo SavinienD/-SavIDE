@@ -5,7 +5,7 @@ const path = require("node:path");
 const test = require("node:test");
 const ts = require("typescript");
 
-// axe:reprise — après une coupure du flux, le démon renvoie la requête et émet
+// reprise — après une coupure du flux, le démon renvoie la requête et émet
 // « stream_retry » : la réponse en cours repart de zéro à l'écran
 // (src/components/chat/stream.ts, applyEvent).
 Module._extensions[".ts"] = (module, filename) => {

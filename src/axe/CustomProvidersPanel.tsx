@@ -1,4 +1,4 @@
-// axe:providers — Settings > Providers: configurable provider instances.
+// providers — Settings > Providers: configurable provider instances.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Icon } from "@iconify/react";
 import {

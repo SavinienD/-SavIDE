@@ -66,7 +66,7 @@ test("stop, attente de la fin du tour, fork enfant de la conversation, consigne 
   assert.match(consigne, /transmise automatiquement à la conversation principale/);
 });
 
-test("axe:bg-a — la conversation principale reçoit un message système (du clone)", async () => {
+test("bg-a — la conversation principale reçoit un message système (du clone)", async () => {
   const d = demon({ toursAvantArret: 0 });
   d.services.prevenir = async (conv, depuis, texte) => {
     d.appels.push(["prevenir", conv, depuis, texte]);
@@ -81,7 +81,7 @@ test("axe:bg-a — la conversation principale reçoit un message système (du cl
   assert.deepEqual(d.appels.slice(-3).map((a) => a[0]), ["fork", "send", "prevenir"]);
 });
 
-test("axe:bg-a — l'échec de la note système n'annule pas l'arrière-plan", async () => {
+test("bg-a — l'échec de la note système n'annule pas l'arrière-plan", async () => {
   const d = demon({ toursAvantArret: 0 });
   d.services.prevenir = async () => {
     throw new Error("hors ligne");

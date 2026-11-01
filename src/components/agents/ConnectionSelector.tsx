@@ -7,7 +7,7 @@ import {
 } from "../settings/connectionsApi";
 import "./agents.css";
 
-// axe:remote — sidebar selector: which machine (service) conversations, the
+// remote — sidebar selector: which machine (service) conversations, the
 // Agents view and Settings > Service apply to.
 
 type Props = {
@@ -24,7 +24,7 @@ export function ConnectionSelector({ onManage }: Props) {
   const refresh = useCallback(async () => {
     try {
       const list = await connectionsApi.list();
-      // axe:e1 — le poste local n'est plus une connexion proposee : il n'y a
+      // e1 — le poste local n'est plus une connexion proposee : il n'y a
       // plus qu'un espace, celui d'Axe Cloud.
       setConnections(list.connections.filter((c) => c.kind !== "local"));
       setLive(await connectionsApi.state());
@@ -39,7 +39,7 @@ export function ConnectionSelector({ onManage }: Props) {
     return () => window.clearInterval(timer);
   }, [refresh, active]);
 
-  // axe:e1 — un seul espace : le selecteur ne s'affiche pas, il n'y a rien a choisir.
+  // e1 — un seul espace : le selecteur ne s'affiche pas, il n'y a rien a choisir.
   if (connections.length <= 1) return null;
 
   const change = async (id: string) => {

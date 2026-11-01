@@ -167,7 +167,7 @@ pub fn render_skills_hint(entries: &[Entry]) -> Option<String> {
     let mut skills: Vec<&Entry> = entries
         .iter()
         .filter(|e| e.meta.kind == EntryKind::Skill)
-        // axe:cleanup — toggled off in Settings > Skills.
+        // cleanup — toggled off in Settings > Skills.
         .filter(|e| !e.meta.tags.iter().any(|t| t == "disabled"))
         .collect();
     if skills.is_empty() {

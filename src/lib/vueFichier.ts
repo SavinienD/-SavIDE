@@ -1,4 +1,4 @@
-// axe:html — choix « Rendu / Code » (Markdown, HTML, CSV, SVG…) mémorisé par
+// html — choix « Rendu / Code » (Markdown, HTML, CSV, SVG…) mémorisé par
 // fichier (chemin absolu) dans localStorage, borné aux MAX_VUES plus récents.
 
 export const CLE_VUES = "axecode.vueFichiers";

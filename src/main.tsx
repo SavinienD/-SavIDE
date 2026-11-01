@@ -1,4 +1,4 @@
-import "./migrateStorage"; // axe:migration - must stay the FIRST import (runs before every other module)
+import "./migrateStorage"; // migration - must stay the FIRST import (runs before every other module)
 import "@fontsource/geist-sans/300.css";
 import "@fontsource/geist-sans/400.css";
 import "@fontsource/geist-sans/500.css";
@@ -11,14 +11,14 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./styles.css";
-import "./axe/theme.css"; // axe:theme
-import { initTheme } from "./axe/theme"; // axe:theme
-import { initTextScale } from "./axe/zoom"; // axe:zoom
-import { bridgeProviderEvents } from "./axe/providers"; // axe:providers
+import "./axe/theme.css"; // theme
+import { initTheme } from "./axe/theme"; // theme
+import { initTextScale } from "./axe/zoom"; // zoom
+import { bridgeProviderEvents } from "./axe/providers"; // providers
 import "./lib/customIcons";
 import { api } from "./lib/ipc";
-import { noterLancement, versionAppli } from "./lib/versionAppli"; // axe:apropos
-import { ErrorBoundary, verrouillerRacine } from "./components/ErrorBoundary"; // axe:robustesse
+import { noterLancement, versionAppli } from "./lib/versionAppli"; // apropos
+import { ErrorBoundary, verrouillerRacine } from "./components/ErrorBoundary"; // robustesse
 
 // Suppress the native WebKit context menu everywhere except inside text
 // inputs and while text is selected (where the OS-level copy/paste menu is
@@ -79,10 +79,10 @@ const openAnchorExternally = (event: MouseEvent) => {
 window.addEventListener("click", openAnchorExternally);
 window.addEventListener("auxclick", openAnchorExternally);
 
-initTheme(); // axe:theme
-initTextScale(); // axe:zoom
-bridgeProviderEvents(); // axe:providers
-verrouillerRacine(); // axe:robustesse
+initTheme(); // theme
+initTextScale(); // zoom
+bridgeProviderEvents(); // providers
+verrouillerRacine(); // robustesse
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -92,7 +92,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   </React.StrictMode>,
 );
 
-// axe:apropos — note la version lancée dès le démarrage : la date de mise à jour
+// apropos — note la version lancée dès le démarrage : la date de mise à jour
 // (Réglages > À propos) est celle du premier lancement de la nouvelle version.
 void versionAppli().then((v) => {
   if (!v) return;

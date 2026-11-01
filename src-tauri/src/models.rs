@@ -398,7 +398,7 @@ pub(super) struct McpOAuthInput {
     pub(super) server_id: String,
 }
 
-/// axe:mcp-supprimer — identifiant affiché par l'interface + nom (repli).
+/// mcp-supprimer — identifiant affiché par l'interface + nom (repli).
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(super) struct DeleteMcpServerInput {

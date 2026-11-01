@@ -1,4 +1,4 @@
-// axe:cloud — Axe Cloud sign-in and calls (Axe Cloud plan, step 1).
+// cloud — Axe Cloud sign-in and calls (Axe Cloud plan, step 1).
 //
 // Sign-in: the app listens on http://127.0.0.1:<free port>/callback and opens
 // the system browser on <base>/app/connexion (port, state, PKCE S256

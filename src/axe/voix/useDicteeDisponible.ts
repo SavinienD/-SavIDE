@@ -1,4 +1,4 @@
-// axe:0.1.71 — disponibilité de la dictée (voix_etat), mise en cache une minute.
+// 0.1.71 — disponibilité de la dictée (voix_etat), mise en cache une minute.
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 

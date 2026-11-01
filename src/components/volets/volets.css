@@ -1,4 +1,4 @@
-/* axe:e6 — volets détachables : fenêtres flottantes internes, bandeaux de rappel,
+/* e6 — volets détachables : fenêtres flottantes internes, bandeaux de rappel,
    menu « Volets » de la barre de titre. Même langage visuel que le reste : surfaces
    --bg-*, filets --line*, monospace pour les étiquettes. */
 
@@ -94,7 +94,7 @@
   min-width: 0;
   min-height: 0;
 }
-/* axe:volet-explorateur — l'explorateur détaché gardait son style ancré en ligne
+/* volet-explorateur — l'explorateur détaché gardait son style ancré en ligne
    (« flex: 0 0 55 % », une part de la HAUTEUR de la barre latérale) : dans la
    fenêtre flottante, posée en ligne, il ne prenait que 55 % de la largeur (moitié
    de la fenêtre vide, nom du dossier écrasé à 0 px). */
@@ -295,7 +295,7 @@
   color: var(--text-0);
 }
 
-/* axe:e6 � la place d'un volet detache : le bandeau prend la place laissee libre. */
+/* e6 � la place d'un volet detache : le bandeau prend la place laissee libre. */
 .volet-rappel-hote {
   flex: 1 1 0;
   min-width: 0;
@@ -304,7 +304,7 @@
 }
 
 
-/* axe:sub-m — panneau bas detache : la section garde une hauteur definie
+/* sub-m — panneau bas detache : la section garde une hauteur definie
    (sinon la liste des conversations s'effondre a 0 dans la fenetre flottante). */
 .volet-flottant__contenu > .sidebar__section {
   display: flex;

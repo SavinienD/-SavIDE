@@ -1,4 +1,4 @@
-// axe:migration — localStorage keys of before the rename.
+// migration — localStorage keys of before the rename.
 //
 // The app used to keep its settings under `axe-<old name>:…` and
 // `<old name>.…` keys (zoom, recent folders, terminal tabs, fast mode…). At the

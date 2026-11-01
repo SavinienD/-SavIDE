@@ -1,10 +1,10 @@
-import { getActiveConnection } from "../settings/connectionsApi"; // axe:journal-espace
-import { filtrerMentionsConversation } from "./mentionsLibre"; // axe:mention-libre
+import { getActiveConnection } from "../settings/connectionsApi"; // journal-espace
+import { filtrerMentionsConversation } from "./mentionsLibre"; // mention-libre
 import { historiquePrompts, memoriserPrompt, naviguer, type EtatHistorique } from "./historiquePrompts";
 import {
-  Fragment, // axe:providers
-  createContext, // axe:couleurs
-  useContext, // axe:couleurs
+  Fragment, // providers
+  createContext, // couleurs
+  useContext, // couleurs
   useCallback,
   useDeferredValue,
   useEffect,
@@ -15,7 +15,7 @@ import {
   type RefObject,
   useRef,
   useState,
-  useSyncExternalStore, // axe:file-attente
+  useSyncExternalStore, // file-attente
 } from "react";
 import { Icon } from "@iconify/react";
 import { convertFileSrc } from "@tauri-apps/api/core";
@@ -33,16 +33,16 @@ import {
   type ToolCardTeamAgent,
 } from "./ToolCard";
 import { TodoStrip, type QueuedPromptStripItem } from "./TodoStrip";
-import { filesPartagees } from "./fileAttente"; // axe:file-attente
-import { abonnerPauses, fileEnPause, instantanePauses, reprendreFile } from "./fileDemon"; // axe:file-pause
-import { deplacerFile, ecouterFilesDemon, migrerFilesNavigateur, pousserFile, relireFileDemon, retirerFile } from "./fileDemon"; // axe:file-demon
-import { avecNote, noteConversation } from "./arrierePlan"; // axe:arriere-plan
+import { filesPartagees } from "./fileAttente"; // file-attente
+import { abonnerPauses, fileEnPause, instantanePauses, reprendreFile } from "./fileDemon"; // file-pause
+import { deplacerFile, ecouterFilesDemon, migrerFilesNavigateur, pousserFile, relireFileDemon, retirerFile } from "./fileDemon"; // file-demon
+import { avecNote, noteConversation } from "./arrierePlan"; // arriere-plan
 import { fileIcon } from "../../lib/fileIcon";
-import { DicteeBouton } from "../../axe/voix/DicteeBouton"; // axe:voix
-import { insererTexteDicte } from "../../axe/voix/inserer"; // axe:voix
+import { DicteeBouton } from "../../axe/voix/DicteeBouton"; // voix
+import { insererTexteDicte } from "../../axe/voix/inserer"; // voix
 import { api, cloudConnectionFromPath } from "../../lib/ipc";
-import { actionsDuPc, modelesEspace, NOTE_COMPACTION_ESPACE } from "../../lib/modelesEspace"; // axe:parcours-collegue
-import { expliquerErreurIA } from "../../lib/erreursIA"; // axe:parcours-collegue
+import { actionsDuPc, modelesEspace, NOTE_COMPACTION_ESPACE } from "../../lib/modelesEspace"; // parcours-collegue
+import { expliquerErreurIA } from "../../lib/erreursIA"; // parcours-collegue
 import { canonicalToolName, isToolName } from "../../lib/tools";
 import { erreurMoteurEnFrancais } from "../../lib/erreursMoteur";
 import {
@@ -60,11 +60,11 @@ import {
   type ModeModelSelections,
   type ModelId,
 } from "../../lib/models";
-import { customModelEntries, providerApi, type ProviderSettingsView } from "../../axe/providers"; // axe:providers
-import { runClientSlashCommand, SLASH_COMMANDS, useSlashCommandMenu } from "./SlashCommands"; // axe:slash
-import { classeJeton, decouperJetons } from "./jetonsMessage"; // axe:couleurs
-import { IndicateursSession } from "./IndicateursSession"; // axe:commandes
-import { estReveilGuet, formatHeure, texteReveil } from "./logiqueIndicateurs"; // axe:commandes
+import { customModelEntries, providerApi, type ProviderSettingsView } from "../../axe/providers"; // providers
+import { runClientSlashCommand, SLASH_COMMANDS, useSlashCommandMenu } from "./SlashCommands"; // slash
+import { classeJeton, decouperJetons } from "./jetonsMessage"; // couleurs
+import { IndicateursSession } from "./IndicateursSession"; // commandes
+import { estReveilGuet, formatHeure, texteReveil } from "./logiqueIndicateurs"; // commandes
 import type {
   AgentMode,
   AttachmentInput,
@@ -98,8 +98,8 @@ import {
   type SubAgentBlock,
 } from "./stream";
 import type { AgentEvent } from "../../types";
-import { libelleStop } from "./arretForce"; // axe:stop-force
-import { agentsApi } from "../agents/agentsApi"; // axe:sub-n
+import { libelleStop } from "./arretForce"; // stop-force
+import { agentsApi } from "../agents/agentsApi"; // sub-n
 
 type Attachment = {
   path: string;
@@ -211,12 +211,12 @@ type Props = {
     prompt?: string,
   ) => Promise<void>;
   onStop: () => Promise<void>;
-  /** axe:arriere-plan — le travail en cours part dans une session d'arrière-plan. */
+  /** arriere-plan — le travail en cours part dans une session d'arrière-plan. */
   onBackground?: () => Promise<{ id: string; nom: string }>;
-  /** axe:stop-force — « Arrêt forcé… » : l'arrêt a été renvoyé, un clic libère la conversation. */
+  /** stop-force — « Arrêt forcé… » : l'arrêt a été renvoyé, un clic libère la conversation. */
   stopForce?: boolean;
   onOpenFile: (path: string) => void;
-  /** axe:mention-libre — conversation sans dossier : « @ » limité à ce sous-dossier. */
+  /** mention-libre — conversation sans dossier : « @ » limité à ce sous-dossier. */
   mentionScope?: string | null;
   onOpenSettings: (section?: "providers") => void;
   externalDrops: ExternalDropFeed;
@@ -426,7 +426,7 @@ export type ExternalDropFeed = {
 
 const BROUILLONS_PARTAGES = new Map<string, ComposerDraft>();
 
-// axe:file-attente — la file d'attente de chaque conversation est partagée par
+// file-attente — la file d'attente de chaque conversation est partagée par
 // tous les volets et gardée dans le stockage local (voir fileAttente.ts) :
 // changer de colonne, remonter le volet, compacter ou redémarrer ne la perd plus.
 const FILES_PARTAGEES = filesPartagees<QueuedPrompt>();
@@ -451,7 +451,7 @@ export function ChatPane({
   onModelPreferenceChange,
   onImplementPlanFresh,
   onStop,
-  onBackground, // axe:arriere-plan
+  onBackground, // arriere-plan
   stopForce = false,
   onOpenFile,
   mentionScope,
@@ -460,17 +460,17 @@ export function ChatPane({
   dropZoneRef,
 }: Props) {
   const conversationViewsRef = useRef<Map<string, ChatViewState>>(new Map());
-  // axe:sub-n — sous-agents (descendants) de la conversation active en cours d'execution.
+  // sub-n — sous-agents (descendants) de la conversation active en cours d'execution.
   const [agentsAuTravail, setAgentsAuTravail] = useState(0);
-  // axe:bg-c — le plus récent des agents au travail : le clic sur le bandeau ouvre sa conversation.
+  // bg-c — le plus récent des agents au travail : le clic sur le bandeau ouvre sa conversation.
   const agentRecentRef = useRef<{ id: string; name: string; conn: string } | null>(null);
-  // axe:bg-b — recompte à la fin de chaque tour (pas seulement sur événement / 10 s).
+  // bg-b — recompte à la fin de chaque tour (pas seulement sur événement / 10 s).
   const rechargerAgentsRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     let vivant = true;
     const charger = async () => {
       try {
-        const conn = getActiveConnection(); // axe:journal-espace — la machine qui a listé l'agent
+        const conn = getActiveConnection(); // journal-espace — la machine qui a listé l'agent
         const all = await agentsApi.list(conn);
         const enfants = new Map<string, string[]>();
         for (const x of all) if (x.parentId) enfants.set(x.parentId, [...(enfants.get(x.parentId) ?? []), x.id]);
@@ -505,8 +505,8 @@ export function ChatPane({
     const timer = window.setInterval(() => void charger(), 10_000);
     return () => { vivant = false; unlisten?.(); window.clearInterval(timer); };
   }, [conversationId]);
-  // axe:sub-n end
-  // axe:e17b — brouillons partagés entre toutes les instances de ChatPane : détacher ou
+  // sub-n end
+  // e17b — brouillons partagés entre toutes les instances de ChatPane : détacher ou
   // changer de colonne remonte un autre ChatPane, le texte non envoyé doit suivre.
   const composerDraftsRef = useRef<Map<string, ComposerDraft>>(BROUILLONS_PARTAGES);
   const [view, setView] = useState<ChatViewState>(() => {
@@ -514,7 +514,7 @@ export function ChatPane({
     return isStreaming ? beginTurn(initial) : initial;
   });
   const viewRef = useRef(view);
-  // axe:bg-b — fin du tour : les agents qui ont fini ne sont plus comptés « au travail ».
+  // bg-b — fin du tour : les agents qui ont fini ne sont plus comptés « au travail ».
   useEffect(() => {
     if (view.status !== "streaming") rechargerAgentsRef.current?.();
   }, [view.status]);
@@ -529,7 +529,7 @@ export function ChatPane({
   >(new Map([[conversationId, subAgentViews]]));
   const [activeTeamNamesByConversation, setActiveTeamNamesByConversation] =
     useState<Map<string, Set<string>>>(() => new Map());
-  // axe:file-attente — instantané du magasin partagé (files, envois, compactions).
+  // file-attente — instantané du magasin partagé (files, envois, compactions).
   const etatFiles = useSyncExternalStore(FILES_PARTAGEES.abonner, FILES_PARTAGEES.instantane);
   const promptQueuesByConversation = etatFiles.files;
   // Compaction + relance, ou mise en arrière-plan : rien ne part de la file.
@@ -541,11 +541,11 @@ export function ChatPane({
   const [autoCloseSubAgentId, setAutoCloseSubAgentId] = useState<string | null>(null);
   const [text, setText] = useState("");
   const histRef = useRef<EtatHistorique>({ index: null, brouillon: "" });
-  // axe:slash
+  // slash
   const slashMenu = useSlashCommandMenu(text, setText);
   const [slashNotice, setSlashNotice] = useState<string | null>(null);
   const slashCompactRef = useRef<((directive?: string) => Promise<void>) | null>(null);
-  // axe:slash end
+  // slash end
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [dropActive, setDropActive] = useState(false);
   const [optimisticModeSelectionsByConversation, setOptimisticModeSelectionsByConversation] =
@@ -578,13 +578,13 @@ export function ChatPane({
     loadFastServiceTierPreference,
   );
   const [configuredProviders, setConfiguredProviders] = useState<string[]>([]);
-  // axe:hotfix — « Connect a provider » seulement après une réponse : un échec
+  // hotfix — « Connect a provider » seulement après une réponse : un échec
   // (moteur pas prêt au démarrage, colonne montée trop tôt) est réessayé.
   const [providersLoaded, setProvidersLoaded] = useState(false);
   const [providersRetry, setProvidersRetry] = useState(0);
   const providersAttemptsRef = useRef(0);
   const [openRouterModels, setOpenRouterModels] = useState<OpenRouterModel[]>([]);
-  const [customProviders, setCustomProviders] = useState<ProviderSettingsView | null>(null); // axe:providers
+  const [customProviders, setCustomProviders] = useState<ProviderSettingsView | null>(null); // providers
   const [agentTeamsEnabled, setAgentTeamsEnabled] = useState(false);
   const modelRef = useRef<HTMLDivElement | null>(null);
   const thinkingRef = useRef<HTMLDivElement | null>(null);
@@ -657,7 +657,7 @@ export function ChatPane({
   const overlayInnerRef = useRef<HTMLDivElement | null>(null);
   const planWritingRef = useRef<{ conversationId: string; placeholderId: string } | null>(null);
   const pendingPlanWriteModeRef = useRef<"update" | null>(null);
-  // axe:file-attente — envoi en cours, éléments bloqués, essais : dans FILES_PARTAGEES.
+  // file-attente — envoi en cours, éléments bloqués, essais : dans FILES_PARTAGEES.
   const lastEnterAtRef = useRef(0);
   const contextEstimateConversationIdRef = useRef(conversationId);
   const contextEstimateSignatureRef = useRef<string | null>(null);
@@ -707,14 +707,14 @@ export function ChatPane({
       const [providers, models, custom] = await Promise.all([
         api.listConfiguredModelProviders(),
         api.listOpenRouterModels().catch(() => []),
-        providerApi.get().catch(() => null), // axe:providers
+        providerApi.get().catch(() => null), // providers
       ]);
       setConfiguredProviders(providers);
       setOpenRouterModels(models);
       setCustomProviders(custom);
       found = providers.length > 0;
     } catch {
-      // axe:hotfix — on garde la dernière liste connue (avant : vidée, donc
+      // hotfix — on garde la dernière liste connue (avant : vidée, donc
       // « Connect a provider » et plus aucun modèle jusqu'au prochain focus).
     }
     if (found || providersAttemptsRef.current >= 5) {
@@ -730,7 +730,7 @@ export function ChatPane({
     void loadConfiguredProviders();
   }, [loadConfiguredProviders]);
 
-  // axe:hotfix — nouvel essai 2 s, 4 s, 8 s, 16 s, 16 s après un échec ou une liste vide.
+  // hotfix — nouvel essai 2 s, 4 s, 8 s, 16 s, 16 s après un échec ou une liste vide.
   useEffect(() => {
     if (providersRetry === 0) return;
     const delay = Math.min(1000 * 2 ** providersAttemptsRef.current, 16000);
@@ -776,8 +776,8 @@ export function ChatPane({
     return () => window.removeEventListener(TOOL_SETTINGS_CHANGED_EVENT, refresh);
   }, [loadAgentTeamsEnabled]);
 
-  const customModels = useMemo(() => customModelEntries(customProviders), [customProviders]); // axe:providers
-  // axe:parcours-collegue — conversation d'un espace Axe Cloud : le tour part sur le démon de
+  const customModels = useMemo(() => customModelEntries(customProviders), [customProviders]); // providers
+  // parcours-collegue — conversation d'un espace Axe Cloud : le tour part sur le démon de
   // l'espace (VM), donc les modèles proposés sont ceux de l'espace, jamais ceux du PC (un
   // collègue n'en a aucun : avant, « Connect a provider » et Send grisé).
   const espaceCloud = cloudConnectionFromPath(workspacePath) !== null;
@@ -849,7 +849,7 @@ export function ChatPane({
     () => collectComposerAttachments(attachments, inlineMentions),
     [attachments, inlineMentions],
   );
-  useSyncExternalStore(abonnerPauses, instantanePauses); // axe:file-pause
+  useSyncExternalStore(abonnerPauses, instantanePauses); // file-pause
   const queuedPrompts =
     promptQueuesByConversation.get(conversationId) ?? EMPTY_QUEUED_PROMPTS;
   const visibleContextEstimate: ContextEstimateState =
@@ -896,7 +896,7 @@ export function ChatPane({
     conversationViewsRef.current.set(viewConversationIdRef.current, view);
   }, [view]);
 
-  // axe:e17b — le brouillon est rangé à chaque frappe (et donc avant un démontage :
+  // e17b — le brouillon est rangé à chaque frappe (et donc avant un démontage :
   // détacher / agrandir / déplacer l'onglet ne perd plus le texte non envoyé).
   useEffect(() => {
     if (viewConversationIdRef.current !== conversationId) return;
@@ -1559,7 +1559,7 @@ export function ChatPane({
         }
         return current;
       }
-      // axe:reprise — stream cut, request sent again: the plan starts over.
+      // reprise — stream cut, request sent again: the plan starts over.
       if (planWriting && event.type === "stream_retry") {
         return {
           ...current,
@@ -1715,7 +1715,7 @@ export function ChatPane({
   const scrollAnimationRef = useRef<number | null>(null);
   const autoScrollingRef = useRef(false);
   const stickToBottomRef = useRef(true);
-  // axe:bas169 — bouton « ↓ » quand on n'est plus en bas (Ctrl+Fin aussi).
+  // bas169 — bouton « ↓ » quand on n'est plus en bas (Ctrl+Fin aussi).
   const [pasEnBas, setPasEnBas] = useState(false);
   const pendingForceScrollRef = useRef(true);
   const [sendTick, setSendTick] = useState(0);
@@ -1934,10 +1934,10 @@ export function ChatPane({
 
   const handleSend = useCallback(async () => {
     if (!modelEntry) return;
-    // axe:hist169 — tout envoi (Entrée ou bouton) entre dans l'historique.
+    // hist169 — tout envoi (Entrée ou bouton) entre dans l'historique.
     if (text.trim()) memoriserPrompt(conversationId, text);
     histRef.current = { index: null, brouillon: "" };
-    // axe:slash — IDE-side commands (/compact, /refine, /tree, /login, /settings).
+    // slash — IDE-side commands (/compact, /refine, /tree, /login, /settings).
     if (
       composerAttachments.length === 0 &&
       (await runClientSlashCommand(text, {
@@ -1950,7 +1950,7 @@ export function ChatPane({
       setText("");
       return;
     }
-    // axe:slash end
+    // slash end
     const currentAttachments = composerAttachments;
     const value = text.trim() || attachmentOnlyMessage(currentAttachments);
     if (!value && currentAttachments.length === 0) {
@@ -1977,7 +1977,7 @@ export function ChatPane({
           insertQueuedPrompt(queue, queuedPrompt, editing?.index),
         ),
       );
-      // axe:file-demon — la file part dans le service, qui l'enverra en fin de tour.
+      // file-demon — la file part dans le service, qui l'enverra en fin de tour.
       void pousserFile(workspacePath, conversationId, queuedPrompt, editing?.index).catch((err) =>
         setView((prev) => ({ ...prev, lastError: String(err) })),
       );
@@ -2003,7 +2003,7 @@ export function ChatPane({
     const revertWorkspaceChanges =
       rewriteState?.revertWorkspaceChanges === true && canRevertWorkspaceChanges;
     const nextHistoryIndex = rewriteFromHistoryIndex ?? history.length;
-    // axe:arriere-plan — après « Arrière-plan », la note part devant ce message.
+    // arriere-plan — après « Arrière-plan », la note part devant ce message.
     const note =
       rewriteFromHistoryIndex === undefined ? FILES_PARTAGEES.prendreNote(conversationId) : null;
     const texteEnvoye = avecNote(note, value);
@@ -2068,16 +2068,16 @@ export function ChatPane({
     thinking,
     effectiveMode,
     serviceTier,
-    workspacePath, // axe:slash
+    workspacePath, // slash
   ]);
 
   const sendQueuedPrompt = useCallback(
     (nextPrompt: QueuedPrompt, restoreIndex = 0) => {
-      // axe:file-attente — réservé ET retiré de la file en un seul geste : un
+      // file-attente — réservé ET retiré de la file en un seul geste : un
       // seul envoi par conversation, même si deux volets la montrent.
       if (!FILES_PARTAGEES.prendreEnvoi(conversationId, nextPrompt.id)) return;
       FILES_PARTAGEES.debloquer(nextPrompt.id);
-      // axe:arriere-plan — après « Arrière-plan », la note part devant ce message.
+      // arriere-plan — après « Arrière-plan », la note part devant ce message.
       const note = FILES_PARTAGEES.prendreNote(conversationId);
       const texte = avecNote(note, nextPrompt.text);
       setView((prev) =>
@@ -2100,7 +2100,7 @@ export function ChatPane({
         nextPrompt.serviceTier,
       )
         .catch((err) => {
-          // axe:queue - un seul echec ne bloque plus la file : nouvel essai auto apres 3 s,
+          // queue - un seul echec ne bloque plus la file : nouvel essai auto apres 3 s,
           // blocage (fleche manuelle) seulement au 2e echec.
           if (note) FILES_PARTAGEES.poserNote(conversationId, note);
           const tries = FILES_PARTAGEES.noterEchec(nextPrompt.id);
@@ -2128,11 +2128,11 @@ export function ChatPane({
     [conversationId, history, onSend],
   );
 
-  // axe:file-hors-vue — tant que ce volet est monté, c'est lui qui vide la file ;
+  // file-hors-vue — tant que ce volet est monté, c'est lui qui vide la file ;
   // démonté (autre onglet, autre conversation), Workspace prend le relais.
   useEffect(() => FILES_PARTAGEES.monter(conversationId), [conversationId]);
 
-  // axe:file-demon — plus d'envoi automatique ici : le service envoie la file
+  // file-demon — plus d'envoi automatique ici : le service envoie la file
   // à la fin du tour. Le volet migre l'ancienne file du navigateur et relit
   // la copie d'affichage.
   useEffect(() => {
@@ -2152,7 +2152,7 @@ export function ChatPane({
     activeSubAgentId !== null ||
     history.length === 0 ||
     !modelEntry;
-  // axe:parcours-collegue (D10) — la compaction manuelle passe par le magasin et les fournisseurs
+  // parcours-collegue (D10) — la compaction manuelle passe par le magasin et les fournisseurs
   // du PC (src-tauri/src/turns.rs) : dans un espace Axe Cloud, le bouton et /compact expliquent
   // qu'elle est automatique au lieu d'échouer (« conversation not found »).
   const compactionAilleurs = !actionsDuPc(espaceCloud).compaction;
@@ -2192,12 +2192,12 @@ export function ChatPane({
       return;
     }
     if (compactionAilleurs) {
-      setSlashNotice(NOTE_COMPACTION_ESPACE); // axe:parcours-collegue (D10)
+      setSlashNotice(NOTE_COMPACTION_ESPACE); // parcours-collegue (D10)
       return;
     }
     setCompactInstructionOpen((open) => !open);
   }, [compactDisabled, compactionAilleurs]);
-  slashCompactRef.current = runManualCompact; // axe:slash
+  slashCompactRef.current = runManualCompact; // slash
 
   const handleCompactInstructionSubmit = useCallback(async () => {
     const instruction = compactInstruction.trim();
@@ -2226,7 +2226,7 @@ export function ChatPane({
   }, [compactDisabled, compactInstructionOpen]);
 
   useEffect(() => {
-    // axe:parcours-collegue (D10) — espace Axe Cloud : son démon compacte lui-même ; la
+    // parcours-collegue (D10) — espace Axe Cloud : son démon compacte lui-même ; la
     // compaction du PC (magasin et fournisseurs du PC) échouerait.
     if (compactionAilleurs) return;
     if (contextEstimate.conversationId !== conversationId) return;
@@ -2239,7 +2239,7 @@ export function ChatPane({
     if (rewriteState !== null) return;
     if (text.trim() || composerAttachments.length > 0) return;
     if (!hasContentAfterLatestCompaction(history)) return;
-    // axe:file-attente — lu en direct : un autre volet a pu lancer la compaction
+    // file-attente — lu en direct : un autre volet a pu lancer la compaction
     // ou un envoi de cette conversation dans le même passage.
     if (FILES_PARTAGEES.occupee(conversationId)) return;
     if (FILES_PARTAGEES.envoiEnCours(conversationId)) return;
@@ -2299,7 +2299,7 @@ export function ChatPane({
     if (contextEstimate.conversationId !== conversationId) return;
     if (contextEstimate.status !== "ready") return;
     if (contextEstimateSignatureRef.current !== autoCompactHistorySignature(history)) return;
-    // axe:file-attente — pas de relance d'objectif pendant une compaction ou un envoi.
+    // file-attente — pas de relance d'objectif pendant une compaction ou un envoi.
     if (FILES_PARTAGEES.occupee(conversationId)) return;
     if (FILES_PARTAGEES.envoiEnCours(conversationId)) return;
 
@@ -2742,7 +2742,7 @@ export function ChatPane({
   );
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (slashMenu.onKeyDown(event)) return; // axe:slash
+    if (slashMenu.onKeyDown(event)) return; // slash
     if (skillMention) {
       if (event.key === "ArrowDown") {
         event.preventDefault();
@@ -2831,7 +2831,7 @@ export function ChatPane({
       event.preventDefault();
       const now = Date.now();
       const busy = view.status === "streaming" || isStreaming || conversationOccupee;
-      // axe:queue - Entree = file ; double Entree (< 500 ms) = envoi immediat.
+      // queue - Entree = file ; double Entree (< 500 ms) = envoi immediat.
       if (busy && text.trim() === "" && now - lastEnterAtRef.current < 500 && queuedPrompts.length > 0) {
         lastEnterAtRef.current = 0;
         const last = queuedPrompts[queuedPrompts.length - 1];
@@ -2849,7 +2849,7 @@ export function ChatPane({
     }
   };
 
-  // axe:voix — texte dicté inséré à la place de la sélection (ou au curseur),
+  // voix — texte dicté inséré à la place de la sélection (ou au curseur),
   // jamais envoyé : le layout effect de pendingCaretRef replace le curseur.
   const insererDictee = useCallback((dicte: string) => {
     const ta = textareaRef.current;
@@ -3119,7 +3119,7 @@ export function ChatPane({
 
   const handleStopAgentSwarm = useCallback(
     async (teamName?: string) => {
-      // axe:cleanup — legacy swarm backend removed; only clear local views of old runs.
+      // cleanup — legacy swarm backend removed; only clear local views of old runs.
       setActiveTeamNamesByConversation((current) =>
         removeActiveTeamName(current, conversationId, teamName),
       );
@@ -3284,7 +3284,7 @@ export function ChatPane({
     [conversationId, workspacePath, queuedPrompts],
   );
 
-  // axe:arriere-plan — « Arrière-plan » (à côté de Stop) ou « Lancer maintenant
+  // arriere-plan — « Arrière-plan » (à côté de Stop) ou « Lancer maintenant
   // (travail en arrière-plan) » sur un message en file : le travail en cours
   // continue dans une session d'arrière-plan, enfant de la conversation ; la
   // conversation est libérée et son premier message en file part, précédé de
@@ -3558,7 +3558,7 @@ export function ChatPane({
                     blocks={displayView.blocks}
                     onPreviewImage={setPreviewImage}
                     onRewindMessage={viewingSubAgent ? () => {} : handleRewindToMessage}
-                    rewindDisabled={viewingSubAgent || view.status === "streaming" || !actionsDuPc(espaceCloud).reecriture /* axe:parcours-collegue (D10) */}
+                    rewindDisabled={viewingSubAgent || view.status === "streaming" || !actionsDuPc(espaceCloud).reecriture /* parcours-collegue (D10) */}
                     rewriteHistoryIndex={
                       viewingSubAgent ? null : rewriteState?.historyIndex ?? null
                     }
@@ -3598,10 +3598,10 @@ export function ChatPane({
               className="tool-card__pre"
               data-error="true"
               style={{ margin: 0 }}
-              // axe:parcours-collegue — le texte technique reste lisible au survol.
+              // parcours-collegue — le texte technique reste lisible au survol.
               title={expliquerErreurIA(displayView.lastError, espaceCloud) ? displayView.lastError : undefined}
             >
-              {/* axe:parcours-collegue — erreur du serveur d'un espace (401, 429, 503…) expliquée en français ;
+              {/* parcours-collegue — erreur du serveur d'un espace (401, 429, 503…) expliquée en français ;
                   sinon, traduction des erreurs du moteur (night-ui-fr). */}
               {expliquerErreurIA(displayView.lastError, espaceCloud) ?? erreurMoteurEnFrancais(displayView.lastError)}
             </div>
@@ -3659,17 +3659,17 @@ export function ChatPane({
           allModels={allModels}
         />
       )}
-      {!viewingSubAgent && agentsAuTravail > 0 && ( /* axe:sub-n */
+      {!viewingSubAgent && agentsAuTravail > 0 && ( /* sub-n */
         <button
           type="button"
           className="axe-agents-bandeau"
           style={{ display: "block", width: "100%", textAlign: "left", padding: "4px 10px", fontSize: 12, border: "none", cursor: "pointer", background: "var(--accent-soft, rgba(80,140,255,0.12))", color: "inherit" }}
           title="Ouvrir la conversation de l'agent"
           onClick={() => {
-            // axe:bg-c — comme la vue Agents : ouvre la conversation (journal) de l'agent.
+            // bg-c — comme la vue Agents : ouvre la conversation (journal) de l'agent.
             const a = agentRecentRef.current;
             window.dispatchEvent(new CustomEvent("axe:open-agents"));
-            if (a) window.dispatchEvent(new CustomEvent("axe:open-agent-journal", { detail: { id: a.id, title: a.name || a.id.slice(0, 8), conn: a.conn } })); // axe:journal-espace
+            if (a) window.dispatchEvent(new CustomEvent("axe:open-agent-journal", { detail: { id: a.id, title: a.name || a.id.slice(0, 8), conn: a.conn } })); // journal-espace
           }}
         >
           ● {agentsAuTravail} agent(s) au travail
@@ -3740,19 +3740,19 @@ export function ChatPane({
                 })}
               </div>
             )}
-        {/* axe:cleanup — swarm rail replaced by the Agents view (src/components/agents). */}
+        {/* cleanup — swarm rail replaced by the Agents view (src/components/agents). */}
         <div
           className="composer__box"
           data-drop={dropActive ? "true" : "false"}
         >
-          {/* axe:slash */}
+          {/* slash */}
           {slashMenu.menu}
           {slashNotice ? (
             <div className="axe-slash-notice" role="status" onClick={() => setSlashNotice(null)}>
               {slashNotice}
             </div>
           ) : null}
-          {/* axe:slash end */}
+          {/* slash end */}
           {skillMention && !slashMenu.active && (
             <div
               className="mention-popover"
@@ -3989,8 +3989,8 @@ export function ChatPane({
                 </button>
               ) : (
                 <>
-              {/* axe:cleanup — Act/Plan/Goal mode picker removed: every turn is a REPL session. */}
-              {/* axe:commandes — icônes /heartbeat et /goal à côté du sélecteur de modèle. */}
+              {/* cleanup — Act/Plan/Goal mode picker removed: every turn is a REPL session. */}
+              {/* commandes — icônes /heartbeat et /goal à côté du sélecteur de modèle. */}
               <IndicateursSession
                 workspacePath={workspacePath}
                 conversationId={conversationId}
@@ -4031,7 +4031,7 @@ export function ChatPane({
                       const selected = m.value === model;
                       const providerIcon =
                         PROVIDERS.find((p) => p.value === m.provider)?.icon ?? m.icon;
-                      // axe:providers — group header whenever the provider changes.
+                      // providers — group header whenever the provider changes.
                       const groupLabel =
                         index === 0 || availableModels[index - 1].provider !== m.provider
                           ? (PROVIDERS.find((p) => p.value === m.provider)?.label ??
@@ -4166,7 +4166,7 @@ export function ChatPane({
               )}
             </div>
             <div className="composer__actions-right">
-              {/* axe:voix — dictée « message vocal » : enregistrement, Whisper de la VM, texte
+              {/* voix — dictée « message vocal » : enregistrement, Whisper de la VM, texte
                   inséré et modifiable, jamais envoyé (Win+H reste en secours dans la bulle d'erreur) */}
               <DicteeBouton
                 workspacePath={workspacePath}
@@ -4202,7 +4202,7 @@ export function ChatPane({
                   Compactage
                 </span>
               </button>
-              {/* axe:slash — /refine and /tree buttons */}
+              {/* slash — /refine and /tree buttons */}
               <button
                 type="button"
                 className="composer__iconbtn"
@@ -4234,10 +4234,10 @@ export function ChatPane({
                   /tree
                 </span>
               </button>
-              {/* axe:slash end */}
+              {/* slash end */}
               <ContextMeter state={visibleContextEstimate} />
               {view.status === "streaming" && onBackground && !viewingSubAgent ? (
-                // axe:arriere-plan — à côté de Stop.
+                // arriere-plan — à côté de Stop.
                 <button
                   type="button"
                   className="composer__send"
@@ -6549,7 +6549,7 @@ function BlockView({
           </div>
         </div>
       );
-    // axe:commandes — réveil /heartbeat : bulle discrète avec l'heure.
+    // commandes — réveil /heartbeat : bulle discrète avec l'heure.
     case "wake":
       return (
         <div className="msg" data-role="assistant">
@@ -6563,7 +6563,7 @@ function BlockView({
           </div>
         </div>
       );
-    // axe:goal165 — relance automatique de l'objectif : bulle discrète avec l'heure.
+    // goal165 — relance automatique de l'objectif : bulle discrète avec l'heure.
     case "goal-continue":
       return (
         <div className="msg" data-role="assistant">
@@ -6585,7 +6585,7 @@ function BlockView({
   }
 }
 
-// axe:commandes — identifiant du dernier réveil affiché (fait clignoter l'icône heartbeat).
+// commandes — identifiant du dernier réveil affiché (fait clignoter l'icône heartbeat).
 function dernierReveilId(blocks: ChatBlock[]): string | null {
   for (let i = blocks.length - 1; i >= 0; i -= 1) {
     if (blocks[i].kind === "wake") return blocks[i].id;
@@ -6941,7 +6941,7 @@ function relativizePath(workspacePath: string, candidate: string): string | null
   return null;
 }
 
-// axe:couleurs — calque du compositeur : commande slash en tête (accent), skills
+// couleurs — calque du compositeur : commande slash en tête (accent), skills
 // (violet), fichiers mentionnés. Couleur seulement : aucune largeur ne change.
 const NOMS_COMMANDES_SLASH = SLASH_COMMANDS.map((c) => c.name);
 
@@ -6978,7 +6978,7 @@ function renderMentionHighlights(
 /** Skills activés de l'espace, pour colorer les bulles des messages envoyés. */
 const SkillsActifsContext = createContext<string[]>([]);
 
-/** axe:couleurs — texte d'une bulle utilisateur : commande et skills colorés, le
+/** couleurs — texte d'une bulle utilisateur : commande et skills colorés, le
  *  reste garde les liens de fichiers (FileLinkedText). */
 function TexteUtilisateur({
   text,

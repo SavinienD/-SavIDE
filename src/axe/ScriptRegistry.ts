@@ -1,4 +1,4 @@
-// axe:e4 — registre de scripts « un seul cerveau ».
+// e4 — registre de scripts « un seul cerveau ».
 //
 // Une fonction ne se sérialise pas : on persiste sa SOURCE (fn.toString()) et
 // ses métadonnées sous `axe:scripts:registry`. Au rechargement, les fonctions

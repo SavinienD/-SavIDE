@@ -1,4 +1,4 @@
-// axe:freechat — full-screen free conversation view (ChatGPT style): every
+// freechat — full-screen free conversation view (ChatGPT style): every
 // conversation in a sidebar (free ones first, then per project, search),
 // a wide centered chat (the regular ChatPane), no editor / tree / terminal.
 import { useEffect, useMemo, useState, type ReactNode } from "react";
@@ -6,7 +6,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { Icon } from "@iconify/react";
 import type { ConversationSummary, SavedConversation } from "../../types";
 import { ConversationList } from "../ConversationList";
-import { NouvelleConversation } from "../NouvelleConversation"; // axe:e13
+import { NouvelleConversation } from "../NouvelleConversation"; // e13
 import { AxeLogo } from "../../axe/Logo";
 import { QuotaIndicator } from "../../axe/QuotaIndicator";
 import { UpdateBadge } from "../UpdateBadge";
@@ -28,7 +28,7 @@ type Props = {
   activeConversation: SavedConversation;
   streamingIds: ReadonlySet<string>;
   onSelect: (id: string) => void;
-  // axe:e13 — la creation demande le nom (recherche dans les archives).
+  // e13 — la creation demande le nom (recherche dans les archives).
   onCreate: (title: string) => void;
   onRename: (id: string, title: string) => void;
   onDelete: (id: string) => void;
@@ -45,7 +45,7 @@ type Props = {
 };
 
 const SIDEBAR_WIDTH = 280;
-// axe:savide-accueil — la barre d'actions est un conteneur (container: inline-size,
+// savide-accueil — la barre d'actions est un conteneur (container: inline-size,
 // overflow: hidden) : sans bord droit sa largeur valait 0 et Accueil / Ouvrir un dossier /
 // Réglages étaient rognés, donc invisibles. Bord droit = quota + boutons de fenêtre.
 const BORD_DROIT_BARRE = isWindowsPlatform() ? 260 : 120;

@@ -19,8 +19,8 @@ export function RemotePanel({ initialStatus = null, onStatusChange }: Props) {
   const [status, setStatus] = useState<RemoteStatus | null>(initialStatus);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // axe:cleanup — self-hosted relay URL (empty until configured).
-  const [relayDraft, setRelayDraft] = useState(initialStatus?.relayUrl ? publicUrl(initialStatus.relayUrl) : "") // axe:relais-defaut;
+  // cleanup — self-hosted relay URL (empty until configured).
+  const [relayDraft, setRelayDraft] = useState(initialStatus?.relayUrl ? publicUrl(initialStatus.relayUrl) : "") // relais-defaut;
   const [relayTouched, setRelayTouched] = useState(false);
   const relayTouchedRef = useRef(false);
   relayTouchedRef.current = relayTouched;

@@ -288,7 +288,7 @@ fn git_root(root: &Path) -> SessionResult<PathBuf> {
     Ok(repo)
 }
 
-/// axe:v2-l4.1 — dépot ciblé : racine de l'espace par défaut, ou sous-dossier choisi par le client.
+/// v2-l4.1 — dépot ciblé : racine de l'espace par défaut, ou sous-dossier choisi par le client.
 fn git_repo(root: &Path, p: &Value) -> SessionResult<PathBuf> {
     let raw = p.get("path").and_then(Value::as_str).unwrap_or("").trim().to_string();
     let dir = if raw.is_empty() || raw == "." {
@@ -299,7 +299,7 @@ fn git_repo(root: &Path, p: &Value) -> SessionResult<PathBuf> {
     git_root(&dir)
 }
 
-/// axe:v2-l4.1 — dépts Git sous la racine de l'espace (profondeur bornée), pour le selecteur de l'UI.
+/// v2-l4.1 — dépts Git sous la racine de l'espace (profondeur bornée), pour le selecteur de l'UI.
 fn scan_repos(root: &Path, dir: &Path, depth: usize, out: &mut Vec<Value>) {
     let Ok(entries) = std::fs::read_dir(dir) else {
         return;
@@ -361,7 +361,7 @@ fn opt(p: &Value, k: &str) -> SessionResult<String> {
         .ok_or_else(|| SessionError::Protocol(format!("{k} is required")))
 }
 
-// axe:v2-l2.4 — index « ouvrir vite », corbeille réversible et Git complet.
+// v2-l2.4 — index « ouvrir vite », corbeille réversible et Git complet.
 
 const INDEX_DEFAULT_LIMIT: usize = 20_000;
 const INDEX_MAX_LIMIT: usize = 50_000;
@@ -658,7 +658,7 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
             d.broadcast("workspace_changed", None, json!({"path":virt(&r,&path)}));
             Ok(serde_json::to_value(doc)?)
         }
-        // axe:push-dossier - ecriture binaire par morceaux (base64), append pour les gros fichiers.
+        // push-dossier - ecriture binaire par morceaux (base64), append pour les gros fichiers.
         "fs.write_bytes" => {
             use base64::Engine as _;
             let s = opt(p, "path")?;
@@ -666,7 +666,7 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
                 .decode(opt(p, "data")?)
                 .map_err(|e| SessionError::Protocol(e.to_string()))?;
             let append = p.get("append").and_then(Value::as_bool).unwrap_or(false);
-            // axe:push-dossier - creer les dossiers parents AVANT resolve (sinon « path not found »).
+            // push-dossier - creer les dossiers parents AVANT resolve (sinon « path not found »).
             if let Some(par) = rel(&s)?.parent() { std::fs::create_dir_all(r.join(par)).map_err(|e| SessionError::Protocol(e.to_string()))?; }
             let path = resolve(&r, &s, true)?;
             if let Some(dir) = path.parent() { std::fs::create_dir_all(dir).map_err(|e| SessionError::Protocol(e.to_string()))?; }
@@ -694,7 +694,7 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
             }
             Ok(v)
         }
-        // axe:v2-l2.4 — index complet des fichiers de l'espace (« ouvrir vite »).
+        // v2-l2.4 — index complet des fichiers de l'espace (« ouvrir vite »).
         "fs.index" => {
             let limit = p
                 .get("limit")
@@ -709,7 +709,7 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
             paths.truncate(limit);
             Ok(json!({"paths": paths, "truncated": truncated}))
         }
-        // axe:v2-l2.4 — suppression réversible : déplacement sous `.axecode/corbeille`.
+        // v2-l2.4 — suppression réversible : déplacement sous `.axecode/corbeille`.
         "fs.trash" => {
             let s = opt(p, "path")?;
             let relative = rel(&s)?;
@@ -752,7 +752,7 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
                 "trashedAtMs": trashed_at_ms,
             }))
         }
-        // axe:v2-l2.4 — contenu de la corbeille, du plus récent au plus ancien.
+        // v2-l2.4 — contenu de la corbeille, du plus récent au plus ancien.
         "fs.trash_list" => {
             let mut out = Vec::new();
             for dir in trash_roots(d, &r) {
@@ -790,7 +790,7 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
             });
             Ok(Value::Array(out))
         }
-        // axe:v2-l2.4 — restauration d'une entrée de la corbeille à sa place.
+        // v2-l2.4 — restauration d'une entrée de la corbeille à sa place.
         "fs.restore" => {
             let id = opt(p, "id")?;
             let id_rel = rel(&id)?;
@@ -959,7 +959,7 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
             let output = git_commit_transactional(&repo, &paths, &msg)?;
             Ok(json!({"message":"Commit created","output":output,"workspacePath":"/work"}))
         }
-        // axe:v2-l2.4 — branches locales, branche courante et suivi amont.
+        // v2-l2.4 — branches locales, branche courante et suivi amont.
         "git.branches" => {
             let repo = git_repo_at(&r, &p)?;
             let current = git_current_branch(&repo)?;
@@ -997,7 +997,7 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
             }
             Ok(json!({"current": current, "branches": branches}))
         }
-        // axe:v2-l2.4 — changement de branche (avec création optionnelle).
+        // v2-l2.4 — changement de branche (avec création optionnelle).
         "git.checkout" => {
             let repo = git_repo_at(&r, &p)?;
             let branch = opt(p, "branch")?;
@@ -1025,7 +1025,7 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
             }
             Ok(json!({"branch": git_current_branch(&repo)?}))
         }
-        // axe:v2-l2.4 — push (l'échec est renvoyé, pas une erreur RPC).
+        // v2-l2.4 — push (l'échec est renvoyé, pas une erreur RPC).
         "git.push" => {
             let repo = git_repo_at(&r, &p)?;
             let set_upstream = p
@@ -1040,13 +1040,13 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
             };
             Ok(json!({"ok": code == 0, "output": out}))
         }
-        // axe:v2-l2.4 — pull en avance rapide uniquement.
+        // v2-l2.4 — pull en avance rapide uniquement.
         "git.pull" => {
             let repo = git_repo_at(&r, &p)?;
             let (code, out) = git_run(&repo, &["pull", "--ff-only"])?;
             Ok(json!({"ok": code == 0, "output": out}))
         }
-        // axe:v2-l2.4 — worktrees du dépôt.
+        // v2-l2.4 — worktrees du dépôt.
         "git.worktrees" => {
             let repo = git_repo_at(&r, &p)?;
             let (code, out) = git_run(&repo, &["worktree", "list", "--porcelain"])?;
@@ -1060,7 +1060,7 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
 }
 
 
-/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+/// 0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
 #[allow(dead_code)]
 fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
     #[allow(unused_mut)]
@@ -1425,7 +1425,7 @@ mod tests {
         assert!(f.call("git.status", json!({"path":"../etc"})).is_err());
     }
 
-    // axe:v2-l2.4 — index « ouvrir vite ».
+    // v2-l2.4 — index « ouvrir vite ».
     #[test]
     fn index_lists_relative_files_and_skips_noise() {
         let f = Fixture::new();
@@ -1459,7 +1459,7 @@ mod tests {
         assert_eq!(idx["paths"], json!(["real.txt"]));
     }
 
-    // axe:v2-l2.4 — corbeille réversible.
+    // v2-l2.4 — corbeille réversible.
     #[test]
     fn trash_list_and_restore_roundtrip() {
         let f = Fixture::new();
@@ -1552,7 +1552,7 @@ mod tests {
         }
     }
 
-    // axe:v2-l2.4 — branches locales et branche courante.
+    // v2-l2.4 — branches locales et branche courante.
     #[test]
     fn git_branches_reports_current_and_upstream() {
         let f = Fixture::new();
@@ -1611,7 +1611,7 @@ mod tests {
         assert!(f.call("git.branches", json!({"repoPath":"../etc"})).is_err());
     }
 
-    // axe:v2-l2.4 — push/pull : l'échec est une réponse, pas une erreur RPC.
+    // v2-l2.4 — push/pull : l'échec est une réponse, pas une erreur RPC.
     #[test]
     fn git_push_and_pull_report_failure_without_rpc_error() {
         let f = Fixture::new();

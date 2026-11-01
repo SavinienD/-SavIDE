@@ -1,4 +1,4 @@
-// axe:zoom — taille du TEXTE LU : chat et documents seulement (axe:e19). La valeur
+// zoom — taille du TEXTE LU : chat et documents seulement (e19). La valeur
 // vit dans `--content-scale` (styles.css), que seuls `.chat-col` et `.editor-host`
 // relisent ; le reste de l'interface ne bouge pas d'un pixel.
 // Persisted in localStorage (same key as the old whole-webview zoom: saved
@@ -6,7 +6,7 @@
 // restarts and the home screen. Réglée dans Settings > Apparence (les Ctrl +/-/0
 // pilotent le zoom de toute l'interface, plus bas).
 
-import { fournirActions } from "./raccourcis"; // axe:raccourcis
+import { fournirActions } from "./raccourcis"; // raccourcis
 
 const STORAGE_KEY = "axecode:zoom";
 const CHANGE_EVENT = "axe:zoom-changed";
@@ -36,7 +36,7 @@ export function loadTextScale(): number {
 }
 
 function applyTextScale(scale: number): void {
-  // axe:e19 — deux variables, une seule intention : `--content-scale` porte la
+  // e19 — deux variables, une seule intention : `--content-scale` porte la
   // valeur du reglage et n'est lu que par le chat et la zone du document ;
   // `--text-scale` reste a 1 pour que la barre de titre, les listes, les boutons
   // et les reglages gardent EXACTEMENT leur taille. Sinon le glisser deforme
@@ -64,7 +64,7 @@ export function onTextScaleChange(cb: (scale: number) => void): () => void {
   return () => window.removeEventListener(CHANGE_EVENT, handler);
 }
 
-// axe:zoom-origine — le zoom D'ORIGINE de SavIDE : toute la webview grandit
+// zoom-origine — le zoom D'ORIGINE de SavIDE : toute la webview grandit
 // (getCurrentWebview().setZoom), comme avant aca8e81/e19. Réglé par Ctrl +/−/0
 // (registre axe/raccourcis.ts) et par le curseur de Settings > Apparence.
 // Clé distincte de la taille du texte (`axecode:zoom`, reprise par e19).

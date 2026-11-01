@@ -1,4 +1,4 @@
-//! axe:cmdnat — analyse en langage naturel des commandes `/heartbeat` et `/goal`
+//! cmdnat — analyse en langage naturel des commandes `/heartbeat` et `/goal`
 //! (l'utilisateur n'a pas à suivre une syntaxe précise).
 //!
 //! Pur et testé : français et anglais, fautes de frappe courantes, intervalle
@@ -832,7 +832,7 @@ mod tests {
     }
 }
 
-// ---------------------------------------------------------------- /guet (axe:guet)
+// ---------------------------------------------------------------- /guet (guet)
 
 /// Ce que veut l'utilisateur avec `/guet …`.
 #[derive(Debug, Clone, PartialEq)]

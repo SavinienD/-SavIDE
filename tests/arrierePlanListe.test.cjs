@@ -1,4 +1,4 @@
-// axe:0.1.71 — sessions « … — arrière-plan » hors de la liste Conversations.
+// 0.1.71 — sessions « … — arrière-plan » hors de la liste Conversations.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const Module = require("node:module");

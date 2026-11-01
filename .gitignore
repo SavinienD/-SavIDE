@@ -36,8 +36,8 @@ __pycache__/
 ~$*
 
 
-# axe:webui build output
+# webui build output
 /web/dist/
 
-# axe:v2 - schemas generes par tauri, jamais committer
+# v2 - schemas generes par tauri, jamais committer
 /src-tauri/gen/schemas/

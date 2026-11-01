@@ -1,4 +1,4 @@
-// axe:0.1.75 — aucun lancement de processus n'ouvre de fenêtre console sous Windows.
+// 0.1.75 — aucun lancement de processus n'ouvre de fenêtre console sous Windows.
 const test = require("node:test"); const assert = require("node:assert");
 const fs = require("node:fs"); const path = require("node:path");
 const racine = path.join(__dirname, "..");

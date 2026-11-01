@@ -62,7 +62,7 @@ pub struct ReplSettings {
     /// Safety cap on model rounds within one turn.
     #[serde(default = "default_max_rounds")]
     pub max_rounds: usize,
-    /// axe:sub-m — model (`provider/model`) used by `rlm.spawn` when neither
+    /// sub-m — model (`provider/model`) used by `rlm.spawn` when neither
     /// `model` nor a profile model is given. `None` = the parent's model.
     #[serde(default)]
     pub subagent_default_model: Option<String>,

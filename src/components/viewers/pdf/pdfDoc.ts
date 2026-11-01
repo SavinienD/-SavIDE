@@ -1,4 +1,4 @@
-// axe:viewers — pdf.js loading: worker, side assets and a range transport
+// viewers — pdf.js loading: worker, side assets and a range transport
 // that pulls byte ranges from Rust, so a 500 MB PDF is never loaded whole.
 
 import {

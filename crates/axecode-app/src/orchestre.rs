@@ -1,4 +1,4 @@
-//! axe:ds16 — l'orchestrateur : l'agent principal confie des tâches longues à des
+//! ds16 — l'orchestrateur : l'agent principal confie des tâches longues à des
 //! agents externes (store `axecode-agents`), attend sans dépenser de jetons (sondage
 //! disque toutes les 500 ms) et lit leur rapport.
 use std::{path::{Path, PathBuf}, time::Duration};

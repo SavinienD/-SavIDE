@@ -1,4 +1,4 @@
-// axe:parcours-collegue (D1b) — « Connect a provider » ouvre les Réglages sur « Providers ».
+// parcours-collegue (D1b) — « Connect a provider » ouvre les Réglages sur « Providers ».
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const Module = require("node:module");

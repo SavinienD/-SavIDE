@@ -1,4 +1,4 @@
-// axe:viewers — read-only hex dump for unknown / binary files. Rows are
+// viewers — read-only hex dump for unknown / binary files. Rows are
 // virtualized and the bytes are fetched from Rust by 64 KiB pages, so even
 // multi-gigabyte files open instantly and only the visible part is read.
 

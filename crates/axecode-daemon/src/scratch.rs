@@ -1,4 +1,4 @@
-//! axe:freechat — free conversations (no project folder).
+//! freechat — free conversations (no project folder).
 //!
 //! A free conversation is a regular session whose workspace is a private,
 //! persistent folder `<data>/scratch/<session-id>/`, so the Python REPL,

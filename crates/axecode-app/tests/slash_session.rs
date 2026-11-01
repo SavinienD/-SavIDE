@@ -63,7 +63,7 @@ struct Banc {
     provider: Arc<Echo>,
     id: String,
     base: std::path::PathBuf,
-    /// axe:goal165 — garder le dossier (rechargement simulé par un 2e banc).
+    /// goal165 — garder le dossier (rechargement simulé par un 2e banc).
     keep: bool,
 }
 
@@ -152,7 +152,7 @@ async fn heartbeat_et_goal_par_commande_slash() {
     b.send("/heartbeat off").await;
     assert!(b.hook.state(&b.id).heartbeat.is_none(), "/heartbeat off doit l'arrêter");
 
-    // axe:cmdnat — langage naturel (exemples réels refusés par la 0.1.62).
+    // cmdnat — langage naturel (exemples réels refusés par la 0.1.62).
     b.send("/heartbeat dis coucou touets les 5secondes").await;
     let hb = b.hook.state(&b.id).heartbeat.expect("phrase libre comprise");
     assert_eq!((hb.interval_ms, hb.message.as_str()), (5_000, "coucou"));
@@ -182,7 +182,7 @@ async fn heartbeat_et_goal_par_commande_slash() {
     b.send("/goal clear").await;
     assert!(b.hook.state(&b.id).goal.is_none(), "/goal clear doit l'effacer");
 
-    // axe:cmdnat — /goal en langage naturel.
+    // cmdnat — /goal en langage naturel.
     b.send("/goal migrer la base avec un budget de 200k jetons").await;
     let g = b.hook.state(&b.id).goal.expect("goal naturel");
     assert_eq!((g.text.as_str(), g.budget_tokens), ("migrer la base", Some(200_000)));
@@ -252,7 +252,7 @@ async fn l_ide_arrete_heartbeat_et_goal() {
     assert!(!b.journal_has("\ncoucou\n</heartbeat>"), "plus aucun réveil après l'arrêt");
 }
 
-/// axe:goal165 — une seule source : l'objectif survit au rechargement (nouveau
+/// goal165 — une seule source : l'objectif survit au rechargement (nouveau
 /// démon, nouveau crochet, même dossier de données) ; un arrêt depuis l'IDE est vu
 /// tout de suite par `goal.get`, par le bloc d'état et par l'indicateur.
 #[tokio::test(flavor = "multi_thread")]
@@ -276,7 +276,7 @@ async fn objectif_source_unique_et_rechargement() {
     assert!(p.contains("a arrêté l'objectif depuis l'interface"), "l'agent est prévenu");
 }
 
-/// axe:goal165 — objectif actif, AUCUN heartbeat : à la fin du tour l'agent est
+/// goal165 — objectif actif, AUCUN heartbeat : à la fin du tour l'agent est
 /// relancé tout seul ; 3 relances de suite sans avancement => pause automatique.
 #[tokio::test(flavor = "multi_thread")]
 async fn objectif_relance_seul_puis_pause_sans_avancement() {
@@ -326,7 +326,7 @@ async fn pas_de_relance_si_l_utilisateur_ecrit() {
     assert!(b.hook.state(&b.id).goal.unwrap().status == "paused");
 }
 
-// ------------------------------------------------------------ axe:guet
+// ------------------------------------------------------------ guet
 
 impl Banc {
     fn meta(&self) -> axecode_core::SessionMeta {
@@ -441,7 +441,7 @@ async fn guet_survit_au_redemarrage() {
     assert!(b.journal_has("statut=\\\"reussi\\\"") && b.journal_has("fichier pret.txt"));
 }
 
-/// axe:guet — `/guet` en langage courant : commande explicite posée, phrase libre
+/// guet — `/guet` en langage courant : commande explicite posée, phrase libre
 /// confiée à l'agent, « annule » arrête tout.
 #[tokio::test(flavor = "multi_thread")]
 async fn guet_par_commande_slash() {

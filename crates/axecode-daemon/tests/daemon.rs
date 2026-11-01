@@ -72,7 +72,7 @@ async fn create_send_echo_and_reload() {
     assert_eq!(metas[0].status, axecode_core::SessionStatus::Inactive);
 }
 
-// axe:freechat — a session without folder gets a private scratch folder and
+// freechat — a session without folder gets a private scratch folder and
 // can later move to a project folder.
 #[tokio::test(flavor = "multi_thread")]
 async fn free_conversation_gets_scratch_folder_and_relocates() {
@@ -110,7 +110,7 @@ async fn free_conversation_gets_scratch_folder_and_relocates() {
 }
 
 
-// axe:journal-archive — le journal d'une conversation archivée (non sous-agent) se lit
+// journal-archive — le journal d'une conversation archivée (non sous-agent) se lit
 // en lecture seule sans la rétablir ; un identifiant inconnu reste introuvable.
 #[tokio::test(flavor = "multi_thread")]
 async fn journal_lisible_apres_archivage() {
@@ -147,7 +147,7 @@ async fn journal_lisible_apres_archivage() {
     let _ = tokio::time::timeout(Duration::from_secs(5), handle).await;
 }
 
-// axe:file-demon — la file part en fin de tour, dans l'ordre, une seule fois,
+// file-demon — la file part en fin de tour, dans l'ordre, une seule fois,
 // sans aucun client qui regarde la conversation.
 #[tokio::test(flavor = "multi_thread")]
 async fn file_demon_part_en_fin_de_tour() {
@@ -185,7 +185,7 @@ async fn file_demon_part_en_fin_de_tour() {
     let _ = tokio::time::timeout(Duration::from_secs(5), handle).await;
 }
 
-// axe:reveil-demarrage — une session avec heartbeat est retrouvée au démarrage.
+// reveil-demarrage — une session avec heartbeat est retrouvée au démarrage.
 #[tokio::test(flavor = "multi_thread")]
 async fn heartbeat_rearme_au_demarrage() {
     let data_dir = tmp();
@@ -203,7 +203,7 @@ async fn heartbeat_rearme_au_demarrage() {
     assert_eq!(daemon.sessions_a_rearmer(), vec![a.id.clone()]);
 }
 
-// axe:file-pause — après un Stop, la file attend « Reprendre la file ».
+// file-pause — après un Stop, la file attend « Reprendre la file ».
 #[tokio::test(flavor = "multi_thread")]
 async fn file_en_pause_apres_stop() {
     use axecode_daemon::queue_rpc;

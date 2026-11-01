@@ -25,7 +25,7 @@ import {
   type TriExplorateur,
 } from "../lib/arbreFichiers";
 
-// axe:explorateur — système du poste (raccourcis Cmd sur macOS, séparateur « \ » sous Windows).
+// explorateur — système du poste (raccourcis Cmd sur macOS, séparateur « \ » sous Windows).
 const PLATEFORME =
   typeof navigator !== "undefined" ? navigator.platform || navigator.userAgent || "" : "";
 const EST_MAC = /mac/i.test(PLATEFORME);
@@ -51,7 +51,7 @@ type ClipboardState = {
 
 type DeletedEntryBatch = WorkspaceDeletedEntry[];
 
-// axe:v2-l6 — affiche le message des erreurs applicatives (ex. hors ligne)
+// v2-l6 — affiche le message des erreurs applicatives (ex. hors ligne)
 // sans le prefixe « Error: » de String(err).
 function errorText(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -117,7 +117,7 @@ type Props = {
   refreshToken?: number;
   dropActive?: boolean;
   dropTargetRelative?: string | null;
-  /** axe:explorateur — tri choisi dans l'en-tête de l'explorateur. */
+  /** explorateur — tri choisi dans l'en-tête de l'explorateur. */
   tri?: TriExplorateur;
 };
 
@@ -283,7 +283,7 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
 
   const sortedRoots = useMemo(() => trierEntrees(roots, tri), [roots, tri]);
 
-  // axe:explorateur — le défilement suit la ligne sélectionnée (clavier compris).
+  // explorateur — le défilement suit la ligne sélectionnée (clavier compris).
   useEffect(() => {
     const path = selectedEntry?.relativePath;
     const body = bodyRef.current;
@@ -1120,7 +1120,7 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
         void restoreLastDeletedEntries();
         return;
       }
-      // axe:explorateur — Ctrl+C (Cmd+C) : copie l'élément ET son chemin absolu ;
+      // explorateur — Ctrl+C (Cmd+C) : copie l'élément ET son chemin absolu ;
       // Ctrl+Maj+C (Cmd+Maj+C) : chemin relatif au dossier ouvert.
       const copieChemin = raccourciCopieChemin(event, EST_MAC);
       if (copieChemin && entry) {
@@ -1163,7 +1163,7 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
         void deleteEntries(entry);
         return;
       }
-      // axe:explorateur — navigation clavier (flèches, Début/Fin, Entrée).
+      // explorateur — navigation clavier (flèches, Début/Fin, Entrée).
       if (
         !command &&
         !event.altKey &&
@@ -2103,7 +2103,7 @@ async function readExternalClipboardPaths(): Promise<string[]> {
     .filter((line) => line.startsWith("/") || /^[A-Za-z]:[\\/]/.test(line));
 }
 
-// axe:explorateur — menu de tri de l'en-tête de l'explorateur (nom, date, taille, sens, dossiers d'abord).
+// explorateur — menu de tri de l'en-tête de l'explorateur (nom, date, taille, sens, dossiers d'abord).
 const LIBELLES_TRI: { cle: CleTri; libelle: string }[] = [
   { cle: "nom", libelle: "Nom" },
   { cle: "date", libelle: "Date de modification" },

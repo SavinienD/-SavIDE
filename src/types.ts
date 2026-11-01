@@ -88,9 +88,9 @@ export type ConversationSummary = {
   id: string;
   title: string;
   updatedAtMs: number;
-  /// axe:e3 — conversation rangée dans l'archive (le chemin reste caché).
+  /// e3 — conversation rangée dans l'archive (le chemin reste caché).
   archived?: boolean;
-  /// axe:0.1.71 — sessions « … — arrière-plan » nées de cette conversation (vue Agents).
+  /// 0.1.71 — sessions « … — arrière-plan » nées de cette conversation (vue Agents).
   arrierePlan?: { id: string; title: string; enCours: boolean }[];
 };
 
@@ -497,7 +497,7 @@ export type WorkspaceEntry = {
   absolutePath: string;
   kind: "file" | "directory";
   hasChildren: boolean;
-  /** axe:explorateur — dernière modification (ms) et taille (octets), pour le tri. */
+  /** explorateur — dernière modification (ms) et taille (octets), pour le tri. */
   modifiedMs?: number;
   size?: number;
 };
@@ -620,10 +620,10 @@ export type AgentEvent =
       usage: StreamTokenUsage;
     }
   | { type: "interrupted" }
-  // axe:reprise — stream cut, request sent again: the live reply starts over.
+  // reprise — stream cut, request sent again: the live reply starts over.
   | { type: "stream_retry" }
   | { type: "error"; message: string }
-  // axe:commandes — réveil /heartbeat (le service a injecté son message).
+  // commandes — réveil /heartbeat (le service a injecté son message).
   | { type: "heartbeat_received"; message: string; at_ms: number }
   | {
       type: "peer_message_received";

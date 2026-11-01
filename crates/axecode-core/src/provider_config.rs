@@ -1,4 +1,4 @@
-// axe:providers — user-configurable provider instances and model catalogs.
+// providers — user-configurable provider instances and model catalogs.
 //
 // These types are shared between the desktop app (persistence + IPC), the
 // provider crates (which build a `Provider` from a `ProviderConfig`) and the

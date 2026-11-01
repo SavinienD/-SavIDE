@@ -1,6 +1,6 @@
 import { cloudRpc } from "./ipc";
 
-/// axe:v2-l6 — etat de joignabilite du service pour un espace cloud.
+/// v2-l6 — etat de joignabilite du service pour un espace cloud.
 export type CloudStatus = "online" | "offline" | "unknown";
 
 type CloudListener = (status: CloudStatus) => void;

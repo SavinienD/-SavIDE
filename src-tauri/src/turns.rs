@@ -62,9 +62,9 @@ pub(super) async fn send_message(
     if text.is_empty() {
         return Err("le message ne peut pas être vide".into());
     }
-    // axe:repl — chat turns run as REPL sessions in the background service.
-    // axe:freechat — free conversations always do (private scratch folder).
-    // axe:v2-l2.4c — un espace cloud tourne sur le service quel que soit le
+    // repl — chat turns run as REPL sessions in the background service.
+    // freechat — free conversations always do (private scratch folder).
+    // v2-l2.4c — un espace cloud tourne sur le service quel que soit le
     // réglage local « agent REPL » : le poste ne sert que d'affichage.
     let route_root = normalize_workspace_root(&input.workspace_path).ok();
     let free_conversation =
@@ -72,11 +72,11 @@ pub(super) async fn send_message(
     let cloud_conversation = route_root
         .as_deref()
         .is_some_and(|root| crate::daemon_client::cloud_connection_id(root).is_some());
-    // axe:reecrire-repl — la réécriture d'un message reste aussi dans le REPL.
+    // reecrire-repl — la réécriture d'un message reste aussi dans le REPL.
     if crate::daemon_client::repl_agent_enabled() || free_conversation || cloud_conversation {
         return crate::daemon_client::send_repl_message(app, &state, &input).await;
     }
-    // axe:repl end
+    // repl end
     let requested_mode = input.mode.map(AgentMode::from).unwrap_or_default();
     let plan_control = input.plan_control;
     let message_visibility = input
@@ -136,12 +136,12 @@ pub(super) async fn send_message(
         plan_control,
     )?;
     let turn_system_prompt = with_turn_plan_reminder(&effective_system_prompt, turn_plan_reminder);
-    // axe:harness — per-turn harness layer (+ apply a ready /refine plan).
+    // harness — per-turn harness layer (+ apply a ready /refine plan).
     let turn_system_prompt = match crate::harness::turn_harness_layer(&workspace_root, &input.conversation_id) {
         Some(layer) => format!("{turn_system_prompt}\n\n{layer}"),
         None => turn_system_prompt,
     };
-    // axe:harness end
+    // harness end
     let mut mode_model_settings = conversation.mode_model_settings.clone();
     let selected_model = model_with_optional_selection(
         mode_model_settings.get(policy.mode),
@@ -267,7 +267,7 @@ pub(super) async fn send_message(
             service_tier,
             cancel.clone(),
         ))),
-        // axe:cleanup — the team_run swarm is gone; sub-agents now go through rlm() sessions.
+        // cleanup — the team_run swarm is gone; sub-agents now go through rlm() sessions.
         teams: None,
         tool_settings,
         event_scope: None,
@@ -747,11 +747,11 @@ pub(super) async fn cancel_turn(
         .get(&input.conversation_id)
         .cloned();
 
-    // axe:repl
+    // repl
     if sender.is_none() && crate::daemon_client::is_bridged(&app, &input.conversation_id) {
         return Ok(crate::daemon_client::cancel_repl_turn(&app, &input.conversation_id).await);
     }
-    // axe:repl end
+    // repl end
     Ok(match sender {
         Some(sender) => sender.cancel_all(),
         None => false,
@@ -1319,7 +1319,7 @@ pub(super) fn attach_latest_plan_artifact(
     mark_plan_source(&mut history[assistant_index]);
 
     let title = plan_title(&plan_text).unwrap_or_else(|| "Plan créé".to_string());
-    // axe:goal — archive the plan in the project harness.
+    // goal — archive the plan in the project harness.
     if let Err(err) = axecode_harness::host::archive_plan(
         &axecode_harness::HarnessStore::open(workspace_root),
         &axecode_harness::host::PlanArchive {
@@ -1333,7 +1333,7 @@ pub(super) fn attach_latest_plan_artifact(
     ) {
         tracing::warn!("plan archive failed: {err:#}");
     }
-    // axe:goal end
+    // goal end
     let updated_at_ms = now_ms();
     let artifact = PlanArtifactState {
         path: relative_path,

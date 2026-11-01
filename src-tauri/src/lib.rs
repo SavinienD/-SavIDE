@@ -99,7 +99,7 @@ use tokio::{
 };
 
 mod context;
-// axe:voix - ouvre la dictee Windows (Win+H) : secours de la dictee Whisper (voix.rs, src/axe/voix).
+// voix - ouvre la dictee Windows (Win+H) : secours de la dictee Whisper (voix.rs, src/axe/voix).
 #[tauri::command]
 fn voice_dictation() -> Result<(), String> {
     #[cfg(windows)]
@@ -114,32 +114,32 @@ fn voice_dictation() -> Result<(), String> {
     Err("dictée Windows uniquement".into())
 }
 mod conversations;
-mod voix; // axe:voix
-mod voix_local; // axe:micro-local
-mod custom_providers; // axe:providers
-mod daemon_client; // axe:daemon
-mod freechat; // axe:freechat
-mod gemini_web; // axe:gemini-web
-mod connections; // axe:remote
-mod cloud; // axe:cloud
-mod repl_settings; // axe:repl
-mod quota; // axe:providers
-mod skill_sync; // axe:e4
-mod import_dossier; // axe:import
+mod voix; // voix
+mod voix_local; // micro-local
+mod custom_providers; // providers
+mod daemon_client; // daemon
+mod freechat; // freechat
+mod gemini_web; // gemini-web
+mod connections; // remote
+mod cloud; // cloud
+mod repl_settings; // repl
+mod quota; // providers
+mod skill_sync; // e4
+mod import_dossier; // import
 mod git;
-mod harness; // axe:harness
-mod harness_backup; // axe:cleanup
+mod harness; // harness
+mod harness_backup; // cleanup
 mod models;
-mod offline; // axe:v2-l6
+mod offline; // v2-l6
 mod platform;
-mod prime_term; // axe:v2-e12
+mod prime_term; // v2-e12
 mod providers;
 mod remote;
-mod remote_workspace; // axe:cloud L2
+mod remote_workspace; // cloud L2
 mod state;
 mod terminal;
 
-/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+/// 0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
 #[allow(dead_code)]
 fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
     #[allow(unused_mut)]
@@ -159,7 +159,7 @@ mod updater;
 pub(crate) const EDITION_LOCALE: bool = true;
 /// Mise à jour automatique active (endpoint : tauri.conf.json, dépôt GitHub public).
 pub(crate) const MAJ_AUTO: bool = true;
-mod viewers; // axe:viewers
+mod viewers; // viewers
 mod workflow;
 mod workspace;
 
@@ -174,7 +174,7 @@ use workflow::*;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // axe:daemon — `axecode --daemon serve` runs the background service.
+    // daemon — `axecode --daemon serve` runs the background service.
     if daemon_client::run_daemon_if_requested() {
         return;
     }
@@ -185,13 +185,13 @@ pub fn run() {
         )
         .try_init();
 
-    // axe:migration — data of the old name copied once into the new folders,
+    // migration — data of the old name copied once into the new folders,
     // before the store, the daemon and the webview open them. Never fatal.
     axecode_app::migration::run_at_startup();
 
     let store = AppStore::open_default().expect("unable to open app store");
     let openrouter_models = store.load_openrouter_models().unwrap_or_default();
-    // axe:cleanup — Settings > Agents profiles become global harness subagent_spec entries.
+    // cleanup — Settings > Agents profiles become global harness subagent_spec entries.
     match axecode_app::rlm::migrate_settings_profiles(&store) {
         Ok(0) => {}
         Ok(count) => tracing::info!(count, "migrated sub-agent profiles to the harness"),
@@ -210,7 +210,7 @@ pub fn run() {
     if let Ok(provider) = KimiProvider::from_default_sources() {
         providers.insert("kimi".into(), Arc::new(provider) as Arc<dyn Provider>);
     }
-    // axe:gemini-web
+    // gemini-web
     if let Ok(provider) = axecode_gemini_web::GeminiWebProvider::from_default_sources() {
         providers.insert(axecode_gemini_web::PROVIDER_ID.into(), Arc::new(provider) as Arc<dyn Provider>);
     }
@@ -241,7 +241,7 @@ pub fn run() {
     let remote = RemoteRuntime::from_store(&store);
 
     let providers = Arc::new(StdMutex::new(providers));
-    // axe:providers — configurable instances (custom, Mistral, DeepSeek, …).
+    // providers — configurable instances (custom, Mistral, DeepSeek, …).
     if let Err(err) = custom_providers::install_custom_providers(&providers) {
         tracing::warn!(error = %err, "unable to install configurable providers");
     }
@@ -280,7 +280,7 @@ pub fn run() {
         })
         .setup(|app| {
             updater::nettoyer_au_demarrage(app.handle()); // marqueur d'une version déjà installée
-            daemon_client::attach_on_startup(app.handle()); // axe:daemon
+            daemon_client::attach_on_startup(app.handle()); // daemon
             #[cfg(target_os = "windows")]
             let _ = app;
 
@@ -306,8 +306,8 @@ pub fn run() {
                 install_desktop_menu(app.handle())?;
             }
             start_remote_if_enabled(app.handle());
-            harness_backup::start_harness_backup_loop(); // axe:cleanup
-            // axe:providers — background Ollama / LM Studio detection.
+            harness_backup::start_harness_backup_loop(); // cleanup
+            // providers — background Ollama / LM Studio detection.
             {
                 let handle = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
@@ -358,41 +358,41 @@ pub fn run() {
         })
         .manage(state)
         .manage(updater::UpdaterState::new())
-        .manage(daemon_client::DaemonState::default()) // axe:daemon
-        .manage(daemon_client::Bridge::default()) // axe:repl
-        .manage(connections::ConnectionsState::default()) // axe:remote
-        .manage(cloud::CloudState::default()) // axe:cloud
-        .manage(prime_term::PrimeTerms::default()) // axe:v2-e12
+        .manage(daemon_client::DaemonState::default()) // daemon
+        .manage(daemon_client::Bridge::default()) // repl
+        .manage(connections::ConnectionsState::default()) // remote
+        .manage(cloud::CloudState::default()) // cloud
+        .manage(prime_term::PrimeTerms::default()) // v2-e12
         .invoke_handler(tauri::generate_handler![
             voice_dictation,
-            voix::voix_transcrire, // axe:voix
+            voix::voix_transcrire, // voix
             voix::voix_annuler,
             voix::voix_etat,
-            voix::voix_modele_local, // axe:micro-local
+            voix::voix_modele_local, // micro-local
             import_dossier::push_folder_cloud,
-            // axe:daemon
+            // daemon
             daemon_client::daemon_status,
             daemon_client::daemon_shutdown,
             daemon_client::daemon_sessions,
             daemon_client::daemon_call,
-            daemon_client::queue_push, // axe:file-demon
-            // axe:gemini-web
+            daemon_client::queue_push, // file-demon
+            // gemini-web
             gemini_web::gemini_web_status,
             gemini_web::gemini_web_login,
             gemini_web::gemini_web_logout,
-            // axe:freechat
+            // freechat
             freechat::freechat_index,
             freechat::freechat_open,
             freechat::freechat_relocate,
-            // axe:remote
+            // remote
             connections::connections_list,
             connections::connections_save,
             connections::connections_delete,
             connections::connections_set_active,
             connections::connections_test,
             connections::connections_state,
-            // axe:remote end
-            // axe:cloud
+            // remote end
+            // cloud
             cloud::cloud_login,
             cloud::cloud_login_cancel,
             cloud::cloud_login_reopen,
@@ -400,8 +400,8 @@ pub fn run() {
             cloud::cloud_logout,
             cloud::cloud_api,
             cloud::cloud_open_web,
-            // axe:cloud end
-            // axe:v2-l6 — mode désynchronisé (journal local + resynchronisation)
+            // cloud end
+            // v2-l6 — mode désynchronisé (journal local + resynchronisation)
             offline::offline_status,
             offline::offline_prepare,
             offline::offline_list,
@@ -415,19 +415,19 @@ pub fn run() {
             offline::offline_sync,
             offline::offline_resolve,
             offline::offline_forget,
-            // axe:v2-l6 end
-            // axe:viewers
+            // v2-l6 end
+            // viewers
             viewers::viewer_read_bytes,
             viewers::viewer_zip_list,
             viewers::viewer_zip_extract,
             viewers::viewer_zip_read,
             viewers::viewer_sqlite_tables,
             viewers::viewer_sqlite_rows,
-            // axe:repl
+            // repl
             repl_settings::repl_settings_get,
             repl_settings::repl_settings_save,
             repl_settings::repl_catalog,
-            // axe:harness
+            // harness
             harness::harness_paths,
             harness::harness_list,
             harness::harness_get,
@@ -446,20 +446,20 @@ pub fn run() {
             harness::harness_cloud_sync,
             harness::harness_cloud_status,
             harness::harness_cloud_publish,
-            // axe:harness end
-            // axe:providers
+            // harness end
+            // providers
             custom_providers::provider_settings_get,
             custom_providers::provider_settings_save,
             custom_providers::provider_discover_models,
             custom_providers::provider_detect_local,
             custom_providers::provider_set_model_override,
             quota::provider_quota,
-            skill_sync::shared_skills_fingerprints, // axe:e4
-            import_dossier::local_folder_files, // axe:import
+            skill_sync::shared_skills_fingerprints, // e4
+            import_dossier::local_folder_files, // import
             harness_backup::harness_backup_get,
             harness_backup::harness_backup_set,
             harness_backup::harness_backup_run,
-            // axe:providers end
+            // providers end
             remote_workspace::remote_workspace_info,
             remote_workspace::remote_workspace_entries,
             remote_workspace::remote_workspace_read,
@@ -485,7 +485,7 @@ pub fn run() {
             remote_workspace::remote_share_unpublish,
             remote_workspace::remote_share_log,
             workspace::open_workspace,
-            workspace::open_cloud_workspace, // axe:v2-l2.3
+            workspace::open_cloud_workspace, // v2-l2.3
             workspace::open_new_window,
             workspace::reset_window_title,
             workspace::watch_workspace_command,
@@ -521,7 +521,7 @@ pub fn run() {
             conversations::load_conversation,
             conversations::rename_conversation,
             conversations::delete_conversation,
-            conversations::archive_local, // axe:archive-locale
+            conversations::archive_local, // archive-locale
             conversations::list_archived_local,
             conversations::restore_local,
             conversations::delete_archived_local,
@@ -583,7 +583,7 @@ pub fn run() {
             terminal::write_terminal,
             terminal::resize_terminal,
             terminal::kill_terminal,
-            // axe:v2-e12 — onglet « Prime Agent » epingle (session de production du portail)
+            // v2-e12 — onglet « Prime Agent » epingle (session de production du portail)
             prime_term::prime_term_open,
             prime_term::prime_term_write,
             prime_term::prime_term_resize,

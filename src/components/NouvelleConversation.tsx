@@ -1,4 +1,4 @@
-// axe:e13 — le champ de creation d'une conversation. Le nom est demande a la
+// e13 — le champ de creation d'une conversation. Le nom est demande a la
 // creation (et exige) : c'est ce qui permet de retrouver la conversation dans
 // la liste, la recherche et les archives. Meme champ dans l'ecran IDE et dans
 // la vue « conversation libre ».

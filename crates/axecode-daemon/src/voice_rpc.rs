@@ -1,4 +1,4 @@
-//! axe:voix — dictée vocale (`voice.*`).
+//! voix — dictée vocale (`voice.*`).
 //!
 //! L'IDE enregistre la voix (MediaRecorder, webm/opus) et l'envoie en base64.
 //! Le service la confie au serveur whisper.cpp de sa machine (route
@@ -9,7 +9,7 @@
 //! d'un appel RPC pour une longue dictée.
 //!
 //! - `voice.transcribe {audio, mime?, durationMs?, language?, prompt?, fast?, tier?, wait?}`
-//!   (`tier` : « petit » | « moyen » | « grand », axe:0.1.75 ; la dictée en direct
+//!   (`tier` : « petit » | « moyen » | « grand », 0.1.75 ; la dictée en direct
 //!   envoie des morceaux WAV de ≈ 3 s avec `wait: true`)
 //!   -> `{jobId}` (ou le résultat directement avec `wait: true`)
 //! - `voice.result {jobId}` -> `{status: "pending"|"done"|"error", ...}`
@@ -76,7 +76,7 @@ const HALLUCINATIONS: &[&str] = &[
 pub struct Engine {
     pub url: String,
     pub label: String,
-    /// axe:0.1.75 — « grand » (large/turbo), « moyen » (small), « petit » (base/tiny).
+    /// 0.1.75 — « grand » (large/turbo), « moyen » (small), « petit » (base/tiny).
     pub tier: String,
 }
 
@@ -92,7 +92,7 @@ pub fn tier_from_label(label: &str) -> &'static str {
     }
 }
 
-/// axe:0.1.75 — ordre des moteurs pour une taille demandée : cette taille d'abord,
+/// 0.1.75 — ordre des moteurs pour une taille demandée : cette taille d'abord,
 /// puis la plus proche (petit -> moyen -> grand ; moyen -> petit -> grand ;
 /// grand -> moyen -> petit). Sans taille, l'ordre de la spec (meilleur d'abord).
 /// Le booléen indique une fenêtre réduite : « petit » demandé et moteur « petit »
@@ -377,7 +377,7 @@ pub struct Dictation {
     pub fast: bool,
     /// Termes ajoutés par l'utilisateur (graphie canonique).
     pub extra_terms: Option<String>,
-    /// axe:0.1.75 — taille de modèle demandée (« petit », « moyen », « grand ») ; None = meilleur d'abord.
+    /// 0.1.75 — taille de modèle demandée (« petit », « moyen », « grand ») ; None = meilleur d'abord.
     pub tier: Option<String>,
 }
 

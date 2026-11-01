@@ -1,4 +1,4 @@
-// axe:e14 — les conversations du chat en onglets, comme un navigateur.
+// e14 — les conversations du chat en onglets, comme un navigateur.
 //
 // L'utilisateur : « des onglets façon navigateur pour la partie de droite chat » ;
 // un onglet se détache pour venir devant, les autres restent à leur place.
@@ -20,13 +20,13 @@ type Props = {
   detache: string | null;
   onActiver: (id: string) => void;
   onFermer: (id: string) => void;
-  /** axe:hotfix — plusieurs colonnes : le dernier onglet d'une colonne se ferme aussi. */
+  /** hotfix — plusieurs colonnes : le dernier onglet d'une colonne se ferme aussi. */
   fermable?: boolean;
-  /** axe:hotfix — bouton « Fermer la colonne » (ses onglets vont à la voisine). */
+  /** hotfix — bouton « Fermer la colonne » (ses onglets vont à la voisine). */
   onFermerColonne?: () => void;
   onDetacher: (id: string) => void;
   onNouvelle: () => void;
-  /** axe:e17b — un onglet d'une autre colonne est déposé ici (position). */
+  /** e17b — un onglet d'une autre colonne est déposé ici (position). */
   onDeposer?: (id: string, position: number) => void;
 };
 
@@ -42,7 +42,7 @@ export function OngletsChat({
   fermable = false,
   onFermerColonne,
 }: Props) {
-  // axe:onglets-place — trop d'onglets pour la colonne : ils gardent leur taille
+  // onglets-place — trop d'onglets pour la colonne : ils gardent leur taille
   // minimale (plus de croix posées sur l'onglet voisin) et la bande défile, à la
   // molette aussi ; l'onglet actif est toujours ramené dans la vue.
   const bandeRef = useRef<HTMLDivElement | null>(null);
@@ -80,7 +80,7 @@ export function OngletsChat({
               data-active={estActif ? "true" : "false"}
               data-detached={estDetache ? "true" : "false"}
               title={estDetache ? `${onglet.titre} — détachée, devant` : onglet.titre}
-              // axe:e17b — glisser l'onglet vers une autre colonne (ou « + »).
+              // e17b — glisser l'onglet vers une autre colonne (ou « + »).
               draggable={!estDetache}
               onDragStart={(event) => {
                 event.dataTransfer.setData(MIME_ONGLET_CHAT, onglet.id);

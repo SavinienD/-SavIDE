@@ -1,4 +1,4 @@
-// axe:e4 — vues UI : badge « Skills synchronisées » et panneau « Exécutions ».
+// e4 — vues UI : badge « Skills synchronisées » et panneau « Exécutions ».
 // Branchées sur SkillSync / ScriptSandbox ; le lecteur du dossier partagé est
 // fourni par l'hôte (IPC Tauri ou API de l'espace), il n'est pas inventé ici.
 import { useEffect, useState } from "react";

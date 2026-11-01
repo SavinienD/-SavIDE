@@ -135,11 +135,11 @@ pub async fn run_turn(ctx: TurnContext) -> TurnOutput {
         if tool_settings.is_enabled(crate::comfyui::COMFYUI) {
             tool_descriptors.push(crate::comfyui::descriptor());
         }
-        // axe:cua — cua-driver en outil (désactivable dans Settings > Outils).
+        // cua — cua-driver en outil (désactivable dans Settings > Outils).
         if tool_settings.is_enabled(crate::cua::CUA_DRIVER) {
             tool_descriptors.push(crate::cua::descriptor());
         }
-        // axe:ds16 — orchestrateur d'agents externes (si activé dans Settings).
+        // ds16 — orchestrateur d'agents externes (si activé dans Settings).
         tool_descriptors.extend(
             crate::orchestre::descriptors()
                 .into_iter()
@@ -710,7 +710,7 @@ pub async fn run_turn(ctx: TurnContext) -> TurnOutput {
                 {
                     update_read_fingerprint_cache(&mut read_fingerprints, result.meta.as_ref());
                 }
-                // axe:images — no image larger than 2000 px enters the
+                // images — no image larger than 2000 px enters the
                 // transcript (read, images.read/show, MCP...).
                 let result_images = crate::tool_run::fit_tool_run_images(result.images.clone());
                 let result_content = result.content.clone();

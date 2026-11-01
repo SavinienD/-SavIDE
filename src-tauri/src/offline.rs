@@ -1,4 +1,4 @@
-// axe:v2-l6 — mode désynchronisé (tranche 2, côté application).
+// v2-l6 — mode désynchronisé (tranche 2, côté application).
 //
 // Quand le service d'un espace cloud est injoignable, l'IDE continue de le
 // consulter et de le modifier à partir d'un MIROIR local :

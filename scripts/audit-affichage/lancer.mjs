@@ -272,20 +272,20 @@ async function preparerScene(page, si, sc) {
     });
     await pause(600);
   }
-  // axe:couleurs — « saisir » : texte tapé dans le compositeur SANS l'envoyer (menus refermés par Échap).
+  // couleurs — « saisir » : texte tapé dans le compositeur SANS l'envoyer (menus refermés par Échap).
   if (sc.saisir) {
     await page.click(".colonne-chat[data-focus='true'] .composer textarea, .composer textarea").catch(() => undefined);
     await page.keyboard.type(sc.saisir);
     await page.keyboard.press("Escape");
     await pause(400);
   }
-  // axe:hist169 — touches dans le compositeur (ex. ArrowUp) après saisie/envoi.
+  // hist169 — touches dans le compositeur (ex. ArrowUp) après saisie/envoi.
   for (const t of sc.touchesCompositeur ?? []) {
     await page.focus(".colonne-chat[data-focus='true'] .composer textarea, .composer textarea").catch(() => undefined);
     await page.keyboard.press(t);
     await pause(200);
   }
-  // axe:bas169 — remonter dans le chat : le bouton « ↓ » doit apparaître.
+  // bas169 — remonter dans le chat : le bouton « ↓ » doit apparaître.
   if (sc.defilerChatHaut) {
     await page.evaluate(() => { const b = document.querySelector(".colonne-chat[data-focus='true'] .chat-body, .chat-body"); if (b) { b.scrollTop = 0; b.dispatchEvent(new Event("scroll")); } });
     await pause(400);
@@ -319,7 +319,7 @@ async function preparerScene(page, si, sc) {
     await page.keyboard.up("Control");
     await page.waitForSelector(".settings-pane", { visible: true, timeout: 5000 }).catch(() => undefined);
   }
-  // axe:html — ouvre un fichier de l'arbre (clic sur sa ligne) dans l'éditeur.
+  // html — ouvre un fichier de l'arbre (clic sur sa ligne) dans l'éditeur.
   if (sc.ouvrirFichier) {
     const ligne = `.tree-row[data-entry-path='${sc.ouvrirFichier}']`;
     await page.waitForSelector(ligne, { visible: true, timeout: 6000 }).catch(() => undefined);
@@ -346,7 +346,7 @@ async function preparerScene(page, si, sc) {
       await pause(150);
     }
   }
-  // axe:explorateur — explorateur de fichiers : clic sur une ligne, touches du clavier
+  // explorateur — explorateur de fichiers : clic sur une ligne, touches du clavier
   // (« Control+Shift+C »…), clic droit, entrée du menu ; le presse-papiers est intercepté.
   if (sc.explorateur) {
     const ligne = (p) => `.sidebar__body .tree-row[data-entry-path="${p}"]`;
@@ -380,20 +380,20 @@ async function preparerScene(page, si, sc) {
       await pause(300);
     }
   }
-  // axe:commandes — clic sur un élément (ex. icône du heartbeat) pour ouvrir son détail.
+  // commandes — clic sur un élément (ex. icône du heartbeat) pour ouvrir son détail.
   if (sc.cliquer) {
     await pause(600);
-    // axe:micro-local — bulle de la dictée (6 s) : gardée pendant le relevé, même lent (libellés agrandis).
+    // micro-local — bulle de la dictée (6 s) : gardée pendant le relevé, même lent (libellés agrandis).
     if (sc.attendre) {
       await page.evaluate(() => {
         const avant = window.setTimeout;
         window.setTimeout = (f, d, ...a) => avant(f, d === 6000 ? 120000 : d, ...a);
       });
     }
-    // axe:liens — « cliquer » accepte une liste : clics successifs.
+    // liens — « cliquer » accepte une liste : clics successifs.
     for (const sel of [sc.cliquer].flat()) {
       if (sc.defilerAvantClic) {
-        // axe:copier-code — l'élément est amené au milieu de l'écran puis survolé (pointeur réel).
+        // copier-code — l'élément est amené au milieu de l'écran puis survolé (pointeur réel).
         const r = await page.evaluate((s) => {
           const el = document.querySelector(s);
           el?.scrollIntoView({ block: "center" });
@@ -403,9 +403,9 @@ async function preparerScene(page, si, sc) {
         if (r) await page.mouse.move(r.x, r.y);
       }
       await page.evaluate((s) => document.querySelector(s)?.click(), sel);
-      await pause(sc.pauseClics ?? 400); // axe:0.1.71 — dictée : enregistrement assez long
+      await pause(sc.pauseClics ?? 400); // 0.1.71 — dictée : enregistrement assez long
     }
-    // axe:micro-local — attendre un élément (ex. bulle de la dictée après le décodage audio).
+    // micro-local — attendre un élément (ex. bulle de la dictée après le décodage audio).
     if (sc.attendre) await page.waitForSelector(sc.attendre, { timeout: 10000 }).catch(() => undefined);
   }
   await pause(900);
@@ -448,7 +448,7 @@ async function auditer(page, si, sc, journal, preparation) {
     };
     // « absent: » : aucun élément visible pour ce sélecteur ; « appel: » : commande IPC reçue par la simulation.
     // « couleur:<sélecteur>=<rgb(…)> » : le premier élément visible du sélecteur a cette couleur de texte.
-    // axe:liens — « gras: » / « surligne: » : TOUS les éléments visibles du sélecteur sont en gras (>= 600)
+    // liens — « gras: » / « surligne: » : TOUS les éléments visibles du sélecteur sont en gras (>= 600)
     // et ont un fond non transparent.
     const visibles = (sel) => [...document.querySelectorAll(sel)].filter((e) => e.getClientRects().length > 0);
     const gras = (sel) => { const els = visibles(sel); return els.length > 0 && els.every((e) => Number(getComputedStyle(e).fontWeight) >= 600); };
@@ -458,7 +458,7 @@ async function auditer(page, si, sc, journal, preparation) {
       const el = [...document.querySelectorAll(spec.slice(0, i))].find((e) => e.getClientRects().length > 0);
       return !!el && getComputedStyle(el).color.replace(/\s/g, "") === spec.slice(i + 1).replace(/\s/g, "");
     };
-    // axe:explorateur — « presse:<texte> » : texte copié dans le presse-papiers ;
+    // explorateur — « presse:<texte> » : texte copié dans le presse-papiers ;
     // « premier:<chemin> » : première ligne de l'explorateur ; « choisi:<chemin> » : seule ligne sélectionnée.
     const lignes = () => [...document.querySelectorAll(".sidebar__body .tree-row[data-entry-path]")];
     const special = (t) =>
@@ -570,7 +570,7 @@ let echec = null;
 async function travailleur() {
   // Contexte isole par travailleur : stockage local separe (les scenes ne se melangent pas).
   const contexte = await navigateur.createBrowserContext();
-  // axe:copier-code — presse-papiers autorisé (bouton « Copier » des blocs de code).
+  // copier-code — presse-papiers autorisé (bouton « Copier » des blocs de code).
   await contexte.overridePermissions(new URL(BASE).origin, ["clipboard-read", "clipboard-write", "clipboard-sanitized-write"]).catch(() => {});
   const page = await contexte.newPage();
   await emulerWindows(page);

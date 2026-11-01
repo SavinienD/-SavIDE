@@ -1,4 +1,4 @@
-// axe:0.1.71 — dictée proposée seulement si un moteur répond.
+// 0.1.71 — dictée proposée seulement si un moteur répond.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const Module = require("node:module");

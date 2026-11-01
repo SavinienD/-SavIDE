@@ -1,4 +1,4 @@
-// axe:viewers — approximate PowerPoint (.pptx) parser. Reads only the XML
+// viewers — approximate PowerPoint (.pptx) parser. Reads only the XML
 // parts it needs (via viewer_zip_read) and produces positioned text boxes,
 // pictures and tables. Theme fonts, effects, SmartArt, charts and
 // animations are not reproduced: the viewer says so explicitly.

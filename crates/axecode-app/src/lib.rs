@@ -6,20 +6,20 @@ pub mod glob;
 pub mod grep;
 pub mod image;
 pub mod mcp;
-pub mod migration; // axe:migration
-pub mod orchestre; // axe:ds16
-pub mod cua; // axe:cua
-pub mod comfyui; // axe:comfyui
-pub mod commandes_naturelles; // axe:cmdnat
+pub mod migration; // migration
+pub mod orchestre; // ds16
+pub mod cua; // cua
+pub mod comfyui; // comfyui
+pub mod commandes_naturelles; // cmdnat
 #[cfg(windows)]
 mod powershell;
 pub mod question;
 pub mod read;
-pub mod repl; // axe:repl
-pub mod rlm; // axe:rlm
+pub mod repl; // repl
+pub mod rlm; // rlm
 mod ripgrep;
-pub mod guet; // axe:guet
-pub mod session_commands; // axe:goal
+pub mod guet; // guet
+pub mod session_commands; // goal
 pub mod skill;
 pub mod store;
 pub mod subagent;

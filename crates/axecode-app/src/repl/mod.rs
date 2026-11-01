@@ -3,7 +3,7 @@
 
 mod budget;
 mod compaction;
-// axe:providers — providers declared in `<data_dir>/providers.json`.
+// providers — providers declared in `<data_dir>/providers.json`.
 pub mod declared;
 mod host;
 pub mod output;
@@ -35,7 +35,7 @@ pub trait TurnHook: Send + Sync {
     async fn reminder(&self, _session: &SessionMeta, _request: &TurnRequest) -> Option<String> {
         None
     }
-    /// axe:goal165 — block re-computed for every request of the turn (live state:
+    /// goal165 — block re-computed for every request of the turn (live state:
     /// goal, autonomous, heartbeat), after the `reminder` blocks.
     async fn live_reminder(&self, _session: &SessionMeta) -> Option<String> {
         None
@@ -54,14 +54,14 @@ pub trait TurnHook: Send + Sync {
     }
     /// Called after every turn with the final assistant text.
     async fn turn_finished(&self, _session: &SessionMeta, _final_text: &str) {}
-    // axe:goal — session commands (/goal, /autonomous, /heartbeat, refine).
+    // goal — session commands (/goal, /autonomous, /heartbeat, refine).
     /// Called once when a session runtime is created (host + data dir).
     fn bind(&self, _context: &RuntimeContext) {}
     /// Whether the daemon should run another turn right away (autonomous).
     async fn wants_continuation(&self, _session: &SessionMeta, _outcome: &TurnOutcome) -> bool {
         false
     }
-    // axe:goal end
+    // goal end
 }
 
 /// Shared dependencies of every REPL runtime of a process.

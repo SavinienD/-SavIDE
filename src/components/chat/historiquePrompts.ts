@@ -1,4 +1,4 @@
-// axe:hist169 - historique des prompts (fleche HAUT/BAS comme un terminal).
+// hist169 - historique des prompts (fleche HAUT/BAS comme un terminal).
 const CLE_GLOBALE = "axe:historique-prompts";
 const cleConv = (id: string) => `axe:historique-prompts:${id}`;
 const MAX = 200;

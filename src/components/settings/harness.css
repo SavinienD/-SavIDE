@@ -1,4 +1,4 @@
-/* Settings > Harness (axe:harness) */
+/* Settings > Harness (harness) */
 .axe-harness { display: flex; flex-direction: column; gap: 12px; padding: 20px 24px; min-height: 0; height: 100%; overflow: auto; }
 .axe-harness h2 { margin: 0 0 4px; font-size: calc(16px * var(--text-scale, 1)); color: var(--text-0); }
 .axe-harness__muted { color: var(--text-2); font-size: calc(12px * var(--text-scale, 1)); }
@@ -40,12 +40,12 @@
 .axe-harness__field { display: flex; flex-direction: column; gap: 4px; font-size: calc(12px * var(--text-scale, 1)); color: var(--text-1); }
 .axe-harness__field select { max-width: 280px; padding: 4px 6px; background: var(--bg-2); color: var(--text-0); border: 1px solid var(--line-strong); border-radius: var(--r-small); }
 
-/* axe:cleanup — sub-agent profile fields */
+/* cleanup — sub-agent profile fields */
 .axe-harness__agent { display: flex; flex-direction: column; gap: 6px; font-size: calc(12px * var(--text-scale, 1)); }
 .axe-harness__agent label { display: flex; align-items: center; gap: 8px; }
 .axe-harness__agent input:not([type="checkbox"]) { flex: 1; padding: 4px 6px; font: inherit; font-family: var(--font-mono, monospace); background: transparent; color: inherit; border: 1px solid var(--border, rgba(127,127,127,.3)); border-radius: 4px; }
 
-/* axe:cleanup — unified Skills tab */
+/* cleanup — unified Skills tab */
 .settings-pane__skill-kinds { margin: 6px 0; }
 .settings-pane__skill-kind { font-size: calc(10px * var(--text-scale, 1)); padding: 1px 6px; border-radius: 999px; border: 1px solid currentColor; opacity: .8; }
 .settings-pane__skill-kind[data-kind="python"] { color: var(--accent, #fc610b); }
@@ -54,7 +54,7 @@
 .settings-pane__pyskill-head h2 { margin: 0 0 4px; font-size: calc(15px * var(--text-scale, 1)); }
 .settings-pane__pyskill-body { border-top: 1px solid var(--border, rgba(127,127,127,.2)); padding-top: 8px; }
 
-/* axe:e13 — le harnais de l'espace Axe Cloud se lit aussi depuis l'interface
+/* e13 — le harnais de l'espace Axe Cloud se lit aussi depuis l'interface
    classique : un groupe distinct, et des entrees en lecture seule. */
 .axe-harness__group { display: flex; align-items: center; gap: 6px; margin: 10px 0 2px;
   padding: 0 2px; color: var(--text-2); text-transform: uppercase;

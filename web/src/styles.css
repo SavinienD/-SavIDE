@@ -1,4 +1,4 @@
-/* axe:webui — web interface. Colours come from src/axe/theme.ts (CSS vars). */
+/* webui — web interface. Colours come from src/axe/theme.ts (CSS vars). */
 :root {
   --accent: #fc610b;
   --accent-soft: rgba(252, 97, 11, 0.12);
@@ -80,7 +80,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-soft
 .convs__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .convs__meta { font-size: 11.5px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .convs__empty { padding: 12px; }
-/* axe:freechat — free conversations */
+/* freechat — free conversations */
 .convs__group { padding: 10px 10px 4px; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
 .sidebar__new { margin: 10px 12px 0; text-align: left; font-weight: 600; }
 .sidebar__new[data-active="true"] { border-color: var(--accent); }

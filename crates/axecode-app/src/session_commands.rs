@@ -45,7 +45,7 @@ pub struct Goal {
     #[serde(default)]
     pub summary: Option<String>,
     pub created_ms: i64,
-    // axe:goal165 — automatic pursuit: while the goal is `active`, the hook
+    // goal165 — automatic pursuit: while the goal is `active`, the hook
     // relaunches the agent after each turn (no heartbeat needed).
     /// Automatic relaunches delivered so far.
     #[serde(default)]
@@ -68,7 +68,7 @@ pub struct Goal {
     pub turn_mark: Option<TurnMark>,
 }
 
-/// axe:goal165 — goal state at the start of a turn.
+/// goal165 — goal state at the start of a turn.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TurnMark {
     pub progress: usize,
@@ -209,7 +209,7 @@ pub struct SessionState {
     pub autonomous: Option<Autonomous>,
     #[serde(default)]
     pub heartbeat: Option<Heartbeat>,
-    /// axe:guet — guets en cours (commande, condition, fichier) et réveils à livrer.
+    /// guet — guets en cours (commande, condition, fichier) et réveils à livrer.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub guets: Vec<Guet>,
     /// One-shot notices for the next reminder (slash command results, ...).
@@ -224,7 +224,7 @@ pub fn now_ms() -> i64 {
         .unwrap_or(0)
 }
 
-// axe:goal165 — ONE store for the session commands state (goal, heartbeat,
+// goal165 — ONE store for the session commands state (goal, heartbeat,
 // autonomous): `<data_dir>/session_state/<id>.json`, shared by this hook (goal.*,
 // /goal, state block of every request) and by the daemon RPC of the IDE
 // (`sessions.commands_state` / `sessions.commands_set`). Every read-modify-write
@@ -454,10 +454,10 @@ struct Inner {
     hosts: Mutex<HashMap<String, Arc<dyn SessionHost>>>,
     states: Mutex<HashMap<String, SessionState>>,
     heartbeats: Mutex<HashMap<String, tokio::task::JoinHandle<()>>>,
-    /// axe:goal165 — planned automatic relaunch of each session.
+    /// goal165 — planned automatic relaunch of each session.
     pursuits: Mutex<HashMap<String, tokio::task::JoinHandle<()>>>,
     pursuit_delay_ms: std::sync::atomic::AtomicU64,
-    /// axe:guet — tâche de chaque guet (clé : id du guet).
+    /// guet — tâche de chaque guet (clé : id du guet).
     guets: Mutex<HashMap<String, tokio::task::JoinHandle<()>>>,
     refine: refine::RefineRunner,
 }
@@ -538,7 +538,7 @@ impl Inner {
         }
     }
 
-    /// axe:goal165 — plan the automatic relaunch of `id` at `at_ms`. At that time it
+    /// goal165 — plan the automatic relaunch of `id` at `at_ms`. At that time it
     /// is delivered only if the goal is still active with this same plan, no turn
     /// is running, and nothing was journaled since the end of the turn (user,
     /// heartbeat or peer message: they start their own turn).
@@ -624,7 +624,7 @@ impl Inner {
         lock(&self.heartbeats).insert(id.to_string(), handle);
     }
 
-    // ------------------------------------------------------------ axe:guet
+    // ------------------------------------------------------------ guet
 
     fn guet(&self, sid: &str, gid: &str) -> Option<Guet> {
         self.load(sid).guets.into_iter().find(|g| g.id == gid)
@@ -815,17 +815,17 @@ impl SessionCommandsHook {
         })
     }
 
-    /// axe:refine169 — délai de préparation des affinages (10 min ; tests : quelques ms).
+    /// refine169 — délai de préparation des affinages (10 min ; tests : quelques ms).
     pub fn set_refine_timeout(&self, timeout: Duration) {
         self.inner.refine.set_timeout(timeout);
     }
 
-    /// axe:goal165 — pause before an automatic relaunch (tests: a few ms).
+    /// goal165 — pause before an automatic relaunch (tests: a few ms).
     pub fn set_pursuit_delay(&self, delay: Duration) {
         self.inner.pursuit_delay_ms.store(delay.as_millis() as u64, std::sync::atomic::Ordering::Relaxed);
     }
 
-    /// axe:guet — arrête toutes les tâches de guet du processus (fin du service ;
+    /// guet — arrête toutes les tâches de guet du processus (fin du service ;
     /// les tests simulent ainsi l'arrêt du processus avant un rechargement).
     pub fn stop_guets(&self) {
         for (_, h) in lock(&self.inner.guets).drain() {
@@ -843,7 +843,7 @@ impl SessionCommandsHook {
         let inner = &self.inner;
         Some(match cmd.name.as_str() {
             "goal" => {
-                // axe:cmdnat — langage naturel ; jamais « usage invalide ».
+                // cmdnat — langage naturel ; jamais « usage invalide ».
                 use crate::commandes_naturelles::{analyser_goal, IntentionObjectif as I};
                 let brut = cmd.rest.trim();
                 match analyser_goal(brut) {
@@ -901,7 +901,7 @@ impl SessionCommandsHook {
                 )
             }
             "heartbeat" => {
-                // axe:cmdnat — langage naturel ; jamais « usage invalide ».
+                // cmdnat — langage naturel ; jamais « usage invalide ».
                 use crate::commandes_naturelles::{analyser_heartbeat, decrire_duree, IntentionReveil as I};
                 let brut = cmd.rest.trim();
                 match analyser_heartbeat(brut) {
@@ -930,7 +930,7 @@ impl SessionCommandsHook {
                 }
             }
             "guet" => {
-                // axe:guet — langage courant ; sinon confié à l'agent.
+                // guet — langage courant ; sinon confié à l'agent.
                 use crate::commandes_naturelles::{analyser_guet, IntentionGuet as I};
                 let brut = cmd.rest.trim();
                 match analyser_guet(brut) {
@@ -970,7 +970,7 @@ impl SessionCommandsHook {
                     Err(e) => format!("/refine could not start: {e}"),
                 }
             }
-            // axe:compact169 — /compact est exécuté directement par la boucle du tour
+            // compact169 — /compact est exécuté directement par la boucle du tour
             // (repl/turn.rs), sans consigne à l'IA : l'ancienne consigne « Call
             // compact.run() right now » restait dans le prompt et l'IA bouclait.
             "compact" => return None,
@@ -1044,7 +1044,7 @@ impl SessionCommandsHook {
     }
 
 
-    /// axe:guet — `guet.commande` / `guet.condition` / `guet.fichier` / `guet.liste` / `guet.annuler`.
+    /// guet — `guet.commande` / `guet.condition` / `guet.fichier` / `guet.liste` / `guet.annuler`.
     pub async fn guet_call(&self, session: &SessionMeta, method: &str, params: Value) -> Result<Value, String> {
         let id = session.id.as_str();
         let inner = &self.inner;
@@ -1168,21 +1168,21 @@ pub fn parse_heartbeat_text(text: &str) -> Option<(String, Option<i64>)> {
 /// autocompletion list against it).
 pub const SLASH_COMMANDS: &[&str] = &["goal", "autonomous", "heartbeat", "guet", "refine", "compact"];
 
-/// axe:guet — `/guet` en phrase libre : l'agent pose lui-même le bon guet.
+/// guet — `/guet` en phrase libre : l'agent pose lui-même le bon guet.
 fn guet_a_confier(brut: &str, raison: &str) -> String {
     format!(
         "L'utilisateur demande « /guet {brut} » ({raison}) : il veut que tu sois RÉVEILLÉ quand quelque chose se termine, sans heartbeat ni boucle. Trouve la commande qui le vérifie, puis pose le guet et termine ton tour : `guet.condition(cmd, intervalle=\"30s\", timeout=\"2h\", message=...)` relance `cmd` jusqu'à ce qu'elle réussisse (code 0) — ex. construction GitHub : `gh run watch <id> --exit-status` avec guet.commande, ou `gh run list -L1 --json status -q '.[0].status' | grep -qx completed` avec guet.condition ; `guet.commande(cmd, message=...)` lance une commande longue et réveille à sa fin ; `guet.fichier(chemin)` attend un fichier. Dis à l'utilisateur en une phrase ce que tu guettes. S'il manque une information (quel dépôt, quelle tâche), demande-la en une phrase. Ne réponds jamais « usage invalide »."
     )
 }
 
-/// axe:cmdnat — `/heartbeat` pas compris : la demande est confiée à l'agent.
+/// cmdnat — `/heartbeat` pas compris : la demande est confiée à l'agent.
 fn reveil_a_confier(brut: &str, raison: &str) -> String {
     format!(
         "La commande « /heartbeat {brut} » n'a pas été comprise automatiquement ({raison}). Interprète toi-même la demande de l'utilisateur : appelle `heartbeat.set(intervalle, message)` (intervalle « 30s », « 5m », « 1h » ; minimum 5 s ; message sans « dis »/« écris ») ou `heartbeat.clear()` pour l'arrêter. Si elle reste ambiguë, demande une précision à l'utilisateur en une phrase, en français. Ne réponds jamais « usage invalide »."
     )
 }
 
-/// axe:cmdnat — `/goal` pas compris : la demande est confiée à l'agent.
+/// cmdnat — `/goal` pas compris : la demande est confiée à l'agent.
 fn objectif_a_confier(brut: &str, raison: &str) -> String {
     format!(
         "La commande « /goal {brut} » n'a pas été comprise automatiquement ({raison}). Interprète toi-même la demande de l'utilisateur : `goal.set(text, budget_tokens=None)` pour fixer un objectif, `goal.pause()`, `goal.resume()`, `goal.complete(summary)` ou `goal.clear()`. Si elle reste ambiguë, demande une précision à l'utilisateur en une phrase, en français. Ne réponds jamais « usage invalide »."
@@ -1259,7 +1259,7 @@ impl SessionCommandsHook {
             }
         }
         let Some(auto) = state.autonomous.clone().filter(|a| a.status == "running") else {
-            // axe:goal165 — no /autonomous: an active goal relaunches the agent
+            // goal165 — no /autonomous: an active goal relaunches the agent
             // after a short pause (no heartbeat needed).
             self.goal_pursuit(session).await;
             return false;
@@ -1315,7 +1315,7 @@ impl SessionCommandsHook {
         true
     }
 
-    /// axe:goal165 — after a turn, with an active goal and no /autonomous: plan the
+    /// goal165 — after a turn, with an active goal and no /autonomous: plan the
     /// relaunch, or pause after too many relaunches without progress.
     async fn goal_pursuit(&self, session: &SessionMeta) {
         let id = session.id.as_str();
@@ -1365,7 +1365,7 @@ impl TurnHook for SessionCommandsHook {
     fn bind(&self, context: &RuntimeContext) {
         *lock(&self.inner.data_dir) = Some(context.data_dir.clone());
         lock(&self.inner.hosts).insert(context.session.id.clone(), context.host.clone());
-        // axe:goal165 — a relaunch planned before a restart of the service is re-armed.
+        // goal165 — a relaunch planned before a restart of the service is re-armed.
         if let Some(at) = self.inner.load(&context.session.id).goal.filter(|g| g.status == "active").and_then(|g| g.next_relaunch_ms) {
             if tokio::runtime::Handle::try_current().is_ok() {
                 self.inner.arm_pursuit(&context.session.id, at);
@@ -1376,7 +1376,7 @@ impl TurnHook for SessionCommandsHook {
                 self.inner.arm_heartbeat(&context.session.id);
             }
         }
-        // axe:guet — guets posés avant un redémarrage du service.
+        // guet — guets posés avant un redémarrage du service.
         if !self.inner.load(&context.session.id).guets.is_empty() && tokio::runtime::Handle::try_current().is_ok() {
             self.inner.rearm_guets(&context.session.id);
         }
@@ -1413,7 +1413,7 @@ impl TurnHook for SessionCommandsHook {
             Some(Err(e)) => blocks.push(format!("## Harness refinement\nBackground refinement failed: {e:#}")),
             None => {}
         }
-        // axe:goal165 — goal state at the start of the turn (progress detection);
+        // goal165 — goal state at the start of the turn (progress detection);
         // a turn starting cancels the planned relaunch; the user speaking resets
         // the count of relaunches without progress.
         let input = user_text(request);
@@ -1447,7 +1447,7 @@ impl TurnHook for SessionCommandsHook {
         (!blocks.is_empty()).then(|| blocks.join("\n\n"))
     }
 
-    // axe:goal165 — goal / autonomous / heartbeat re-read from the state file for
+    // goal165 — goal / autonomous / heartbeat re-read from the state file for
     // EVERY request of the turn (before: frozen at the start of the turn, so an
     // objective cleared from the IDE during a long turn was still shown « en cours »
     // while `goal.get()` already returned None).
@@ -1506,7 +1506,7 @@ impl TurnHook for SessionCommandsHook {
                 let store = HarnessStore::open(&session.workspace_id);
                 refine::status_json(&self.inner.refine, &store, &session.id).map_err(|e| e.to_string())
             }
-            // axe:refine-run — stop a running refinement (this session's one by default).
+            // refine-run — stop a running refinement (this session's one by default).
             "refine.cancel" => {
                 let store = HarnessStore::open(&session.workspace_id);
                 let target = params.get("id").and_then(Value::as_str).filter(|v| !v.trim().is_empty()).unwrap_or(&session.id);
@@ -1523,7 +1523,7 @@ impl TurnHook for SessionCommandsHook {
 }
 
 
-/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+/// 0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
 #[allow(dead_code)]
 fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
     #[allow(unused_mut)]
@@ -1615,7 +1615,7 @@ mod tests {
         assert_eq!(parse_heartbeat_text("bonjour"), None);
     }
 
-    /// axe:goal165 — relaunch after each turn, backoff, pause after 3 idle relaunches.
+    /// goal165 — relaunch after each turn, backoff, pause after 3 idle relaunches.
     #[test]
     fn poursuite_de_l_objectif() {
         let mut g = Goal { text: "lot 3".into(), status: "active".into(), ..Default::default() };

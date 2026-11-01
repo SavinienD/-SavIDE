@@ -1,4 +1,4 @@
-// axe:cloud — « Terminal » tab (admin): opens /prime/terminal on the server
+// cloud — « Terminal » tab (admin): opens /prime/terminal on the server
 // (Prime, OpenCode or bash in tmux, resumed after a cut) in the system
 // browser, already signed in through /app/code-web. Never in a window of the
 // app: a remote page there would reach the app's local commands.

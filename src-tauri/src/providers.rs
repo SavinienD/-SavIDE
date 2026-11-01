@@ -25,7 +25,7 @@ pub(super) fn provider_registry_snapshot(
         .map(|providers| {
             providers
                 .iter()
-                .map(|(id, provider)| (id.clone(), custom_providers::with_overrides(provider.clone()))) // axe:providers
+                .map(|(id, provider)| (id.clone(), custom_providers::with_overrides(provider.clone()))) // providers
                 .collect()
         })
 }
@@ -40,7 +40,7 @@ pub(super) fn provider_from_registry(
         .map_err(|_| "registre des fournisseurs indisponible".to_string())?
         .get(provider_id)
         .cloned()
-        .map(custom_providers::with_overrides) // axe:providers
+        .map(custom_providers::with_overrides) // providers
         .ok_or_else(|| format!("provider `{provider_id}` is not configured or missing credentials"))
 }
 

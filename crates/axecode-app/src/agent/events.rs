@@ -57,7 +57,7 @@ pub enum AgentEvent {
         usage: Usage,
     },
     Interrupted,
-    /// axe:reprise — the model stream was cut and the request is sent again:
+    /// reprise — the model stream was cut and the request is sent again:
     /// the live text and thinking of the current response start over.
     StreamRetry,
     Error {
@@ -81,7 +81,7 @@ pub enum AgentEvent {
         event: Box<AgentEvent>,
     },
     AgentSlept,
-    /// axe:commandes — a `/heartbeat` woke the session up (shown as « réveil : … »).
+    /// commandes — a `/heartbeat` woke the session up (shown as « réveil : … »).
     HeartbeatReceived {
         message: String,
         at_ms: i64,

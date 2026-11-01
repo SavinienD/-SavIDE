@@ -65,24 +65,24 @@ export const SCENES = [
   { id: "maj-badge-fenetre", sim: { majDispo: "0.1.66" }, stockage: () => colonnes([ids(3)]), cliquer: ".titlebar__update-pill", temoins: ["sel:.titlebar__update-popover .titlebar__update-popover-notes", "clic:.titlebar__update-popover-btn--primary", "clic:.titlebar__update-popover-btn--ghost", "absent:.updater-lock"] },
   { id: "maj-badge-accueil", sim: { majDispo: "0.1.66" }, espace: false, temoins: ["clic:.welcome__maj .titlebar__update-pill"] },
   { id: "accueil", sim: { cloud: true }, espace: false, temoins: ["sel:button.welcome__cta", "absent:svg linearGradient"] },
-  // axe:0.1.71 — bulle d'info de la dictée (« Transcrit par … en 6,0 s, nettoyé par l'IA. ») : elle débordait du compositeur.
+  // 0.1.71 — bulle d'info de la dictée (« Transcrit par … en 6,0 s, nettoyé par l'IA. ») : elle débordait du compositeur.
   { id: "dictee-info", sim: {}, stockage: () => colonnes([ids(3)]), cliquer: [".axe-voix__micro", ".axe-voix__valider"], pauseClics: 1500, attendre: ".axe-voix__bulle--info", temoins: ["clic:.axe-voix__bulle--info"] },
   { id: "dictee-info-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: [".axe-voix__micro", ".axe-voix__valider"], pauseClics: 1500, attendre: ".axe-voix__bulle--info", temoins: ["clic:.axe-voix__bulle--info"] },
-  // axe:0.1.71 — pendant l'enregistrement, la barre de dictée recouvrait le bouton Envoyer (colonne étroite).
+  // 0.1.71 — pendant l'enregistrement, la barre de dictée recouvrait le bouton Envoyer (colonne étroite).
   { id: "dictee-envoyer-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: ".axe-voix__micro", temoins: ["clic:.colonne-chat[data-focus='true'] .composer__send", "clic:.axe-voix__valider", "clic:.axe-voix__annuler"] },
-  // axe:micro-local — whisper.cpp embarqué : micro visible sans aucun service, réglage petit/moyen.
+  // micro-local — whisper.cpp embarqué : micro visible sans aucun service, réglage petit/moyen.
   { id: "dictee-micro-local", sim: { voixLocale: true }, stockage: () => colonnes([ids(3)]), cliquer: [".axe-voix__micro", ".axe-voix__valider"], pauseClics: 1500, attendre: ".axe-voix__bulle--info", temoins: ["clic:.axe-voix__bulle--info"] },
   { id: "dictee-reglage-modele", sim: { voixLocale: true }, stockage: () => colonnes([ids(3)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='voice']"],
     temoins: ["sel:[data-testid='voix-modele-local'] input[type='radio']:checked", "Moyen (small)", "Petit (base)"] },
-  // axe:0.1.75 — dictée en direct : texte provisoire grisé au-dessus du compositeur pendant l'enregistrement.
-  // axe:copier-code — bouton « Copier » d'un bloc de code du chat : clic puis retour « Copié ».
+  // 0.1.75 — dictée en direct : texte provisoire grisé au-dessus du compositeur pendant l'enregistrement.
+  // copier-code — bouton « Copier » d'un bloc de code du chat : clic puis retour « Copié ».
   { id: "copier-code", sim: {}, stockage: () => colonnes([ids(3)]), cliquer: ".chat-body .bloc-copie__btn", defilerAvantClic: true, pauseClics: 50, temoins: ["sel:.bloc-copie[data-etat='copie'] .bloc-copie__btn"] },
   { id: "dictee-direct", sim: {}, stockage: () => colonnes([ids(3)]), cliquer: ".axe-voix__micro", pauseClics: 4500, temoins: ["sel:.composer__box > .axe-voix__provisoire", "clic:.axe-voix__valider"] },
   { id: "dictee-direct-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: ".axe-voix__micro", pauseClics: 4500, temoins: ["sel:.composer__box > .axe-voix__provisoire", "clic:.axe-voix__valider", "clic:.axe-voix__annuler"] },
   { id: "dictee-enregistrement-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: ".axe-voix__micro", temoins: ["clic:.axe-voix__valider", "clic:.axe-voix__annuler"] },
   { id: "c1", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["sel:.thinking-block", "sel:.tool-card__err-dot", "sel:.composer__send"] },
-  // axe:0.1.75 — capture de Savinien : onglet Git du volet bas, branche au nom long, liste des modifications vide/coupée, onglets tronqués.
+  // 0.1.75 — capture de Savinien : onglet Git du volet bas, branche au nom long, liste des modifications vide/coupée, onglets tronqués.
   { id: "git-branche-longue", sim: { brancheLongue: true }, stockage: () => colonnes([ids(3)]), terminal: true, cliquer: ".terminal-tab[data-tab='git']", pauseClics: 800, temoins: ["sel:.terminal-shell .git-panel__row", "sel:.terminal-shell .git-panel__commit"] },
   { id: "git-branche-longue-local", sim: { brancheLongue: true, cloud: false }, stockage: () => colonnes([ids(3)]), terminal: true, cliquer: ".terminal-tab[data-tab='git']", pauseClics: 800, temoins: ["sel:.terminal-shell .git-panel__row", "sel:.terminal-shell .git-panel__commit"] },
   { id: "c1-terminal", sim: {}, stockage: () => colonnes([ids(3)]), terminal: true, temoins: ["sel:.terminal-shell .terminal-tabs"] },
@@ -104,7 +104,7 @@ export const SCENES = [
   { id: "sans-fournisseur-clic", sim: { fournisseur: false, accelerer: true }, stockage: () => colonnes([ids(3)]), sansFournisseur: true, clicConnecter: true, temoins: ["sel:.settings-pane"] },
   { id: "sans-fournisseur-c1", sim: { fournisseur: false, accelerer: true }, stockage: () => colonnes([ids(3)]), sansFournisseur: true, temoins: ["sel:.composer__connect-cta"] },
   { id: "tour-file-sous-agents", sim: { tour: "en_cours", sousAgents: 2 }, stockage: () => ({ ...colonnes([ids(2), ["c-003"]]), ...fileAttente("c-001", 3) }), temoins: ["sel:.composer__send[data-variant='stop']", "sel:.composer__send[data-variant='background']", "sel:.axe-agents-bandeau", "sel:.todo-strip__queue"] },
-  // axe:file-pause — après un Stop, la file attend : bouton « Reprendre la file ».
+  // file-pause — après un Stop, la file attend : bouton « Reprendre la file ».
   { id: "file-en-pause", sim: { filePause: true }, stockage: () => ({ ...colonnes([ids(2), ["c-003"]]), ...fileAttente("c-001", 2) }), temoins: ["clic:[data-testid='reprendre-file']", "sel:.todo-strip__queue"] },
   { id: "arret-force", sim: { tour: "en_cours", sousAgents: 1, accelerer: true }, stockage: () => ({ ...colonnes([ids(2), ["c-003"], ["c-004"]]), ...fileAttente("c-001", 2) }), arretForce: true, temoins: ["sel:.composer__send[data-variant='stop'][data-force='true']", "sel:.axe-agents-bandeau"] },
   // attendus : le détail de l'erreur, affiché tel quel avant comme après la traduction du préfixe (« Réponse interrompue : … »).
@@ -125,7 +125,7 @@ export const SCENES = [
     temoins: ["sel:.chat-body"],
     attendus: [FIN_TOUR_PRECEDENT],
   },
-  // axe:commandes — « /heartbeat 1m coucou » et « /goal … » : icônes à côté du modèle,
+  // commandes — « /heartbeat 1m coucou » et « /goal … » : icônes à côté du modèle,
   // réveil visible dans la conversation (« réveil : coucou » avec l'heure), détail au clic.
   {
     id: "commandes",
@@ -149,7 +149,7 @@ export const SCENES = [
     temoins: ["sel:.axe-indicateur[data-kind='heartbeat']", "sel:.axe-indicateur[data-kind='goal']", "sel:.axe-reveil", "sel:.axe-indicateurs__detail"],
     attendus: ["coucou", "Arrêter le réveil", "Toutes les 1 min"],
   },
-  // axe:guet — deux guets : icône avec leur nombre à côté du modèle, détail au clic
+  // guet — deux guets : icône avec leur nombre à côté du modèle, détail au clic
   // (commande, depuis quand, prochain essai) avec Annuler ; bulle « guet … : terminée ».
   {
     id: "guets",
@@ -177,7 +177,7 @@ export const SCENES = [
     temoins: ["sel:.axe-indicateur[data-kind='guet']", "sel:.axe-reveil[data-kind='guet']", "sel:.axe-indicateurs__detail", "sel:.axe-indicateurs__guet"],
     attendus: ["gh run view 4242 --exit-status", "cargo test --workspace", "Annuler", "Tout annuler", "Prochain essai", "guet g9a8b7c"],
   },
-  // axe:html — page .html : Code par défaut ; le bouton de bascule (le même que le
+  // html — page .html : Code par défaut ; le bouton de bascule (le même que le
   // Markdown) passe au rendu, dans une iframe sandbox sans scripts ni réseau (CSP).
   {
     id: "html-rendu",
@@ -197,7 +197,7 @@ export const SCENES = [
     clics: [".xv-html .xv-btn--text"],
     temoins: ["sel:iframe.xv-html__frame[sandbox*='allow-scripts']", "sel:iframe.xv-html__frame[srcdoc*=\"connect-src 'none'\"]", "sel:.xv-html__status[data-on='true']"],
   },
-  // axe:liens — liens bien visibles (gras + fond d'accent) et cliquables, dans le message de
+  // liens — liens bien visibles (gras + fond d'accent) et cliquables, dans le message de
   // l'utilisateur (URL nue, chemin) et dans la réponse (URL nue raccourcie, [texte](url), chemins
   // Linux et Windows) : le clic ouvre le navigateur (open_external_url) ou le fichier dans l'éditeur.
   {
@@ -224,7 +224,7 @@ export const SCENES = [
     ],
     attendus: ["la notice", "github.com/exemple/projet/actions", "src/lib/ipc.ts", "notes.txt"],
   },
-  // axe:explorateur — clavier dans l'explorateur : gauche replie « docs », bas, droite déplie
+  // explorateur — clavier dans l'explorateur : gauche replie « docs », bas, droite déplie
   // « scripts », bas = premier enfant, Ctrl+C = chemin absolu SANS « \\?\ ».
   {
     id: "explorateur-clavier", sim: {}, stockage: () => colonnes([ids(1)]),
@@ -255,7 +255,7 @@ export const SCENES = [
     explorateur: { clic: "tests", menuTri: ["ouvrir", "[data-tri='taille']", "[data-sens='decroissant']", "[data-dossiers-dabord]"] },
     temoins: ["clic:.sidebar__head-btn[data-action='trier']", "clic:.tree-sort__menu .tree-menu__item", "premier:RAPPORT.md", "sel:.tree-sort__menu [data-tri='taille'][data-active='true']"],
   },
-  // axe:couleurs — commande slash en orange (accent) et skill en violet : dans la bulle du
+  // couleurs — commande slash en orange (accent) et skill en violet : dans la bulle du
   // message envoyé (« /goal … /revue-code ») et dans le compositeur (« /heartbeat 5s coucou … »).
   {
     id: "couleurs",
@@ -299,7 +299,7 @@ export const SCENES = [
   { id: "mcp-supprimer", sim: { mcp: ["github", "postgres"] }, stockage: () => colonnes([ids(1)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__nav-list-item[data-server='github'] .settings-pane__nav-list-item-main", ".settings-pane__mcp-delete", ".settings-pane__mcp-delete[data-confirm='true']"],
     temoins: ["appel:delete_mcp_server", "absent:.settings-pane__nav-list-item[data-server='github']", "sel:.settings-pane__nav-list-item[data-server='postgres']"] },
-  // axe:0.1.71 — session « test — arrière-plan » : hors de la liste, indicateur sur « test ».
+  // 0.1.71 — session « test — arrière-plan » : hors de la liste, indicateur sur « test ».
   { id: "arriere-plan-liste", sim: { fournisseur: false, collegue: true, arrierePlan: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, temoins: ["clic:.conv-row__bg"] },
   // Parcours d'un collègue (Camille) : connecté à Axe Cloud, aucun fournisseur sur son PC,
   // son espace a le fournisseur axe-cloud. Il ouvre son espace, crée « test » (« + »), écrit et envoie.
@@ -320,9 +320,9 @@ export const SCENES = [
   { id: "collegue-arbre", sim: { fournisseur: false, collegue: true, espaceVide: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, creer: "test", ecrire: "Bonjour", evenementsTour: tourFini("s-1"), arbre: true, temoins: ["sel:.axe-tree-overlay"] },
   // À la réouverture de l'espace : la liste doit montrer les conversations de l'espace (« test »).
   { id: "collegue-liste", sim: { fournisseur: false, collegue: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, temoins: ["test"] },
-  // axe:bas169 — remonté dans un long chat : bouton flottant « ↓ » cliquable.
+  // bas169 — remonté dans un long chat : bouton flottant « ↓ » cliquable.
   { id: "chat-aller-en-bas", sim: {}, stockage: () => colonnes([ids(3)]), defilerChatHaut: true, temoins: ["clic:[data-testid='chat-aller-en-bas']"] },
-  // axe:hist169 — prompt envoyé puis flèche HAUT dans le compositeur vide : il revient.
+  // hist169 — prompt envoyé puis flèche HAUT dans le compositeur vide : il revient.
   { id: "historique-prompts", sim: {}, stockage: () => colonnes([ids(1)]), ecrire: "relance le banc à 800 px", touchesCompositeur: ["ArrowUp"],
     temoins: ["valeur:relance le banc à 800 px"] },
 ];

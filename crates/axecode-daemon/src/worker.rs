@@ -188,7 +188,7 @@ impl Daemon {
         }
     }
 
-    /// axe:bg-b — end of a worker (normal end, panic, or task dropped when the
+    /// bg-b — end of a worker (normal end, panic, or task dropped when the
     /// process stops): the session is `Idle` unless another worker already
     /// took over, decided under the same lock as `enqueue` (no race leaving a
     /// finished session "running", nor a running one "idle"). A worker that
@@ -206,7 +206,7 @@ impl Daemon {
         };
         if idle {
             self.set_status(id, SessionStatus::Idle);
-            // axe:file-demon — tour fini : le message suivant de la file part.
+            // file-demon — tour fini : le message suivant de la file part.
             crate::queue_rpc::dispatch_next(self, id);
         }
     }
@@ -399,7 +399,7 @@ impl Daemon {
         }
         let last_active = lock(&self.sessions).get(id).map(|s| s.last_active);
         self.set_status(id, SessionStatus::Inactive);
-        // axe:menage — unloading is not activity: the archive delay of a
+        // menage — unloading is not activity: the archive delay of a
         // finished sub-agent keeps counting from its last turn.
         if let (Some(at), Some(slot)) = (last_active, lock(&self.sessions).get_mut(id)) {
             slot.last_active = at;
@@ -407,7 +407,7 @@ impl Daemon {
     }
 
     /// Sessions idle for longer than their window: `subagent_idle_unload`
-    /// for sub-agents (sessions with a parent, axe:menage), `idle_unload`
+    /// for sub-agents (sessions with a parent, menage), `idle_unload`
     /// for the others.
     pub(crate) fn stale_sessions(&self) -> Vec<String> {
         let (window, subagent_window) = (self.config.idle_unload, self.config.subagent_idle_unload);
@@ -427,7 +427,7 @@ impl Daemon {
             .collect()
     }
 
-    /// axe:menage — one pass of the maintenance loop (every 15 s): unloads
+    /// menage — one pass of the maintenance loop (every 15 s): unloads
     /// the runtimes left idle for too long, archives finished sub-agents,
     /// compresses old archives (first pass, then once a day).
     pub async fn housekeeping(&self) {
@@ -438,7 +438,7 @@ impl Daemon {
         self.compress_archives_if_due().await;
     }
 
-    /// axe:reveil-demarrage — au démarrage du service, les sessions qui ont un
+    /// reveil-demarrage — au démarrage du service, les sessions qui ont un
     /// heartbeat, un guet ou une relance /goal en attente
     /// (`<données>/session_state/<id>.json`) sont chargées : le hook les réarme dans
     /// `bind`. Avant, elles ne repartaient qu'au prochain tour de la session.

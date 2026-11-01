@@ -1,4 +1,4 @@
-// axe:viewers — Jupyter notebook (.ipynb) renderer: markdown cells through
+// viewers — Jupyter notebook (.ipynb) renderer: markdown cells through
 // the chat Markdown component, code cells with their execution count and
 // outputs (text streams, errors, images, sanitized HTML, JSON). Rendering
 // only: nothing is executed. The JSON source stays editable in "Code".

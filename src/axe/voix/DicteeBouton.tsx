@@ -3,11 +3,11 @@ import { createPortal } from "react-dom";
 
 import { formaterDuree } from "./inserer";
 import { useDictee } from "./useDictee";
-import { useDicteeDisponible } from "./useDicteeDisponible"; // axe:0.1.71
+import { useDicteeDisponible } from "./useDicteeDisponible"; // 0.1.71
 import "./voix.css";
 
 /**
- * axe:voix — bouton micro du compositeur, « comme le message vocal de ChatGPT » :
+ * voix — bouton micro du compositeur, « comme le message vocal de ChatGPT » :
  * clic -> enregistrement (onde, minuteur, ✕ annuler, ✓ terminer) -> transcription
  * Whisper sur la VM -> texte inséré dans la zone de saisie, modifiable, JAMAIS envoyé.
  * Le ✓ garde aria-label « Dicter » : le raccourci Ctrl+Maj+D (Workspace.tsx) démarre
@@ -44,7 +44,7 @@ function IconeValider() {
   );
 }
 
-/** axe:0.1.75 — seule la fin du texte provisoire est montrée (pas de texte coupé par un cadre). */
+/** 0.1.75 — seule la fin du texte provisoire est montrée (pas de texte coupé par un cadre). */
 export function finProvisoire(texte: string, max = 200): string {
   if (texte.length <= max) return texte;
   const fin = texte.slice(-max);
@@ -63,11 +63,11 @@ function Chrono({ depuis }: { depuis: number }) {
 
 export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
   const d = useDictee({ workspacePath, modele, onTexte });
-  // axe:0.1.71 — sans moteur qui répond, pas de micro (au lieu de l'erreur « connexion refusée »).
+  // 0.1.71 — sans moteur qui répond, pas de micro (au lieu de l'erreur « connexion refusée »).
   // SavIDE est 100 % local : seul un moteur Whisper du poste compte (jamais celui de la VM).
   const dispo = useDicteeDisponible(workspacePath, { localSeulement: true });
   const enregistre = d.phase === "enregistrement" || d.phase === "demarrage";
-  // axe:0.1.71 — barre d'enregistrement et bulles placées dans la rangée d'actions et dans la
+  // 0.1.71 — barre d'enregistrement et bulles placées dans la rangée d'actions et dans la
   // boîte du compositeur (portails), plus sous le micro : ancrées au micro, elles dépassaient
   // de la colonne étroite (bulle « … en 6,0 s, » rognée, coupée à droite, sur le compositeur).
   const ancre = useRef<HTMLSpanElement | null>(null);
@@ -146,9 +146,9 @@ export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
       )}
 
       {(enregistre || d.phase === "transcription") && (d.provisoire || (enregistre && (d.direct.actif || d.direct.erreur))) && placer(
-        // axe:0.1.75 — texte provisoire de la dictée en direct, grisé ; le texte final le remplace.
+        // 0.1.75 — texte provisoire de la dictée en direct, grisé ; le texte final le remplace.
         <span className="axe-voix__provisoire" role="status" aria-live="polite" title="Texte provisoire : remplacé par la transcription complète à la fin">
-          {/* axe:0.1.77 — encadré visible dès le début du direct (attente), avec la raison d'un aperçu absent. */}
+          {/* 0.1.77 — encadré visible dès le début du direct (attente), avec la raison d'un aperçu absent. */}
           {d.provisoire ? (
             <span className="axe-voix__provisoire-texte">{finProvisoire(d.provisoire)}<span aria-hidden="true">…</span></span>
           ) : d.direct.erreur ? (

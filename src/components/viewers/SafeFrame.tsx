@@ -1,4 +1,4 @@
-// axe:viewers — renders untrusted document HTML (docx, epub, pptx text,
+// viewers — renders untrusted document HTML (docx, epub, pptx text,
 // notebook outputs) safely: the markup is sanitized, then shown in an iframe
 // sandboxed WITHOUT scripts. `allow-same-origin` only lets this component
 // style the page, intercept links (opened in the system browser) and run the

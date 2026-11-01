@@ -1,4 +1,4 @@
-// axe:arriere-plan — « Arrière-plan » : libérer la conversation sans perdre le
+// arriere-plan — « Arrière-plan » : libérer la conversation sans perdre le
 // travail en cours (demande de l'utilisateur : « pour ne pas monopoliser la conv,
 // qu'on puisse décider de mettre en arrière-plan ce que tu fais pour que le
 // message en queue se lance »).
@@ -43,7 +43,7 @@ export function consigneArrierePlan(titre: string | null | undefined): string {
   );
 }
 
-/** axe:bg-a — message système déposé dans la conversation principale quand son
+/** bg-a — message système déposé dans la conversation principale quand son
  * travail en cours est basculé en arrière-plan (livré à son prochain tour). */
 export function messageSystemeArrierePlan(nom: string, id: string): string {
   return (
@@ -74,7 +74,7 @@ export type ServicesArrierePlan = {
   forker(id: string, nom: string, parentId: string): Promise<{ id: string; name?: string }>;
   envoyer(id: string, texte: string): Promise<unknown>;
   attendre(ms: number): Promise<void>;
-  /** axe:bg-a — note système à la conversation (de la part du clone), sans lancer de tour. */
+  /** bg-a — note système à la conversation (de la part du clone), sans lancer de tour. */
   prevenir?(conversationId: string, depuis: string, texte: string): Promise<unknown>;
 };
 
@@ -120,7 +120,7 @@ export async function mettreEnArrierePlan(
   return { id: clone.id, nom: nomFinal };
 }
 
-/** axe:0.1.71 — liste « Conversations » d'un espace : une session qui a un parent (sous-agent,
+/** 0.1.71 — liste « Conversations » d'un espace : une session qui a un parent (sous-agent,
  *  clone « … — arrière-plan ») n'y figure plus ; elle reste dans la vue Agents et le démon
  *  l'archive seul une fois son travail fini (menage). Les clones d'arrière-plan sont
  *  rattachés à leur conversation d'origine (indicateur + clic pour ouvrir). */

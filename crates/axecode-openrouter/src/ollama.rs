@@ -1,4 +1,4 @@
-//! axe:ollama — native Ollama `/api/chat` (NDJSON stream).
+//! ollama — native Ollama `/api/chat` (NDJSON stream).
 //!
 //! Ollama's OpenAI route (`/v1/chat/completions`) cannot set the context
 //! size: the server then keeps its default (2 048 to 4 096 tokens on most

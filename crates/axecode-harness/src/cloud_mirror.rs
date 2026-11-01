@@ -1,4 +1,4 @@
-//! axe:shared-brain — read-only mirror of the Axe Cloud space's GLOBAL harness.
+//! shared-brain — read-only mirror of the Axe Cloud space's GLOBAL harness.
 //!
 //! The global harness lives on each PC (`~/.axecode/harness`): a colleague who
 //! installs the app starts with nothing. When the `axe-cloud` connection is up,

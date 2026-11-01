@@ -1,4 +1,4 @@
-// axe:viewers — read-only SQLite browser: tables/views list, first rows of
+// viewers — read-only SQLite browser: tables/views list, first rows of
 // the selected table in the virtualized grid. All queries run in Rust with a
 // read-only, query_only connection.
 

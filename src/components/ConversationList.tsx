@@ -10,14 +10,14 @@ type Props = {
   onSelect: (id: string) => void;
   onRename: (id: string, title: string) => void;
   onDelete: (id: string) => void;
-  // axe:e3 — archivage. Fourni seulement quand l'espace sait archiver (le
+  // e3 — archivage. Fourni seulement quand l'espace sait archiver (le
   // service) : en local, la liste garde son bouton de suppression. Le chemin de
   // l'archive n'est jamais transmis — le parent ne le connaît pas non plus.
   onArchive?: (id: string) => void;
   archived?: ConversationSummary[];
   onRestoreArchived?: (id: string) => void;
   onDeleteArchived?: (id: string) => void;
-  /** axe:0.1.71 — ouvre une session d'arrière-plan (journal, comme la vue Agents). */
+  /** 0.1.71 — ouvre une session d'arrière-plan (journal, comme la vue Agents). */
   onOpenBackground?: (id: string, title: string) => void;
 };
 

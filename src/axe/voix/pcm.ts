@@ -1,4 +1,4 @@
-// axe:micro-local — enregistrement -> PCM mono 16 kHz (float 32 bits LE) pour
+// micro-local — enregistrement -> PCM mono 16 kHz (float 32 bits LE) pour
 // whisper.cpp embarqué : le décodage se fait dans la vue web, pas en Rust.
 
 export const MIME_PCM = "audio/pcm-f32-16k";

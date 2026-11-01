@@ -11,7 +11,7 @@ import type {
 } from "../../types";
 import { canonicalToolName, isToolName } from "../../lib/tools";
 import { resumeOutilEnFrancais } from "./resumesOutils";
-import { lirePoursuite, lireReveil } from "./logiqueIndicateurs"; // axe:commandes
+import { lirePoursuite, lireReveil } from "./logiqueIndicateurs"; // commandes
 
 const MIN_VISIBLE_TURN_DURATION_MS = 90_000;
 const CLEANED_TOOL_OUTPUT =
@@ -96,9 +96,9 @@ export type ChatBlock =
       id: string;
       durationMs: number;
     }
-  // axe:commandes — message injecté par un /heartbeat (bulle discrète « réveil : … »).
+  // commandes — message injecté par un /heartbeat (bulle discrète « réveil : … »).
   | { kind: "wake"; id: string; message: string; atMs: number | null }
-  // axe:goal165 — relance automatique de l'objectif (bulle discrète).
+  // goal165 — relance automatique de l'objectif (bulle discrète).
   | { kind: "goal-continue"; id: string; message: string; atMs: number | null };
 
 export type SubAgentBlock = {
@@ -130,7 +130,7 @@ export type ChatViewState = {
   streamPhase: StreamPhase;
   lastError: string | null;
   turnStartedAtMs: number | null;
-  /** axe:reprise-tour — index du premier bloc du tour en cours : « stream_retry »
+  /** reprise-tour — index du premier bloc du tour en cours : « stream_retry »
    *  ne retire jamais un bloc d'un tour précédent (tour de continuation enchaîné). */
   liveFrom?: number;
 };
@@ -322,7 +322,7 @@ function blocksFromHistory(history: ChatMessage[]): ChatBlock[] {
         if (isHiddenUserText(part)) continue;
         const trimmed = part.text.trim();
         if (!trimmed) continue;
-        // axe:commandes — réveil /heartbeat : bulle discrète, pas un message de l'utilisateur.
+        // commandes — réveil /heartbeat : bulle discrète, pas un message de l'utilisateur.
         const relance = lirePoursuite(trimmed);
         if (relance) {
           blocks.push({ kind: "goal-continue", id: id("g"), message: relance.message, atMs: relance.atMs });
@@ -1165,9 +1165,9 @@ function finalizeStreamingThinking(blocks: ChatBlock[]): ChatBlock[] {
   return next;
 }
 
-// axe:reprise — the live text/thinking blocks at the end of the view
+// reprise — the live text/thinking blocks at the end of the view
 // (ids `s-a-` / `s-t-`): what the current model response has shown.
-// axe:reprise-tour — never below `liveFrom` (start of the current turn): the
+// reprise-tour — never below `liveFrom` (start of the current turn): the
 // final text of the previous turn also carries a live id when a continuation
 // turn follows it with nothing in between.
 function dropLiveResponse(blocks: ChatBlock[], liveFrom = 0): ChatBlock[] {
@@ -1201,7 +1201,7 @@ export function applyEvent(
 ): ChatViewState {
   switch (event.type) {
     case "turn_started": {
-      // axe:reprise-tour — un nouveau tour commence ici, même enchaîné au précédent.
+      // reprise-tour — un nouveau tour commence ici, même enchaîné au précédent.
       const next = beginTurn(state);
       return { ...next, liveFrom: next.blocks.length };
     }
@@ -1228,7 +1228,7 @@ export function applyEvent(
     case "text_finished":
       return state;
 
-    // axe:reprise — stream cut, the request is sent again: the response
+    // reprise — stream cut, the request is sent again: the response
     // starts over, what it had shown goes away.
     case "stream_retry":
       return withStreamPhase(state, "waiting", {
@@ -1302,7 +1302,7 @@ export function applyEvent(
       return withStreamPhase(state, "tooling", { blocks: next });
     }
     case "tool_output_delta": {
-      // axe:repl — live stdout of a regular tool (python REPL): append it to
+      // repl — live stdout of a regular tool (python REPL): append it to
       // the tool card. Only compaction deltas create a compaction block;
       // treating every delta as compaction showed "Compacted context" cards
       // for each python execution.
@@ -1634,7 +1634,7 @@ export function applyEvent(
     case "peer_message_received":
       return state;
 
-    // axe:commandes — un /heartbeat a réveillé la session : bulle « réveil : … ».
+    // commandes — un /heartbeat a réveillé la session : bulle « réveil : … ».
     case "heartbeat_received": {
       const last = state.blocks[state.blocks.length - 1];
       if (last?.kind === "wake" && last.message === event.message && last.atMs === event.at_ms) {
@@ -1702,7 +1702,7 @@ export function beginTurn(state: ChatViewState): ChatViewState {
     status: "streaming",
     lastError: null,
     turnStartedAtMs: state.turnStartedAtMs ?? Date.now(),
-    liveFrom: state.blocks.length, // axe:reprise-tour
+    liveFrom: state.blocks.length, // reprise-tour
   });
 }
 

@@ -1,4 +1,4 @@
-// axe:parcours-collegue — erreurs du compteur Axe Cloud (401, 429, 503…) en français lisible.
+// parcours-collegue — erreurs du compteur Axe Cloud (401, 429, 503…) en français lisible.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const Module = require("node:module");

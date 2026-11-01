@@ -26,11 +26,11 @@ const PY_VERSION = "3.12.7";
 const PIP_PACKAGES = [
   "ipython>=8.20",
   "dill>=0.3.8",
-  // axe:viewers — text extraction of office/pdf files in files.read.
+  // viewers — text extraction of office/pdf files in files.read.
   "openpyxl>=3.1",
   "python-docx>=1.1",
   "pypdf>=4.2",
-  // axe:certificats — root CAs for ssl/urllib (the embedded Python has none):
+  // certificats — root CAs for ssl/urllib (the embedded Python has none):
   // the kernel sets SSL_CERT_FILE to certifi.where() at startup.
   "certifi>=2024.8.30",
 ];

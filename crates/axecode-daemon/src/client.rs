@@ -42,7 +42,7 @@ impl DaemonClient {
         Ok(Self::from_stream(stream, endpoint, events))
     }
 
-    // axe:remote
+    // remote
     /// Connects to a remote daemon over WebSocket (`ws://` or `wss://`,
     /// path `/ws`). `authorization` is a full header value
     /// (`Bearer …` or `Basic …`).
@@ -69,7 +69,7 @@ impl DaemonClient {
             })?;
         Ok(Self::from_stream(crate::listen::bridge(ws), url, events))
     }
-    // axe:remote end
+    // remote end
 
     fn from_stream(
         stream: transport::BoxStream,
@@ -237,7 +237,7 @@ pub fn sibling_binary() -> Option<PathBuf> {
     })
 }
 
-/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+/// 0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
 #[allow(dead_code)]
 fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
     #[allow(unused_mut)]

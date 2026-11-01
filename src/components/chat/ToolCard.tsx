@@ -6,13 +6,13 @@ import {
   type CSSProperties,
   type MouseEvent,
 } from "react";
-import { PreCopiable } from "./PreCopiable"; // axe:copier-code
+import { PreCopiable } from "./PreCopiable"; // copier-code
 import { Icon } from "@iconify/react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import type { FileChange, TodoStatus, ToolResultImage } from "../../types";
 import { canonicalToolName } from "../../lib/tools";
 import { FileChangeBlock } from "./FileChangeBlock";
-import { ReplCard } from "./ReplCard"; // axe:repl
+import { ReplCard } from "./ReplCard"; // repl
 
 function extractEditFilePaths(argsPretty?: string): string[] {
   if (!argsPretty) return [];
@@ -1077,7 +1077,7 @@ export function ToolCard({
   activeTeamNames,
   subAgentName,
 }: ToolCardProps) {
-  // axe:repl
+  // repl
   if (name === "python") {
     return (
       <ReplCard

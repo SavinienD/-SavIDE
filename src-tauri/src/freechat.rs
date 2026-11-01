@@ -1,4 +1,4 @@
-// axe:freechat — free conversations (no project folder), ChatGPT style.
+// freechat — free conversations (no project folder), ChatGPT style.
 //
 // In the IDE every free conversation lives in one shared workspace, the
 // scratch root `<data>/scratch`, so the conversation list, the streaming
@@ -179,7 +179,7 @@ pub(crate) async fn freechat_relocate(
     {
         let extra = system_prompt_for_workspace(&target, "").unwrap_or_default();
         let params = json!({"sessionId": id, "workspaceId": target_id, "systemPromptExtra": extra.trim()});
-        // axe:relocate-occupe — juste après une réponse, le service peut encore tenir la
+        // relocate-occupe — juste après une réponse, le service peut encore tenir la
         // session (« session busy ») : nouvel essai automatique, puis message en français.
         let mut essai = 0;
         loop {
@@ -352,7 +352,7 @@ pub(crate) async fn mirror_rename(app: &AppHandle, workspace_root: &Path, conver
     .await;
 }
 
-/// axe:relocate-occupe — l'erreur « session busy » du service (tour pas encore libéré).
+/// relocate-occupe — l'erreur « session busy » du service (tour pas encore libéré).
 pub(crate) fn relocate_occupe(err: &str) -> bool {
     err.to_ascii_lowercase().contains("session busy")
 }

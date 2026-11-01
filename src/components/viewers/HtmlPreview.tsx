@@ -1,14 +1,14 @@
-// axe:viewers — sandboxed HTML preview. The live Monaco buffer is rendered in
+// viewers — sandboxed HTML preview. The live Monaco buffer is rendered in
 // an iframe (srcdoc) with a <base> pointing at the file's folder so relative
 // images, styles and scripts resolve. Scripts stay disabled until the user
 // explicitly allows them; same-origin is never granted, so the page cannot
-// reach the app or its IPC. axe:html — a CSP blocks every network access
+// reach the app or its IPC. html — a CSP blocks every network access
 // (only local files of the folder, data: and blob:).
 
 import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import { assetDirUrl } from "./bytes";
-import { documentApercuHtml } from "../../lib/apercuHtml"; // axe:html
+import { documentApercuHtml } from "../../lib/apercuHtml"; // html
 
 export default function HtmlPreview({
   html,
@@ -26,7 +26,7 @@ export default function HtmlPreview({
     const timer = setTimeout(() => setSource(html), 300);
     return () => clearTimeout(timer);
   }, [html]);
-  // axe:html — CSP sans réseau (fichiers locaux du dossier seulement), scripts selon le choix.
+  // html — CSP sans réseau (fichiers locaux du dossier seulement), scripts selon le choix.
   const doc = documentApercuHtml(source, assetDirUrl(absolutePath), scripts);
 
   return (

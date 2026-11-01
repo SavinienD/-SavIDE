@@ -1,4 +1,4 @@
-// axe:mention-libre — conversation sans dossier : toutes les conversations partagent le
+// mention-libre — conversation sans dossier : toutes les conversations partagent le
 // dossier « scratch », chacune travaille dans scratch/<id>/. La recherche « @ fichier »
 // ne propose que les fichiers de la conversation ouverte.
 export function filtrerMentionsConversation<T extends { relativePath: string }>(

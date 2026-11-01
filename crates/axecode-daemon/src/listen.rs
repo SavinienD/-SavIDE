@@ -1,4 +1,4 @@
-//! axe:remote — network listener (`serve --listen <host:port>`).
+//! remote — network listener (`serve --listen <host:port>`).
 //!
 //! Exposes the exact JSON-lines protocol of the local pipe over WebSocket:
 //! one text frame = one line. Closed by default: when the address is not

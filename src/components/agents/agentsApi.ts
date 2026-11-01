@@ -2,11 +2,11 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { cloudRpc } from "../../lib/ipc";
-import { connectionArg, getActiveConnection } from "../settings/connectionsApi"; // axe:remote
+import { connectionArg, getActiveConnection } from "../settings/connectionsApi"; // remote
 
 export type SessionStatus = "running" | "idle" | "inactive";
 
-// axe:agents — external agents of the service (`agents.*` RPC). The tasks live
+// agents — external agents of the service (`agents.*` RPC). The tasks live
 // on the service under <workspace>/.axecode/agents; statuses are the service's.
 export type ServiceAgentStatus = "en_attente" | "en_cours" | "termine" | "erreur" | "arrete";
 
@@ -59,7 +59,7 @@ export type SessionMeta = {
   leaf?: string;
   entryCount: number;
   archived?: boolean;
-  /** axe:freechat — free conversation (private scratch folder, no project). */
+  /** freechat — free conversation (private scratch folder, no project). */
   scratch?: boolean;
 };
 
@@ -83,11 +83,11 @@ export type DaemonEvent = {
   event: "status" | "entry" | "stream" | "daemon" | "connection";
   sessionId?: string;
   data?: unknown;
-  /** axe:remote — set for events of a remote connection (absent = local). */
+  /** remote — set for events of a remote connection (absent = local). */
   connectionId?: string;
 };
 
-// axe:remote — every call targets the active connection unless `connection` is given.
+// remote — every call targets the active connection unless `connection` is given.
 const call = <T,>(method: string, params: Record<string, unknown> = {}, connection?: string) =>
   invoke<T>("daemon_call", {
     input: { method, params, connection: connectionArg(connection ?? getActiveConnection()) },
@@ -109,10 +109,10 @@ export const agentsApi = {
   stop: (sessionId: string, connection?: string) => call<{ ok: boolean }>("sessions.stop", { sessionId }, connection),
   moveLeaf: (sessionId: string, entryId: string, label?: string, connection?: string) =>
     call<{ entryId: string }>("sessions.move_leaf", { sessionId, entryId, label }, connection),
-  // axe:sub-m — change the model of an idle session.
+  // sub-m — change the model of an idle session.
   setModel: (sessionId: string, model: { provider: string; name: string }, connection?: string) =>
     call<{ ok: boolean }>("sessions.set_model", { sessionId, model }, connection),
-  // axe:arriere-plan — parentId : parent du clone (défaut côté service : le parent de la source).
+  // arriere-plan — parentId : parent du clone (défaut côté service : le parent de la source).
   fork: (sessionId: string, entryId?: string, name?: string, connection?: string, parentId?: string) =>
     call<SessionMeta>("sessions.fork", { sessionId, entryId, name, parentId }, connection),
   get: (sessionId: string, connection?: string) =>
@@ -121,7 +121,7 @@ export const agentsApi = {
     listen<DaemonEvent>("axe://daemon", (e) => handler(e.payload)),
 };
 
-// axe:agents — external agents (CLI launched by the service, `.axecode/agents`).
+// agents — external agents (CLI launched by the service, `.axecode/agents`).
 // These methods only exist on the service: callers pass the cloud connection.
 export const serviceAgentsApi = {
   list: (connection: string) =>

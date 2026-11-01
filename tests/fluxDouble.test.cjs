@@ -5,7 +5,7 @@ const path = require("node:path");
 const test = require("node:test");
 const ts = require("typescript");
 
-// axe:flux-unique — scène : le même flux relayé par deux clients démon (démon local +
+// flux-unique — scène : le même flux relayé par deux clients démon (démon local +
 // connexion distante, ou deux connexions vers la même VM) donnait le texte en double,
 // entremêlé. Le filtre est côté Rust (daemon_client::accept_stream_source) ; cette scène
 // montre le motif produit par applyEvent et le rendu attendu avec une seule source.

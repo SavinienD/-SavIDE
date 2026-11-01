@@ -1,4 +1,4 @@
-// axe:webui — HTTP (login) + WebSocket client of the session service.
+// webui — HTTP (login) + WebSocket client of the session service.
 // The WebSocket speaks the daemon JSON-lines protocol: one frame = one line.
 
 export type SessionStatus = "running" | "idle" | "inactive";
@@ -18,7 +18,7 @@ export type SessionMeta = {
   leaf?: string;
   entryCount: number;
   archived?: boolean;
-  /** axe:freechat — free conversation (private scratch folder, no project). */
+  /** freechat — free conversation (private scratch folder, no project). */
   scratch?: boolean;
 };
 
@@ -180,7 +180,7 @@ export class ServiceClient {
     this.call("sessions.set_model", { sessionId, model });
   create = (request: { name: string; workspaceId: string; model: ModelRef; initialMessage?: string }) =>
     this.call<SessionMeta>("sessions.create", request);
-  // axe:freechat — a free conversation: no folder, the service gives it a
+  // freechat — a free conversation: no folder, the service gives it a
   // private scratch folder. Named after its first message (like the IDE).
   createFree = (model: ModelRef, initialMessage?: string) =>
     this.create({ name: sessionName(initialMessage ?? ""), workspaceId: "", model, initialMessage });
@@ -188,7 +188,7 @@ export class ServiceClient {
 
 export const service = new ServiceClient();
 
-/** axe:freechat — first words of a message (same rule as the IDE). */
+/** freechat — first words of a message (same rule as the IDE). */
 function sessionName(text: string): string {
   const clean = text.split(/\s+/).filter(Boolean).join(" ");
   const chars = Array.from(clean);

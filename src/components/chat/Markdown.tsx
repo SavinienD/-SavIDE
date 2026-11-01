@@ -11,7 +11,7 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import { api } from "../../lib/ipc";
 import { MermaidDiagram } from "./MermaidDiagram";
-import { PreCopiable } from "./PreCopiable"; // axe:copier-code
+import { PreCopiable } from "./PreCopiable"; // copier-code
 import { decouperLiens, estFichier, estUrl, raccourcirUrl } from "./liensChat";
 
 type Props = {
@@ -32,7 +32,7 @@ function isMermaidLanguage(className?: string): boolean {
 
 const isFileToken = estFichier;
 
-/** axe:liens — lien web : gras, surligné, ouvre le navigateur par défaut (Windows, macOS, Linux). */
+/** liens — lien web : gras, surligné, ouvre le navigateur par défaut (Windows, macOS, Linux). */
 function UrlLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <a
@@ -115,7 +115,7 @@ function linkifyChildren(children: ReactNode, options: LinkifyOptions): ReactNod
   return Children.map(children, (child) => {
     if (typeof child === "string") return linkifyText(child, options);
     if (!isValidElement(child)) return child;
-    // axe:liens — les éléments rendus par nos composants (a, code, pre) ont pour type la
+    // liens — les éléments rendus par nos composants (a, code, pre) ont pour type la
     // fonction du composant : on les reconnaît à leur nœud HAST, sinon lien dans lien.
     const tag = (child.props as { node?: { tagName?: string } }).node?.tagName;
     if (

@@ -1,4 +1,4 @@
-// axe:parcours-collegue — modèles proposés dans une conversation d'un espace Axe Cloud.
+// parcours-collegue — modèles proposés dans une conversation d'un espace Axe Cloud.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const Module = require("node:module");
@@ -104,7 +104,7 @@ test("D10 : compaction et réécriture passent par le PC, désactivées dans un 
   const pane = fs.readFileSync(path.resolve(__dirname, "../src/components/chat/ChatPane.tsx"), "utf8");
   assert.match(pane, /const compactionAilleurs = !actionsDuPc\(espaceCloud\)\.compaction;/);
   // Compaction automatique du PC : jamais dans un espace (le démon de l'espace compacte lui-même).
-  assert.match(pane, /useEffect\(\(\) => \{\s*\/\/ axe:parcours-collegue \(D10\)[^\n]*\n[^\n]*\n\s*if \(compactionAilleurs\) return;/);
+  assert.match(pane, /useEffect\(\(\) => \{\s*\/\/ parcours-collegue \(D10\)[^\n]*\n[^\n]*\n\s*if \(compactionAilleurs\) return;/);
   // Bouton « Compaction » et /compact : l'avis, jamais l'appel au PC.
   assert.equal((pane.match(/if \(compactionAilleurs\) \{\s*setSlashNotice\(NOTE_COMPACTION_ESPACE\)/g) ?? []).length, 2);
   assert.match(pane, /rewindDisabled=\{[^}]*!actionsDuPc\(espaceCloud\)\.reecriture/);

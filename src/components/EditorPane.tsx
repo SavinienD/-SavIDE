@@ -12,20 +12,20 @@ import { Icon } from "@iconify/react";
 import { languageForPath } from "../lib/language";
 import { fileIcon } from "../lib/fileIcon";
 import { Markdown } from "./chat/Markdown";
-import { memoriserVue, vueMemorisee } from "../lib/vueFichier"; // axe:html
+import { memoriserVue, vueMemorisee } from "../lib/vueFichier"; // html
 import type { EditorRevealTarget, EditorTab } from "../types";
 import { ImageContextMenu } from "./ImageContextMenu";
-import { onThemeChange } from "../axe/theme"; // axe:theme
-import { AXE_MONACO_THEME, monacoThemeData } from "../axe/themeTargets"; // axe:theme
+import { onThemeChange } from "../axe/theme"; // theme
+import { AXE_MONACO_THEME, monacoThemeData } from "../axe/themeTargets"; // theme
 import {
   loadTextScale,
   MONO_BASE_PX,
   MONO_LINE_BASE_PX,
   onTextScaleChange,
-} from "../axe/zoom"; // axe:zoom
-import { FallbackHost, ViewerHost, usesFileViewer, viewerForPath } from "./viewers/ViewerHost"; // axe:viewers
-import { ZoomableImage } from "./viewers/ImageZoom"; // axe:viewers
-import { OpenWithDefaultApp, ViewerError } from "./viewers/common"; // axe:viewers
+} from "../axe/zoom"; // zoom
+import { FallbackHost, ViewerHost, usesFileViewer, viewerForPath } from "./viewers/ViewerHost"; // viewers
+import { ZoomableImage } from "./viewers/ImageZoom"; // viewers
+import { OpenWithDefaultApp, ViewerError } from "./viewers/common"; // viewers
 
 if (!(globalThis as typeof globalThis & { MonacoEnvironment?: unknown }).MonacoEnvironment) {
   (
@@ -56,7 +56,7 @@ loader.config({ monaco: monacoNs });
 type Props = {
   tabs: EditorTab[];
   activeIndex: number;
-  // axe:v2-l6 (tranche 2) — fichiers modifies hors ligne, en attente de synchro.
+  // v2-l6 (tranche 2) — fichiers modifies hors ligne, en attente de synchro.
   pendingPaths?: ReadonlySet<string>;
   onActivate: (index: number) => void;
   onClose: (index: number) => void;
@@ -108,7 +108,7 @@ export function EditorPane({
     useRef<Monaco.editor.IEditorDecorationsCollection | null>(null);
   const onSaveRef = useRef(onSave);
   const [editorReadySeq, setEditorReadySeq] = useState(0);
-  // axe:zoom — text size picked in Settings > Apparence (only chars grow);
+  // zoom — text size picked in Settings > Apparence (only chars grow);
   // the wrapper re-applies Monaco's `options` prop on change.
   const [textScale, setTextScale] = useState<number>(() => loadTextScale());
   useEffect(() => onTextScaleChange(setTextScale), []);
@@ -138,10 +138,10 @@ export function EditorPane({
     : false;
   const activePreview = activeTab
     ? markdownPreview[activeTab.relativePath] ??
-      vueMemorisee(activeTab.doc.absolutePath) ?? // axe:html
+      vueMemorisee(activeTab.doc.absolutePath) ?? // html
       isPlanMarkdownPath(activeTab.relativePath)
     : false;
-  // axe:viewers — route the tab by extension. File viewers (PDF, workbooks,
+  // viewers — route the tab by extension. File viewers (PDF, workbooks,
   // undecodable CSV) replace Monaco; overlay viewers (CSV table, HTML
   // preview) are toggled over the live buffer, Markdown-style.
   const [viewerPreview, setViewerPreview] = useState<Record<string, boolean>>({});
@@ -152,7 +152,7 @@ export function EditorPane({
     activeTab &&
       overlaySpec &&
       (viewerPreview[activeTab.relativePath] ??
-        vueMemorisee(activeTab.doc.absolutePath) ?? // axe:html
+        vueMemorisee(activeTab.doc.absolutePath) ?? // html
         overlaySpec.previewByDefault),
   );
   const toggleViewerPreview = useCallback(() => {
@@ -161,11 +161,11 @@ export function EditorPane({
     const absolu = activeTab.doc.absolutePath;
     setViewerPreview((prev) => {
       const rendu = !(prev[path] ?? vueMemorisee(absolu) ?? overlaySpec.previewByDefault);
-      memoriserVue(absolu, rendu); // axe:html
+      memoriserVue(absolu, rendu); // html
       return { ...prev, [path]: rendu };
     });
   }, [activeTab, overlaySpec]);
-  // axe:viewers end
+  // viewers end
   // External files are tabs whose path lives outside of the active
   // workspace (typically opened from the terminal). We still render them
   // in Monaco but force the editor into read-only mode and skip every
@@ -174,7 +174,7 @@ export function EditorPane({
   const readOnlyEditor = isExternalTab || (activeTab ? !activeTab.doc.editable : false);
   const showTextEditor = Boolean(
     activeTab &&
-      !activeFileViewer && // axe:viewers
+      !activeFileViewer && // viewers
       (activeTab.doc.editable || isExternalTab) &&
       activeTab.doc.content !== null &&
       !isPreviewableImagePath(activeTab.relativePath),
@@ -186,7 +186,7 @@ export function EditorPane({
     const absolu = activeTab.doc.absolutePath;
     setMarkdownPreview((prev) => {
       const rendu = !(prev[path] ?? vueMemorisee(absolu) ?? isPlanMarkdownPath(path));
-      memoriserVue(absolu, rendu); // axe:html
+      memoriserVue(absolu, rendu); // html
       return { ...prev, [path]: rendu };
     });
   }, [activeTab]);
@@ -198,13 +198,13 @@ export function EditorPane({
     [onOpenFile],
   );
 
-  const themeUnsubRef = useRef<(() => void) | null>(null); // axe:theme
-  useEffect(() => () => themeUnsubRef.current?.(), []); // axe:theme
+  const themeUnsubRef = useRef<(() => void) | null>(null); // theme
+  useEffect(() => () => themeUnsubRef.current?.(), []); // theme
 
   const handleMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     setEditorReadySeq((value) => value + 1);
-    // axe:theme — editor colours derived from the Axe background, re-applied on change.
+    // theme — editor colours derived from the Axe background, re-applied on change.
     monaco.editor.defineTheme(AXE_MONACO_THEME, monacoThemeData());
     monaco.editor.setTheme(AXE_MONACO_THEME);
     themeUnsubRef.current?.();
@@ -258,7 +258,7 @@ export function EditorPane({
     revealTarget?.relativePath,
   ]);
 
-  // axe:viewers — a search hit in a file shown through an overlay viewer
+  // viewers — a search hit in a file shown through an overlay viewer
   // switches back to the code so the match is visible.
   useEffect(() => {
     if (!revealTarget || activeTab?.relativePath !== revealTarget.relativePath) return;
@@ -368,7 +368,7 @@ export function EditorPane({
               if (event.button === 1) { event.preventDefault(); event.stopPropagation(); onClose(index); }
             }}
             title={tab.relativePath}
-            // axe:e17b — deplacer l'onglet vers une autre colonne : glisser par
+            // e17b — deplacer l'onglet vers une autre colonne : glisser par
             // evenements pointer (le DnD HTML5 est avale par WebView2/Tauri) + clic droit.
             data-onglet-chemin={tab.relativePath}
             onPointerDown={(event) => {
@@ -480,7 +480,7 @@ export function EditorPane({
           </button>
         )}
         {overlaySpec && showTextEditor && (
-          // axe:viewers — CSV "Tableau / Texte brut", HTML "Aperçu / Code".
+          // viewers — CSV "Tableau / Texte brut", HTML "Aperçu / Code".
           <button
             type="button"
             className="tab-action editor-preview-toggle"
@@ -531,7 +531,7 @@ export function EditorPane({
               </span>
             </div>
           ) : isPreviewableImagePath(activeTab.relativePath) ? (
-            // axe:viewers — zoomable image (fit / 1:1 / Ctrl+wheel, drag to pan).
+            // viewers — zoomable image (fit / 1:1 / Ctrl+wheel, drag to pan).
             <div
               className="xv-layer"
               onContextMenu={(event) => {
@@ -571,7 +571,7 @@ export function EditorPane({
               )}
             </div>
           ) : activeFileViewer && viewerSpec ? (
-            // axe:viewers
+            // viewers
             <div className="xv-layer">
               <ViewerHost
                 key={activeTab.relativePath}
@@ -625,7 +625,7 @@ export function EditorPane({
                 </div>
               )}
               {activeOverlay && viewerSpec && (
-                // axe:viewers
+                // viewers
                 <div className="xv-layer">
                   <ViewerHost
                     key={activeTab.relativePath}
@@ -638,7 +638,7 @@ export function EditorPane({
               )}
             </div>
           ) : !activeTab.doc.editable || activeTab.doc.content === null ? (
-            // axe:viewers — binary or too large for Monaco: hex dump or
+            // viewers — binary or too large for Monaco: hex dump or
             // paged text, read by ranges (never the whole file).
             <div className="xv-layer">
               <FallbackHost key={activeTab.relativePath} doc={activeTab.doc} />
@@ -656,7 +656,7 @@ function formatBytes(bytes: number): string {
 }
 
 function isPreviewableImagePath(relativePath: string): boolean {
-  // axe:viewers — SVG goes through its own viewer (preview + editable code).
+  // viewers — SVG goes through its own viewer (preview + editable code).
   return /\.(png|jpe?g|gif|webp|bmp|avif|ico|cur|heic|heif)$/i.test(relativePath);
 }
 

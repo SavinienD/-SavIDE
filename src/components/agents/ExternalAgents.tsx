@@ -56,7 +56,7 @@ function resumeText(agent: ServiceAgent): string {
   return text.length > 160 ? `${text.slice(0, 160)}…` : text;
 }
 
-/** axe:agents — external agents (OpenCode/DeepSeek CLIs) launched by the
+/** agents — external agents (OpenCode/DeepSeek CLIs) launched by the
  *  service in <workspace>/.axecode/agents. In local mode the panel stays inert:
  *  those agents only run on the service. */
 export function ExternalAgents({ workspacePath }: Props) {

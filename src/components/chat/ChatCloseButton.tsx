@@ -1,4 +1,4 @@
-// axe:e17b — le ✕ du chat.
+// e17b — le ✕ du chat.
 //
 // Le bouton X n'est affiché que sur un chat détaché et sert à archiver ou
 // ré-ancrer la conversation. Dans la colonne normale il n'existe pas : l'ancien

@@ -1,4 +1,4 @@
-// axe:viewers — maps a file path to the viewer that renders it.
+// viewers — maps a file path to the viewer that renders it.
 //
 // A viewer can work in two ways:
 // - overlay: the file is text, Monaco stays the source of truth and the

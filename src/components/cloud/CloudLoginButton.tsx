@@ -1,5 +1,5 @@
 import { EDITION_LOCALE } from "../../lib/edition";
-// axe:connexion-google - bouton « Se connecter (Google Axe) » : relance le flux cloud_login existant
+// connexion-google - bouton « Se connecter (Google Axe) » : relance le flux cloud_login existant
 // (navigateur systeme, compte @exemple.invalid). Une fois connecte, affiche l'e-mail.
 import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
@@ -28,7 +28,7 @@ export function CloudLoginButton({
 }: {
   className?: string;
   style?: React.CSSProperties;
-  /** axe:barre-titre — rendu de la barre de titre (sur une ligne, icônes). */
+  /** barre-titre — rendu de la barre de titre (sur une ligne, icônes). */
   barre?: boolean;
 }) {
   if (EDITION_LOCALE) return null;
@@ -48,7 +48,7 @@ function CloudLoginButtonCloud({
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   if (etat?.connected && barre) {
-    // axe:barre-titre — e-mail tronqué (« … », complet au survol) et petit
+    // barre-titre — e-mail tronqué (« … », complet au survol) et petit
     // bouton « Se déconnecter » ; en barre étroite, l'icône seule.
     const role = etat.role || "compte";
     return (
@@ -73,8 +73,8 @@ function CloudLoginButtonCloud({
     return (
       <span className={className} style={style} title={`Connecté à Axe Cloud (${etat.role || "compte"})`}>
         {etat.email}
-        {/* axe:deconnexion - changer de compte */}
-        <button type="button" style={{ marginLeft: 6, fontSize: 11, cursor: "pointer", minHeight: 22, padding: "2px 8px" /* axe:accueil-compte - cible de 20 px au moins */ }} title="Se déconnecter (changer de compte)"
+        {/* deconnexion - changer de compte */}
+        <button type="button" style={{ marginLeft: 6, fontSize: 11, cursor: "pointer", minHeight: 22, padding: "2px 8px" /* accueil-compte - cible de 20 px au moins */ }} title="Se déconnecter (changer de compte)"
           onClick={() => deconnecter()}>
           Se déconnecter
         </button>

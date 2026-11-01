@@ -1,4 +1,4 @@
-// axe:viewers — spreadsheet viewer (xlsx/xls/ods/csv/tsv) built on SheetJS.
+// viewers — spreadsheet viewer (xlsx/xls/ods/csv/tsv) built on SheetJS.
 // Binary workbooks are streamed from Rust by chunks; CSV/TSV come from the
 // live Monaco buffer so the "Tableau" view always reflects unsaved edits.
 

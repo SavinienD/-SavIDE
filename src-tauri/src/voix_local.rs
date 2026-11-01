@@ -1,4 +1,4 @@
-// axe:micro-local — dictée 100 % locale : whisper.cpp embarqué (whisper-rs),
+// micro-local — dictée 100 % locale : whisper.cpp embarqué (whisper-rs),
 // modèle multilingue « base » (≈ 148 Mo) ou « small » (≈ 488 Mo) téléchargé au
 // premier usage dans le dossier de données de l'appli, empreinte SHA-256
 // vérifiée avant usage. Aucun appel réseau pendant la transcription.
@@ -165,7 +165,7 @@ pub fn transcrire_pcm(chemin: &std::path::Path, echantillons: &[f32], amorce: &s
     p.set_print_realtime(false);
     p.set_print_timestamps(false);
     p.set_suppress_blank(true);
-    // axe:0.1.75 — morceau de la dictée en direct : fenêtre réduite (≈ 3× plus rapide).
+    // 0.1.75 — morceau de la dictée en direct : fenêtre réduite (≈ 3× plus rapide).
     if let Some(ctx) = audio_ctx {
         p.set_audio_ctx(ctx as _);
     }

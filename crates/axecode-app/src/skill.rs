@@ -109,14 +109,14 @@ impl SkillTool {
         let mut roots = vec![
             self.workspace_root.join(".agents/skills"),
             self.workspace_root.join(".axecode/skills"),
-            axecode_harness::legacy_dirs::project_skills_dir(&self.workspace_root), // axe:dossiers-anciens
-            legacy_skills_dir(&self.workspace_root, false), // axe:migration - read only
+            axecode_harness::legacy_dirs::project_skills_dir(&self.workspace_root), // dossiers-anciens
+            legacy_skills_dir(&self.workspace_root, false), // migration - read only
         ];
         if let Some(base_dirs) = BaseDirs::new() {
             let home = base_dirs.home_dir();
             roots.push(home.join(".agents/skills"));
             roots.push(home.join(".axecode/skills"));
-            roots.push(legacy_skills_dir(home, true)); // axe:migration - read only
+            roots.push(legacy_skills_dir(home, true)); // migration - read only
         }
 
         let mut seen = HashSet::new();
@@ -271,13 +271,13 @@ pub fn list_installed_skills(
             workspace_root.join(".agents/skills"),
         ),
         (SkillSource::Workspace, workspace_root.join(".axecode/skills")),
-        (SkillSource::Workspace, axecode_harness::legacy_dirs::project_skills_dir(workspace_root)), // axe:dossiers-anciens
-        (SkillSource::Workspace, legacy_skills_dir(workspace_root, false)), // axe:migration - read only
+        (SkillSource::Workspace, axecode_harness::legacy_dirs::project_skills_dir(workspace_root)), // dossiers-anciens
+        (SkillSource::Workspace, legacy_skills_dir(workspace_root, false)), // migration - read only
     ];
     if let Some(home) = home_dir.as_ref() {
         roots.push((SkillSource::Global, home.join(".agents/skills")));
         roots.push((SkillSource::Global, home.join(".axecode/skills")));
-        roots.push((SkillSource::Global, legacy_skills_dir(home, true))); // axe:migration - read only
+        roots.push((SkillSource::Global, legacy_skills_dir(home, true))); // migration - read only
     }
 
     let mut seen = HashSet::new();
@@ -296,7 +296,7 @@ pub fn list_installed_skills(
     skills
 }
 
-/// axe:v2-l7 — lit les compétences d'un dossier donné (sans déduplication ni
+/// v2-l7 — lit les compétences d'un dossier donné (sans déduplication ni
 /// tri) : sert aussi aux racines hors espace de travail, comme l'espace partagé.
 pub fn scan_installed_skills(
     root: &Path,
@@ -353,7 +353,7 @@ pub fn scan_installed_skills(
     skills
 }
 
-/// axe:migration - skills of before the rename (`<root>/.atelier/skills`, rebrand:keep):
+/// migration - skills of before the rename (`<root>/.atelier/skills`, rebrand:keep):
 /// copied ONCE into the app data (never into the project), then only that copy
 /// is listed, after the new folders (same name: the new one wins), never
 /// written: not in `skill_roots`.
@@ -371,13 +371,13 @@ fn legacy_skills_dir(root: &Path, global: bool) -> PathBuf {
     dest
 }
 
-/// axe:v2-l2.4 — allowed skill roots (workspace first, then global), mirroring
+/// v2-l2.4 — allowed skill roots (workspace first, then global), mirroring
 /// what `list_installed_skills` scans.
 pub fn skill_roots(workspace_root: &Path) -> Vec<PathBuf> {
     let mut roots = vec![
         workspace_root.join(".agents/skills"),
         workspace_root.join(".axecode/skills"),
-        axecode_harness::legacy_dirs::project_skills_dir(workspace_root), // axe:dossiers-anciens
+        axecode_harness::legacy_dirs::project_skills_dir(workspace_root), // dossiers-anciens
     ];
     if let Some(base) = BaseDirs::new() {
         let home = base.home_dir();
@@ -415,7 +415,7 @@ fn write_skill_atomic(path: &Path, content: &str) -> Result<()> {
     Ok(())
 }
 
-/// axe:v2-l2.4 — write (atomically) the `SKILL.md` of an existing skill.
+/// v2-l2.4 — write (atomically) the `SKILL.md` of an existing skill.
 pub fn write_installed_skill(
     workspace_root: impl AsRef<Path>,
     skill_md: &Path,
@@ -431,7 +431,7 @@ pub fn write_installed_skill(
     Ok(skill_md)
 }
 
-/// axe:v2-l2.4 — create `<workspace>/.agents/skills/<name>/SKILL.md`.
+/// v2-l2.4 — create `<workspace>/.agents/skills/<name>/SKILL.md`.
 /// `name` must be a single safe path component (validated by the caller too).
 pub fn create_installed_skill_named(
     workspace_root: impl AsRef<Path>,
@@ -454,7 +454,7 @@ pub fn create_installed_skill_named(
     Ok(skill_path)
 }
 
-/// axe:v2-l2.4 — delete a skill folder, only inside the allowed roots.
+/// v2-l2.4 — delete a skill folder, only inside the allowed roots.
 pub fn delete_installed_skill(
     workspace_root: impl AsRef<Path>,
     skill_md: &Path,

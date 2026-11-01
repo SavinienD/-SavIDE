@@ -1,4 +1,4 @@
-// axe:freechat — start a free conversation (no project folder) from the web
+// freechat — start a free conversation (no project folder) from the web
 // interface. The service gives the session a private scratch folder.
 import { useMemo, useState } from "react";
 import { service, type ModelRef, type SessionMeta } from "./api";

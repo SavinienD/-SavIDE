@@ -12,7 +12,7 @@ use axecode_core::{JournalEntryKind, Part};
 
 use super::runtime::{lock, Shared};
 
-/// axe:compact169 — réponses de `compact.run()` (en français, sans ambiguïté).
+/// compact169 — réponses de `compact.run()` (en français, sans ambiguïté).
 pub const COMPACT_PROGRAMME: &str = "Compaction programmée : elle sera faite avant la prochaine requête. N'appelle plus compact.run() dans ce tour : termine ton tour maintenant (réponse courte, sans autre outil).";
 pub const COMPACT_IGNORE: &str = "compact.run() a déjà été appelé dans ce tour : appel ignoré. La compaction est faite ou programmée ; termine ton tour maintenant sans rappeler compact.run().";
 use crate::{
@@ -133,7 +133,7 @@ fn tool_json(result: ToolRunResult) -> Result<Value, String> {
 }
 
 /// MCP registry of the session, connected lazily on first use.
-/// axe:mcp-supprimer — rebuilt when the stored MCP config changed (server
+/// mcp-supprimer — rebuilt when the stored MCP config changed (server
 /// deleted or disabled in Réglages > MCP): a deleted server is never relaunched.
 async fn mcp_registry(shared: &Arc<Shared>) -> Result<Arc<crate::McpToolRegistry>, String> {
     let settings = AppStore::open_default()
@@ -201,7 +201,7 @@ pub(crate) async fn dispatch(shared: &Arc<Shared>, method: &str, params: Value) 
                 .and_then(Value::as_str)
                 .map(str::to_string)
                 .filter(|d| !d.trim().is_empty());
-            // axe:compact169 — un seul compact.run() par tour : sinon une IA qui relit
+            // compact169 — un seul compact.run() par tour : sinon une IA qui relit
             // la consigne boucle (capture du 26/10 : 9 appels, tour sans fin).
             let deja = {
                 let mut n = lock(&shared.compact_calls);

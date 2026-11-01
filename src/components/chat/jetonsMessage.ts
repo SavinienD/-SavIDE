@@ -1,4 +1,4 @@
-// axe:couleurs — découpe un texte de message en segments colorés : commande slash
+// couleurs — découpe un texte de message en segments colorés : commande slash
 // en tête (/goal, /heartbeat… : couleur d'accent), skills (/nom-du-skill : violet),
 // fichiers mentionnés (@chemin). Module pur (sans React) : partagé par le
 // compositeur (calque sous la zone de saisie) et la bulle du message envoyé.

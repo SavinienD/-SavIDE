@@ -1,4 +1,4 @@
-// axe:v2-e12 — un terminal LOCAL : le shell du poste sur lequel tourne l'appli
+// v2-e12 — un terminal LOCAL : le shell du poste sur lequel tourne l'appli
 // (a cote des terminaux du service, qui vivent sur la machine distante).
 // Le shell reste monte tant que l'onglet existe : changer d'onglet ne le tue pas.
 import { useEffect, useRef, useState } from "react";

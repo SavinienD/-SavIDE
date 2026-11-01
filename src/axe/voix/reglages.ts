@@ -1,5 +1,5 @@
 /**
- * axe:voix — réglages de la dictée vocale, propres au poste (localStorage).
+ * voix — réglages de la dictée vocale, propres au poste (localStorage).
  * Lus à chaque dictée : un changement dans Réglages > Dictée vocale s'applique
  * tout de suite, sans recharger.
  */
@@ -13,17 +13,17 @@ export type ReglagesVoix = {
   repliOpenai: boolean;
   /** Dictée rapide : fenêtre Whisper réduite (≈ 3× plus rapide sur une phrase courte, moins précise). */
   rapide: boolean;
-  /** axe:micro-local — modèle Whisper du poste : « base » (petit, ≈ 148 Mo), « small » (moyen, ≈ 488 Mo)
-   *  ou « auto » (axe:0.1.75 : moyen s'il suit à moins de 2× le temps réel, sinon petit). */
+  /** micro-local — modèle Whisper du poste : « base » (petit, ≈ 148 Mo), « small » (moyen, ≈ 488 Mo)
+   *  ou « auto » (0.1.75 : moyen s'il suit à moins de 2× le temps réel, sinon petit). */
   modeleLocal: "auto" | "base" | "small";
-  /** axe:0.1.75 — transcription en direct pendant qu'on parle (texte provisoire grisé). */
+  /** 0.1.75 — transcription en direct pendant qu'on parle (texte provisoire grisé). */
   direct: boolean;
 };
 
 export const REGLAGES_VOIX_DEFAUT: ReglagesVoix = {
   nettoyer: true,
   vocabulaire: "",
-  // axe:0.1.75 — moyens gratuits seulement par défaut (OpenAI est payant).
+  // 0.1.75 — moyens gratuits seulement par défaut (OpenAI est payant).
   repliOpenai: false,
   rapide: false,
   modeleLocal: "auto",

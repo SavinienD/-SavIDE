@@ -1,4 +1,4 @@
-// axe:explorateur — fonctions pures de l'explorateur de fichiers (chemins, tri, clavier).
+// explorateur — fonctions pures de l'explorateur de fichiers (chemins, tri, clavier).
 // Testées par tests/explorateur.test.cjs ; FileTree.tsx les utilise.
 
 export type CleTri = "nom" | "date" | "taille";

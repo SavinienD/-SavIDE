@@ -1,4 +1,4 @@
-//! axe:cua — cua-driver comme OUTIL intégré (plus besoin de passer par MCP).
+//! cua — cua-driver comme OUTIL intégré (plus besoin de passer par MCP).
 //! Lance `cua-driver <args...>` (binaire dans le PATH ou CUA_DRIVER_BIN), sortie texte rendue au modèle.
 use std::time::Duration;
 use serde_json::{json, Value};
@@ -52,7 +52,7 @@ pub fn binaire() -> String {
     "cua-driver".into()
 }
 
-/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+/// 0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
 #[allow(dead_code)]
 fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
     #[allow(unused_mut)]

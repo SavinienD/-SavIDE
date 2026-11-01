@@ -5,7 +5,7 @@ const path = require("node:path");
 const test = require("node:test");
 const ts = require("typescript");
 
-// axe:commandes — chaque commande slash proposée dans l'autocomplétion doit être
+// commandes — chaque commande slash proposée dans l'autocomplétion doit être
 // servie : côté IDE (runClientSlashCommand) ou par le service (session_commands.rs,
 // run_slash). Plus les indicateurs /heartbeat et /goal et la bulle « réveil : … ».
 Module._extensions[".ts"] = (module, filename) => {
@@ -50,7 +50,7 @@ test("toutes les commandes slash proposées sont servies (IDE ou service)", () =
 });
 
 test("/goal et /heartbeat acceptent les formes annoncées (service)", () => {
-  // axe:cmdnat — phrases libres analysées par commandes_naturelles.rs ; repli : confié à l'agent.
+  // cmdnat — phrases libres analysées par commandes_naturelles.rs ; repli : confié à l'agent.
   const rust = lire("crates/axecode-app/src/commandes_naturelles.rs");
   for (const forme of ['"pause"', '"reprends"', '"fini"', '"efface"', '"stop"', '"arrete"', '"toutes"', '"every"', '"chaque"']) {
     assert.ok(rust.includes(forme), `forme ${forme} absente de l'analyse`);
@@ -92,7 +92,7 @@ test("réveil : lecture du message injecté et texte de la bulle avec l'heure", 
   assert.deepEqual(ind.lireReveil(`<heartbeat at_ms="${at}">\ncoucou\n</heartbeat>`), { message: "coucou", atMs: at });
   assert.deepEqual(ind.lireReveil("<heartbeat>\ncoucou\n</heartbeat>"), { message: "coucou", atMs: null });
   assert.equal(ind.lireReveil("bonjour"), null);
-  // axe:goal165 — réveils fusionnés (missed) et relance automatique de l'objectif.
+  // goal165 — réveils fusionnés (missed) et relance automatique de l'objectif.
   assert.deepEqual(ind.lireReveil(`<heartbeat at_ms="${at}" missed="2">\ncoucou\n</heartbeat>`), { message: "coucou", atMs: at });
   assert.deepEqual(ind.lirePoursuite(`<goal_continue at_ms="${at}" n="2">\nPoursuis l'objectif : lot 3\n</goal_continue>`), { message: "Poursuis l'objectif : lot 3", atMs: at });
   assert.equal(ind.lirePoursuite("bonjour"), null);
@@ -127,7 +127,7 @@ test("le message du heartbeat est affiché : en direct et depuis l'historique", 
   assert.equal(hist.blocks.filter((b) => b.kind === "user-text").length, 0, "pas affiché comme un message de l'utilisateur");
 });
 
-// axe:guet — indicateur des guets et bulle de réveil.
+// guet — indicateur des guets et bulle de réveil.
 test("guet : état normalisé, détail, réveil", () => {
   const e = ind.normaliserEtat({ guets: [
     { id: "g1a2b3c", genre: "condition", cmd: "gh run view 1 --exit-status", cree_ms: Date.now() - 120000, prochain_ms: 1792000000000, essais: 2, statut: "actif" },

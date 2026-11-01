@@ -1,4 +1,4 @@
-// axe:viewers — entry point used by EditorPane. Each viewer lives in its own
+// viewers — entry point used by EditorPane. Each viewer lives in its own
 // lazily imported chunk, so SheetJS / pdf.js / mammoth are only downloaded
 // when a file of that family is opened.
 

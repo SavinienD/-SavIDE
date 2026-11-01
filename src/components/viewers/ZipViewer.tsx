@@ -1,4 +1,4 @@
-// axe:viewers — zip archive browser (also used for jar/apk/nupkg…): folder
+// viewers — zip archive browser (also used for jar/apk/nupkg…): folder
 // tree of the entries, sizes, single-file extraction through a save dialog.
 // Listing and extraction run in Rust; nothing is decompressed in the webview.
 

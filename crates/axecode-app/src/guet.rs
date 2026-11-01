@@ -1,4 +1,4 @@
-//! axe:guet — guets : réveiller la conversation quand une tâche se termine
+//! guet — guets : réveiller la conversation quand une tâche se termine
 //! (commande finie, condition devenue vraie, fichier apparu), au lieu d'un
 //! heartbeat ou d'un sous-agent qui boucle.
 //!
@@ -227,7 +227,7 @@ pub fn vue(g: &Guet) -> Value {
 }
 
 
-/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+/// 0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
 #[allow(dead_code)]
 fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
     #[allow(unused_mut)]

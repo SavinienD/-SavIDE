@@ -1,4 +1,4 @@
-// axe:file-attente — file d'attente des messages, partagée par tous les volets.
+// file-attente — file d'attente des messages, partagée par tous les volets.
 //
 // Avant (0.1.54) la file vivait dans un useState de CHAQUE ChatPane : changer
 // de colonne, cliquer dans une autre colonne (le focus change de colonne, donc
@@ -120,7 +120,7 @@ export class MagasinFiles<T extends ElementFile> {
   private etat: EtatFiles<T>;
   private readonly ecouteurs = new Set<() => void>();
   private readonly essais = new Map<string, number>();
-  // axe:file-hors-vue — volets montés par conversation : une conversation sans
+  // file-hors-vue — volets montés par conversation : une conversation sans
   // volet est vidée par le gestionnaire global (Workspace), plus par un volet.
   private readonly vues = new Map<string, number>();
 
@@ -267,7 +267,7 @@ export class MagasinFiles<T extends ElementFile> {
   }
 
   /**
-   * axe:file-hors-vue — conversations qu'aucun volet ne montre et dont le
+   * file-hors-vue — conversations qu'aucun volet ne montre et dont le
    * premier message peut partir maintenant (tour fini, rien en vol, libre,
    * pas bloqué). Ordre conservé : un seul élément par conversation à la fois.
    */
@@ -440,7 +440,7 @@ let partage: MagasinFiles<ElementFile> | null = null;
 
 /** Le magasin unique de l'appli (créé au premier appel). */
 export function filesPartagees<T extends ElementFile>(): MagasinFiles<T> {
-  // axe:file-demon — copie d'affichage seulement : la vraie file est dans le
+  // file-demon — copie d'affichage seulement : la vraie file est dans le
   // service ; l'ancienne file du navigateur est migrée (fileDemon.ts).
   partage ??= new MagasinFiles<ElementFile>(null);
   return partage as unknown as MagasinFiles<T>;

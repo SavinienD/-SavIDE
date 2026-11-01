@@ -4,25 +4,25 @@ import { Workspace } from "./components/Workspace";
 import { UpdateBadge } from "./components/UpdateBadge";
 import { recordRecent, deriveName } from "./lib/recents";
 import { api } from "./lib/ipc";
-import { freechatApi } from "./components/freechat/freechatApi"; // axe:freechat
-import { CloudLogin } from "./components/cloud/CloudLogin"; // axe:cloud
-import { CloudLoginButton } from "./components/cloud/CloudLoginButton"; // axe:connexion-google
-import { isWindowsPlatform } from "./components/WindowControls"; // axe:accueil-compte
-import { ConnectedScreen } from "./components/cloud/ConnectedScreen"; // axe:v2-l1
-import { CLOUD_CONNECTION, cloudApi, saveMode, type CloudState } from "./components/cloud/cloudApi"; // axe:cloud
-import { LOCAL_CONNECTION, connectionsApi } from "./components/settings/connectionsApi"; // axe:v2-l2.3
-import "./components/cloud/cloud.css"; // axe:cloud
-import "./components/cloud/connected-screen.css"; // axe:v2-l1
+import { freechatApi } from "./components/freechat/freechatApi"; // freechat
+import { CloudLogin } from "./components/cloud/CloudLogin"; // cloud
+import { CloudLoginButton } from "./components/cloud/CloudLoginButton"; // connexion-google
+import { isWindowsPlatform } from "./components/WindowControls"; // accueil-compte
+import { ConnectedScreen } from "./components/cloud/ConnectedScreen"; // v2-l1
+import { CLOUD_CONNECTION, cloudApi, saveMode, type CloudState } from "./components/cloud/cloudApi"; // cloud
+import { LOCAL_CONNECTION, connectionsApi } from "./components/settings/connectionsApi"; // v2-l2.3
+import "./components/cloud/cloud.css"; // cloud
+import "./components/cloud/connected-screen.css"; // v2-l1
 import { EDITION_LOCALE } from "./lib/edition";
 import type { WorkspaceBootstrap } from "./types";
 
 type AppState =
   | { kind: "boot" }
-  // axe:cloud — cloud mode (default): sign-in screen, then the cloud shell.
+  // cloud — cloud mode (default): sign-in screen, then the cloud shell.
   | { kind: "cloud_login"; notice: string | null }
   | { kind: "cloud"; cloud: CloudState }
   | { kind: "welcome" }
-  // axe:freechat — `chat` is the free conversation view (no project folder).
+  // freechat — `chat` is the free conversation view (no project folder).
   | { kind: "workspace"; bootstrap: WorkspaceBootstrap; layout: "ide" | "chat" };
 
 
@@ -32,12 +32,12 @@ export default function App() {
 
   const openWorkspace = useCallback(async (path: string, conversationId?: string) => {
     setBootError(null);
-    // axe:v2-e12d — un dossier du poste se travaille dans l'espace local :
+    // v2-e12d — un dossier du poste se travaille dans l'espace local :
     // une connexion cloud restee active ne doit pas s'inviter dans l'interface.
     await connectionsApi.setActive(LOCAL_CONNECTION).catch(() => undefined);
     try {
       let bootstrap = await api.openWorkspace(path);
-      // axe:freechat — land on a given conversation (free conversation
+      // freechat — land on a given conversation (free conversation
       // opened in a folder, project conversation picked in the sidebar).
       if (conversationId && bootstrap.activeConversation.id !== conversationId) {
         try {
@@ -54,7 +54,7 @@ export default function App() {
     }
   }, []);
 
-  // axe:freechat — free conversation view.
+  // freechat — free conversation view.
   const openFreeChat = useCallback(
     async (options: { conversationId?: string; fresh?: boolean }) => {
       setBootError(null);
@@ -76,7 +76,7 @@ export default function App() {
     let cancelled = false;
 
     (async () => {
-      // 2. Accueil. axe:v2-e12d — l'application s'ouvre toujours sur
+      // 2. Accueil. v2-e12d — l'application s'ouvre toujours sur
       //    l'interface classique du poste (dossiers recents, conversations
       //    libres, ouvrir un dossier). L'espace Axe Cloud n'est plus l'ecran
       //    d'arrivee : il reste a un clic (« Revenir a Axe Cloud »), et une
@@ -97,14 +97,14 @@ export default function App() {
     setState({ kind: "welcome" });
   }, []);
 
-  // axe:cloud — session changes coming from Rust (401 = expired/revoked).
+  // cloud — session changes coming from Rust (401 = expired/revoked).
   useEffect(() => {
     let off: (() => void) | undefined;
     let disposed = false;
     void cloudApi
       .onState((cloud) => {
         setState((current) => {
-          // axe:v2-l2.3 — session cloud perdue pendant qu'on travaillait sur l'espace cloud.
+          // v2-l2.3 — session cloud perdue pendant qu'on travaillait sur l'espace cloud.
           if (
             current.kind === "workspace" &&
             current.bootstrap.workspace.path.startsWith("axe-cloud://") &&
@@ -142,7 +142,7 @@ export default function App() {
     setState({ kind: "welcome" });
   }, []);
 
-  // axe:v2-e12d — depuis l'accueil classique, « Revenir a Axe Cloud » ouvre
+  // v2-e12d — depuis l'accueil classique, « Revenir a Axe Cloud » ouvre
   // directement l'IDE sur l'espace quand la session est deja ouverte (comme au
   // demarrage en L2.3) ; sinon on passe par l'ecran de connexion.
   const enterCloudMode = useCallback(async () => {
@@ -162,7 +162,7 @@ export default function App() {
       const bootstrap = await api.openCloudWorkspace(CLOUD_CONNECTION);
       setState({ kind: "workspace", bootstrap, layout: "ide" });
     } catch (err) {
-      setBootError("Retour à Axe Cloud : " + String(err)); // axe:retour-cloud
+      setBootError("Retour à Axe Cloud : " + String(err)); // retour-cloud
       try {
         const cloud = await cloudApi.state();
         setState(cloud.connected ? { kind: "cloud", cloud } : { kind: "cloud_login", notice: null });
@@ -172,7 +172,7 @@ export default function App() {
     }
   }, []);
 
-  // axe:accueil-3-choix - un seul espace : ouvre l'IDE sur l'espace cloud (pas d'ecran separe).
+  // accueil-3-choix - un seul espace : ouvre l'IDE sur l'espace cloud (pas d'ecran separe).
   const openCloudFolder = async (folder: string) => {
     setBootError(null);
     try {
@@ -221,9 +221,9 @@ export default function App() {
           error={bootError}
           deriveName={deriveName}
         />
-        {/* axe:cloud — way back to the cloud mode from the local home screen. */}
-        {/* axe:un-seul-espace - plus de « Revenir a Axe Cloud » : un seul espace, sur la VM. */}
-        {/* axe:accueil-compte - sous Windows, à gauche des boutons Réduire/Agrandir/Fermer (138 px) : il était posé dessus. */}
+        {/* cloud — way back to the cloud mode from the local home screen. */}
+        {/* un-seul-espace - plus de « Revenir a Axe Cloud » : un seul espace, sur la VM. */}
+        {/* accueil-compte - sous Windows, à gauche des boutons Réduire/Agrandir/Fermer (138 px) : il était posé dessus. */}
         {/* Mise à jour disponible : badge discret en haut à droite (rien si MAJ_AUTO est coupé). */}
         <div className="welcome__maj" style={{ position: "fixed", top: EDITION_LOCALE ? 12 : 52, right: isWindowsPlatform() ? 150 : 16, zIndex: 50 }}>
           <UpdateBadge />

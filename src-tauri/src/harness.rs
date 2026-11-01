@@ -144,7 +144,7 @@ pub(super) async fn harness_rollback(input: HarnessIdInput) -> IpcResult<Refinem
     refine::rollback(&store, &input.id).map_err(err)
 }
 
-/// axe:refine-run — stop a running refinement (aborts the local task if this
+/// refine-run — stop a running refinement (aborts the local task if this
 /// process owns it; otherwise the owner sees the journal within a second).
 #[tauri::command]
 pub(super) async fn harness_refine_cancel(input: HarnessIdInput) -> IpcResult<RefinementRecord> {
@@ -300,7 +300,7 @@ pub(super) fn turn_harness_layer(workspace_root: &std::path::Path, conversation_
 }
 
 // ---------------------------------------------------------------------------
-// axe:shared-brain — one brain: the Axe Cloud space's global harness.
+// shared-brain — one brain: the Axe Cloud space's global harness.
 // ---------------------------------------------------------------------------
 
 fn global_paths() -> axecode_harness::HarnessPaths {

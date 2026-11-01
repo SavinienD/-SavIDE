@@ -8,7 +8,7 @@ import {
   lireReglagesVoix,
   type ReglagesVoix,
 } from "./reglages";
-import { dicteeDisponible, MESSAGE_DICTEE_INDISPONIBLE_LOCAL } from "./disponibilite"; // axe:0.1.71
+import { dicteeDisponible, MESSAGE_DICTEE_INDISPONIBLE_LOCAL } from "./disponibilite"; // 0.1.71
 import { lireEtatVoix } from "./useDicteeDisponible";
 import "./voix.css";
 import { listen } from "@tauri-apps/api/event";
@@ -18,7 +18,7 @@ const MODELES_LOCAUX = [
   { nom: "small" as const, libelle: "Moyen (small)", taille: "488 Mo", aide: "Plus précis, environ trois fois plus lent." },
 ];
 
-/** axe:voix — Réglages > Dictée vocale : options et test des moteurs. */
+/** voix — Réglages > Dictée vocale : options et test des moteurs. */
 type Moteur = { url: string; label: string; ok: boolean; error?: string | null };
 type EtatService = { connexion: string; ok: boolean; moteurs?: Moteur[] | null; erreur?: string };
 type ModeleLocal = { nom: string; octets: number; present: boolean };
@@ -30,7 +30,7 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
   const [test, setTest] = useState<"repos" | "en-cours" | "erreur">("repos");
   const [erreurTest, setErreurTest] = useState("");
   const [dispo, setDispo] = useState<boolean | null>(null);
-  const [mesure] = useState(() => lireMesure()); // axe:0.1.75
+  const [mesure] = useState(() => lireMesure()); // 0.1.75
   useEffect(() => {
     let fini = false;
     void lireEtatVoix(workspacePath).then((e) => {
@@ -53,7 +53,7 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
     ecrireReglagesVoix(suivant);
   };
 
-  // axe:micro-local — téléchargement du modèle choisi, avec progression.
+  // micro-local — téléchargement du modèle choisi, avec progression.
   const [telechargement, setTelechargement] = useState<string | null>(null);
   useEffect(() => {
     void tester();
@@ -93,7 +93,7 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
     }
   };
 
-  // axe:0.1.71 — SavIDE (100 % local) : sans moteur Whisper sur le poste, la dictée est masquée.
+  // 0.1.71 — SavIDE (100 % local) : sans moteur Whisper sur le poste, la dictée est masquée.
   if (dispo === false) {
     return (
       <div className="axe-appearance axe-voix-reglages">

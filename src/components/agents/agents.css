@@ -1,4 +1,4 @@
-/* Agents view + session tree (axe:agents) */
+/* Agents view + session tree (agents) */
 .axe-agents { display: flex; flex-direction: column; gap: 8px; height: 100%; min-height: 0; overflow: auto; padding: 10px 12px; font-size: calc(12px * var(--text-scale, 1)); color: var(--text-1); }
 .axe-agents button, .axe-tree button { padding: 3px 8px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-2); color: var(--text-1); cursor: pointer; font-size: calc(11px * var(--text-scale, 1)); }
 .axe-agents button:hover:not(:disabled), .axe-tree button:hover:not(:disabled) { border-color: var(--accent); color: var(--text-0); }
@@ -13,10 +13,10 @@
 .axe-agents__row { display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: var(--r-small); cursor: pointer; }
 .axe-agents__row:hover { background: var(--bg-2); }
 .axe-agents__row[data-active="true"] { background: var(--bg-2); outline: 1px solid var(--accent); }
-.axe-agents__twisty { width: 20px; height: 20px; flex: 0 0 auto; padding: 0 !important; border: 0 !important; background: none !important; color: var(--text-2); } /* axe:cibles — 6 px de large avant (écrasé) */
-/* axe:agents-etroit — une ligne d'agent ne passe jamais à la ligne ni ne déborde : nom, compte et modèle se tronquent (« … »). */
+.axe-agents__twisty { width: 20px; height: 20px; flex: 0 0 auto; padding: 0 !important; border: 0 !important; background: none !important; color: var(--text-2); } /* cibles — 6 px de large avant (écrasé) */
+/* agents-etroit — une ligne d'agent ne passe jamais à la ligne ni ne déborde : nom, compte et modèle se tronquent (« … »). */
 .axe-agents__row > .axe-agents__muted { min-width: 0; flex: 0 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* axe:agents-lisible — vue étroite (barre latérale, 27em = 324 px à 12 px) : le
+/* agents-lisible — vue étroite (barre latérale, 27em = 324 px à 12 px) : le
    nombre de sous-agents et le modèle passent sous le nom, au lieu d'être réduits
    à « 3… » et « c… » à côté d'un nom tronqué. */
 .axe-agents { container: vue-agents / inline-size; }
@@ -55,7 +55,7 @@
 .axe-tree-overlay__panel { width: min(760px, 92vw); max-height: 80vh; overflow: auto; padding: 14px; border: 1px solid var(--line-strong); border-radius: var(--r-card); background: var(--bg-1); }
 .axe-tree-overlay__panel .axe-tree__list { max-height: 64vh; }
 
-/* axe:remote — connection selector + remote conversations + machine groups */
+/* remote — connection selector + remote conversations + machine groups */
 .axe-connsel { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-bottom: 1px solid var(--line-strong); font-size: calc(12px * var(--text-scale, 1)); }
 .axe-connsel select { flex: 1; min-width: 0; background: var(--bg-2); color: var(--text-0); border: 1px solid var(--line-strong); border-radius: var(--r-small); padding: 2px 4px; font: inherit; }
 .axe-connsel__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-2); flex: none; }
@@ -78,7 +78,7 @@
 .axe-agents__error button { margin-left: 6px; }
 .axe-agents__machine { margin: 6px 0 2px; color: var(--text-2); font-size: calc(11px * var(--text-scale, 1)); text-transform: uppercase; letter-spacing: .04em; display: flex; gap: 6px; align-items: center; }
 
-/* axe:agents — agents externes (CLI lancées par le service) */
+/* agents — agents externes (CLI lancées par le service) */
 .axe-agents__section { display: flex; flex-direction: column; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line-strong); }
 .axe-agents__section-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .axe-agents__section-head strong { color: var(--text-0); font-size: calc(13px * var(--text-scale, 1)); }
@@ -104,7 +104,7 @@
 .axe-agents__close { margin-left: auto; }
 .axe-agents__result { display: flex; flex-direction: column; gap: 4px; }
 .axe-agents__journal { margin: 0; max-height: 260px; overflow: auto; padding: 6px 8px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-0, var(--bg-1)); color: var(--text-1); font-family: var(--font-mono); font-size: calc(11px * var(--text-scale, 1)); white-space: pre-wrap; word-break: break-word; }
-/* axe:v2-e12 — archiver / rétablir / supprimer, là où vivent les conversations. */
+/* v2-e12 — archiver / rétablir / supprimer, là où vivent les conversations. */
 .axe-agents__icon-btn {
   display: inline-flex;
   align-items: center;
@@ -164,7 +164,7 @@
   color: var(--text-0);
 }
 
-/* axe:sub-m — journal en lecture, nom complet, tâche, colonne modèle étroite */
+/* sub-m — journal en lecture, nom complet, tâche, colonne modèle étroite */
 .axe-agents__label { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
 .axe-agents__task { color: var(--text-2); font-size: calc(11px * var(--text-scale, 1)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .axe-agents__row .axe-agents__model { flex: 0 1 auto; max-width: 30%; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: calc(10px * var(--text-scale, 1)); }
@@ -172,7 +172,7 @@
 .axe-journal__head { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line-strong); }
 .axe-journal__head strong { color: var(--text-0); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .axe-journal__head button:first-of-type { margin-left: auto; }
-.axe-journal__head button { min-width: 24px; min-height: 24px; } /* axe:bg-c — cibles cliquables >= 20 px */
+.axe-journal__head button { min-width: 24px; min-height: 24px; } /* bg-c — cibles cliquables >= 20 px */
 .axe-journal__head > .axe-agents__muted { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .axe-journal__body { flex: 1 1 0; min-height: 0; overflow: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
 .axe-journal__msg { padding: 8px 10px; border-radius: var(--r-small); background: var(--bg-1); border: 1px solid var(--line-strong); }
@@ -184,7 +184,7 @@
 .axe-journal__tool pre { max-height: 320px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-size: calc(11px * var(--text-scale, 1)); background: var(--bg-1); padding: 6px; border-radius: var(--r-small); }
 .axe-journal__event { font-size: calc(11px * var(--text-scale, 1)); color: var(--text-2); }
 
-/* axe:journal-espace — « Agents externes (CLI) » : cible d'au moins 24 px. */
+/* journal-espace — « Agents externes (CLI) » : cible d'au moins 24 px. */
 .axe-agents__external > summary {
   min-height: 24px;
   display: flex;
@@ -192,7 +192,7 @@
   cursor: pointer;
 }
 
-/* axe:journal-espace — état · modèle · entrées sur une ligne (coupé par « … »). */
+/* journal-espace — état · modèle · entrées sur une ligne (coupé par « … »). */
 .axe-agents__detail-head .axe-agents__muted {
   min-width: 0;
   overflow: hidden;

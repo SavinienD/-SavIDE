@@ -1,4 +1,4 @@
-//! axe:gemini-web — Gemini through the gemini.google.com web app (cookies of a
+//! gemini-web — Gemini through the gemini.google.com web app (cookies of a
 //! dedicated browser profile), with text-emulated tool calls. Gives access to
 //! the models of the user's Google AI subscription that the official APIs do
 //! not expose to it (Gemini 4 Argon with Google AI Pro).

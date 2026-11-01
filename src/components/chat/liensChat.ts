@@ -1,4 +1,4 @@
-// axe:liens — découpe d'un texte de chat en liens cliquables : URL http(s), chemins de
+// liens — découpe d'un texte de chat en liens cliquables : URL http(s), chemins de
 // fichiers (relatifs, absolus POSIX, Windows « C:\… » ou « dossier\fichier.ext »), le reste en texte.
 // Module pur (sans React) : testé par tests/liensChat.test.cjs.
 

@@ -1,6 +1,6 @@
 # Chat — notes de conception
 
-## Colonnes (axe:e17b)
+## Colonnes (e17b)
 - `colonnes.ts` : état pur `{ colonnes: string[][], focus }` (ouvrir, deplacer, retirer, ajouterColonne, focaliser, relire). Testé dans `tests/colonnesChat.test.cjs`.
 - `Workspace.tsx` rend un `ChatPane` par colonne ; chaque pane reçoit les actions liées à SA conversation (`actionsConversation.ts`), jamais celles du fil actif.
 - La colonne qui a le focus porte `activeConv` (titre, raccourcis, liste de gauche) ; cliquer dans une colonne lui donne le focus.

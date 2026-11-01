@@ -1,4 +1,4 @@
-// axe:parcours-collegue (D11) — /tree d'une conversation d'espace : le journal est lu sur l'espace.
+// parcours-collegue (D11) — /tree d'une conversation d'espace : le journal est lu sur l'espace.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");

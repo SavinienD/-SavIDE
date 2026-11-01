@@ -1,4 +1,4 @@
-// axe:explorateur — chemins sans « \\?\ », raccourcis de copie, tri et navigation clavier.
+// explorateur — chemins sans « \\?\ », raccourcis de copie, tri et navigation clavier.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const Module = require("node:module");

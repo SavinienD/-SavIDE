@@ -1,4 +1,4 @@
-// axe:file-demon — la file d'attente vit dans le service (démon local ou
+// file-demon — la file d'attente vit dans le service (démon local ou
 // espace distant), par session : il envoie le message suivant à la fin du
 // tour, quel que soit le dossier ou l'onglet ouvert dans l'IDE. Le front n'en
 // garde qu'une copie d'affichage (magasin fileAttente, sans stockage), tenue à
@@ -67,7 +67,7 @@ export function deplacerFile(workspacePath: string, conversationId: string, item
   return appel(workspacePath, "queue.move", { sessionId: conversationId, itemId, index });
 }
 
-// axe:file-pause — après un Stop, le service met la file en pause ; le
+// file-pause — après un Stop, le service met la file en pause ; le
 // bouton « Reprendre la file » la relance (queue.resume).
 const PAUSES = new Set<string>();
 const ABONNES_PAUSE = new Set<() => void>();

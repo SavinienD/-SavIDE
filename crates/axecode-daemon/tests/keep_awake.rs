@@ -1,4 +1,4 @@
-//! axe:eveil — a real turn (fake runtime) asks the keep-awake to hold while
+//! eveil — a real turn (fake runtime) asks the keep-awake to hold while
 //! it runs and to release once the session is idle again (21/10/2026: the
 //! hold was never re-applied after a modern standby; the sink is injected
 //! here to see the requests the daemon actually sends).

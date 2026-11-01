@@ -3,7 +3,7 @@ import { api } from "../../lib/ipc";
 import type { ImageProvider, ToolSettings, WebSearchProvider } from "../../types";
 import { ApiKeyField } from "./ApiKeyField";
 
-// axe:cleanup — web search and image generation providers used by the REPL
+// cleanup — web search and image generation providers used by the REPL
 // (`web.*`, `images.*`). Stored in the existing tool settings so keys entered
 // before the Tools tab was removed are kept.
 

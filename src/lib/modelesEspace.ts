@@ -1,4 +1,4 @@
-// axe:parcours-collegue — modèles proposés dans une conversation d'un espace Axe Cloud.
+// parcours-collegue — modèles proposés dans une conversation d'un espace Axe Cloud.
 //
 // Le tour d'une conversation d'espace part sur le démon de l'espace (VM) : seuls les
 // fournisseurs de l'ESPACE comptent, jamais ceux du PC (un collègue n'en a aucun ; ceux de
@@ -48,7 +48,7 @@ export function modelesEspace(modeleConversation?: ModelRef | null): ModelEntry[
   return liste;
 }
 
-/** axe:parcours-collegue (D10) — actions du compositeur qui passent par le PC (magasin et
+/** parcours-collegue (D10) — actions du compositeur qui passent par le PC (magasin et
  *  fournisseurs du PC : compact_conversation, réécriture depuis un message, src-tauri/src/
  *  turns.rs). Dans une conversation d'espace Axe Cloud elles échouaient (« conversation not
  *  found », « provider `axe-cloud` is not configured… ») : elles y sont désactivées. La

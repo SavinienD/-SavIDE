@@ -1,4 +1,4 @@
-// axe:providers — `provider_quota` IPC: subscription quota windows per provider.
+// providers — `provider_quota` IPC: subscription quota windows per provider.
 //
 // Anthropic OAuth exposes `GET /api/oauth/usage`; every window is returned
 // with its utilisation and reset time. Samples are appended to

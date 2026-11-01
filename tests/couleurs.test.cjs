@@ -5,7 +5,7 @@ const path = require("node:path");
 const test = require("node:test");
 const ts = require("typescript");
 
-// axe:couleurs — découpe des messages : commande slash en tête (accent), skills (violet).
+// couleurs — découpe des messages : commande slash en tête (accent), skills (violet).
 Module._extensions[".ts"] = (module, filename) => {
   const javascript = ts.transpileModule(fs.readFileSync(filename, "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },

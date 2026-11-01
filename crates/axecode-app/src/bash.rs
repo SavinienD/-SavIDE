@@ -131,7 +131,7 @@ impl BashTool {
         }
     }
 
-    /// axe:ds16 — racine de l'espace (pour l'orchestrateur).
+    /// ds16 — racine de l'espace (pour l'orchestrateur).
     pub fn workspace_root(&self) -> &std::path::Path {
         &self.workspace_root
     }
@@ -812,7 +812,7 @@ fn final_transcript(mut text: String, truncated: bool, status: &str) -> String {
 }
 
 
-/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+/// 0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
 #[allow(dead_code)]
 fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
     #[allow(unused_mut)]

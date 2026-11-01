@@ -1,4 +1,4 @@
-// axe:viewers — virtualized spreadsheet grid with frozen row/column headers.
+// viewers — virtualized spreadsheet grid with frozen row/column headers.
 // Only the cells inside the viewport (plus a small overscan) are rendered, so
 // sheets with hundreds of thousands of rows scroll smoothly.
 

@@ -1,4 +1,4 @@
-// axe:import — copie un dossier local dans l'espace cloud (sous-dossier du même nom), puis l'appelant bascule dessus.
+// import — copie un dossier local dans l'espace cloud (sous-dossier du même nom), puis l'appelant bascule dessus.
 import { invoke } from "@tauri-apps/api/core";
 import { api } from "./ipc";
 

@@ -351,7 +351,7 @@ async fn stop_over_the_websocket_listener() {
     std::fs::remove_dir_all(dir).ok();
 }
 
-/// axe:bg-b — the process running a worker goes away mid-turn (runtime
+/// bg-b — the process running a worker goes away mid-turn (runtime
 /// dropped): the session must not stay "running" for good, and a new message
 /// must start a fresh worker instead of being queued behind a dead one.
 #[test]
@@ -375,7 +375,7 @@ fn a_worker_that_vanishes_leaves_the_session_idle() {
     std::fs::remove_dir_all(dir).ok();
 }
 
-/// axe:bg-b — messages sent right as a turn ends: the session ends idle,
+/// bg-b — messages sent right as a turn ends: the session ends idle,
 /// never "running" with no worker, nor "idle" with one.
 #[tokio::test(flavor = "multi_thread")]
 async fn back_to_back_turns_end_idle() {
@@ -391,7 +391,7 @@ async fn back_to_back_turns_end_idle() {
     std::fs::remove_dir_all(dir).ok();
 }
 
-/// axe:bg-a — `sessions.message` with `wake: false` journals the note for the
+/// bg-a — `sessions.message` with `wake: false` journals the note for the
 /// next turn without starting one.
 #[tokio::test(flavor = "multi_thread")]
 async fn quiet_system_note_does_not_start_a_turn() {

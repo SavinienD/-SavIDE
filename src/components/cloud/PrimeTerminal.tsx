@@ -1,4 +1,4 @@
-// axe:v2-e12 — onglet « Prime Agent » epingle : on s'attache a la session de Prime qui tourne
+// v2-e12 — onglet « Prime Agent » epingle : on s'attache a la session de Prime qui tourne
 // deja en production. Le portail la garde ouverte en permanence ; on ne la relance pas (une
 // seconde instance travaillerait sur le meme etat et casserait la production).
 //

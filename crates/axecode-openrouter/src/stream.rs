@@ -11,10 +11,10 @@ use axecode_core::{
 
 use crate::wire::{self, ChatChunk};
 
-/// axe:ollama — silence allowed between two pieces of a streamed answer.
+/// ollama — silence allowed between two pieces of a streamed answer.
 pub const DEFAULT_IDLE_TIMEOUT: Duration = Duration::from_secs(120);
 
-/// axe:ollama — limits applied while reading a streamed answer.
+/// ollama — limits applied while reading a streamed answer.
 #[derive(Debug, Clone)]
 pub struct StreamLimits {
     /// Longest silence (no byte at all) before the turn is abandoned.

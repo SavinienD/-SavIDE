@@ -103,7 +103,7 @@ test("e17b glisser pointer : seuil et colonne cible", () => {
   assert.deepEqual(S.deplacer(e, "a", S.colonneCible("nouvelle", 2)).colonnes, [["b"], ["c"], ["a"]]);
 });
 
-test("axe:hotfix fermerColonne : les onglets rejoignent la voisine, le focus suit", () => {
+test("hotfix fermerColonne : les onglets rejoignent la voisine, le focus suit", () => {
   const etat = { colonnes: [["a"], ["b"], ["c"]], focus: 2 };
   assert.deepEqual(C.fermerColonne(etat, 2), { colonnes: [["a"], ["b", "c"]], focus: 1 });
   assert.deepEqual(C.fermerColonne(etat, 0), { colonnes: [["b", "a"], ["c"]], focus: 1 });
@@ -112,7 +112,7 @@ test("axe:hotfix fermerColonne : les onglets rejoignent la voisine, le focus sui
   assert.equal(C.fermerColonne(seule, 0), seule);
 });
 
-test("axe:hotfix synchroniser : le focus suit la conversation active, pas le dernier onglet", () => {
+test("hotfix synchroniser : le focus suit la conversation active, pas le dernier onglet", () => {
   let etat = { colonnes: [["a"], ["b"], ["c"]], focus: 0 };
   etat = C.synchroniser(etat, ["a", "b", "c"], "a");
   assert.equal(etat.focus, 0);
@@ -125,14 +125,14 @@ test("axe:hotfix synchroniser : le focus suit la conversation active, pas le der
   assert.equal(C.synchroniser(stable, ["a", "b"], "b"), stable);
 });
 
-test("axe:hotfix suivre : le focus va sur la colonne de la conversation active", () => {
+test("hotfix suivre : le focus va sur la colonne de la conversation active", () => {
   const etat = { colonnes: [["a"], ["b"]], focus: 0 };
   assert.deepEqual(C.suivre(etat, "b"), { colonnes: [["a"], ["b"]], focus: 1 });
   assert.equal(C.suivre(etat, "a"), etat);
   assert.equal(C.suivre(etat, "z"), etat);
 });
 
-test("axe:hotfix-largeurs poignée entre deux colonnes : la gauche prend ce que perd la droite, jamais sous 220 px", () => {
+test("hotfix-largeurs poignée entre deux colonnes : la gauche prend ce que perd la droite, jamais sous 220 px", () => {
   const proche = (a, b) => assert.ok(Math.abs(a - b) < 1e-9, `${a} != ${b}`);
   assert.deepEqual(C.poidsColonnes(undefined, 2), [1, 1]);
   assert.deepEqual(C.poidsColonnes([1.5, 0.5], 2), [1.5, 0.5]);

@@ -1,4 +1,4 @@
-// axe:viewers — Word (.docx) viewer: mammoth converts the document to clean
+// viewers — Word (.docx) viewer: mammoth converts the document to clean
 // semantic HTML (headings, lists, tables, images inlined as data URIs), shown
 // in the sandboxed document frame. Layout (columns, headers/footers, exact
 // fonts) is intentionally not reproduced.

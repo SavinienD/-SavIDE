@@ -1,4 +1,4 @@
-// axe:viewers — PDF viewer: virtualized pages, pagination, zoom, full-text
+// viewers — PDF viewer: virtualized pages, pagination, zoom, full-text
 // search and thumbnails. Pages are streamed from Rust by byte ranges.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";

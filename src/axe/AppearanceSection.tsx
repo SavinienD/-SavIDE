@@ -24,7 +24,7 @@ import {
   UI_ZOOM_MAX,
   UI_ZOOM_MIN,
   UI_ZOOM_STEP,
-} from "./zoom"; // axe:zoom
+} from "./zoom"; // zoom
 
 /** Settings > Apparence: text size, Axe presets, free background picker and a live mini-IDE preview. */
 export function AppearanceSection() {
@@ -37,9 +37,9 @@ export function AppearanceSection() {
     setDraft(value);
   }), []);
   useEffect(() => onTextScaleChange(setTextScaleState), []);
-  const [uiZoom, setUiZoomState] = useState<number>(() => loadUiZoom()); // axe:zoom-origine
+  const [uiZoom, setUiZoomState] = useState<number>(() => loadUiZoom()); // zoom-origine
   useEffect(() => onUiZoomChange((z) => { setUiZoomState(z); setUiZoomDraft(null); }), []);
-  // axe:zoom-curseur — pendant le glisser, seule la valeur affichée bouge ;
+  // zoom-curseur — pendant le glisser, seule la valeur affichée bouge ;
   // le zoom natif est appliqué au relâchement (pointerup / clavier / blur).
   const [uiZoomDraft, setUiZoomDraft] = useState<number | null>(null);
   const commitUiZoom = () => {
@@ -65,7 +65,7 @@ export function AppearanceSection() {
         </p>
       </header>
 
-      {/* axe:zoom-origine — zoom de toute l'interface, celui d'origine de SavIDE */}
+      {/* zoom-origine — zoom de toute l'interface, celui d'origine de SavIDE */}
       <section className="axe-appearance__block">
         <h3>Zoom de l'interface</h3>
         <div className="axe-appearance__row">

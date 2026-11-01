@@ -13,7 +13,7 @@ use tokio_tungstenite::{connect_async, tungstenite::Message};
 const REMOTE_SETTINGS_KEY: &str = "remote_settings_v1";
 pub(super) const REMOTE_STATUS_EVENT_NAME: &str = "remote-status-changed";
 pub(super) const CONVERSATIONS_CHANGED_EVENT_NAME: &str = "conversations-changed";
-// axe:cleanup — no hosted relay: the user points the app at a self-hosted one
+// cleanup — no hosted relay: the user points the app at a self-hosted one
 // (remote/ Docker image). Empty until configured in Settings > Remote.
 const DEFAULT_RELAY_WS_URL: &str = "";
 /// Legacy upstream relay, dropped from stored settings on load.
@@ -738,7 +738,7 @@ impl RemoteRuntime {
             }
             RemotePhoneCommand::DeleteConversation { conversation_id } => {
                 let bootstrap = conversations::delete_conversation(
-                    app.clone(), // axe:freechat
+                    app.clone(), // freechat
                     state,
                     ConversationInput {
                         workspace_path: workspace_path.clone(),
@@ -787,7 +787,7 @@ impl RemoteRuntime {
                 thinking,
             } => {
                 let settings = conversations::set_conversation_model_preference(
-                    app.clone(), // axe:providers
+                    app.clone(), // providers
                     state,
                     ConversationModelPreferenceInput {
                         workspace_path: workspace_path.clone(),
@@ -1364,7 +1364,7 @@ fn status_from_inner(inner: &RemoteRuntimeInner) -> RemoteStatus {
             code: pairing.code.clone(),
             expires_at_ms: pairing.expires_at_ms,
             qr_url: format!(
-                // axe:remote-prefix: trailing slash, the /remote -> /remote/ redirect drops the query.
+                // remote-prefix: trailing slash, the /remote -> /remote/ redirect drops the query.
                 "{}/?code={}",
                 public_relay_url_for_ws(&inner.settings.relay_url),
                 pairing.code

@@ -1,4 +1,4 @@
-//! axe:v2-l7c — `agents.*` RPC: external agents (OpenCode/DeepSeek, later
+//! v2-l7c — `agents.*` RPC: external agents (OpenCode/DeepSeek, later
 //! Codex/Claude) driven by the service in an on-disk task queue.
 //!
 //! The queue lives under `<workspace>/.axecode/agents/` (the daemon's own

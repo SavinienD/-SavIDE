@@ -26,7 +26,7 @@ enum Step {
 
 struct Scripted {
     steps: Mutex<VecDeque<Step>>,
-    /// axe:compaction — declared context window (None = unknown model).
+    /// compaction — declared context window (None = unknown model).
     window: Option<u32>,
     /// (request has tools, characters sent) of every call.
     seen: Mutex<Vec<(bool, usize)>>,
@@ -154,7 +154,7 @@ fn setup_with(steps: Vec<Step>, window: Option<u32>) -> Option<(Session, Arc<Scr
     setup_hooks(steps, window, false)
 }
 
-/// axe:guet — `with_session_hook` : avec le crochet des commandes de session (guet, goal…).
+/// guet — `with_session_hook` : avec le crochet des commandes de session (guet, goal…).
 fn setup_hooks(steps: Vec<Step>, window: Option<u32>, with_session_hook: bool) -> Option<(Session, Arc<Scripted>)> {
     if axecode_repl::python::find_python(&[]).is_none() {
         eprintln!("skipping: no Python with IPython");
@@ -407,7 +407,7 @@ async fn context_overflow_compacts_and_retries() {
     assert_eq!(h[1].text(), "D done");
 }
 
-/// axe:compaction — the request about to be sent is measured: two 20 000-char
+/// compaction — the request about to be sent is measured: two 20 000-char
 /// tool outputs push it past `window − 16 384` and the loop compacts BEFORE
 /// sending (the provider never refuses). The old trigger (input tokens of the
 /// previous call, 10 here) never fired.
@@ -439,7 +439,7 @@ async fn compacts_before_the_request_that_would_not_fit() {
     assert_eq!(h.last().unwrap().text(), "E done");
 }
 
-/// axe:guet — posé depuis le noyau par `guet.condition`, le guet vit dans le service :
+/// guet — posé depuis le noyau par `guet.condition`, le guet vit dans le service :
 /// le noyau meurt et redémarre, le guet est toujours là et réveille la conversation.
 #[tokio::test(flavor = "multi_thread")]
 async fn guet_survit_au_redemarrage_du_noyau() {

@@ -524,7 +524,7 @@ fn paths_touched_before(store: &HarnessStore, op: &RefineOp) -> Result<Vec<PathB
     let mut out = Vec::new();
     if let Some(id) = op.id.as_deref() {
         if let Some(existing) = store.get(id)? {
-            // axe:migration - files of the project harness of before the rename
+            // migration - files of the project harness of before the rename
             // are never written, so never snapshotted nor restored.
             out.extend(entry_files(&existing).into_iter().filter(|path| !store.paths().is_legacy_path(path)));
         }
@@ -868,7 +868,7 @@ enum TaskEnd {
 pub struct RefineRunner {
     pending: Arc<Mutex<HashMap<String, PendingRefinement>>>,
     tasks: Arc<Mutex<HashMap<String, tokio::task::AbortHandle>>>,
-    /// axe:refine169 — délai de préparation (ms), réglable après coup (tests).
+    /// refine169 — délai de préparation (ms), réglable après coup (tests).
     timeout_ms: Arc<std::sync::atomic::AtomicU64>,
 }
 
@@ -892,7 +892,7 @@ impl RefineRunner {
         self
     }
 
-    /// axe:refine169 — change le délai de préparation des prochains affinages.
+    /// refine169 — change le délai de préparation des prochains affinages.
     pub fn set_timeout(&self, timeout: Duration) {
         self.timeout_ms.store(timeout.as_millis() as u64, std::sync::atomic::Ordering::Relaxed);
     }
@@ -1185,7 +1185,7 @@ pub fn status_json(runner: &RefineRunner, store: &HarnessStore, conversation_id:
 /// + reminder rendering.
 pub fn harness_layer(store: &HarnessStore) -> Result<Option<String>> {
     let mut entries = store.load_all()?;
-    // axe:shared-brain — globals of the Axe Cloud space (read-only mirror).
+    // shared-brain — globals of the Axe Cloud space (read-only mirror).
     crate::cloud_mirror::merge_into(&mut entries, &crate::cloud_mirror::read(store.paths()));
     Ok(inject::render_layer(&entries))
 }
@@ -1226,7 +1226,7 @@ mod tests {
         HarnessStore::new(HarnessPaths::with_home(dir.0.join("ws"), Some(dir.0.join("home"))))
     }
 
-    // axe:migration
+    // migration
     #[test]
     fn refine_never_writes_the_old_project_folder() {
         let dir = TempDir::new();
@@ -1253,7 +1253,7 @@ mod tests {
         assert_eq!(store.get("mem_old").unwrap().unwrap().body.trim(), "new body");
         rollback(&store, &record.id).unwrap();
         assert!(store.get("mem_old").unwrap().unwrap().body.contains("old body"));
-        // axe:dossiers-anciens — l'ancien dossier a été déplacé, jamais réécrit.
+        // dossiers-anciens — l'ancien dossier a été déplacé, jamais réécrit.
         assert!(!old_file.exists() && !legacy.exists());
     }
 
@@ -1380,7 +1380,7 @@ mod tests {
         assert!(store.list(Some(EntryKind::PromptNote), None).unwrap().is_empty());
     }
 
-    // axe:refine-run — the background task must finish on its own (no next
+    // refine-run — the background task must finish on its own (no next
     // turn needed), journal its outcome and never stay « planning ».
     mod runner {
         use super::*;

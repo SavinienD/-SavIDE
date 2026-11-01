@@ -1,4 +1,4 @@
-//! axe:remote — credentials for the network listener (`--listen`).
+//! remote — credentials for the network listener (`--listen`).
 //!
 //! Stored in `<data_dir>/remote-auth.json`: user passwords hashed with
 //! argon2 (PHC strings) and access tokens hashed with SHA-256. Clear-text

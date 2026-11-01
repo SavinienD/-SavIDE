@@ -44,7 +44,7 @@ impl SessionRuntimeFactory for ReplFactory {
         Ok(ReplRuntime::new(self.deps.clone(), context))
     }
 
-    // axe:voix — complétion simple, sans outil (nettoyage d'une dictée).
+    // voix — complétion simple, sans outil (nettoyage d'une dictée).
     async fn complete_text(
         &self,
         model: ModelRef,
@@ -91,11 +91,11 @@ pub(crate) struct Shared {
     pub sink: Mutex<Option<Arc<dyn TurnSink>>>,
     /// Set by `compact.run()` from the kernel; consumed by the loop.
     pub compact_request: Mutex<Option<Option<String>>>,
-    /// axe:compact169 — `compact.run()` calls in the current turn (a 2nd one is ignored).
+    /// compact169 — `compact.run()` calls in the current turn (a 2nd one is ignored).
     pub compact_calls: Mutex<u32>,
     /// Input tokens of the last model call (auto-compaction trigger).
     pub last_input_tokens: Mutex<u32>,
-    /// axe:compaction — (tokens billed, characters sent) of the last call:
+    /// compaction — (tokens billed, characters sent) of the last call:
     /// converts the next request's size into tokens.
     pub last_call_size: Mutex<Option<(u64, u64)>>,
     /// MCP servers, connected on first use by the `mcp` module.
@@ -142,7 +142,7 @@ impl HostHandler for RuntimeHost {
     async fn call(&self, method: &str, params: Value, _exec: Option<String>) -> Result<Value, String> {
         let shared = &self.0;
         if axecode_harness::host::handles(method) {
-            // axe:freechat — free conversations have no project harness:
+            // freechat — free conversations have no project harness:
             // new entries go to the global scope, demotion is refused.
             let mut params = params;
             if lock(&shared.session).scratch {
@@ -155,7 +155,7 @@ impl HostHandler for RuntimeHost {
                     }
                 }
             }
-            // axe:freechat end
+            // freechat end
             return axecode_harness::host::dispatch(&shared.harness, method, &params)
                 .map_err(|e| e.to_string());
         }
@@ -182,12 +182,12 @@ pub struct ReplRuntime {
 
 impl ReplRuntime {
     pub fn new(deps: Arc<ReplDeps>, context: RuntimeContext) -> Arc<Self> {
-        // axe:goal
+        // goal
         for hook in &deps.hooks {
             hook.bind(&context);
         }
-        // axe:goal end
-        // axe:providers — models declared in `<data_dir>/providers.json` are
+        // goal end
+        // providers — models declared in `<data_dir>/providers.json` are
         // resolved here; the host registry keeps serving every other provider.
         let deps = Arc::new(ReplDeps {
             providers: Arc::new(super::declared::DeclaredProviderResolver::load(

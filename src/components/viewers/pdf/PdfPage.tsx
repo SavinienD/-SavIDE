@@ -1,4 +1,4 @@
-// axe:viewers — one PDF page (canvas + selectable text layer) and its
+// viewers — one PDF page (canvas + selectable text layer) and its
 // thumbnail. Pages are only mounted while near the viewport (see PdfViewer).
 
 import { useEffect, useRef, useState } from "react";

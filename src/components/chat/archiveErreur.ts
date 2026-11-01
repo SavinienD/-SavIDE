@@ -1,4 +1,4 @@
-// axe:archive-erreur — message français quand l'archivage échoue (module pur,
+// archive-erreur — message français quand l'archivage échoue (module pur,
 // testé par tests/archiveErreur.test.cjs). Avant, l'erreur était avalée.
 export function messageArchiveEchec(err: unknown): string {
   const brut = err instanceof Error ? err.message : typeof err === "string" ? err : "";

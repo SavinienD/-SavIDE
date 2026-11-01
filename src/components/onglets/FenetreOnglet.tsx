@@ -1,4 +1,4 @@
-// axe:e15 — une fenêtre flottante pour UN onglet détaché (terminal, chat, fichier).
+// e15 — une fenêtre flottante pour UN onglet détaché (terminal, chat, fichier).
 //
 // Pourquoi un composant à part plutôt que la couche des volets d'E6 : un volet
 // détache un PANNEAU entier, ici on détache un onglet. Le geste est le même que
@@ -75,7 +75,7 @@ type Props = {
 };
 
 export function FenetreOnglet({ id, titre, sousTitre, icone, children, onClose, extra }: Props) {
-  // axe:e18 — double-clic sur l'en-tete : la fenetre prend tout l'ecran de
+  // e18 — double-clic sur l'en-tete : la fenetre prend tout l'ecran de
   // l'application (second double-clic : elle rend sa taille). C'est le geste le
   // plus rapide pour gagner du terrain quand on detache.
   const [plein, setPlein] = useState(false);

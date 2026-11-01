@@ -141,7 +141,7 @@ function applyStream(l: Live, e: any): Live {
     }
     case "compaction_start":
       return { ...l, busy: "compacte…" };
-    // axe:reprise — stream cut, request sent again: the reply starts over.
+    // reprise — stream cut, request sent again: the reply starts over.
     case "stream_retry":
       return { ...l, busy: "reprend…", text: {}, thinking: {} };
     case "turn_done":

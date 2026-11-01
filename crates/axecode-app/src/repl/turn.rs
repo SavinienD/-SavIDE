@@ -70,7 +70,7 @@ async fn run_inner(
     runtime.kernel().await?;
     shared.family.begin_turn(&request.peer_messages);
     *lock(&shared.compact_calls) = 0;
-    // axe:compact169 — `/compact [directive]` tapé par l'utilisateur : la compaction
+    // compact169 — `/compact [directive]` tapé par l'utilisateur : la compaction
     // est faite ici, directement, sans demander à l'IA d'appeler compact.run().
     let slash_compact: Option<Option<String>> = match &request.input {
         TurnInput::User { message } => {
@@ -120,15 +120,15 @@ async fn run_inner(
         history.push(message);
     }
 
-    // axe:cache — `stable` blocks stay in the cached prefix for the whole
+    // cache — `stable` blocks stay in the cached prefix for the whole
     // turn; `volatile` blocks (peer messages, goal/autonomous counters,
     // notices, the todo list below) go after the volatile marker.
     let mut reminders: Vec<String> = Vec::new();
-    // axe:freechat — free conversation: no project, private scratch folder.
+    // freechat — free conversation: no project, private scratch folder.
     if request.session.scratch {
         reminders.push(prompt::SCRATCH_REMINDER.to_string());
     }
-    // axe:freechat end
+    // freechat end
     if let Ok(Some(layer)) = axecode_harness::refine::harness_layer(&shared.harness) {
         reminders.push(layer);
     }
@@ -142,7 +142,7 @@ async fn run_inner(
             volatile.push(block);
         }
     }
-    // axe:bg-d — automatic status of the sub-agents at work, at the start of
+    // bg-d — automatic status of the sub-agents at work, at the start of
     // the turn, then refreshed every SUBAGENTS_STATUS_EVERY during a long turn.
     let me_id = request.session.id.clone();
     let now_ms = || {
@@ -158,7 +158,7 @@ async fn run_inner(
     let mut final_text = String::new();
     let mut stop_reason = None;
     let mut retried_after_overflow = false;
-    // axe:compaction — a summary that still exceeds the threshold must not
+    // compaction — a summary that still exceeds the threshold must not
     // trigger a new (paid) compaction on every round.
     let mut auto_compactions = 0usize;
     for _round in 0..settings.max_rounds {
@@ -178,7 +178,7 @@ async fn run_inner(
         }
         let todo_block = lock(&shared.todo).system_block();
         let mut blocks = volatile.clone();
-        // axe:goal165 — live session state (goal…) read again for each request.
+        // goal165 — live session state (goal…) read again for each request.
         for hook in &shared.deps.hooks {
             if let Some(block) = hook.live_reminder(&meta).await {
                 blocks.push(block);
@@ -198,7 +198,7 @@ async fn run_inner(
         );
 
         // Automatic or kernel-requested compaction.
-        // axe:compaction — estimate the request about to be sent (not the
+        // compaction — estimate the request about to be sent (not the
         // previous call) and always keep room for the answer.
         let caps = provider.capabilities(&meta.model);
         let max_output_tokens = settings
@@ -338,7 +338,7 @@ async fn run_inner(
         tracing::warn!(error = %err, "sub-agent result delivery failed");
     }
     sink.emit(json!({"type": "turn_done"})).await;
-    // axe:goal — hooks decide on autonomous continuation.
+    // goal — hooks decide on autonomous continuation.
     let mut outcome = TurnOutcome {
         final_text,
         usage: usage_total,
@@ -351,7 +351,7 @@ async fn run_inner(
         }
     }
     Ok(outcome)
-    // axe:goal end
+    // goal end
 }
 
 fn add_usage(total: &mut Usage, usage: &Usage) {

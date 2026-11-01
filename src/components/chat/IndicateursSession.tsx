@@ -1,4 +1,4 @@
-// axe:commandes — petites icônes /heartbeat et /goal à côté du sélecteur de modèle :
+// commandes — petites icônes /heartbeat et /goal à côté du sélecteur de modèle :
 // intervalle et prochain réveil (clignote au déclenchement), texte et statut du goal ;
 // un clic ouvre le détail avec les boutons pour les arrêter.
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";

@@ -8,7 +8,7 @@ import {
   microDisponible,
 } from "./enregistreur";
 import { lireReglagesVoix } from "./reglages";
-import { blobEnPcm16k, MIME_PCM, pcmEnBase64 } from "./pcm"; // axe:micro-local
+import { blobEnPcm16k, MIME_PCM, pcmEnBase64 } from "./pcm"; // micro-local
 import {
   apercuTropLent,
   assemblerProvisoire,
@@ -21,7 +21,7 @@ import {
   type TailleWhisper,
 } from "./direct";
 
-/** axe:voix — machine à états de la dictée : repos -> enregistrement ->
+/** voix — machine à états de la dictée : repos -> enregistrement ->
  *  transcription -> texte inséré (jamais envoyé), ou erreur avec secours Win+H. */
 export type PhaseDictee = "repos" | "demarrage" | "enregistrement" | "transcription" | "erreur";
 
@@ -41,7 +41,7 @@ export const NB_BARRES = 28;
 /** Au-delà, la dictée est terminée d'office (et transcrite). */
 export const DUREE_MAX_MS = 10 * 60 * 1000;
 const ANNULE = "dictée annulée";
-/** axe:0.1.77 — sans PCM du WebAudio après ce délai, le direct passe aux segments MediaRecorder. */
+/** 0.1.77 — sans PCM du WebAudio après ce délai, le direct passe aux segments MediaRecorder. */
 export const ATTENTE_PCM_MS = 1_500;
 export const SEGMENT_MS = 3_000;
 
@@ -51,7 +51,7 @@ type Options = {
   onTexte: (texte: string) => void;
 };
 
-/** axe:0.1.75 — SavIDE : réglage du modèle local -> taille, et taille -> modèle local. */
+/** 0.1.75 — SavIDE : réglage du modèle local -> taille, et taille -> modèle local. */
 function reglageTaille(modele: "auto" | "base" | "small"): "auto" | TailleWhisper {
   return modele === "small" ? "moyen" : modele === "base" ? "petit" : "auto";
 }
@@ -84,12 +84,12 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
   const contexteRef = useRef({ workspacePath, modele });
   contexteRef.current = { workspacePath, modele };
   const terminerRef = useRef<() => void>(() => undefined);
-  // axe:0.1.75 — dictée en direct : morceaux de ≈ 3 s transcrits au fil de l'eau.
+  // 0.1.75 — dictée en direct : morceaux de ≈ 3 s transcrits au fil de l'eau.
   const [provisoire, setProvisoire] = useState("");
   const morceauxTexte = useRef<string[]>([]);
-  // axe:0.1.77 — un segment MediaRecorder (secours) est décodé en PCM avant la file.
+  // 0.1.77 — un segment MediaRecorder (secours) est décodé en PCM avant la file.
   const fileMorceaux = useRef<{ audio: Float32Array; ms: number }[]>([]);
-  // axe:0.1.77 — état visible du direct : l'encadré gris s'affiche dès le début (attente),
+  // 0.1.77 — état visible du direct : l'encadré gris s'affiche dès le début (attente),
   // et dit pourquoi l'aperçu manque au lieu de se taire (erreurs avalées en 0.1.75-0.1.76).
   const [direct, setDirect] = useState<{ actif: boolean; erreur: string | null }>({ actif: false, erreur: null });
   const debutDirect = useRef(0);
@@ -100,7 +100,7 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
   const session = useRef(0);
   const minuterieDirect = useRef<number | null>(null);
   const moyenPresent = useRef(false);
-  // axe:0.1.77 — le petit (base) aussi peut manquer (premier usage) : sans lui, chaque
+  // 0.1.77 — le petit (base) aussi peut manquer (premier usage) : sans lui, chaque
   // morceau échouait (« pas encore sur le poste ») et l'aperçu restait vide sans explication.
   const petitPresent = useRef(false);
   useEffect(() => {
@@ -147,7 +147,7 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
       const { workspacePath: espace } = contexteRef.current;
       const r = await invoke<ResultatTranscription & { taille?: string | null }>("voix_transcrire", {
         input: {
-          // axe:micro-local — SavIDE : PCM 16 kHz pour whisper.cpp embarqué.
+          // micro-local — SavIDE : PCM 16 kHz pour whisper.cpp embarqué.
           audio: pcmEnBase64(audio),
           mime: MIME_PCM,
           local: true,
@@ -239,7 +239,7 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
     minuterieDirect.current = window.setInterval(() => {
       if (!directActif.current || enregistreur.current !== enr) return;
       if (enr.segmentsActifs()) return;
-      // axe:0.1.77 — WebAudio muet (contexte suspendu, ScriptProcessor sans rappel) :
+      // 0.1.77 — WebAudio muet (contexte suspendu, ScriptProcessor sans rappel) :
       // 1,5 s sans PCM -> segments MediaRecorder de 3 s (cause du direct « vide » sur PC).
       if (!enr.pcmLivre()) {
         if (performance.now() - debutDirect.current >= ATTENTE_PCM_MS) enr.demarrerSegments(SEGMENT_MS, surSegment);
@@ -348,7 +348,7 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
         setInfo("Enregistrement trop court.");
         return;
       }
-      // axe:micro-local — SavIDE : whisper.cpp embarqué, audio décodé ici en PCM 16 kHz.
+      // micro-local — SavIDE : whisper.cpp embarqué, audio décodé ici en PCM 16 kHz.
       const audio = pcmEnBase64(await blobEnPcm16k(blob));
       const reglages = lireReglagesVoix();
       const { workspacePath: espace, modele: chat } = contexteRef.current;

@@ -473,7 +473,7 @@ export function TodoStrip({
   onQueuedPromptEdit?: (id: string) => void;
   onQueuedPromptDelete?: (id: string) => void;
   onQueuedPromptMove?: (draggedId: string, targetId: string) => void;
-  /** axe:arriere-plan — « Lancer maintenant (travail en arrière-plan) ». */
+  /** arriere-plan — « Lancer maintenant (travail en arrière-plan) ». */
   onQueuedPromptBackground?: (id: string) => void;
 }) {
   const latest = useMemo(() => latestActiveTodo(blocks), [blocks]);
@@ -886,7 +886,7 @@ function QueuedPromptRow({
           <Icon icon="solar:alt-arrow-down-linear" width={13} height={13} />
         </button>
         {onBackground ? (
-          // axe:arriere-plan — le travail en cours continue en arrière-plan,
+          // arriere-plan — le travail en cours continue en arrière-plan,
           // ce message part tout de suite.
           <button
             type="button"

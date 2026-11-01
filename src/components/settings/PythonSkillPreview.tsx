@@ -3,7 +3,7 @@ import { api } from "../../lib/ipc";
 import { Markdown } from "../chat/Markdown";
 import { formatDate, type HarnessEntry } from "./harnessApi";
 
-// axe:cleanup — Settings > Skills: preview of a harness Python skill
+// cleanup — Settings > Skills: preview of a harness Python skill
 // (package `<name>/__init__.py` + SKILL.md), next to the Markdown recipes.
 
 export function isPySkillEnabled(entry: HarnessEntry): boolean {

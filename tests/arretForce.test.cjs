@@ -5,7 +5,7 @@ const path = require("node:path");
 const test = require("node:test");
 const ts = require("typescript");
 
-// axe:stop-force — logique du bouton Stop (src/components/chat/arretForce.ts).
+// stop-force — logique du bouton Stop (src/components/chat/arretForce.ts).
 const sourcePath = path.resolve(__dirname, "../src/components/chat/arretForce.ts");
 const source = fs.readFileSync(sourcePath, "utf8");
 const javascript = ts.transpileModule(source, {

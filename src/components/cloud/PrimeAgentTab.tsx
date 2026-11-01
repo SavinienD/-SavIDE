@@ -1,4 +1,4 @@
-// axe:cloud — « Prime Agent » tab: chat with Prime (portal API, one task at a
+// cloud — « Prime Agent » tab: chat with Prime (portal API, one task at a
 // time, answer polled every 2 s), tickets and quick links from the local
 // cache of Prime. Everything goes through `cloud_api` (Bearer added in Rust).
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -33,7 +33,7 @@ function openLink(url?: string) {
   if (url && /^https:\/\//i.test(url)) void api.openExternalUrl(url).catch(() => undefined);
 }
 
-// axe:connexion-google - non connecte : bouton de connexion au lieu d'un panneau vide.
+// connexion-google - non connecte : bouton de connexion au lieu d'un panneau vide.
 export function PrimeAgentTab({ active }: { active: boolean }) {
   const etat = useCloudState();
   if (etat && !etat.connected) {
@@ -130,7 +130,7 @@ function PrimeAgentTabConnecte({ active }: { active: boolean }) {
   }, [pending, loadHistory]);
 
   useEffect(() => {
-    // axe:robustesse — défiler la zone des messages elle-même (jamais scrollIntoView : il défile aussi les parents).
+    // robustesse — défiler la zone des messages elle-même (jamais scrollIntoView : il défile aussi les parents).
     const log = logBox.current;
     if (active && log) log.scrollTop = log.scrollHeight;
   }, [messages, pending, active]);
@@ -165,7 +165,7 @@ function PrimeAgentTabConnecte({ active }: { active: boolean }) {
 
   return (
     <div className="axc-prime">
-      {/* axe:l8 — le tableau de bord Prime (tickets, surveillances, journal) en un clic ;
+      {/* l8 — le tableau de bord Prime (tickets, surveillances, journal) en un clic ;
           main.tsx ouvre les liens https dans le navigateur. */}
       <a
         className="axc-l8"
@@ -240,7 +240,7 @@ function PrimeAgentTabConnecte({ active }: { active: boolean }) {
       </section>
 
       <aside className="axc-side">
-        {/* axe:liens — liens rapides EN PREMIER : sous la liste des tickets (jusqu'à 50), ils étaient invisibles sans défiler. */}
+        {/* liens — liens rapides EN PREMIER : sous la liste des tickets (jusqu'à 50), ils étaient invisibles sans défiler. */}
         <section>
           <h2 className="axc-section__title">
             <span>Liens rapides</span>

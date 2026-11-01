@@ -1,4 +1,4 @@
-/* axe:viewers — multi-format file viewers. Everything uses the Axe theme
+/* viewers — multi-format file viewers. Everything uses the Axe theme
    variables so the viewers follow the background picked in Settings. */
 
 .xv-layer {
@@ -634,7 +634,7 @@
   background: #000;
 }
 .xv-media[data-video="true"] {
-  /* axe:video-largeur — volet flex : sans min-width/min-height 0, la vidéo
+  /* video-largeur — volet flex : sans min-width/min-height 0, la vidéo
      pouvait être calculée à ~0 px de large (bande étroite sur fond noir). */
   min-width: 0;
   min-height: 0;

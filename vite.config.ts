@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
-// axe:viewers — pdf.js side assets (CMaps, standard fonts, wasm decoders)
+// viewers — pdf.js side assets (CMaps, standard fonts, wasm decoders)
 // served under /pdfjs/ in dev and copied into dist at build time. They are
 // only fetched by the PDF viewer, never part of the startup bundle.
 const PDFJS_ASSET_DIRS = ["cmaps", "standard_fonts", "wasm", "iccs"];
@@ -37,13 +37,13 @@ function pdfjsAssets(): Plugin {
     },
   };
 }
-// axe:viewers end
+// viewers end
 
 // Tauri dev server config
 const host = process.env.TAURI_DEV_HOST;
 
 export default defineConfig(async () => ({
-  plugins: [react(), pdfjsAssets() /* axe:viewers */],
+  plugins: [react(), pdfjsAssets() /* viewers */],
   clearScreen: false,
   server: {
     port: 1420,

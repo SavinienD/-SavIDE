@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import "./repl.css";
-import { connectionArg, LOCAL_CONNECTION, useActiveConnection } from "./connectionsApi"; // axe:remote
+import { connectionArg, LOCAL_CONNECTION, useActiveConnection } from "./connectionsApi"; // remote
 
-// axe:daemon — Settings > Service: state of the background service that owns
+// daemon — Settings > Service: state of the background service that owns
 // the sessions (pid, clients, sessions by status), with inspection and a
 // forced shutdown.
 
@@ -17,8 +17,8 @@ type DaemonStatus = {
   startedAtMs?: number;
   clients?: { id: number; name: string }[];
   sessions?: { total: number; running: number; idle: number; inactive: number };
-  listen?: string | null; // axe:remote
-  remote?: boolean; // axe:remote
+  listen?: string | null; // remote
+  remote?: boolean; // remote
 };
 
 type SessionMeta = {
@@ -57,7 +57,7 @@ export function ServicePane() {
   const [sessions, setSessions] = useState<SessionMeta[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const connectionId = useActiveConnection(); // axe:remote
+  const connectionId = useActiveConnection(); // remote
   const connection = connectionArg(connectionId);
   const isRemote = connectionId !== LOCAL_CONNECTION;
 

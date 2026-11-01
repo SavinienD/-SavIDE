@@ -25,7 +25,7 @@ pub(crate) const ANTHROPIC_RECONNECT_MESSAGE: &str =
 #[derive(Clone)]
 pub enum Credential {
     OAuth(Arc<Mutex<OAuthToken>>),
-    // axe:providers — plain API key for Anthropic-compatible endpoints.
+    // providers — plain API key for Anthropic-compatible endpoints.
     ApiKey(String),
 }
 
@@ -130,7 +130,7 @@ impl Credential {
         matches!(self, Self::OAuth(_))
     }
 
-    // axe:providers
+    // providers
     pub fn from_api_key(api_key: impl Into<String>) -> Self {
         Self::ApiKey(api_key.into())
     }
@@ -274,7 +274,7 @@ pub fn load_default_auth_status() -> Result<AnthropicAuthStatus> {
     load_auth_status(&default_auth_path()?)
 }
 
-// axe:providers — a fresh OAuth access token for the usage/quota endpoint.
+// providers — a fresh OAuth access token for the usage/quota endpoint.
 pub async fn load_default_oauth_access_token(http: &reqwest::Client) -> Result<Option<String>> {
     match Credential::load_default()? {
         Some(credential) => credential.bearer_or_key(http).await.map(Some),

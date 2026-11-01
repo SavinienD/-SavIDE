@@ -18,16 +18,16 @@ fn arg_value(args: &[String], flag: &str) -> Option<String> {
         .and_then(|i| args.get(i + 1).cloned())
 }
 
-// axe:remote
+// remote
 fn arg_values(args: &[String], flag: &str) -> Vec<String> {
     args.windows(2)
         .filter(|w| w[0] == flag)
         .map(|w| w[1].clone())
         .collect()
 }
-// axe:remote end
+// remote end
 
-// axe:migration
+// migration
 fn is_default_data_dir(data_dir: &std::path::Path) -> bool {
     let default = directories::ProjectDirs::from("fr", "savide", "savide")
         .and_then(|dirs| dirs.data_local_dir().canonicalize().ok());
@@ -61,7 +61,7 @@ pub async fn run(args: Vec<String>, factory: Arc<dyn SessionRuntimeFactory>) -> 
                 tracing::info!("a daemon is already running for this data dir");
                 return Ok(());
             }
-            // axe:migration — a service started without the desktop app (spaces
+            // migration — a service started without the desktop app (spaces
             // of the VM) migrates the data of the old name itself: a no-op once
             // done, skipped for any other data folder (tests).
             if is_default_data_dir(&data_dir) {
@@ -69,7 +69,7 @@ pub async fn run(args: Vec<String>, factory: Arc<dyn SessionRuntimeFactory>) -> 
             }
             let mut config = DaemonConfig::new(data_dir.clone());
             config.auto_shutdown = !args.iter().any(|a| a == "--foreground");
-            // axe:v2-l2 — set by the service unit or the environment, never by a client request.
+            // v2-l2 — set by the service unit or the environment, never by a client request.
             let workspace_root = arg_value(&args, "--workspace-root")
                 .or_else(|| axecode_core::env::var("AXECODE_WORKSPACE_ROOT").ok())
                 .filter(|v| !v.trim().is_empty());
@@ -78,7 +78,7 @@ pub async fn run(args: Vec<String>, factory: Arc<dyn SessionRuntimeFactory>) -> 
                 anyhow::ensure!(root.is_dir(), "--workspace-root must be a directory");
                 config.workspace_root = Some(root);
             }
-            // axe:v2-l4 — service-wide shared space, same rule.
+            // v2-l4 — service-wide shared space, same rule.
             let shared_root = arg_value(&args, "--shared-root")
                 .or_else(|| axecode_core::env::var("AXECODE_SHARED_ROOT").ok())
                 .filter(|v| !v.trim().is_empty());
@@ -87,14 +87,14 @@ pub async fn run(args: Vec<String>, factory: Arc<dyn SessionRuntimeFactory>) -> 
                 anyhow::ensure!(root.is_dir(), "--shared-root must be a directory");
                 config.shared_root = Some(root);
             }
-            // axe:remote — `--listen host:port [--allow-host name]...`
+            // remote — `--listen host:port [--allow-host name]...`
             if let Some(addr) = arg_value(&args, "--listen") {
                 let hosts = arg_values(&args, "--allow-host");
                 config.listen = Some(crate::listen::ListenConfig::parse(&addr, hosts)?);
                 // A network service must outlive its clients.
                 config.auto_shutdown = false;
             }
-            // axe:remote end
+            // remote end
             crate::migrate::import_legacy_once(&data_dir);
             let daemon = Daemon::new(config, factory);
             server::run(daemon).await
@@ -116,9 +116,9 @@ pub async fn run(args: Vec<String>, factory: Arc<dyn SessionRuntimeFactory>) -> 
             }
             Ok(())
         }
-        // axe:remote
+        // remote
         "set-password" | "token" | "auth" => crate::auth::run_cli(&command, &args, &data_dir),
-        // axe:remote end
+        // remote end
         other => anyhow::bail!("unknown command {other}"),
     }
 }

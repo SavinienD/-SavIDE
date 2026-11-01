@@ -1,4 +1,4 @@
-//! axe:comfyui — outil ComfyUI : envoie un workflow (format API) à un serveur ComfyUI
+//! comfyui — outil ComfyUI : envoie un workflow (format API) à un serveur ComfyUI
 //! (COMFYUI_URL, défaut http://127.0.0.1:8188), attend la fin et renvoie les fichiers produits.
 use std::time::Duration;
 use serde_json::{json, Value};

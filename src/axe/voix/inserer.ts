@@ -1,5 +1,5 @@
 /**
- * axe:voix — insertion du texte dicté dans la zone de saisie : à la place de
+ * voix — insertion du texte dicté dans la zone de saisie : à la place de
  * la sélection (ou au curseur), avec des espaces propres autour. Le texte n'est
  * jamais envoyé : l'utilisateur le relit et l'envoie lui-même.
  */

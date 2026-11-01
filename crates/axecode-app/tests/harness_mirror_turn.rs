@@ -1,4 +1,4 @@
-//! axe:shared-brain — preuve que les globales de l'espace Axe Cloud (miroir
+//! shared-brain — preuve que les globales de l'espace Axe Cloud (miroir
 //! `cloud_mirror`, commit eab706e) arrivent dans la requête envoyée au modèle
 //! par un tour REPL : ReplRuntime::run_turn -> repl::turn (reminders) ->
 //! refine::harness_layer -> cloud_mirror::merge_into.

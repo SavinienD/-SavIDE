@@ -116,7 +116,7 @@ impl AgentsConfig {
 pub const INSTALL_DIRS: [&str; 2] = ["/opt/axecode/", "/opt/savide/"];
 // rebrand:keep-end
 
-/// axe:migration - `/opt/axecode/<x>` when it exists, else the same program of
+/// migration - `/opt/axecode/<x>` when it exists, else the same program of
 /// the installation of before the rename (and the other way round for
 /// settings written before the rename).
 pub fn installed_program(program: &str) -> String {

@@ -320,7 +320,7 @@ impl McpToolRegistry {
         Some(call_mcp_tool(binding, input).await)
     }
 
-    // axe:repl — direct access for the REPL `mcp` module (no load step).
+    // repl — direct access for the REPL `mcp` module (no load step).
     /// `(generated_name, server, original_tool, description)` of every tool.
     pub async fn catalog(&self) -> Vec<(String, String, String, String)> {
         let bindings = self.bindings.read().await;
@@ -342,7 +342,7 @@ impl McpToolRegistry {
         let binding = self.bindings.read().await.get(name).cloned()?;
         Some(call_mcp_tool(binding, input).await)
     }
-    // axe:repl end
+    // repl end
 
     pub async fn tool_label(&self, name: &str) -> Option<McpToolLabel> {
         let binding = self.bindings.read().await.get(name).cloned()?;

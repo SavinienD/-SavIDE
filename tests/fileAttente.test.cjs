@@ -196,7 +196,7 @@ test("un seul magasin pour toute l'appli (survit au remontage d'un volet)", () =
   assert.equal(F.filesPartagees(), F.filesPartagees());
 });
 
-// axe:file-hors-vue — A tourne avec 2 messages en file, l'utilisateur passe sur B.
+// file-hors-vue — A tourne avec 2 messages en file, l'utilisateur passe sur B.
 test("file hors vue : A démontée envoie ses 2 messages dans l'ordre", () => {
   const m = new F.MagasinFiles(null);
   const el = (id) => ({ id, text: id, attachments: [] });

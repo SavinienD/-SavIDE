@@ -16,26 +16,26 @@ import { api } from "../lib/ipc";
 import { titreAffiche } from "../lib/titres";
 import { modelRefWithThinking, thinkingFromRef } from "../lib/models";
 import { Splitter } from "./Splitter";
-import { fournirActions } from "../axe/raccourcis"; // axe:raccourcis
+import { fournirActions } from "../axe/raccourcis"; // raccourcis
 import { FileTree, MenuTriExplorateur, type FileTreeHandle } from "./FileTree";
 import { CLE_STOCKAGE_TRI, lireTri, type TriExplorateur } from "../lib/arbreFichiers";
 import { ConversationList } from "./ConversationList";
-import { NouvelleConversation } from "./NouvelleConversation"; // axe:e13
+import { NouvelleConversation } from "./NouvelleConversation"; // e13
 import { EditorPane } from "./EditorPane";
 import { SettingsPane } from "./SettingsPane";
 import { TerminalPanel } from "./TerminalPanel";
-import { CloudTerminalPanel } from "./cloud/CloudTerminalPanel"; // axe:e8
-import { CLOUD_CONNECTION, cloudApi } from "./cloud/cloudApi"; // axe:e15
-import { CloudLoginButton } from "./cloud/CloudLoginButton"; // axe:connexion-google
-import { FenetreOnglet } from "./onglets/FenetreOnglet"; // axe:e14
-import { OngletsChat, type OngletChat } from "./onglets/OngletsChat"; // axe:e14
-import { ChatCloseButton } from "./chat/ChatCloseButton"; // axe:e17b
-import { VoletRappel, VoletsFlottants, VoletOutils } from "./volets/VoletsFlottants"; // axe:e6
-import { useVolets } from "./volets/volets"; // axe:e6
-import "./volets/volets.css"; // axe:e6
-import { cloudConnectionFromPath, cloudRpc } from "../lib/ipc"; // axe:v2-l2.3
-import { preferenceModeleEspace } from "../lib/modelesEspace"; // axe:parcours-collegue
-import { demanderSectionReglages } from "../lib/sectionReglages"; // axe:parcours-collegue
+import { CloudTerminalPanel } from "./cloud/CloudTerminalPanel"; // e8
+import { CLOUD_CONNECTION, cloudApi } from "./cloud/cloudApi"; // e15
+import { CloudLoginButton } from "./cloud/CloudLoginButton"; // connexion-google
+import { FenetreOnglet } from "./onglets/FenetreOnglet"; // e14
+import { OngletsChat, type OngletChat } from "./onglets/OngletsChat"; // e14
+import { ChatCloseButton } from "./chat/ChatCloseButton"; // e17b
+import { VoletRappel, VoletsFlottants, VoletOutils } from "./volets/VoletsFlottants"; // e6
+import { useVolets } from "./volets/volets"; // e6
+import "./volets/volets.css"; // e6
+import { cloudConnectionFromPath, cloudRpc } from "../lib/ipc"; // v2-l2.3
+import { preferenceModeleEspace } from "../lib/modelesEspace"; // parcours-collegue
+import { demanderSectionReglages } from "../lib/sectionReglages"; // parcours-collegue
 import {
   CloudOfflineError,
   getCloudStatus,
@@ -44,7 +44,7 @@ import {
   probeCloud,
   subscribeCloudStatus,
   type CloudStatus,
-} from "../lib/cloudOnline"; // axe:v2-l6
+} from "../lib/cloudOnline"; // v2-l6
 import {
   ensureOfflineMirror,
   getOfflineView,
@@ -53,25 +53,25 @@ import {
   subscribeOffline,
   syncOffline,
   type OfflineView,
-} from "../lib/cloudOffline"; // axe:v2-l6 (tranche 2)
+} from "../lib/cloudOffline"; // v2-l6 (tranche 2)
 import { RemotePanel } from "./RemotePanel";
 import { SearchPane } from "./SearchPane";
-import { AgentsView } from "./agents/AgentsView"; // axe:agents
-import { SessionTree } from "./agents/SessionTree"; // axe:agents
-import { SessionJournal } from "./agents/SessionJournal"; // axe:sub-m
-// axe:remote
+import { AgentsView } from "./agents/AgentsView"; // agents
+import { SessionTree } from "./agents/SessionTree"; // agents
+import { SessionJournal } from "./agents/SessionJournal"; // sub-m
+// remote
 import { ConnectionSelector } from "./agents/ConnectionSelector";
 import { RemoteConversations } from "./agents/RemoteConversations";
-import { agentsApi } from "./agents/agentsApi"; // axe:e12b — creation d'une conversation sur le service
-import { rememberedModel } from "./agents/remoteItems"; // axe:e12b — modele choisi plus tard, jamais demande ici
+import { agentsApi } from "./agents/agentsApi"; // e12b — creation d'une conversation sur le service
+import { rememberedModel } from "./agents/remoteItems"; // e12b — modele choisi plus tard, jamais demande ici
 import { getActiveConnection, LOCAL_CONNECTION, useActiveConnection } from "./settings/connectionsApi";
-// axe:remote end
+// remote end
 import { ChatPane, type ExternalDropFeed } from "./chat/ChatPane";
-import { createConversationActions } from "./chat/actionsConversation"; // axe:e17a
-import { filesPartagees } from "./chat/fileAttente"; // axe:file-attente
-import { migrerFilesNavigateur } from "./chat/fileDemon"; // axe:file-demon
-import { messageArchiveEchec } from "./chat/archiveErreur"; // axe:archive-erreur
-import { avecNote, mettreEnArrierePlan } from "./chat/arrierePlan"; // axe:arriere-plan
+import { createConversationActions } from "./chat/actionsConversation"; // e17a
+import { filesPartagees } from "./chat/fileAttente"; // file-attente
+import { migrerFilesNavigateur } from "./chat/fileDemon"; // file-demon
+import { messageArchiveEchec } from "./chat/archiveErreur"; // archive-erreur
+import { avecNote, mettreEnArrierePlan } from "./chat/arrierePlan"; // arriere-plan
 import {
   clore,
   clotLaDemande,
@@ -80,34 +80,34 @@ import {
   forcer,
   libereAuClic,
   type DemandesArret,
-} from "./chat/arretForce"; // axe:stop-force
+} from "./chat/arretForce"; // stop-force
 import {
   deplacer as deplacerColonne,
-  fermerColonne as fermerColonneEtat, // axe:hotfix
+  fermerColonne as fermerColonneEtat, // hotfix
   focaliser as focaliserColonne,
   ouvrir as ouvrirColonne,
   relire as relireColonnes,
   retirer as retirerColonne,
-  suivre as suivreColonne, // axe:hotfix
-  synchroniser as synchroniserColonnes, // axe:hotfix
+  suivre as suivreColonne, // hotfix
+  synchroniser as synchroniserColonnes, // hotfix
   trouver as trouverColonne,
   MIME_ONGLET_CHAT,
   MIME_ONGLET_FICHIER,
   colonneCible,
   depasseSeuil,
-  poidsColonnes as poidsColonnesChatValides, // axe:hotfix-largeurs
-  redimensionner as redimensionnerPoids, // axe:hotfix-largeurs
+  poidsColonnes as poidsColonnesChatValides, // hotfix-largeurs
+  redimensionner as redimensionnerPoids, // hotfix-largeurs
   type EtatColonnes,
-} from "./chat/colonnes"; // axe:e17b
-import { FreechatView } from "./freechat/FreechatView"; // axe:freechat
+} from "./chat/colonnes"; // e17b
+import { FreechatView } from "./freechat/FreechatView"; // freechat
 import { AxeLogo } from "../axe/Logo";
 import { UpdateBadge } from "./UpdateBadge";
 import { declarerActivite } from "../lib/activite";
-import { importerDossier } from "../lib/importDossier"; // axe:import
+import { importerDossier } from "../lib/importDossier"; // import
 import { invoke } from "@tauri-apps/api/core";
-import { SkillsBadge } from "../axe/E4Vues"; // axe:e4
-import { SkillSync, type Empreintes } from "../axe/SkillSync"; // axe:e4
-import { QuotaIndicator } from "../axe/QuotaIndicator"; // axe:providers
+import { SkillsBadge } from "../axe/E4Vues"; // e4
+import { SkillSync, type Empreintes } from "../axe/SkillSync"; // e4
+import { QuotaIndicator } from "../axe/QuotaIndicator"; // providers
 import { WindowControls, isWindowsPlatform } from "./WindowControls";
 import type {
   ActiveTurnSummary,
@@ -135,7 +135,7 @@ type Props = {
   bootstrap: WorkspaceBootstrap;
   onSwitchWorkspace: () => void;
   onBootstrapReplace: (b: WorkspaceBootstrap) => void;
-  // axe:freechat — "chat": free conversation view (no editor/tree/terminal).
+  // freechat — "chat": free conversation view (no editor/tree/terminal).
   layout?: "ide" | "chat";
   /** Opens a project folder in the IDE view (optionally on a conversation). */
   onOpenFolder?: (path: string, conversationId?: string) => void;
@@ -145,7 +145,7 @@ type Props = {
 
 const INITIAL_LEFT = 280;
 const INITIAL_RIGHT = 420;
-// axe:colonnes-place — largeur minimale d'une colonne de chat (styles.css,
+// colonnes-place — largeur minimale d'une colonne de chat (styles.css,
 // .colonne-chat) et du bouton « + colonne » : le panneau de chat s'élargit pour
 // que ses colonnes tiennent (avant, la 2e et la 3e sortaient de l'écran).
 const LARGEUR_MIN_COLONNE_CHAT = 220;
@@ -164,10 +164,10 @@ const COMPACTION_CONTINUATION_PROMPT =
 const GOAL_COMPACTION_CONTINUATION_PROMPT =
   "Continue working toward the active goal from the compacted context. Do not repeat completed work. If the goal is now truly complete, audit it and call update_goal with status complete.";
 const IS_WINDOWS = isWindowsPlatform();
-// axe:barre-place — feux de fenêtre macOS en haut à gauche : la barre les évite.
+// barre-place — feux de fenêtre macOS en haut à gauche : la barre les évite.
 const IS_MAC = typeof navigator !== "undefined" && /mac/i.test(navigator.platform);
 
-// axe:raccourcis — pousser un dossier du PC sur la VM (bouton de la barre de titre et Ctrl+Maj+U).
+// raccourcis — pousser un dossier du PC sur la VM (bouton de la barre de titre et Ctrl+Maj+U).
 async function pousserDossierCloud(): Promise<void> {
   const { open } = await import("@tauri-apps/plugin-dialog");
   const dir = await open({ directory: true });
@@ -203,7 +203,7 @@ export function Workspace({
   const [streamingConversationIds, setStreamingConversationIds] = useState<
     Set<string>
   >(() => new Set());
-  const streamingIdsRef = useRef(streamingConversationIds); // axe:arriere-plan
+  const streamingIdsRef = useRef(streamingConversationIds); // arriere-plan
   streamingIdsRef.current = streamingConversationIds;
   // Mise à jour automatique : attendre la fin des tours (et des agents) en cours.
   useEffect(() => {
@@ -218,7 +218,7 @@ export function Workspace({
   const replayActiveTurnEventsRef = useRef<
     (conversationId: string, afterSequence?: number) => Promise<void>
   >(async () => {});
-  // axe:e3 — conversations rangées dans l'archive. L'interface ne connaît que
+  // e3 — conversations rangées dans l'archive. L'interface ne connaît que
   // la liste donnée par le service : jamais un chemin.
   const [archivedConversations, setArchivedConversations] = useState<
     ConversationSummary[]
@@ -229,7 +229,7 @@ export function Workspace({
   // Bottom-sidebar tab — "conversations" preserves the existing default.
   // Both panels stay mounted (display:none on the inactive one) so users
   // can flip between them without losing in-progress form input.
-  // axe:miroir-vm - derniere copie des conversations sur la VM.
+  // miroir-vm - derniere copie des conversations sur la VM.
   const [miroir, setMiroir] = useState<{ ok: boolean; n: number; atMs: number; error?: string } | null>(null);
   useEffect(() => {
     let un: UnlistenFn | undefined;
@@ -238,35 +238,35 @@ export function Workspace({
     ).then((f) => { un = f; });
     return () => un?.();
   }, []);
-  const [bottomTab, setBottomTab] = useState<"conversations" | "agents">( // axe:agents
+  const [bottomTab, setBottomTab] = useState<"conversations" | "agents">( // agents
     "conversations",
   );
-  // axe:sub-n — le bandeau « N agent(s) au travail » du chat ouvre la vue Agents.
+  // sub-n — le bandeau « N agent(s) au travail » du chat ouvre la vue Agents.
   useEffect(() => {
     const ouvrir = () => setBottomTab("agents");
     window.addEventListener("axe:open-agents", ouvrir);
     return () => window.removeEventListener("axe:open-agents", ouvrir);
   }, []);
-  // axe:bg-c — … et ouvre la conversation de l'agent, comme un clic dans la vue Agents.
+  // bg-c — … et ouvre la conversation de l'agent, comme un clic dans la vue Agents.
   useEffect(() => {
     const ouvrir = (e: Event) => {
       const d = (e as CustomEvent<{ id: string; title: string; conn?: string }>).detail;
-      // axe:journal-espace — sans machine précisée : celle de la vue Agents (l'espace), pas le PC.
+      // journal-espace — sans machine précisée : celle de la vue Agents (l'espace), pas le PC.
       if (d?.id) setJournalSession({ id: d.id, conn: d.conn ?? getActiveConnection(), title: d.title });
     };
     window.addEventListener("axe:open-agent-journal", ouvrir);
     return () => window.removeEventListener("axe:open-agent-journal", ouvrir);
   }, []);
-  // axe:e6 — les volets remplacent le verrou du panneau bas : chaque volet se
+  // e6 — les volets remplacent le verrou du panneau bas : chaque volet se
   // detache, se duplique et se reancre ; sa place et sa taille sont gardees
   // (localStorage) et jamais perdues hors de l'ecran.
   const volets = useVolets();
-  // axe:e4 — synchro des skills partagées toutes les 5 min (commande Tauri).
+  // e4 — synchro des skills partagées toutes les 5 min (commande Tauri).
   const skillSync = useMemo(
     () => new SkillSync((dir) => invoke<Empreintes>("shared_skills_fingerprints", { dir })),
     [],
   );
-  // axe:e14 — les conversations ouvertes, en onglets (comme un navigateur) :
+  // e14 — les conversations ouvertes, en onglets (comme un navigateur) :
   // un onglet par conversation, l'onglet actif EST la conversation active, et un
   // onglet se detache pour venir devant. La liste est gardee par espace.
   const [ongletsChat, setOngletsChat] = useState<OngletChat[]>(() => {
@@ -281,7 +281,7 @@ export function Workspace({
     }
   });
   const [chatDetache, setChatDetache] = useState<string | null>(null);
-  // axe:sub-m — journal of a sub-agent shown read-only in the focused chat column.
+  // sub-m — journal of a sub-agent shown read-only in the focused chat column.
   const [journalSession, setJournalSession] = useState<{ id: string; conn: string; title: string } | null>(null);
   useEffect(() => {
     try {
@@ -306,7 +306,7 @@ export function Workspace({
       return copie;
     });
   }, [activeConv.id, activeConv.title]);
-  // axe:onglets-sync — les onglets suivent la liste du bas : un onglet dont la
+  // onglets-sync — les onglets suivent la liste du bas : un onglet dont la
   // conversation n'existe plus (supprimee/archivee, ailleurs aussi) disparait,
   // et un renommage met a jour son titre. L'onglet actif est toujours garde
   // (conversation neuve pas encore listee).
@@ -334,10 +334,10 @@ export function Workspace({
       d !== null && d !== activeConv.id && !conversations.some((c) => c.id === d) ? null : d,
     );
   }, [conversations, activeConv.id]);
-  const activeConnection = useActiveConnection(); // axe:remote
-  // axe:v2-l2.3 — espace de travail CLOUD : fichiers sur la VM, terminal distant, indicateur de synchro.
+  const activeConnection = useActiveConnection(); // remote
+  // v2-l2.3 — espace de travail CLOUD : fichiers sur la VM, terminal distant, indicateur de synchro.
   const cloudConnection = cloudConnectionFromPath(workspacePath);
-  // axe:e15 — la session Axe Cloud, vue depuis n'importe quelle interface : c'est
+  // e15 — la session Axe Cloud, vue depuis n'importe quelle interface : c'est
   // elle qui donne le terminal a onglets (Bash du service, terminal local, Prime
   // Agent epingle), meme quand on travaille sur un dossier local.
   const [cloudReady, setCloudReady] = useState<string | null>(null);
@@ -364,17 +364,17 @@ export function Workspace({
       stop?.();
     };
   }, []);
-  // axe:v2-l6 — joignabilite du service cloud (aucun etat en mode local).
+  // v2-l6 — joignabilite du service cloud (aucun etat en mode local).
   const [cloudStatus, setCloudStatus] = useState<CloudStatus>("unknown");
-  // axe:e13 — L'utilisateur aime voir l'etat du service : le badge revient.
+  // e13 — L'utilisateur aime voir l'etat du service : le badge revient.
   const [cloudProbeIn, setCloudProbeIn] = useState(15);
-  // axe:v2-l6 (tranche 2) — etat du miroir local (la reprise reste silencieuse).
+  // v2-l6 (tranche 2) — etat du miroir local (la reprise reste silencieuse).
   const [offlineView, setOfflineView] = useState<OfflineView>(() =>
     getOfflineView(workspacePath),
   );
-  // axe:e13 — creation d'une conversation : on demande le nom.
+  // e13 — creation d'une conversation : on demande le nom.
   const [creating, setCreating] = useState(false);
-  // axe:e18 — le badge suit la connexion visible : dans un espace cloud c'est lui,
+  // e18 — le badge suit la connexion visible : dans un espace cloud c'est lui,
   // depuis l'interface classique c'est la session Axe Cloud ouverte. Avant, il
   // n'existait que dans un espace cloud — donc L'utilisateur ne le voyait jamais.
   const connexionCloud = cloudConnection ?? cloudReady;
@@ -428,7 +428,7 @@ export function Workspace({
   // E2 — la reprise est silencieuse : rien n'est annonce, rien n'est compte.
   // (Le journal est rejoue au retour du reseau et au demarrage ; l'interface
   // suit toute seule l'etat du miroir.)
-  // axe:e13 — le badge indique de lui-meme dans combien de temps la sonde
+  // e13 — le badge indique de lui-meme dans combien de temps la sonde
   // retentera, sans jamais rien demander a l'utilisateur.
   useEffect(() => {
     if (!cloudConnection || cloudStatus !== "offline") return;
@@ -437,7 +437,7 @@ export function Workspace({
     const timer = window.setInterval(tick, 1000);
     return () => window.clearInterval(timer);
   }, [cloudConnection, cloudStatus]);
-  // axe:agents — /tree overlay opened from the composer.
+  // agents — /tree overlay opened from the composer.
   const [treeSessionId, setTreeSessionId] = useState<string | null>(null);
   useEffect(() => {
     const handler = (event: Event) => {
@@ -447,7 +447,7 @@ export function Workspace({
     window.addEventListener("axe:open-session-tree", handler);
     return () => window.removeEventListener("axe:open-session-tree", handler);
   }, []);
-  // axe:agents end
+  // agents end
 
   useEffect(() => {
     activeConvIdRef.current = activeConv.id;
@@ -545,7 +545,7 @@ export function Workspace({
   const createConversation = useCallback(async (titre: string) => {
     const seq = ++navigationSeqRef.current;
     const nom = titre.trim();
-    // axe:e12b — sur un espace, « nouvelle conversation » se joue en deux temps :
+    // e12b — sur un espace, « nouvelle conversation » se joue en deux temps :
     // le service cree la session, on ouvre aussitot le fil a droite. Aucun modele
     // n'est demande ici : le dernier choisi part en silence (il se change dans la
     // conversation ouverte), exactement comme pour « Nouvelle recette ».
@@ -575,7 +575,7 @@ export function Workspace({
       const next = await api.createConversation(workspacePath);
       if (seq !== navigationSeqRef.current) return;
       if (next.workspace.path !== workspacePath) return;
-      // axe:e13 — le nom demande a la creation sert a retrouver la
+      // e13 — le nom demande a la creation sert a retrouver la
       // conversation dans la liste et dans les archives.
       const renommees = await api.renameConversation(
         workspacePath,
@@ -591,7 +591,7 @@ export function Workspace({
     }
   }, [workspacePath, cloudConnection]);
 
-  // axe:e13 — « + » ouvre le champ au lieu de creer tout de suite : le nom est
+  // e13 — « + » ouvre le champ au lieu de creer tout de suite : le nom est
   // exige, donc la creation ne part jamais sans lui.
   const startCreate = useCallback(() => {
     setCreating(true);
@@ -670,9 +670,9 @@ export function Workspace({
 
   const deleteConversation = useCallback(
     async (id: string) => {
-      setOngletsChat((t) => t.filter((o) => o.id !== id)); // axe:suppr-onglet
+      setOngletsChat((t) => t.filter((o) => o.id !== id)); // suppr-onglet
       setChatDetache((a) => (a === id ? null : a));
-      // axe:stuck - une conversation bloquee « en marche » peut etre supprimee : on l'arrete d'abord.
+      // stuck - une conversation bloquee « en marche » peut etre supprimee : on l'arrete d'abord.
       if (streamingConversationIds.has(id)) {
         try { await api.cancelTurn(workspacePath, id); } catch { /* deja arretee */ }
         markConversationStreaming(id, false);
@@ -697,9 +697,9 @@ export function Workspace({
     [workspacePath, onBootstrapReplace, streamingConversationIds, markConversationStreaming],
   );
 
-  // axe:e3 — la liste des archives n'est demandée qu'à un espace qui sait
+  // e3 — la liste des archives n'est demandée qu'à un espace qui sait
   // archiver : en local, il n'y a pas d'archive et on ne l'invente pas.
-  // axe:archive-locale — en local aussi : l'archive vit dans la base locale.
+  // archive-locale — en local aussi : l'archive vit dans la base locale.
   const refreshArchivedConversations = useCallback(async () => {
     try {
       const list = await api.listArchivedConversations(workspacePath);
@@ -714,7 +714,7 @@ export function Workspace({
     void refreshArchivedConversations();
   }, [refreshArchivedConversations]);
 
-  // axe:archive-erreur — pushNotice est defini plus bas : on passe par une ref.
+  // archive-erreur — pushNotice est defini plus bas : on passe par une ref.
   const avisArchiveRef = useRef<(texte: string) => void>(() => {});
   const archiveConversation = useCallback(
     async (id: string) => {
@@ -725,7 +725,7 @@ export function Workspace({
         );
         return;
       }
-      setOngletsChat((t) => t.filter((o) => o.id !== id)); // axe:suppr-onglet
+      setOngletsChat((t) => t.filter((o) => o.id !== id)); // suppr-onglet
       setChatDetache((a) => (a === id ? null : a));
       try {
         const next = await api.archiveConversation(workspacePath, id);
@@ -736,7 +736,7 @@ export function Workspace({
           if (first) {
             void selectConversation(first.id);
           } else {
-            // axe:archive-locale — plus aucune conversation active : on en ouvre une neuve.
+            // archive-locale — plus aucune conversation active : on en ouvre une neuve.
             void createConversation("");
           }
         }
@@ -793,7 +793,7 @@ export function Workspace({
     "file" | "directory" | null
   >(null);
   const fileTreeRef = useRef<FileTreeHandle | null>(null);
-  // axe:explorateur — tri de l'explorateur, mémorisé sur le poste.
+  // explorateur — tri de l'explorateur, mémorisé sur le poste.
   const [triExplorateur, setTriExplorateur] = useState<TriExplorateur>(() =>
     lireTri(typeof localStorage !== "undefined" ? localStorage.getItem(CLE_STOCKAGE_TRI) : null),
   );
@@ -941,7 +941,7 @@ export function Workspace({
     };
   }, [refreshFileTree]);
 
-  // axe:reprise-reveil — au réveil du PC (onglet visible, focus) ou à la
+  // reprise-reveil — au réveil du PC (onglet visible, focus) ou à la
   // reconnexion d'un espace, relire la liste et la conversation ouverte : les
   // tours faits pendant la coupure s'affichent au lieu de sembler arrêtés.
   useEffect(() => {
@@ -1058,12 +1058,12 @@ export function Workspace({
     // fan it out via a window event so the pane can react regardless of
     // whether it just mounted or was already open.
     if (section) {
-      // axe:parcours-collegue — gardée aussi pour un volet pas encore monté (avant : « About »).
+      // parcours-collegue — gardée aussi pour un volet pas encore monté (avant : « About »).
       demanderSectionReglages(section);
     }
   }, []);
 
-  // axe:savide-reglages — /login et /settings ouvrent le volet (IDE et conversation sans dossier).
+  // savide-reglages — /login et /settings ouvrent le volet (IDE et conversation sans dossier).
   useEffect(() => {
     const ouvrir = () => openSettings();
     window.addEventListener(OUVRIR_REGLAGES_EVENT, ouvrir);
@@ -1091,7 +1091,7 @@ export function Workspace({
   }, []);
   avisArchiveRef.current = (texte) => pushNotice("error", texte);
 
-  // axe:freechat — no editor in the free conversation view: files produced
+  // freechat — no editor in the free conversation view: files produced
   // by the agent (relative to the conversation's private folder) open with
   // the default application.
   const openFreeChatFile = useCallback(
@@ -1241,7 +1241,7 @@ export function Workspace({
         }
         const cleaned = cleanChatFilePath(rawPath).replace(/\\/g, "/");
         if (!cleaned || cleaned.includes("://")) return;
-        // axe:liens — chemin absolu hors de l'espace (Windows « C:/… », réseau « //… »,
+        // liens — chemin absolu hors de l'espace (Windows « C:/… », réseau « //… »,
         // Linux/macOS « /… ») : ouvert en lecture dans l'éditeur.
         if (/^[a-zA-Z]:\//.test(cleaned) || cleaned.startsWith("/")) {
           if (await openExternalFile(cleaned)) return;
@@ -1449,7 +1449,7 @@ export function Workspace({
         });
       } catch (err) {
         console.error(err);
-        // axe:v2-l6 — hors ligne : message court au lieu de l'erreur brute.
+        // v2-l6 — hors ligne : message court au lieu de l'erreur brute.
         if (err instanceof CloudOfflineError) {
           pushNotice("error", err.message);
         }
@@ -1458,7 +1458,7 @@ export function Workspace({
     [pushNotice, workspacePath, tabs],
   );
 
-  // axe:v2-l6 (tranche 2) — tranche un conflit de synchronisation.
+  // v2-l6 (tranche 2) — tranche un conflit de synchronisation.
   const handleResolveConflict = useCallback(
     async (relativePath: string, keep: "local" | "server" | "both") => {
       try {
@@ -1870,7 +1870,7 @@ export function Workspace({
   >(new Set());
   const dragSubsRef = useRef<Set<(active: boolean) => void>>(new Set());
   const chatDropZoneRef = useRef<HTMLDivElement | null>(null);
-  // axe:e17b — les colonnes sans focus ne reçoivent pas les fichiers déposés.
+  // e17b — les colonnes sans focus ne reçoivent pas les fichiers déposés.
   const chatDropZoneMorteRef = useRef<HTMLDivElement | null>(null);
   const fileTreeDropZoneRef = useRef<HTMLDivElement | null>(null);
   const [fileTreeDropState, setFileTreeDropState] = useState<{
@@ -2067,7 +2067,7 @@ export function Workspace({
         continueAfter && continuationMode === "goal"
           ? GOAL_COMPACTION_CONTINUATION_PROMPT
           : COMPACTION_CONTINUATION_PROMPT;
-      // axe:file-attente — la compaction finit par un « turn_finished »
+      // file-attente — la compaction finit par un « turn_finished »
       // (src-tauri/src/turns.rs:719) et Workspace remet « en cours » à faux
       // (ci-dessous) AVANT d'envoyer la relance, après deux await : la file
       // d'attente envoyait son message dans ce trou. La conversation reste
@@ -2168,7 +2168,7 @@ export function Workspace({
       const selected = modelRefWithThinking(model, thinking);
       const local = () =>
         api.setConversationModelPreference(workspacePath, conversationId, mode, model, thinking);
-      // axe:parcours-collegue — conversation d'espace inconnue du PC : modèle posé sur le service.
+      // parcours-collegue — conversation d'espace inconnue du PC : modèle posé sur le service.
       const updated = cloudConnection
         ? await preferenceModeleEspace(
             local,
@@ -2261,7 +2261,7 @@ export function Workspace({
     [workspacePath, markConversationStreaming, markConversationStreamingModel, onBootstrapReplace],
   );
 
-  // axe:stop-force — Stop ne reste jamais sans effet (voir chat/arretForce.ts) :
+  // stop-force — Stop ne reste jamais sans effet (voir chat/arretForce.ts) :
   // encore en cours 10 s apres Stop => « Arret force… » et arret renvoye ; un
   // clic sur « Arret force… », ou un arret que personne ne prend (tour
   // fantome), libere la conversation dans toutes ses vues.
@@ -2291,7 +2291,7 @@ export function Workspace({
       } catch (err) {
         console.error(err);
       }
-      // axe:stuck - tour fantome (plus rien cote moteur) : Stop libere toujours l'etat local.
+      // stuck - tour fantome (plus rien cote moteur) : Stop libere toujours l'etat local.
       markConversationStreaming(conversationId, false);
       if (liberer || !pris) libererConversation(conversationId);
     },
@@ -2335,7 +2335,7 @@ export function Workspace({
     [majDemandesArret, envoyerArret],
   );
 
-  // axe:arriere-plan — « Arrière-plan » : le travail en cours continue dans une
+  // arriere-plan — « Arrière-plan » : le travail en cours continue dans une
   // session d'arrière-plan, enfant de la conversation (vue Agents), et la
   // conversation est libérée (voir chat/arrierePlan.ts).
   const mettreConversationEnArrierePlan = useCallback(
@@ -2348,7 +2348,7 @@ export function Workspace({
           forker: (id, nom, parentId) => agentsApi.fork(id, undefined, nom, connexion, parentId),
           envoyer: (id, texte) => agentsApi.send(id, texte, connexion),
           attendre: (ms) => sleep(ms),
-          // axe:bg-a — la conversation est prévenue (message système, sans lancer de tour).
+          // bg-a — la conversation est prévenue (message système, sans lancer de tour).
           prevenir: (conversationId, depuis, texte) =>
             agentsApi.call("sessions.message", { sessionId: conversationId, from: depuis, text: texte, wake: false }, connexion),
         },
@@ -2365,7 +2365,7 @@ export function Workspace({
     [cloudConnection, libererConversation],
   );
 
-  // axe:file-demon — la file des conversations non affichées est envoyée par
+  // file-demon — la file des conversations non affichées est envoyée par
   // le service lui-même (fin de tour), même si l'IDE montre un autre dossier.
   // Ici : migration de l'ancienne file du navigateur de cet espace.
   useEffect(() => {
@@ -2380,7 +2380,7 @@ export function Workspace({
       changeModelPreference: changeConversationModelPreferenceFor,
       implementPlanFresh: implementPlanFreshForConversation,
       stop: stopTurnForConversation,
-      background: mettreConversationEnArrierePlan, // axe:arriere-plan
+      background: mettreConversationEnArrierePlan, // arriere-plan
     }),
     [
       sendMessageForConversation,
@@ -2398,7 +2398,7 @@ export function Workspace({
   );
 
   // ---------------- Layout state ----------------
-  // axe:e18 — detacher libere la place : un volet detache se replie en liseré et
+  // e18 — detacher libere la place : un volet detache se replie en liseré et
   // le voisin prend le terrain. C'est le but du geste (retour de l'utilisateur).
   const explorateurDetache = volets.estDetache("explorateur");
   const panneauBasDetache = volets.estDetache("panneauBas");
@@ -2432,11 +2432,11 @@ export function Workspace({
   }, []);
   const [leftWidth, setLeftWidth] = useState(INITIAL_LEFT);
   const [rightWidth, setRightWidth] = useState(INITIAL_RIGHT);
-  // axe:barre-titre — les boutons de la barre s'arrêtent avant la marque (et la
+  // barre-titre — les boutons de la barre s'arrêtent avant la marque (et la
   // pastille de mise à jour) : jamais de chevauchement, même fenêtre étroite.
   const barreTitreRef = useRef<HTMLDivElement | null>(null);
   const [largeurDroiteBarre, setLargeurDroiteBarre] = useState(0);
-  // axe:barre-place — et à gauche, la place des éléments posés en début de barre
+  // barre-place — et à gauche, la place des éléments posés en début de barre
   // (quota d'abonnement, import cloud) : les boutons prennent tout le reste de la
   // barre au lieu de la seule largeur de l'éditeur (rognés à 800-1024 px, et dès
   // que le chat s'élargit pour ses colonnes).
@@ -2595,7 +2595,7 @@ export function Workspace({
     : null;
   const chatModeModelSettings = activeConv.modeModelSettings;
 
-  // axe:e17b — colonnes de chat. Chaque colonne garde ses onglets ; la colonne
+  // e17b — colonnes de chat. Chaque colonne garde ses onglets ; la colonne
   // qui a le focus porte la conversation active (titre, raccourcis, liste de
   // gauche, sélection de texte) ; les autres montrent leur dernier fil lu.
   const [etatColonnesChat, setEtatColonnesChat] = useState<EtatColonnes<string>>(
@@ -2606,7 +2606,7 @@ export function Workspace({
       },
   );
   const colonnesChat = etatColonnesChat.colonnes;
-  // axe:colonnes-place — place demandée par les colonnes (une seule : la largeur réglée).
+  // colonnes-place — place demandée par les colonnes (une seule : la largeur réglée).
   const besoinColonnesChat =
     colonnesChat.length > 1
       ? colonnesChat.length * LARGEUR_MIN_COLONNE_CHAT + (colonnesChat.length - 1) + LARGEUR_AJOUT_COLONNE
@@ -2626,7 +2626,7 @@ export function Workspace({
       /* stockage plein : les colonnes vivent le temps de la session */
     }
   }, [etatColonnesChat, workspacePath]);
-  // axe:hotfix-largeurs — largeur de chaque colonne de chat (poids flex), réglée
+  // hotfix-largeurs — largeur de chaque colonne de chat (poids flex), réglée
   // par la poignée entre deux colonnes ; double-clic = parts égales.
   const colonnesChatRef = useRef<HTMLDivElement | null>(null);
   const [poidsColonnesChat, setPoidsColonnesChat] = useState<number[]>(() => {
@@ -2665,7 +2665,7 @@ export function Workspace({
   );
   // Les onglets sont la source des conversations ouvertes : chaque onglet a une
   // colonne (celle du focus par défaut), un onglet fermé quitte sa colonne.
-  // axe:hotfix — le focus suit la conversation active (voir synchroniser).
+  // hotfix — le focus suit la conversation active (voir synchroniser).
   const idActifColonnesRef = useRef(activeConv.id);
   idActifColonnesRef.current = activeConv.id;
   useEffect(() => {
@@ -2690,7 +2690,7 @@ export function Workspace({
       return ou ? focaliserColonne(etat, ou[0]) : etat;
     });
   }, [activeConv]);
-  // axe:colonne-echec — chargement impossible (conversation supprimée ailleurs,
+  // colonne-echec — chargement impossible (conversation supprimée ailleurs,
   // moteur pas prêt…) : un message avec « Réessayer » et « Fermer l'onglet » au
   // lieu d'« Ouverture de la conversation… » affiché pour toujours.
   const [echecsColonnes, setEchecsColonnes] = useState<Record<string, string>>({});
@@ -2722,7 +2722,7 @@ export function Workspace({
         });
     }
   }, [colonnesChat, etatColonnesChat.focus, visibleDeColonne, conversationsColonnes, echecsColonnes, workspacePath, chatDetache, activeConv.id]);
-  // axe:colonne-echec — ce qu'affiche une colonne (ou la fenêtre détachée) dont le fil n'est pas là.
+  // colonne-echec — ce qu'affiche une colonne (ou la fenêtre détachée) dont le fil n'est pas là.
   const renduFilAbsent = (id: string | null) =>
     !id ? (
       <p className="onglets-chat__absent">Colonne vide : glissez-y un onglet.</p>
@@ -2776,12 +2776,12 @@ export function Workspace({
     });
   }, [activeConv.id]);
 
-  // axe:hotfix — « Fermer la colonne » : ses onglets rejoignent la colonne voisine.
+  // hotfix — « Fermer la colonne » : ses onglets rejoignent la colonne voisine.
   const fermerColonneChat = useCallback((index: number) => {
     setEtatColonnesChat((etat) => fermerColonneEtat(etat, index));
   }, []);
 
-  // axe:e17b — archiver = la conversation quitte l'archive des onglets et sa colonne.
+  // e17b — archiver = la conversation quitte l'archive des onglets et sa colonne.
   const archiverConversationColonne = useCallback(
     async (id: string) => {
       await archiveConversation(id);
@@ -2792,7 +2792,7 @@ export function Workspace({
     [archiveConversation],
   );
 
-  // axe:raccourcis — les actions de l'IDE pour le registre unique (axe/raccourcis.ts).
+  // raccourcis — les actions de l'IDE pour le registre unique (axe/raccourcis.ts).
   // Une ref garde la version courante : on s'inscrit une seule fois.
   const actionsRaccourcisRef = useRef<Parameters<typeof fournirActions>[0]>({});
   actionsRaccourcisRef.current = {
@@ -2841,7 +2841,7 @@ export function Workspace({
     return fournirActions(relais);
   }, []);
 
-  // axe:e14 — les gestes des onglets du chat.
+  // e14 — les gestes des onglets du chat.
   const fermerOngletChat = useCallback(
     (id: string) => {
       const index = ongletsChat.findIndex((t) => t.id === id);
@@ -2850,7 +2850,7 @@ export function Workspace({
       setChatDetache((actuel) => (actuel === id ? null : actuel));
       if (id === activeConv.id) {
         // On ne laisse jamais le chat vide : on glisse sur l'onglet voisin.
-        // axe:hotfix — d'abord le voisin dans SA colonne, sinon la conversation
+        // hotfix — d'abord le voisin dans SA colonne, sinon la conversation
         // visible de la colonne d'à côté (avant : un onglet d'une autre colonne).
         let voisin: string | null = null;
         const ou = trouverColonne(colonnesChat, id);
@@ -2870,7 +2870,7 @@ export function Workspace({
   );
   const detacherChat = useCallback(
     (id: string) => {
-      // axe:e18 — la fenetre montre la conversation detachee ; la colonne garde
+      // e18 — la fenetre montre la conversation detachee ; la colonne garde
       // les autres onglets lisibles (on bascule sur la voisine s'il y en a une).
       setChatDetache(id);
       const autres = ongletsChat.filter((t) => t.id !== id);
@@ -2883,8 +2883,8 @@ export function Workspace({
     [activeConv.id, ongletsChat, selectConversation],
   );
 
-  // axe:freechat — the same ChatPane serves both layouts.
-  // axe:e17b — un ChatPane par colonne : chacun reçoit SA conversation et ses
+  // freechat — the same ChatPane serves both layouts.
+  // e17b — un ChatPane par colonne : chacun reçoit SA conversation et ses
   // actions liées (createConversationActions), jamais celles du fil actif.
   const renduChatPane = (conv: SavedConversation, enFocus: boolean) => {
     const actions =
@@ -2942,7 +2942,7 @@ export function Workspace({
         onSelect={(id) => void selectConversation(id)}
         onCreate={(titre) => void createConversation(titre)}
         onRename={(id, title) => void renameConversation(id, title)}
-        onDelete={(id) => void archiveConversation(id)} // axe:archive-locale
+        onDelete={(id) => void archiveConversation(id)} // archive-locale
         onHome={onSwitchWorkspace}
         onOpenFolder={(path, conversationId) => onOpenFolder?.(path, conversationId)}
         settingsOpen={settingsOpen}
@@ -2951,11 +2951,11 @@ export function Workspace({
         settingsView={<SettingsPane workspacePath={workspacePath} />}
         chat={chatPane}
       />
-      {/* axe:agents — /tree works in the free conversation view too */}
+      {/* agents — /tree works in the free conversation view too */}
       {treeSessionId ? (
         <div className="axe-tree-overlay" onClick={() => setTreeSessionId(null)}>
           <div className="axe-tree-overlay__panel" onClick={(e) => e.stopPropagation()}>
-            <SessionTree sessionId={treeSessionId} connectionId={cloudConnection ?? undefined /* axe:parcours-collegue (D11) : arbre lu sur l'espace, pas sur le PC */} onClose={() => setTreeSessionId(null)} />
+            <SessionTree sessionId={treeSessionId} connectionId={cloudConnection ?? undefined /* parcours-collegue (D11) : arbre lu sur l'espace, pas sur le PC */} onClose={() => setTreeSessionId(null)} />
           </div>
         </div>
       ) : null}
@@ -2963,9 +2963,9 @@ export function Workspace({
       </>
     );
   }
-  // axe:freechat end
+  // freechat end
 
-  // axe:e6 — les cinq volets sont definis une seule fois : ils se rendent a
+  // e6 — les cinq volets sont definis une seule fois : ils se rendent a
   // leur place, ou dans une fenetre flottante quand ils sont detaches. Une
   // copie (exemplaire >= 1) est un composant independant.
   const voletExplorateur = (
@@ -3064,7 +3064,7 @@ export function Workspace({
       className="sidebar__section sidebar__section--bottom"
       style={{ flex: "1 1 0" }}
     >
-      <ConnectionSelector onManage={() => openSettings()} /> {/* axe:remote */}
+      <ConnectionSelector onManage={() => openSettings()} /> {/* remote */}
       <div className="sidebar__head sidebar__head--tabs">
         <div className="sidebar-tabs" role="tablist">
           <button
@@ -3074,7 +3074,7 @@ export function Workspace({
             data-active={bottomTab === "conversations" ? "true" : "false"}
             aria-selected={bottomTab === "conversations"}
             onClick={() => setBottomTab("conversations")}
-            title="Conversations" // axe:laterale-etroite — barre étroite : icône seule
+            title="Conversations" // laterale-etroite — barre étroite : icône seule
             aria-label="Conversations"
           >
             <Icon
@@ -3084,7 +3084,7 @@ export function Workspace({
             />
             <span>Conversations</span>
           </button>
-          {/* axe:agents */}
+          {/* agents */}
           <button
             type="button"
             role="tab"
@@ -3092,17 +3092,17 @@ export function Workspace({
             data-active={bottomTab === "agents" ? "true" : "false"}
             aria-selected={bottomTab === "agents"}
             onClick={() => setBottomTab("agents")}
-            title="Agents" // axe:laterale-etroite
+            title="Agents" // laterale-etroite
             aria-label="Agents"
           >
             <Icon icon="solar:branching-paths-down-linear" width={13} height={13} />
             <span>Agents</span>
           </button>
-          {/* axe:agents end */}
+          {/* agents end */}
         </div>
         <VoletOutils volet="panneauBas" volets={volets} classeBouton="sidebar__head-btn" />
         {bottomTab === "conversations" &&
-          (activeConnection === LOCAL_CONNECTION || cloudConnection) && ( // axe:remote / axe:e12b
+          (activeConnection === LOCAL_CONNECTION || cloudConnection) && ( // remote / e12b
           <div className="sidebar__head-actions">
             <button
               type="button"
@@ -3133,7 +3133,7 @@ export function Workspace({
           display: bottomTab === "conversations" ? "flex" : "none",
         }}
       >
-        {/* axe:e12b — sur un espace (Axe Cloud), ce panneau n'est QUE la liste :
+        {/* e12b — sur un espace (Axe Cloud), ce panneau n'est QUE la liste :
             on choisit, on renomme, on archive, on supprime ; la conversation
             elle-meme se lit et s'ecrit dans le volet de droite. Le lecteur integre
             ne reste que pour une connexion distante classique (SSH), ou il n'y a
@@ -3153,48 +3153,48 @@ export function Workspace({
           activeId={activeConv.id}
           streamingIds={streamingConversationIds}
           onSelect={(id) => {
-            // axe:bg-e — une conversation choisie dans la liste remplace la vue d'un agent.
+            // bg-e — une conversation choisie dans la liste remplace la vue d'un agent.
             setJournalSession(null);
             void selectConversation(id);
           }}
           onRename={renameConversation}
-          onDelete={archiveConversation} // axe:suppr=archive
-          // axe:e3 / axe:archive-locale — local comme espace cloud : on archive
+          onDelete={archiveConversation} // suppr=archive
+          // e3 / archive-locale — local comme espace cloud : on archive
           // au lieu de supprimer ; la suppression n'existe que depuis l'archive.
           onArchive={archiveConversation}
           archived={archivedConversations}
           onRestoreArchived={restoreArchivedConversation}
           onDeleteArchived={deleteArchivedConversation}
-          onOpenBackground={(id, title) => setJournalSession({ id, conn: cloudConnection ?? LOCAL_CONNECTION, title })} // axe:0.1.71
+          onOpenBackground={(id, title) => setJournalSession({ id, conn: cloudConnection ?? LOCAL_CONNECTION, title })} // 0.1.71
         />
         </>
         )}
       </div>
-      {/* axe:agents */}
+      {/* agents */}
       {bottomTab === "agents" ? (
         <div className="sidebar-tab-pane" role="tabpanel" style={{ display: "flex" }}>
           <AgentsView
             workspacePath={workspacePath}
             onOpenConversation={(id) => {
-              setJournalSession(null); // axe:sub-m
+              setJournalSession(null); // sub-m
               void selectConversation(id);
             }}
-            onOpenJournal={(id, conn, title) => setJournalSession({ id, conn, title })} // axe:sub-m
-            onOpenFreeConversation={onOpenFreeChat} // axe:freechat
+            onOpenJournal={(id, conn, title) => setJournalSession({ id, conn, title })} // sub-m
+            onOpenFreeConversation={onOpenFreeChat} // freechat
           />
         </div>
       ) : null}
       {treeSessionId ? (
         <div className="axe-tree-overlay" onClick={() => setTreeSessionId(null)}>
           <div className="axe-tree-overlay__panel" onClick={(e) => e.stopPropagation()}>
-            <SessionTree sessionId={treeSessionId} connectionId={cloudConnection ?? undefined /* axe:parcours-collegue (D11) : arbre lu sur l'espace, pas sur le PC */} onClose={() => setTreeSessionId(null)} />
+            <SessionTree sessionId={treeSessionId} connectionId={cloudConnection ?? undefined /* parcours-collegue (D11) : arbre lu sur l'espace, pas sur le PC */} onClose={() => setTreeSessionId(null)} />
           </div>
         </div>
       ) : null}
-      {/* axe:agents end */}
+      {/* agents end */}
     </div>  );
 
-  // axe:e17b — colonnes de fichiers : la disposition garde les chemins par
+  // e17b — colonnes de fichiers : la disposition garde les chemins par
   // colonne ; `colonnesFichiers` (EditorTab[][]) en est la vue sur `tabs`.
   const [dispositionFichiers, setDispositionFichiers] = useState<EtatColonnes<string>>({
     colonnes: [[]],
@@ -3227,7 +3227,7 @@ export function Workspace({
     [tabs],
   );
 
-  // axe:e17b — deplacement d'onglet de fichier entre colonnes sans DnD HTML5.
+  // e17b — deplacement d'onglet de fichier entre colonnes sans DnD HTML5.
   const [menuOnglet, setMenuOnglet] = useState<{ chemin: string; col: number; x: number; y: number } | null>(null);
   useEffect(() => {
     if (!menuOnglet) return;
@@ -3492,7 +3492,7 @@ export function Workspace({
   const renduTerminal = (cle: string) => (
     <>
       {terminalAvailable && (cloudConnection || cloudReady) ? (
-        // axe:e8 / axe:e15 — le terminal a onglets (Bash du service, terminal
+        // e8 / e15 — le terminal a onglets (Bash du service, terminal
         // local, « Prime Agent » epingle) s'affiche aussi depuis l'interface
         // classique : il suffit d'une session Axe Cloud ouverte. La cle de
         // stockage est stable, donc on retrouve les memes onglets partout.
@@ -3521,7 +3521,7 @@ export function Workspace({
   return (
     <div className="workspace">
       {noticeEl}
-      {/* axe:e6 — les volets detaches vivent ici, dans la fenetre de l'application. */}
+      {/* e6 — les volets detaches vivent ici, dans la fenetre de l'application. */}
       <VoletsFlottants
         volets={volets}
         contenu={(fenetre) => {
@@ -3541,7 +3541,7 @@ export function Workspace({
           }
         }}
       />
-      {/* axe:e14 — l'onglet de chat detache vit devant, dans sa fenetre ; le
+      {/* e14 — l'onglet de chat detache vit devant, dans sa fenetre ; le
           refermer le remet a sa place. */}
       {chatDetache ? (
         <FenetreOnglet
@@ -3632,7 +3632,7 @@ export function Workspace({
           >
             <Icon icon="solar:sidebar-minimalistic-linear" width={12} height={12} style={{ transform: "scaleX(-1)" }} />
           </button>
-          {/* axe:e18 — le menu « Volets » est retire : chaque volet a son bouton,
+          {/* e18 — le menu « Volets » est retire : chaque volet a son bouton,
               et un volet detache se replie en liseré. */}
           <button
             className="titlebar__btn"
@@ -3653,7 +3653,7 @@ export function Workspace({
             <Icon icon="solar:home-2-linear" width={12} height={12} />
             <span className="titlebar__btn-label">Accueil</span>
           </button>
-          {/* axe:push-dossier - un seul espace : pousser un dossier du PC sur la VM, depuis l'IDE. */}
+          {/* push-dossier - un seul espace : pousser un dossier du PC sur la VM, depuis l'IDE. */}
           {EDITION_LOCALE ? null : <button
             className="titlebar__btn"
             title="Pousser un dossier de ce PC sur le cloud (VM)"
@@ -3704,9 +3704,9 @@ export function Workspace({
             </>
           ) : null}
         </div>
-        <QuotaIndicator /> {/* axe:providers */}
+        <QuotaIndicator /> {/* providers */}
         {cloudConnection ? (
-          // axe:import — copier un dossier du PC dans l'espace, puis l'ouvrir.
+          // import — copier un dossier du PC dans l'espace, puis l'ouvrir.
           <button
             type="button"
             className="skills-badge"
@@ -3728,7 +3728,7 @@ export function Workspace({
           </button>
         ) : null}
         <UpdateBadge />
-        <SkillsBadge sync={skillSync} /> {/* axe:e4 */}
+        <SkillsBadge sync={skillSync} /> {/* e4 */}
         <WindowControls />
       </div>
 
@@ -3782,7 +3782,7 @@ export function Workspace({
         )}
         <div
           className="workbench-center"
-          // axe:colonnes-place — plusieurs colonnes de chat : l'éditeur cède un peu de place.
+          // colonnes-place — plusieurs colonnes de chat : l'éditeur cède un peu de place.
           style={colonnesChat.length > 1 ? { minWidth: 240 } : undefined}
         >
           {/* E2 — le seul cas ou l'interface demande quelque chose : le meme
@@ -3905,7 +3905,7 @@ export function Workspace({
           }
         >
           {droiteRepliee ? (
-            // axe:e18 — le chat detache ne garde plus sa colonne : liseré, et
+            // e18 — le chat detache ne garde plus sa colonne : liseré, et
             // l'editeur prend toute la largeur.
             <div className="volet-repli-hote">
               {chatDetacheSeul ? (
@@ -3929,9 +3929,9 @@ export function Workspace({
               )}
             </div>
           ) : (
-            /* axe:e14 — les conversations en onglets ; axe:e18 — un onglet
+            /* e14 — les conversations en onglets ; e18 — un onglet
                detache laisse les AUTRES lisibles a droite.
-               axe:e17b — une colonne par liste d'onglets, « + colonne » a droite
+               e17b — une colonne par liste d'onglets, « + colonne » a droite
                de la derniere, glisser un onglet d'une colonne a l'autre. */
             <div className="colonnes-chat" data-testid="colonnes-chat" ref={colonnesChatRef}>
               {colonnesChat.map((colonne, index) => {
@@ -3950,7 +3950,7 @@ export function Workspace({
                     data-colonne={index}
                     onPointerDownCapture={(event) => {
                       if (enFocus) return;
-                      // axe:hotfix — fermer/détacher un onglet d'une autre colonne (ou
+                      // hotfix — fermer/détacher un onglet d'une autre colonne (ou
                       // clic du milieu) n'ouvre plus d'abord sa conversation : elle
                       // revenait aussitôt après sa fermeture.
                       const cible = event.target as HTMLElement | null;
@@ -3983,7 +3983,7 @@ export function Workspace({
                       actif={visible ?? ""}
                       detache={chatDetache}
                       onActiver={(id) => {
-                        setJournalSession(null); // axe:sub-m
+                        setJournalSession(null); // sub-m
                         void selectConversation(id);
                       }}
                       onFermer={fermerOngletChat}
@@ -4010,7 +4010,7 @@ export function Workspace({
                         chatPane
                       )
                     ) : conv && conv.id === chatDetache ? (
-                      // axe:colonne-echec — son fil est dans la fenêtre détachée (avant :
+                      // colonne-echec — son fil est dans la fenêtre détachée (avant :
                       // « Ouverture de la conversation… » pour toujours).
                       <p className="onglets-chat__absent">Conversation détachée, devant.</p>
                     ) : conv ? (

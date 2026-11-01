@@ -1,4 +1,4 @@
-// axe:e17b — colonnes de chat et de fichiers.
+// e17b — colonnes de chat et de fichiers.
 //
 // Etat pur (sans React) pour pouvoir le tester en node : chaque colonne est une
 // liste ordonnee d'identifiants ; une colonne "focus" donne la conversation active.
@@ -150,7 +150,7 @@ export function colonneCible(attr: string | null | undefined, nb: number): numbe
   return Number.isInteger(n) && n >= 0 && n < nb ? n : null;
 }
 
-/** axe:hotfix — le focus va sur la colonne qui contient `id` (conversation active). */
+/** hotfix — le focus va sur la colonne qui contient `id` (conversation active). */
 export function suivre<T>(
   etat: EtatColonnes<T>,
   id: T,
@@ -161,7 +161,7 @@ export function suivre<T>(
 }
 
 /**
- * axe:hotfix — accorde les colonnes aux onglets ouverts : un onglet fermé quitte
+ * hotfix — accorde les colonnes aux onglets ouverts : un onglet fermé quitte
  * sa colonne, un onglet neuf va dans la colonne du focus, et le focus suit la
  * conversation active (avant : il sautait sur la colonne du DERNIER onglet).
  */
@@ -182,7 +182,7 @@ export function synchroniser<T>(
 }
 
 /**
- * axe:hotfix — « Fermer la colonne » : ses onglets rejoignent la colonne voisine
+ * hotfix — « Fermer la colonne » : ses onglets rejoignent la colonne voisine
  * (à gauche, ou à droite pour la première) ; aucune conversation n'est fermée.
  */
 export function fermerColonne<T>(etat: EtatColonnes<T>, index: number): EtatColonnes<T> {
@@ -197,7 +197,7 @@ export function fermerColonne<T>(etat: EtatColonnes<T>, index: number): EtatColo
   return { colonnes: net, focus: borner(focus, net.length) };
 }
 
-/** axe:hotfix-largeurs — largeur minimale d'une colonne de chat (comme le CSS). */
+/** hotfix-largeurs — largeur minimale d'une colonne de chat (comme le CSS). */
 export const LARGEUR_MIN_COLONNE_PX = 220;
 
 /** Poids (flex-grow) de `n` colonnes : ceux gardés s'ils vont, sinon parts égales. */

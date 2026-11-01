@@ -31,7 +31,7 @@ const CODE_SYSTEM_PREFIX: &str = "You are Claude Code, Anthropic's official CLI 
 const COMMON_BETA: &str = "fine-grained-tool-streaming-2025-05-14";
 const OAUTH_BETA: &str = "claude-code-20250219,oauth-2025-04-20";
 const CACHE_BREAKPOINTS: usize = 4;
-/// axe:cache — set once an endpoint refused `cache_control.ttl`: later
+/// cache — set once an endpoint refused `cache_control.ttl`: later
 /// requests of this process use the default 5-minute cache.
 static CACHE_TTL_REFUSED: AtomicBool = AtomicBool::new(false);
 const ANTHROPIC_MAX_IMAGE_BASE64_BYTES: usize = 5 * 1024 * 1024;
@@ -44,7 +44,7 @@ pub struct AnthropicConfig {
     pub base_url: String,
     pub api_version: String,
     pub extra_beta: Option<String>,
-    // axe:providers — identity + catalog for Anthropic-compatible instances.
+    // providers — identity + catalog for Anthropic-compatible instances.
     /// Provider id models are addressed with (`anthropic` for the native OAuth provider).
     pub provider_id: String,
     /// Explicit model catalog; empty means "use the built-in Claude catalog".
@@ -63,7 +63,7 @@ impl AnthropicConfig {
         }
     }
 
-    // axe:providers
+    // providers
     pub fn compatible(
         provider_id: impl Into<String>,
         base_url: impl Into<String>,
@@ -114,7 +114,7 @@ impl AnthropicProvider {
         Self::new(AnthropicConfig::from_default_sources()?)
     }
 
-    // axe:providers
+    // providers
     fn model_capabilities(&self, model: &ModelRef) -> ModelCapabilities {
         if self.config.models.is_empty() {
             return model_info::capabilities(model);
@@ -287,7 +287,7 @@ impl Provider for AnthropicProvider {
         }
 
         let is_oauth = self.config.credential.is_oauth();
-        // axe:providers — compatible endpoints rarely implement count_tokens.
+        // providers — compatible endpoints rarely implement count_tokens.
         if !is_oauth {
             return Ok(TokenEstimate {
                 input_tokens: rough_token_estimate(&request),
@@ -336,7 +336,7 @@ impl Provider for AnthropicProvider {
     }
 
     async fn stream(&self, mut request: ProviderRequest) -> Result<ProviderStream> {
-        // axe:images — shrink images > 2000 px (also those already stored in
+        // images — shrink images > 2000 px (also those already stored in
         // the transcript): Anthropic refuses the whole request otherwise, and
         // since the image stays in the history the session would be dead.
         axecode_core::image_fit::fit_transcript_images_in_place(
@@ -350,7 +350,7 @@ impl Provider for AnthropicProvider {
             .send_json_version_aware("/v1/messages", &body, "text/event-stream", true)
             .await;
         let response = match first {
-            // axe:cache — endpoint without the 1-hour cache: retry once with
+            // cache — endpoint without the 1-hour cache: retry once with
             // the default one, and never ask again in this process.
             Err(AppError::InvalidRequest(message))
                 if ttl.is_some() && is_cache_ttl_rejection(&message) =>
@@ -372,7 +372,7 @@ impl Provider for AnthropicProvider {
     }
 }
 
-// axe:cache — request body and cache lifetime.
+// cache — request body and cache lifetime.
 impl AnthropicProvider {
     fn messages_request<'a>(&self, request: &'a ProviderRequest) -> Result<wire::MessagesRequest<'a>> {
         let caps = self.model_capabilities(&request.model);
@@ -448,7 +448,7 @@ impl AnthropicProvider {
     }
 }
 
-/// axe:cache — the volatile part of the system prompt rides as the last block
+/// cache — the volatile part of the system prompt rides as the last block
 /// of the last user message (after its tool results), never cached.
 fn append_volatile_state<'a>(messages: &mut Vec<wire::WireMessage<'a>>, text: &'a str) {
     let part = wire::WirePart::Text {
@@ -765,7 +765,7 @@ fn part_is_ui_only(part: &Part) -> bool {
         == Some(true)
 }
 
-// axe:providers
+// providers
 fn rough_token_estimate(request: &ProviderRequest) -> u32 {
     let mut chars: usize = 0;
     if let Some(system) = &request.system_prompt {
@@ -1229,7 +1229,7 @@ mod tests {
         assert_eq!(recorded[1], "claude-cli/9.9.9");
     }
 
-    // axe:cache
+    // cache
     fn body_json(provider: &AnthropicProvider, request: &ProviderRequest) -> serde_json::Value {
         let mut body = provider.messages_request(request).unwrap();
         apply_cache_ttl(&mut body, provider.cache_ttl());

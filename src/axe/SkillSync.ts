@@ -1,4 +1,4 @@
-// axe:e4 — synchronisation des skills partagées (/srv/axe/commun/skills).
+// e4 — synchronisation des skills partagées (/srv/axe/commun/skills).
 //
 // Toutes les 5 minutes : on lit l'empreinte des skills du répertoire partagé
 // (via un lecteur injecté : IPC Tauri / API de l'espace), on la compare à celle

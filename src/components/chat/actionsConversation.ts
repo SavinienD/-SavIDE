@@ -43,7 +43,7 @@ export type ConversationExecutors = {
     prompt?: string,
   ) => Promise<void>;
   stop: (conversation: SavedConversation) => Promise<void>;
-  /** axe:arriere-plan — le travail en cours part dans une session d'arrière-plan. */
+  /** arriere-plan — le travail en cours part dans une session d'arrière-plan. */
   background?: (conversation: SavedConversation) => Promise<{ id: string; nom: string }>;
 };
 

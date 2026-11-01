@@ -1,4 +1,4 @@
-// axe:viewers — shell shared by document viewers rendered as HTML (docx,
+// viewers — shell shared by document viewers rendered as HTML (docx,
 // epub): toolbar with in-document search, optional side panel, SafeFrame.
 
 import { useCallback, useRef, useState, type ReactNode } from "react";

@@ -1,4 +1,4 @@
-// axe:providers — configurable provider instances (custom OpenAI/Anthropic-
+// providers — configurable provider instances (custom OpenAI/Anthropic-
 // compatible endpoints, Mistral, DeepSeek, xAI, Groq, Prime Inference,
 // Ollama, LM Studio). Types mirror crates/axecode-core/src/provider_config.rs.
 import { invoke } from "@tauri-apps/api/core";

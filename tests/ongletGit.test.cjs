@@ -1,4 +1,4 @@
-// axe:0.1.75 — onglet Git du volet bas (capture de Savinien : liste des modifications invisible, onglets tronqués).
+// 0.1.75 — onglet Git du volet bas (capture de Savinien : liste des modifications invisible, onglets tronqués).
 const test = require("node:test");
 const assert = require("node:assert");
 const fs = require("node:fs");

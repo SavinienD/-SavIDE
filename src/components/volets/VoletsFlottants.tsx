@@ -1,4 +1,4 @@
-// axe:e6 — la couche des volets : fenêtres flottantes, boutons du volet ancré,
+// e6 — la couche des volets : fenêtres flottantes, boutons du volet ancré,
 // bandeau de rappel et menu de la barre de titre.
 //
 // Tout se passe DANS la fenêtre de l'application (pas de fenêtre système Tauri) :
@@ -201,7 +201,7 @@ export function VoletRappel({
   compact = false,
 }: RappelProps & { compact?: boolean }) {
   const nom = VOLET_NOMS[volet];
-  // axe:e18 — en liseré : plus de pave qui mange la place, juste l'icone qui dit
+  // e18 — en liseré : plus de pave qui mange la place, juste l'icone qui dit
   // « ce volet est detache, clique pour le remettre ». C'est ca, gagner du terrain.
   if (compact) {
     return (

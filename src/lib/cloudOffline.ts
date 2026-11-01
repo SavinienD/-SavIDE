@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { FileDocument, WorkspaceEntry } from "../types";
 
-/// axe:v2-l6 (tranche 2) — travail hors ligne sur une copie locale (miroir) d'un
+/// v2-l6 (tranche 2) — travail hors ligne sur une copie locale (miroir) d'un
 /// espace cloud. Ce module porte l'etat du miroir par espace, les appels aux
 /// commandes Tauri `offline_*` et la mise en attente des modifications.
 ///

@@ -1,4 +1,4 @@
-// axe:gemini-web — Settings > Providers card for Gemini through the
+// gemini-web — Settings > Providers card for Gemini through the
 // gemini.google.com web app (models of the Google AI subscription that the
 // APIs do not expose, e.g. Gemini 4 Argon with Google AI Pro).
 import { useCallback, useEffect, useState } from "react";

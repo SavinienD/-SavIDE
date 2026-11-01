@@ -1,7 +1,7 @@
-import { PreCopiable } from "./PreCopiable"; // axe:copier-code
+import { PreCopiable } from "./PreCopiable"; // copier-code
 import { useMemo, useState, type ReactNode } from "react";
 
-// axe:repl — condensed card for one `python(code)` execution: first line of
+// repl — condensed card for one `python(code)` execution: first line of
 // code + output summary; expands to the full code and the raw output.
 
 type ReplMeta = {
@@ -43,7 +43,7 @@ function parseCode(argsPretty?: string): string {
   return argsPretty;
 }
 
-// axe:lisible - libelle humain deduit du code, sans aucun appel au modele.
+// lisible - libelle humain deduit du code, sans aucun appel au modele.
 function libelle(code: string): string {
   const c = code;
   const f = (re: RegExp) => c.match(re)?.[1];

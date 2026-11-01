@@ -1,4 +1,4 @@
-// axe:cloud — « Se connecter avec Google » screen (first launch, after a
+// cloud — « Se connecter avec Google » screen (first launch, after a
 // logout or when the session expired). The browser does the Google part;
 // this screen only waits for `cloud_login` to come back.
 import { useState } from "react";

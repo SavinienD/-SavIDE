@@ -5,7 +5,7 @@ const path = require("node:path");
 const test = require("node:test");
 const ts = require("typescript");
 
-// axe:liens — URL, chemins (Linux/macOS/Windows) et texte bien séparés.
+// liens — URL, chemins (Linux/macOS/Windows) et texte bien séparés.
 Module._extensions[".ts"] = (module, filename) => {
   const javascript = ts.transpileModule(fs.readFileSync(filename, "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },

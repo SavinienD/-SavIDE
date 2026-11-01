@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { ReplServicesSection } from "./ReplServicesSection"; // axe:cleanup
+import { ReplServicesSection } from "./ReplServicesSection"; // cleanup
 import "./repl.css";
-import { useModelChoices } from "../agents/useModelChoices"; // axe:sub-m
+import { useModelChoices } from "../agents/useModelChoices"; // sub-m
 
-// axe:repl — Settings > Outils (REPL): modules and functions exposed in the
+// repl — Settings > Outils (REPL): modules and functions exposed in the
 // Python kernel. Disabled entries are neither imported nor described to the
 // model. Also hosts the compaction threshold and the per-model output caps.
 
@@ -21,7 +21,7 @@ export type ReplSettings = {
   maxOutputTokens: Record<string, number>;
   outputCapChars: number;
   maxRounds: number;
-  /** axe:sub-m — `provider/model` for rlm.spawn without `model` (null = parent's model). */
+  /** sub-m — `provider/model` for rlm.spawn without `model` (null = parent's model). */
   subagentDefaultModel?: string | null;
 };
 type CatalogFunction = { name: string; signature: string; doc: string; default_doc?: string };
@@ -41,7 +41,7 @@ export function ReplToolsPane({ workspacePath }: { workspacePath: string }) {
   const [status, setStatus] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [newModelKey, setNewModelKey] = useState("");
-  const modelChoices = useModelChoices(); // axe:sub-m
+  const modelChoices = useModelChoices(); // sub-m
 
   useEffect(() => {
     invoke<ReplSettings>("repl_settings_get")
@@ -146,7 +146,7 @@ export function ReplToolsPane({ workspacePath }: { workspacePath: string }) {
         </label>
       </section>
 
-      {/* axe:sub-m — modèle par défaut des sous-agents */}
+      {/* sub-m — modèle par défaut des sous-agents */}
       <section className="axe-repl__card">
         <h3>Sous-agents</h3>
         <label className="axe-repl__row">
@@ -208,7 +208,7 @@ export function ReplToolsPane({ workspacePath }: { workspacePath: string }) {
         </div>
       </section>
 
-      <ReplServicesSection workspacePath={workspacePath} /> {/* axe:cleanup */}
+      <ReplServicesSection workspacePath={workspacePath} /> {/* cleanup */}
 
       <section className="axe-repl__card">
         <h3>

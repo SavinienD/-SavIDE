@@ -11,7 +11,7 @@
   --accent-deep: #b34307;
   --accent-glow: rgba(252, 97, 11, 0.35);
   --accent-soft: rgba(252, 97, 11, 0.12);
-  --skill:       #a78bfa; /* axe:couleurs — skills dans le compositeur et les bulles */
+  --skill:       #a78bfa; /* couleurs — skills dans le compositeur et les bulles */
 }
 
 /* Settings > Apparence */
@@ -57,7 +57,7 @@
 .axe-appearance__button:hover { background: var(--bg-3); color: var(--text-0); }
 .axe-appearance__hint { color: var(--text-3); font-size: var(--fs-sm); }
     /* Fixed track: the bar must not move while the text-size slider is
-       dragged (axe:zoom — the scale only touches font sizes). */
+       dragged (zoom — the scale only touches font sizes). */
     .axe-appearance__zoom { flex: 0 0 240px; min-width: 0; accent-color: var(--accent); }
 .axe-appearance__zoom-value { min-width: 44px; color: var(--text-0); font-variant-numeric: tabular-nums; }
 .axe-appearance__block { display: flex; flex-direction: column; gap: 10px; }
@@ -111,7 +111,7 @@
 .axe-preview__composer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding: 4px 4px 4px 8px; border: 1px solid var(--line-strong); border-radius: var(--r-med); background: var(--bg-0); color: var(--text-3); }
 .axe-preview__send { padding: 2px 8px; border-radius: var(--r-small); background: var(--accent); color: #fff; }
 
-/* axe:providers — Settings > Providers, configurable instances */
+/* providers — Settings > Providers, configurable instances */
 .axe-providers { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
 .axe-providers__header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
 .axe-providers__header h2 { margin: 0 0 4px; font-size: var(--fs-base); color: var(--text-0); }
@@ -146,7 +146,7 @@
 .axe-providers__icon-btn:hover { color: var(--danger); }
 .axe-providers__footer { display: flex; gap: 6px; justify-content: flex-end; }
 
-/* axe:providers — QuotaIndicator (titlebar) */
+/* providers — QuotaIndicator (titlebar) */
 .axe-quota { position: relative; display: flex; align-items: center; margin-right: 6px; -webkit-app-region: no-drag; }
 .axe-quota__pill {
   display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: var(--r-pill);
@@ -174,14 +174,14 @@
 .axe-quota__window[data-tone="error"] .axe-quota__bar > span { background: var(--danger); }
 .axe-quota__meta { display: flex; flex-direction: column; color: var(--text-3); font-size: calc(10.5px * var(--text-scale, 1)); }
 
-/* axe:providers — model selector group headers */
+/* providers — model selector group headers */
 .axe-model-group {
   padding: 6px 10px 2px; color: var(--text-3); font-size: calc(10.5px * var(--text-scale, 1));
   text-transform: uppercase; letter-spacing: 0.04em; pointer-events: none;
 }
 .axe-model-group:not(:first-child) { border-top: 1px solid var(--line-soft); margin-top: 4px; }
 
-/* axe:cleanup — harness backup */
+/* cleanup — harness backup */
 .axe-backup { margin: 16px 24px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--bg-1); display: flex; flex-direction: column; gap: 8px; }
 .axe-backup h3 { margin: 0; font-size: var(--fs-base); color: var(--text-0); }
 .axe-backup__hint { margin: 0; color: var(--text-3); font-size: var(--fs-xs); }
@@ -190,7 +190,7 @@
 .axe-backup__row input[type="number"] { width: 64px; padding: 4px 6px; border: 1px solid var(--line); border-radius: var(--r-small); background: var(--bg-2); color: var(--text-0); }
 .axe-backup__dir { color: var(--text-2); font-size: var(--fs-xs); overflow: hidden; text-overflow: ellipsis; max-width: 360px; white-space: nowrap; }
 
-/* axe:cleanup — Settings > Remote: self-hosted relay URL */
+/* cleanup — Settings > Remote: self-hosted relay URL */
 .remote-panel__relay { display: flex; gap: 8px; align-items: center; }
 .remote-panel__relay input { flex: 1; min-width: 0; padding: 6px 8px; font: inherit; font-size: calc(12.5px * var(--text-scale, 1)); background: transparent; color: inherit; border: 1px solid var(--border, rgba(127,127,127,.3)); border-radius: 6px; }
 .remote-panel__hint[data-tone="warn"] { color: var(--accent, #fc610b); }

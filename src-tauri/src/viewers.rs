@@ -1,4 +1,4 @@
-// axe:viewers — backend helpers for the multi-format file viewers.
+// viewers — backend helpers for the multi-format file viewers.
 //
 // The editor viewers never load a whole binary file through the JSON IPC:
 // they ask for byte ranges (`viewer_read_bytes`) that come back as a raw

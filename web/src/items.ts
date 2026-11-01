@@ -1,4 +1,4 @@
-// axe:webui — turns a journal (entries along the current branch) plus live
+// webui — turns a journal (entries along the current branch) plus live
 // stream events into displayable items.
 import type { ChatMessage, JournalEntry, JournalTree } from "./api";
 import { erreurMoteurEnFrancais } from "../../src/lib/erreursMoteur";

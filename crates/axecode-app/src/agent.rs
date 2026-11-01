@@ -19,6 +19,6 @@ pub use context::{AgentMode, TurnContext, TurnOutput};
 pub use events::{AgentEvent, AgentEventScope, ConversationEvent};
 pub use mode::{system_prompt_for_mode, system_prompt_for_mode_with_plan_prompt};
 pub use turn::run_turn;
-// axe:repl
+// repl
 pub(crate) use assistant_message::AssistantMessageBuilder;
 pub(crate) use history::repair_missing_tool_results;

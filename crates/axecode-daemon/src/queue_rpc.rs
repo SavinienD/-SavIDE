@@ -1,4 +1,4 @@
-//! axe:file-demon — file d'attente des messages, tenue par le service.
+//! file-demon — file d'attente des messages, tenue par le service.
 //!
 //! Avant, la file vivait dans le navigateur de l'IDE (localStorage) et ne
 //! partait que si l'IDE montrait l'espace de la conversation. Elle vit
@@ -47,7 +47,7 @@ pub struct QueueItem {
 pub struct Queues {
     loaded: bool,
     map: HashMap<String, Vec<QueueItem>>,
-    /// axe:file-pause — files en pause après un Stop (« Reprendre la file »).
+    /// file-pause — files en pause après un Stop (« Reprendre la file »).
     paused: std::collections::HashSet<String>,
 }
 
@@ -158,7 +158,7 @@ pub fn dispatch_next(d: &Daemon, id: &str) {
         let mut q = lock(&d.queues);
         ensure_loaded(d, &mut q);
         if is_paused(d, &q, id) {
-            return; // axe:file-pause — après un Stop, on attend « Reprendre la file »
+            return; // file-pause — après un Stop, on attend « Reprendre la file »
         }
     }
     let next = edit(d, id, |items| (!items.is_empty()).then(|| items.remove(0)));
@@ -184,7 +184,7 @@ pub fn dispatch_all(d: &Daemon) {
     }
 }
 
-/// axe:file-pause — Stop de l'utilisateur : la file (non vide) se met en pause.
+/// file-pause — Stop de l'utilisateur : la file (non vide) se met en pause.
 pub fn pause_after_stop(d: &Daemon, id: &str) {
     let paused = {
         let mut q = lock(&d.queues);

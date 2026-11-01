@@ -42,7 +42,7 @@ La conversation peut être compactée ; `context` donne accès à tout l'histori
 Les modules ci-dessous sont déjà importés dans l'espace de noms du noyau. Appelle `help(module.fonction)` pour le détail.
 "#;
 
-/// axe:freechat — reminder of free conversations (no project folder).
+/// freechat — reminder of free conversations (no project folder).
 pub const SCRATCH_REMINDER: &str = "<free_conversation>\nCeci est une conversation libre : l'utilisateur n'a pas ouvert de dossier de projet. \
 Le répertoire de travail est un dossier privé de cette conversation ; enregistre-y les fichiers produits \
 (images, exports, scripts) et donne leur chemin. Il n'y a pas de harnais de projet : les entrées du \
@@ -106,11 +106,11 @@ pub fn system_prompt(catalog: &str, extra: Option<&str>, reminders: &[String]) -
     system_prompt_split(catalog, extra, reminders, &[]).0
 }
 
-/// axe:cache — heading of the per-request state at the end of the system
+/// cache — heading of the per-request state at the end of the system
 /// prompt. Anthropic-style providers send it after the cached prefix.
 pub const VOLATILE_HEADING: &str = "# État actuel de la session (change d'une requête à l'autre)";
 
-/// axe:cache — system prompt + byte offset of its volatile tail.
+/// cache — system prompt + byte offset of its volatile tail.
 ///
 /// `stable` blocks (harness layer, free-conversation reminder) change at most
 /// a few times per session: they stay in the cached prefix. `volatile` blocks

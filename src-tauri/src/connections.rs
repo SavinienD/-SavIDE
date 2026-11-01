@@ -1,4 +1,4 @@
-// axe:remote — registry of service connections (Settings > Connexions).
+// remote — registry of service connections (Settings > Connexions).
 //
 // `Local` is implicit and always present. `Distante` connects to a remote
 // service over WebSocket (`--listen`), `SSH` opens a tunnel with the user's
@@ -157,7 +157,7 @@ fn authorization(connection: &Connection) -> Option<String> {
     ))
 }
 
-/// axe:v2-e12 — meme en-tete, pour une connexion nommee (l'onglet Prime Agent s'en sert).
+/// v2-e12 — meme en-tete, pour une connexion nommee (l'onglet Prime Agent s'en sert).
 pub(crate) fn authorization_for(id: &str) -> Option<String> {
     authorization(&find(id)?)
 }
@@ -374,7 +374,7 @@ async fn open(
         let source = format!("{}:{}", connection.id, crate::daemon_client::next_source_id());
         tokio::spawn(async move {
             while let Some(event) = rx.recv().await {
-                // axe:un-seul-espace - les evenements du daemon distant alimentent le chat.
+                // un-seul-espace - les evenements du daemon distant alimentent le chat.
                 crate::daemon_client::bridge_event(&app, &event, &source);
                 let mut payload = serde_json::to_value(&event).unwrap_or_default();
                 payload["connectionId"] = json!(connection_id);
@@ -495,7 +495,7 @@ pub(crate) async fn connections_save(
     input: ConnectionSaveInput,
 ) -> std::result::Result<Value, String> {
     let mut connection = input.connection;
-    // axe:cloud — the Axe Cloud connection (URL + token) is managed by the
+    // cloud — the Axe Cloud connection (URL + token) is managed by the
     // sign-in only: editing it here could send its token to another host.
     if connection.id == crate::cloud::CLOUD_CONNECTION_ID {
         return Err("connexion gérée par la connexion Axe Cloud (menu du compte)".into());
@@ -593,7 +593,7 @@ pub(crate) async fn connections_state(app: AppHandle) -> std::result::Result<Val
     Ok(Value::Object(out))
 }
 
-/// axe:0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+/// 0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
 #[allow(dead_code)]
 fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
     #[allow(unused_mut)]

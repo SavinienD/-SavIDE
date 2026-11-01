@@ -1,4 +1,4 @@
-/* axe:voix — dictée vocale du compositeur (barre d'enregistrement façon ChatGPT). */
+/* voix — dictée vocale du compositeur (barre d'enregistrement façon ChatGPT). */
 .axe-voix {
   position: relative;
   display: inline-flex;
@@ -231,7 +231,7 @@
   color: var(--danger, #e5484d);
 }
 
-/* axe:0.1.71 — barre et bulles dans le compositeur (portails de DicteeBouton) : jamais plus
+/* 0.1.71 — barre et bulles dans le compositeur (portails de DicteeBouton) : jamais plus
    larges que lui, donc jamais rognées par une colonne étroite (800 px, trois colonnes). */
 .composer__actions > .axe-voix__barre {
   right: 5px;
@@ -254,7 +254,7 @@
   }
 }
 
-/* axe:0.1.71 — pendant l'enregistrement, la barre ne recouvre plus la rangée (elle cachait le
+/* 0.1.71 — pendant l'enregistrement, la barre ne recouvre plus la rangée (elle cachait le
    bouton Envoyer dans une colonne étroite) : elle passe sur sa propre ligne, sous les actions,
    alignée à droite ; Envoyer reste visible et cliquable. */
 .composer__actions > .axe-voix__barre {
@@ -284,12 +284,12 @@
   overflow-wrap: anywhere;
 }
 
-/* axe:micro-local — titre sur une ligne même en colonne étroite */
+/* micro-local — titre sur une ligne même en colonne étroite */
 .axe-voix-reglages > header > h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .axe-voix-reglages { min-width: 0; }
 .axe-voix-reglages .axe-appearance__button { max-width: 100%; white-space: normal; }
 .axe-voix-reglages__ligne { min-width: 0; overflow-wrap: anywhere; }
-/* axe:0.1.75 — dictée en direct : texte provisoire grisé au-dessus de la zone de saisie,
+/* 0.1.75 — dictée en direct : texte provisoire grisé au-dessus de la zone de saisie,
    remplacé par la transcription complète à la fin (les dernières lignes restent visibles). */
 .axe-voix__provisoire {
   position: absolute;

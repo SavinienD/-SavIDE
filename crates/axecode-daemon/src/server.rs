@@ -28,7 +28,7 @@ impl SessionHost for Daemon {
     async fn create_session(&self, request: CreateSessionRequest) -> SessionResult<SessionMeta> {
         self.create(request)
     }
-    // axe:menage — the runtimes still see the archived sub-agents, and a
+    // menage — the runtimes still see the archived sub-agents, and a
     // request on one of them restores it first (`wake_archived`).
     async fn get_session(&self, session_id: &str) -> SessionResult<SessionMeta> {
         self.wake_archived(session_id);
@@ -101,7 +101,7 @@ impl Daemon {
     /// Handles one request for client `client`.
     pub async fn dispatch(&self, client: u64, method: &str, params: Value) -> SessionResult<Value> {
         self.touch();
-        // axe:menage — a request on an archived sub-agent restores it first,
+        // menage — a request on an archived sub-agent restores it first,
         // except the requests that work on the archive itself.
         if method.starts_with("sessions.")
             && !matches!(
@@ -122,7 +122,7 @@ impl Daemon {
                 self.wake_archived(&id);
             }
         }
-        // axe:journal-archive — lire le journal (arbre, historique) d'une conversation
+        // journal-archive — lire le journal (arbre, historique) d'une conversation
         // archivée hors des sous-agents (ex. « … — arrière-plan ») : lecture seule depuis
         // l'archive, sans la rétablir (avant : « session not found »).
         if matches!(method, methods::SESSIONS_TREE | methods::SESSIONS_HISTORY) {
@@ -145,14 +145,14 @@ impl Daemon {
                 methods::SESSIONS_LIST
                     | methods::SESSIONS_CREATE
                     | methods::SESSIONS_ENSURE
-                    // axe:e3 — la suppression porte sur une conversation archivee,
+                    // e3 — la suppression porte sur une conversation archivee,
                     // absente de la memoire : le controle de visibilite est fait
                     // dans le gestionnaire, sur la metadonnee relue de l'archive.
                     | methods::SESSIONS_DELETE
-                    // axe:e3 — idem pour le retablissement : la conversation
+                    // e3 — idem pour le retablissement : la conversation
                     // archivee n'est plus en memoire.
                     | methods::SESSIONS_RESTORE
-                    // axe:v2-e12f — le retablissement passe aussi par
+                    // v2-e12f — le retablissement passe aussi par
                     // `sessions.update {archived: false}` : la conversation
                     // archivee n'est pas en memoire, le controle de
                     // visibilite est fait dans `restore_archived`.
@@ -177,9 +177,9 @@ impl Daemon {
             }
             // v2-l7c — external agents (on-disk task queue under .axecode/agents)
             m if m.starts_with("agents.") => crate::agents_rpc::dispatch(self, m, &params),
-            // axe:file-demon — file d'attente des messages, par session
+            // file-demon — file d'attente des messages, par session
             m if m.starts_with("queue.") => crate::queue_rpc::dispatch(self, m, &params),
-            // axe:voix — dictée vocale : Whisper de la machine, nettoyage IA optionnel
+            // voix — dictée vocale : Whisper de la machine, nettoyage IA optionnel
             m if m.starts_with("voice.") => crate::voice_rpc::dispatch(self, m, &params).await,
             m if m.starts_with("term.") => {
                 crate::term_rpc::dispatch(&self.arc(), client, m, &params)
@@ -205,7 +205,7 @@ impl Daemon {
                 ok(json!({"ok": true}))
             }
             methods::SESSIONS_LIST => {
-                // axe:e3 — les conversations archivees ne sortent que si on les
+                // e3 — les conversations archivees ne sortent que si on les
                 // demande : la liste active garde exactement son comportement.
                 if params.get("archived").and_then(Value::as_bool) == Some(true) {
                     return self.list_archived_entries();
@@ -231,19 +231,19 @@ impl Daemon {
                 }
                 ok(serde_json::to_value(sessions)?)
             }
-            // axe:e3 — archiver : la conversation quitte les conversations actives
+            // e3 — archiver : la conversation quitte les conversations actives
             // et part dans le dossier d'archive, dont le chemin n'est jamais montre.
             methods::SESSIONS_ARCHIVE => {
                 let id = sid(&params)?;
                 ok(self.archive(&id)?)
             }
-            // axe:e3 — supprimer : refuse tant que la conversation n'est pas
+            // e3 — supprimer : refuse tant que la conversation n'est pas
             // archivee ; ensuite seulement, l'archive est effacee.
             methods::SESSIONS_DELETE => {
                 let id = sid(&params)?;
                 ok(self.delete_archived(&id)?)
             }
-            // axe:e3 — retablir : une conversation archivee revient dans la
+            // e3 — retablir : une conversation archivee revient dans la
             // liste active (archiver n'est donc pas un aller simple).
             methods::SESSIONS_RESTORE => {
                 let id = sid(&params)?;
@@ -285,7 +285,7 @@ impl Daemon {
                 visible_session(self, &meta.id)?;
                 ok(serde_json::to_value(meta)?)
             }
-            // axe:freechat — a free conversation opened in a project folder
+            // freechat — a free conversation opened in a project folder
             methods::SESSIONS_RELOCATE => {
                 let id = sid(&params)?;
                 let workspace = opt_str(&params, "workspaceId").unwrap_or_default();
@@ -294,7 +294,7 @@ impl Daemon {
                     self.relocate(&id, workspace, extra).await?,
                 )?)
             }
-            // axe:freechat end
+            // freechat end
             methods::SESSIONS_ATTACH | methods::SESSIONS_DETACH => {
                 let id = opt_str(&params, "sessionId").unwrap_or_else(|| "*".into());
                 if id != "*" {
@@ -315,7 +315,7 @@ impl Daemon {
                 let to = sid(&params)?;
                 let from = opt_str(&params, "from").unwrap_or_else(|| "user".into());
                 let text = opt_str(&params, "text").unwrap_or_default();
-                // axe:bg-a — `wake: false` : note système livrée au prochain tour, sans en lancer un.
+                // bg-a — `wake: false` : note système livrée au prochain tour, sans en lancer un.
                 if params.get("wake").and_then(Value::as_bool) == Some(false) {
                     return ok(json!({"entryId": self.post_peer_quiet(&from, &to, text)?}));
                 }
@@ -324,7 +324,7 @@ impl Daemon {
             methods::SESSIONS_STOP => {
                 let id = sid(&params)?;
                 self.stop(&id)?;
-                crate::queue_rpc::pause_after_stop(self, &id); // axe:file-pause
+                crate::queue_rpc::pause_after_stop(self, &id); // file-pause
                 ok(json!({"ok": true}))
             }
             methods::SESSIONS_HISTORY => {
@@ -345,7 +345,7 @@ impl Daemon {
             }
             methods::SESSIONS_FORK => {
                 let id = sid(&params)?;
-                // axe:arriere-plan — parent du clone (ex. la conversation libérée).
+                // arriere-plan — parent du clone (ex. la conversation libérée).
                 let parent = opt_str(&params, "parentId");
                 if let Some(parent) = parent.as_deref() {
                     if self.config.workspace_root.is_some() {
@@ -360,7 +360,7 @@ impl Daemon {
                 )?;
                 ok(serde_json::to_value(meta)?)
             }
-            // axe:commandes — indicateurs /goal et /heartbeat (lecture, arrêt)
+            // commandes — indicateurs /goal et /heartbeat (lecture, arrêt)
             methods::SESSIONS_COMMANDS_STATE => ok(crate::commandes_rpc::state(self, &sid(&params)?)?),
             methods::SESSIONS_COMMANDS_SET => {
                 let op = opt_str(&params, "op").unwrap_or_default();
@@ -372,7 +372,7 @@ impl Daemon {
                 self.set_model(&id, model)?;
                 ok(json!({"ok": true}))
             }
-            // axe:v2-e12f — une seule notion d'archive : le tiroir d'E3.
+            // v2-e12f — une seule notion d'archive : le tiroir d'E3.
             // « archived: true » range la conversation (le journal quitte les
             // conversations actives : plus personne ne la lit, ni l'interface,
             // ni le harnais, ni un agent) ; « archived: false » la retablit.
@@ -411,9 +411,9 @@ impl Daemon {
                 self.unload(&sid(&params)?).await;
                 ok(json!({"ok": true}))
             }
-            // axe:webui — browser sessions (Settings > Interface web)
+            // webui — browser sessions (Settings > Interface web)
             m if m.starts_with("webui.") => crate::webui::dispatch(self, m, params),
-            // axe:webui end
+            // webui end
             other => Err(SessionError::Protocol(format!("unknown method {other}"))),
         }
     }
@@ -494,12 +494,12 @@ pub async fn run(daemon: Arc<Daemon>) -> anyhow::Result<()> {
     let config = daemon.config.clone();
     std::fs::create_dir_all(&config.data_dir)?;
     let mut listener = Listener::bind(&config.endpoint)?;
-    // axe:remote — optional network listener, closed by default.
+    // remote — optional network listener, closed by default.
     let remote = match &config.listen {
         Some(listen) => Some((crate::listen::bind(&daemon, listen).await?, listen.clone())),
         None => None,
     };
-    // axe:remote end
+    // remote end
     let pid = std::process::id();
     protocol::write_lock(
         &config.data_dir,
@@ -509,25 +509,25 @@ pub async fn run(daemon: Arc<Daemon>) -> anyhow::Result<()> {
             version: config.version.clone(),
             protocol: protocol::PROTOCOL_VERSION,
             started_at_ms: now_ms(),
-            listen: config.listen.as_ref().map(|l| l.addr.to_string()), // axe:remote
+            listen: config.listen.as_ref().map(|l| l.addr.to_string()), // remote
         },
     )?;
     tracing::info!(endpoint = %config.endpoint, pid, "axecode-daemon listening");
-    // axe:remote
+    // remote
     let remote_task = remote.map(|(tcp, listen)| {
         tracing::info!(addr = %listen.addr, "remote WebSocket listener enabled");
         tokio::spawn(crate::listen::serve(daemon.clone(), tcp, listen))
     });
-    // axe:remote end
-    crate::webui::install(&config.data_dir); // axe:webui
+    // remote end
+    crate::webui::install(&config.data_dir); // webui
                                              // v2-l7c — recover external agent tasks (ghost `en_cours` -> `erreur`).
     if let Err(error) = crate::agents_rpc::start(&daemon) {
         tracing::warn!(error = %error, "agents queue unavailable at startup");
     }
 
-    crate::queue_rpc::dispatch_all(&daemon); // axe:file-demon
+    crate::queue_rpc::dispatch_all(&daemon); // file-demon
     {
-        let daemon = daemon.clone(); // axe:reveil-demarrage
+        let daemon = daemon.clone(); // reveil-demarrage
         tokio::spawn(async move { daemon.rearmer_au_demarrage().await });
     }
     let housekeeping = {
@@ -536,7 +536,7 @@ pub async fn run(daemon: Arc<Daemon>) -> anyhow::Result<()> {
             let mut tick = tokio::time::interval(Duration::from_secs(15));
             loop {
                 tick.tick().await;
-                daemon.housekeeping().await; // axe:menage
+                daemon.housekeeping().await; // menage
                 if daemon.should_auto_shutdown() {
                     tracing::info!("no running session and no client: shutting down");
                     daemon.request_shutdown();
@@ -562,7 +562,7 @@ pub async fn run(daemon: Arc<Daemon>) -> anyhow::Result<()> {
     }
     housekeeping.abort();
     if let Some(task) = remote_task {
-        task.abort(); // axe:remote
+        task.abort(); // remote
     }
     for meta in daemon.list_metas() {
         let _ = daemon.stop(&meta.id);

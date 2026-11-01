@@ -1,4 +1,4 @@
-// axe:terminal-onglets - logique pure des onglets du terminal local (testee par tests/terminalTabs.test.cjs).
+// terminal-onglets - logique pure des onglets du terminal local (testee par tests/terminalTabs.test.cjs).
 export const GIT_TAB_ID = "__git__";
 
 /** Titre envoye par le shell qui n'est que le chemin de l'executable (pwsh sous Windows : « C:\Program Files\PowerShell\7\pwsh.exe »). */
