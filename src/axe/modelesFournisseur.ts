@@ -74,6 +74,41 @@ export function deplacerSurcharge<T>(
   return reste;
 }
 
+// fenetre-locale — fenêtre par défaut d'un modèle ajouté (même règle que le Rust :
+// axecode_core::default_context_window_for). Ollama réserve la mémoire de toute la fenêtre
+// (num_ctx) : à 128 000 jetons, qwen3:4b prenait 22 Go. Toujours modifiable ensuite.
+export const FENETRE_CLOUD = 128000;
+export const FENETRE_LOCALE = 32768;
+export const SORTIE_MAX = 16384;
+
+/** Adresse de ce PC : localhost, 127.x.x.x, [::1], 0.0.0.0 (avec ou sans schéma, port, chemin). */
+export function estUrlLocale(url: string): boolean {
+  const u = url.trim();
+  const reste = u.includes("://") ? u.slice(u.indexOf("://") + 3) : u;
+  let hote = reste.split(/[/?#]/)[0] ?? "";
+  hote = (hote.includes("@") ? hote.slice(hote.lastIndexOf("@") + 1) : hote).toLowerCase();
+  const nom = hote.startsWith("[") ? hote.slice(0, hote.indexOf("]") + 1) : hote.split(":")[0];
+  return nom === "localhost" || nom.startsWith("127.") || nom === "[::1]" || nom === "0.0.0.0";
+}
+
+/** Serveur de modèles local : Ollama / LM Studio (`typeLocal`), ou point d'accès compatible
+ *  OpenAI sur ce PC. Un compatible Anthropic sur localhost (compteur des espaces) reste cloud. */
+export function fournisseurLocal(kind: string, typeLocal: boolean, baseUrl: string): boolean {
+  return typeLocal || (kind !== "anthropic_compatible" && estUrlLocale(baseUrl));
+}
+
+/** Local : 32 768, ou moins si le serveur annonce moins ; cloud : l'annonce, sinon 128 000. */
+export function fenetreParDefaut(local: boolean, annoncee?: number | null): number {
+  const a = annoncee && annoncee > 0 ? Math.floor(annoncee) : null;
+  if (local) return a ? Math.min(a, FENETRE_LOCALE) : FENETRE_LOCALE;
+  return a ?? FENETRE_CLOUD;
+}
+
+/** Sortie maximale par défaut : 16 384, jamais plus de la moitié de la fenêtre. */
+export function sortieParDefaut(fenetre: number): number {
+  return Math.min(SORTIE_MAX, Math.max(1, Math.floor(fenetre / 2)));
+}
+
 /** « Découvrir » : les identifiants réels rendus par le serveur, dans son ordre ; un modèle
  *  déjà déclaré garde ses réglages ; ceux que le serveur ne liste pas restent en fin de liste. */
 export function fusionnerDecouverte<T extends { id: string }>(existants: readonly T[], trouves: readonly T[]): T[] {

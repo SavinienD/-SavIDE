@@ -452,6 +452,7 @@ pub fn run() {
             custom_providers::provider_settings_save,
             custom_providers::provider_discover_models,
             custom_providers::provider_detect_local,
+            custom_providers::provider_model_default_window, // fenetre-locale
             custom_providers::provider_set_model_override,
             quota::provider_quota,
             skill_sync::shared_skills_fingerprints, // e4

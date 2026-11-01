@@ -23,8 +23,10 @@ pub use declared_providers::{
 };
 // providers
 pub use provider_config::{
-    model_override_key, ModelCatalogEntry, ModelDefinition, ModelOverride, ProviderConfig,
-    ProviderKind, ProviderSettings,
+    default_context_window_for, default_max_output_for, is_local_url, lower_legacy_local_windows,
+    migrate_local_windows_once, model_override_key, ModelCatalogEntry, ModelDefinition, ModelOverride,
+    ProviderConfig, ProviderKind, ProviderSettings, DEFAULT_CONTEXT_WINDOW, LOCAL_CONTEXT_WINDOW,
+    LOCAL_WINDOW_MARK,
 };
 // daemon
 pub use session::{

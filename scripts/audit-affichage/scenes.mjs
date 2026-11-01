@@ -304,6 +304,17 @@ export const SCENES = [
     clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row", "[data-action='saisir-modele']"],
     taper: [{ sel: ".axe-providers__saisie input[data-champ='nouvel-id']", texte: "qwen3:4b", entree: true }],
     temoins: ["sel:.axe-providers__saisie [data-erreur='saisie']", "clic:[data-action='ajouter-modele']"] },
+  // fenetre-locale — « Saisir » sur Ollama : 32 768 jetons de contexte (plus 128 000 : Ollama réservait 22 Go pour qwen3:4b) ;
+  // un modèle qui annonce moins (gemma2:2b, 8 192 par /api/show) garde sa fenêtre ; le contexte reste modifiable.
+  { id: "fournisseurs-saisir-local", sim: { fournisseursLocaux: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row", "[data-action='saisir-modele']"],
+    taper: [{ sel: ".axe-providers__saisie input[data-champ='nouvel-id']", texte: "qwen3:8b", entree: true }],
+    temoins: ["champ:.axe-providers__models input[data-champ='id']=qwen3:8b", "champ:.axe-providers__models input[data-champ='contexte']=32768",
+      "absent:.axe-providers__models input[data-champ='contexte'][value='128000']", "sel:.axe-providers__models input[data-champ='contexte']"] },
+  { id: "fournisseurs-saisir-annonce", sim: { fournisseursLocaux: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row", "[data-action='saisir-modele']"],
+    taper: [{ sel: ".axe-providers__saisie input[data-champ='nouvel-id']", texte: "gemma2:2b", entree: true }],
+    temoins: ["champ:.axe-providers__models input[data-champ='id']=gemma2:2b", "champ:.axe-providers__models input[data-champ='contexte']=8192"] },
   // « Découvrir » : les identifiants réels du serveur remplissent la colonne Identifiant.
   { id: "fournisseurs-decouvrir", sim: { fournisseursLocaux: true }, stockage: () => colonnes([ids(1)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row", "[data-action='decouvrir-modeles']"],

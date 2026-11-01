@@ -20,6 +20,8 @@ const SETTINGS_FILE: &str = "providers.json";
 const KEYS_FILE: &str = "provider-keys.json";
 const LOCAL_PROBE_TIMEOUT: Duration = Duration::from_millis(1_500);
 const REMOTE_PROBE_TIMEOUT: Duration = Duration::from_secs(20);
+/// fenetre-locale — `POST /api/show` d'Ollama (fenêtre annoncée par modèle).
+const LOCAL_SHOW_TIMEOUT: Duration = Duration::from_secs(3);
 
 fn data_dir() -> std::result::Result<PathBuf, String> {
     ProjectDirs::from("fr", "savide", "savide")
@@ -53,7 +55,14 @@ fn write_json<T: Serialize>(path: &Path, value: &T) -> std::result::Result<(), S
 }
 
 pub(crate) fn load_provider_settings() -> std::result::Result<ProviderSettings, String> {
-    let settings: ProviderSettings = read_json(&data_dir()?.join(SETTINGS_FILE))?;
+    let dir = data_dir()?;
+    // fenetre-locale (0.1.78) — une fois : modèles locaux restés à 128 000 -> 32 768.
+    match axecode_core::migrate_local_windows_once(&dir) {
+        Ok(0) => {}
+        Ok(changed) => tracing::info!(changed, "fenêtres locales : modèles locaux passés à 32 768 jetons"),
+        Err(err) => tracing::debug!(error = %err, "fenêtres locales : migration non faite"),
+    }
+    let settings: ProviderSettings = read_json(&dir.join(SETTINGS_FILE))?;
     Ok(settings.normalized())
 }
 
@@ -288,17 +297,17 @@ pub(crate) fn install_custom_providers(registry: &Registry) -> std::result::Resu
     Ok(ids)
 }
 
-fn guess_definition(id: &str, context_window: Option<u32>, kind: ProviderKind) -> ModelDefinition {
+/// `announced` = fenêtre annoncée par le serveur ; `local` = serveur sur ce PC (Ollama, LM Studio,
+/// localhost) : 32 768 au plus par défaut (fenetre-locale). Cloud : inchangé.
+fn guess_definition(id: &str, announced: Option<u32>, local: bool) -> ModelDefinition {
     let lower = id.to_ascii_lowercase();
     let mut def = ModelDefinition::new(id);
-    if let Some(window) = context_window {
-        def.context_window = window;
-    } else if kind == ProviderKind::DeepSeek {
-        def.context_window = 128_000;
-    } else if kind.is_local() {
-        def.context_window = 32_768;
-    }
-    def.max_output_tokens = def.max_output_tokens.min(def.context_window);
+    def.context_window = axecode_core::default_context_window_for(local, announced);
+    def.max_output_tokens = if local {
+        axecode_core::default_max_output_for(def.context_window)
+    } else {
+        def.max_output_tokens.min(def.context_window)
+    };
     def.supports_reasoning = ["reason", "r1", "think", "qwq", "o1", "o3", "o4", "magistral", "grok-4", "-mini"]
         .iter()
         .any(|needle| lower.contains(needle))
@@ -323,6 +332,7 @@ async fn discover(
             .map_err(error_to_string);
     }
     let timeout = if kind.is_local() { LOCAL_PROBE_TIMEOUT } else { REMOTE_PROBE_TIMEOUT };
+    let local = kind.is_local_endpoint(base);
     let (url, route) = match kind {
         ProviderKind::Ollama => (base.trim_end_matches("/v1").to_string(), Some("/api/tags")),
         _ => (base.to_string(), None),
@@ -330,9 +340,19 @@ async fn discover(
     let models = axecode_openrouter::discover_compatible_models(&url, api_key, route, timeout)
         .await
         .map_err(error_to_string)?;
+    // fenetre-locale — Ollama : fenêtre de chaque modèle lue par /api/show (si plus petite que 32 768).
+    let announced: HashMap<String, u32> = if kind == ProviderKind::Ollama {
+        let ids: Vec<String> = models.iter().map(|model| model.id.clone()).collect();
+        axecode_openrouter::ollama_context_lengths(&url, &ids, LOCAL_SHOW_TIMEOUT).await
+    } else {
+        HashMap::new()
+    };
     let mut defs: Vec<ModelDefinition> = models
         .into_iter()
-        .map(|model| guess_definition(&model.id, model.context_window, kind))
+        .map(|model| {
+            let window = model.context_window.or_else(|| announced.get(&model.id).copied());
+            guess_definition(&model.id, window, local)
+        })
         .filter(|def| def.supports_tools || kind.is_local())
         .collect();
     defs.sort_by(|a, b| a.id.cmp(&b.id));
@@ -480,6 +500,35 @@ pub(crate) async fn provider_discover_models(
         },
     };
     discover(input.kind, &input.base_url, &key).await
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct DefaultWindowInput {
+    kind: ProviderKind,
+    #[serde(default)]
+    base_url: String,
+    model: String,
+}
+
+/// fenetre-locale — fenêtre par défaut d'un modèle saisi à la main (« Saisir ») : 32 768 pour
+/// un fournisseur local, moins si Ollama annonce moins (`/api/show`) ; 128 000 pour le cloud.
+#[tauri::command]
+pub(crate) async fn provider_model_default_window(
+    input: DefaultWindowInput,
+) -> std::result::Result<u32, String> {
+    let base = input.base_url.trim().trim_end_matches('/');
+    let base = if base.is_empty() { input.kind.default_base_url() } else { base };
+    let model = input.model.trim().to_string();
+    let announced = if input.kind == ProviderKind::Ollama && !model.is_empty() {
+        axecode_openrouter::ollama_context_lengths(base, &[model], LOCAL_SHOW_TIMEOUT)
+            .await
+            .into_values()
+            .next()
+    } else {
+        None
+    };
+    Ok(axecode_core::default_context_window_for(input.kind.is_local_endpoint(base), announced))
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -668,6 +717,27 @@ pub(crate) fn with_overrides(provider: Arc<dyn Provider>) -> Arc<dyn Provider> {
         provider
     } else {
         Arc::new(OverriddenProvider(provider))
+    }
+}
+
+#[cfg(test)]
+mod local_window_tests {
+    use super::guess_definition;
+
+    // fenetre-locale — modèles découverts : local = 32 768 au plus (ou la fenêtre annoncée si
+    // plus petite), sortie ≤ moitié de la fenêtre ; cloud = comme avant.
+    #[test]
+    fn discovered_local_models_get_a_small_window_and_cloud_ones_do_not_change() {
+        let qwen = guess_definition("qwen3:4b", None, true);
+        assert_eq!((qwen.context_window, qwen.max_output_tokens), (32_768, 16_384));
+        assert_eq!(guess_definition("qwen3:4b", Some(40_960), true).context_window, 32_768);
+        let gemma = guess_definition("gemma2:2b", Some(8_192), true);
+        assert_eq!((gemma.context_window, gemma.max_output_tokens), (8_192, 4_096));
+        let cloud = guess_definition("gpt-4.1", None, false);
+        assert_eq!((cloud.context_window, cloud.max_output_tokens), (128_000, 16_384));
+        assert_eq!(guess_definition("deepseek-chat", None, false).context_window, 128_000);
+        assert_eq!(guess_definition("big", Some(1_000_000), false).context_window, 1_000_000);
+        assert_eq!(guess_definition("tiny", Some(8_192), false).max_output_tokens, 8_192, "cloud : règle d'avant");
     }
 }
 

@@ -219,6 +219,12 @@ export function installerSimulation(scene: Scene): void {
     },
     // Ollama : identifiants de « ollama list », fenêtre annoncée par /api/show (gemma2:2b : 8 192 < 32 768).
     provider_discover_models: () => [modeleLocal("gemma2:2b", 8192), modeleLocal("llama3.1:8b"), modeleLocal("qwen3:4b"), modeleLocal("qwen3:8b")],
+    // fenetre-locale — « Saisir » : même règle que le Rust (local 32 768, moins si /api/show l'annonce ; cloud 128 000).
+    provider_model_default_window: (a) => {
+      const local = a.kind === "ollama" || a.kind === "lm_studio" || (a.kind !== "anthropic_compatible" && /^(https?:\/\/)?(localhost|127\.)/.test(a.baseUrl ?? ""));
+      if (!local) return 128000;
+      return a.kind === "ollama" && a.model === "gemma2:2b" ? 8192 : 32768;
+    },
     get_openai_provider_status: () => statut(fournisseur),
     get_anthropic_provider_status: () => statut(fournisseur),
     get_google_provider_status: () => statut(false),

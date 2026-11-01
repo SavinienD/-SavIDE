@@ -10,8 +10,9 @@ pub use auth::{
     touch_default_auth_validation, Credential, OpenRouterAuthStatus,
 };
 pub use client::{
-    discover_compatible_models, fetch_model_catalog, validate_api_key, CompatibleModel, Dialect,
-    OpenRouterCatalogModel, OpenRouterConfig, OpenRouterProvider,
+    discover_compatible_models, fetch_model_catalog, ollama_context_length, ollama_context_lengths,
+    validate_api_key, CompatibleModel, Dialect, OpenRouterCatalogModel, OpenRouterConfig,
+    OpenRouterProvider,
 };
 pub use ollama::humanize_local_error;
 pub use stream::{StreamLimits, DEFAULT_IDLE_TIMEOUT};

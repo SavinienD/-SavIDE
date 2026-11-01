@@ -564,6 +564,62 @@ impl CompatModelBody {
     }
 }
 
+/// fenetre-locale — fenêtre annoncée par Ollama pour un modèle (`POST /api/show`) :
+/// `model_info["<general.architecture>.context_length"]`, sinon la première clé `*.context_length`.
+pub fn ollama_context_length(show: &Value) -> Option<u32> {
+    let info = show.get("model_info")?.as_object()?;
+    let by_arch = info
+        .get("general.architecture")
+        .and_then(Value::as_str)
+        .and_then(|arch| info.get(&format!("{arch}.context_length")));
+    by_arch
+        .or_else(|| {
+            info.iter()
+                .find(|(key, _)| key.ends_with(".context_length"))
+                .map(|(_, value)| value)
+        })
+        .and_then(Value::as_u64)
+        .filter(|value| *value > 0)
+        .map(|value| value.min(u64::from(u32::MAX)) as u32)
+}
+
+/// fenetre-locale — fenêtres annoncées par un serveur Ollama (`base_url` avec ou sans `/v1`)
+/// pour ces modèles, interrogés en parallèle ; un modèle sans réponse est absent du résultat.
+pub async fn ollama_context_lengths(
+    base_url: &str,
+    models: &[String],
+    timeout: std::time::Duration,
+) -> HashMap<String, u32> {
+    let base = base_url.trim().trim_end_matches('/');
+    let base = base.strip_suffix("/v1").unwrap_or(base).to_string();
+    let Ok(http) = reqwest::Client::builder()
+        .user_agent(USER_AGENT)
+        .timeout(timeout)
+        .build()
+    else {
+        return HashMap::new();
+    };
+    let calls = models.iter().map(|id| {
+        let http = http.clone();
+        let url = format!("{base}/api/show");
+        async move {
+            // `model` (Ollama récent) et `name` (ancien) : le serveur prend l'un ou l'autre.
+            let response = http
+                .post(url)
+                .json(&serde_json::json!({ "model": id, "name": id }))
+                .send()
+                .await
+                .ok()?;
+            if !response.status().is_success() {
+                return None;
+            }
+            let show: Value = response.json().await.ok()?;
+            ollama_context_length(&show).map(|window| (id.clone(), window))
+        }
+    });
+    futures::future::join_all(calls).await.into_iter().flatten().collect()
+}
+
 fn compatible_models(body: CompatModelsResponse) -> Vec<CompatibleModel> {
     let mut seen = std::collections::HashSet::new();
     body.data
@@ -1271,7 +1327,103 @@ mod tests {
     use serde_json::json;
     use axecode_core::{ChatMessage, ModelCapabilities, ModelRef, ProviderRequest};
 
-    use super::{build_chat_request, cache_mode_for_model, compatible_models, model_info, CacheMode};
+    use super::{
+        build_chat_request, cache_mode_for_model, compatible_models, discover_compatible_models, model_info,
+        ollama_context_length, ollama_context_lengths, CacheMode,
+    };
+
+    // fenetre-locale — corps réel de POST /api/show (Ollama 0.12, qwen3:4b), abrégé.
+    #[test]
+    fn ollama_show_gives_the_context_length_of_the_architecture() {
+        let show = json!({
+            "modelfile": "FROM qwen3:4b", "parameters": "num_ctx 4096\ntemperature 0.6",
+            "details": {"family": "qwen3", "parameter_size": "4.0B", "quantization_level": "Q4_K_M"},
+            "model_info": {"general.architecture": "qwen3", "general.parameter_count": 4_022_468_096u64,
+                           "qwen3.block_count": 36, "qwen3.context_length": 40960, "qwen3.embedding_length": 2560},
+            "capabilities": ["completion", "tools", "thinking"]
+        });
+        assert_eq!(ollama_context_length(&show), Some(40_960));
+        let other = json!({"model_info": {"general.architecture": "x", "llama.context_length": 8192}});
+        assert_eq!(ollama_context_length(&other), Some(8_192));
+        assert_eq!(ollama_context_length(&json!({"model_info": {}})), None);
+        assert_eq!(ollama_context_length(&json!({"error": "model 'z' not found"})), None);
+    }
+
+    /// Faux Ollama : /api/tags (name + model) et /api/show par modèle, une connexion par requête.
+    async fn fake_ollama_server() -> String {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        tokio::spawn(async move {
+            loop {
+                let Ok((mut socket, _)) = listener.accept().await else { return };
+                tokio::spawn(async move {
+                    let mut data = Vec::new();
+                    let mut buf = [0u8; 4096];
+                    let (end, length) = loop {
+                        let n = socket.read(&mut buf).await.unwrap_or(0);
+                        if n == 0 {
+                            return;
+                        }
+                        data.extend_from_slice(&buf[..n]);
+                        if let Some(pos) = data.windows(4).position(|w| w == b"\r\n\r\n") {
+                            let head = String::from_utf8_lossy(&data[..pos]).to_ascii_lowercase();
+                            let length = head
+                                .lines()
+                                .find_map(|l| l.strip_prefix("content-length:"))
+                                .and_then(|v| v.trim().parse::<usize>().ok())
+                                .unwrap_or(0);
+                            break (pos + 4, length);
+                        }
+                    };
+                    while data.len() < end + length {
+                        let n = socket.read(&mut buf).await.unwrap_or(0);
+                        if n == 0 {
+                            break;
+                        }
+                        data.extend_from_slice(&buf[..n]);
+                    }
+                    let head = String::from_utf8_lossy(&data[..end]).to_string();
+                    let path = head.split_whitespace().nth(1).unwrap_or("").to_string();
+                    let body: serde_json::Value = serde_json::from_slice(&data[end..]).unwrap_or_default();
+                    let (status, reply) = match path.as_str() {
+                        "/api/tags" => ("200 OK", json!({"models": [
+                            {"name": "gemma2:2b", "model": "gemma2:2b", "size": 1_629_518_495u64},
+                            {"name": "qwen3:4b", "model": "qwen3:4b", "size": 2_497_293_931u64},
+                            {"name": "sans-info:1b", "model": "sans-info:1b"}
+                        ]})),
+                        "/api/show" => match body["model"].as_str() {
+                            Some("gemma2:2b") => ("200 OK", json!({"model_info": {"general.architecture": "gemma2", "gemma2.context_length": 8192}})),
+                            Some("qwen3:4b") => ("200 OK", json!({"model_info": {"general.architecture": "qwen3", "qwen3.context_length": 40960}})),
+                            _ => ("404 Not Found", json!({"error": "model not found"})),
+                        },
+                        _ => ("404 Not Found", json!({})),
+                    };
+                    let text = reply.to_string();
+                    let out = format!(
+                        "HTTP/1.1 {status}\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{text}",
+                        text.len()
+                    );
+                    let _ = socket.write_all(out.as_bytes()).await;
+                    let _ = socket.shutdown().await;
+                });
+            }
+        });
+        format!("http://127.0.0.1:{port}")
+    }
+
+    #[tokio::test]
+    async fn ollama_discovery_lists_real_ids_then_reads_their_windows() {
+        let base = fake_ollama_server().await;
+        let timeout = std::time::Duration::from_secs(5);
+        let models = discover_compatible_models(&base, "", Some("/api/tags"), timeout).await.expect("découverte");
+        let ids: Vec<String> = models.iter().map(|m| m.id.clone()).collect();
+        assert_eq!(ids, vec!["gemma2:2b", "qwen3:4b", "sans-info:1b"]);
+        let windows = ollama_context_lengths(&format!("{base}/v1"), &ids, timeout).await;
+        assert_eq!(windows.get("gemma2:2b"), Some(&8_192));
+        assert_eq!(windows.get("qwen3:4b"), Some(&40_960));
+        assert!(!windows.contains_key("sans-info:1b"));
+    }
 
     // fournisseurs-178 — corps réels : Ollama 0.12 `/api/tags` (name + model), OpenAI / LM Studio `/v1/models`.
     #[test]

@@ -22,6 +22,9 @@ import {
   identifiantsNettoyes,
   modelesInvalides,
   renommerModele,
+  fenetreParDefaut,
+  fournisseurLocal,
+  sortieParDefaut,
 } from "./modelesFournisseur";
 
 type Draft = ProviderConfig & { apiKey: string; hasApiKey: boolean; installed: boolean; isNew: boolean };
@@ -41,12 +44,14 @@ const EXEMPLE_ID: Partial<Record<ProviderKind, string>> = {
 
 const MESSAGE_IDENTIFIANTS = "Identifiants de modèles à corriger (vides ou en double) avant d'enregistrer.";
 
-function emptyModel(id: string): ModelDefinition {
+/** fenetre-locale — modèle saisi à la main : 32 768 jetons pour un serveur local (Ollama réserve
+ *  la mémoire de toute la fenêtre), 128 000 pour le cloud ; modifiable dans le tableau. */
+function emptyModel(id: string, contextWindow: number, local: boolean): ModelDefinition {
   return {
     id,
     label: "",
-    contextWindow: 128000,
-    maxOutputTokens: 16384,
+    contextWindow,
+    maxOutputTokens: local ? sortieParDefaut(contextWindow) : 16384,
     supportsTools: true,
     supportsReasoning: false,
     supportsVision: false,
@@ -237,8 +242,39 @@ export function CustomProvidersPanel() {
       setSaisie({ ...saisie, erreur });
       return;
     }
-    update(d.id || d.name, { models: [...d.models, emptyModel(saisie.id.trim())] });
+    const id = saisie.id.trim();
+    const cle = d.id || d.name;
+    // fenetre-locale — local : 32 768 tout de suite ; Ollama peut annoncer moins (/api/show,
+    // lu par le Rust) : la ligne est alors corrigée, sauf si la valeur a déjà été changée à la main.
+    const local = fournisseurLocal(d.kind, Boolean(kindInfo(d.kind)?.local), d.baseUrl);
+    const fenetre = fenetreParDefaut(local);
+    const sortie = local ? sortieParDefaut(fenetre) : 16384;
+    update(cle, { models: [...d.models, emptyModel(id, fenetre, local)] });
     setSaisie(null);
+    void providerApi
+      .defaultWindow(d.kind, d.baseUrl, id)
+      .then((annoncee) => {
+        if (typeof annoncee !== "number" || annoncee <= 0 || annoncee === fenetre) return;
+        setDrafts((prev) =>
+          prev.map((x) =>
+            (x.id || x.name) !== cle
+              ? x
+              : {
+                  ...x,
+                  models: x.models.map((m) =>
+                    m.id.trim() === id && m.contextWindow === fenetre
+                      ? {
+                          ...m,
+                          contextWindow: annoncee,
+                          maxOutputTokens: m.maxOutputTokens === sortie && local ? sortieParDefaut(annoncee) : Math.min(m.maxOutputTokens, annoncee),
+                        }
+                      : m,
+                  ),
+                },
+          ),
+        );
+      })
+      .catch(() => undefined);
   };
 
   const setOverride = (providerId: string, modelId: string, contextWindow: number | undefined) => {
@@ -296,6 +332,7 @@ export function CustomProvidersPanel() {
         const open = openId === key;
         const erreurs = erreursIdentifiants(d.models);
         const premiereErreur = Object.values(erreurs)[0];
+        const local = fournisseurLocal(d.kind, Boolean(info?.local), d.baseUrl);
         const tone = !d.enabled ? "off" : d.installed ? "ok" : "error";
         const label = !d.enabled
           ? "Désactivé"
@@ -419,7 +456,15 @@ export function CustomProvidersPanel() {
                       <tr>
                         <th title="Nom exact envoyé au fournisseur (ex. qwen3:8b pour Ollama)">Identifiant</th>
                         <th title="Libellé de la liste des modèles (vide = identifiant)">Nom affiché</th>
-                        <th title="Fenêtre de contexte déclarée">Contexte</th>
+                        <th
+                          title={
+                            local
+                              ? "Fenêtre de contexte déclarée. Serveur local : 32 768 par défaut, car Ollama réserve la mémoire de toute la fenêtre."
+                              : "Fenêtre de contexte déclarée"
+                          }
+                        >
+                          Contexte
+                        </th>
                         <th title="Contexte imposé (modelOverrides.<id>.contextWindow)">Imposé</th>
                         <th>Sortie max</th>
                         <th>Outils</th>
@@ -455,7 +500,14 @@ export function CustomProvidersPanel() {
                             />
                           </td>
                           <td data-label="Contexte">
-                            <input type="number" min={1} value={m.contextWindow} onChange={(e) => setModel(d, i, { contextWindow: Number(e.target.value) || 1 })} />
+                            <input
+                              type="number"
+                              min={1}
+                              data-champ="contexte"
+                              value={m.contextWindow}
+                              title={local ? "Jetons de contexte : Ollama réserve la mémoire de toute la fenêtre" : undefined}
+                              onChange={(e) => setModel(d, i, { contextWindow: Number(e.target.value) || 1 })}
+                            />
                           </td>
                           <td data-label="Imposé">
                             <input
