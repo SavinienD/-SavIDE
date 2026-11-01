@@ -10868,3 +10868,34 @@ textarea {
 .bloc-copie:hover .bloc-copie__btn, .bloc-copie__btn:focus-visible, .bloc-copie[data-etat="copie"] .bloc-copie__btn { opacity: 1; }
 .bloc-copie__btn:hover { color: var(--text, inherit); }
 .bloc-copie[data-etat="copie"] .bloc-copie__btn { color: var(--success, #3fb950); }
+
+/* Barre des liens de la conversation (en-tête du chat). */
+.chat-head { position: relative; }
+.chat-links { margin-left: auto; display: flex; align-items: center; min-width: 0; }
+.chat-links + .chat-head__dot { margin-left: 0; }
+.chat-links__toggle {
+  display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 7px;
+  border-radius: var(--r-med); color: var(--text-3); font-family: var(--font-ui); font-size: var(--fs-xs);
+  transition: background 150ms ease, color 150ms ease;
+}
+.chat-links__toggle:hover, .chat-links__toggle[data-open="true"] { background: var(--bg-3); color: var(--text-0); }
+.chat-links__panel {
+  position: absolute; top: 100%; right: 8px; left: 8px; z-index: 60; max-width: 520px; margin-left: auto;
+  display: flex; flex-direction: column; max-height: min(360px, 40vh); padding: 4px;
+  border-radius: var(--r-card); background: var(--bg-3); box-shadow: var(--shadow-elevated); font-family: var(--font-ui);
+}
+.chat-links__filters { display: flex; flex-wrap: wrap; gap: 4px; padding: 2px 2px 6px; }
+.chat-links__filter {
+  min-height: 22px; padding: 2px 8px; border-radius: var(--r-small); color: var(--text-2); font-size: var(--fs-xs); white-space: nowrap;
+}
+.chat-links__filter span { color: var(--text-3); margin-left: 2px; }
+.chat-links__filter:hover { background: var(--bg-4); color: var(--text-0); }
+.chat-links__filter[data-active="true"] { background: var(--bg-4); color: var(--text-0); }
+.chat-links__list { overflow-y: auto; min-height: 0; display: flex; flex-direction: column; }
+.chat-links__item {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; padding: 5px 9px; border-radius: var(--r-small);
+  color: var(--text-2); font-size: var(--fs-xs); text-align: left;
+}
+.chat-links__item:hover { background: var(--bg-4); color: var(--text-0); }
+.chat-links__item svg { flex: 0 0 auto; color: var(--text-3); }
+.chat-links__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; }

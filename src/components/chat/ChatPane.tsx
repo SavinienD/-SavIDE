@@ -24,6 +24,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { AIThinkingBlock } from "./AIThinkingBlock";
 import { FileChangeBlock } from "./FileChangeBlock";
 import { FileLinkedText, Markdown } from "./Markdown";
+import { BarreLiens } from "./BarreLiens";
 import { ActionsCheminChatContext, type ActionsCheminChat } from "./MenuCheminChat";
 import { cheminsACopier } from "../../lib/cheminsChat";
 import { PlanningNextMoveBlock } from "./PlanningNextMoveBlock";
@@ -3553,6 +3554,7 @@ export function ChatPane({
           )}
           <span>{activeSubAgent?.title ?? "Conversation"}</span>
         </span>
+        <BarreLiens blocks={displayView.blocks} onOpenFile={ouvrirFichier} />
         <span className="chat-head__dot" data-status={displayView.status} />
       </div>
       <div className="chat-body" ref={bodyRef}>

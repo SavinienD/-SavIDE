@@ -127,6 +127,11 @@
       "selecteur": ".settings-pane__provider-title-row",
       "situation": "^(800x600|1024x768).*/fournisseurs-",
       "raison": "Réglages > Fournisseurs dans l'IDE à 800-1024 px (volet de 170 px) : pastille « Non connecté » rognée, défaut préexistant (mesuré sur 8e4c1f4 = 0.1.77), hors du correctif des identifiants, à reprendre."
+    },
+    {
+      "regle": "chevauchement",
+      "selecteur": ".chat-links__panel",
+      "raison": "Liste des liens de la conversation, ouverte au clic sur le bouton de l'en-tête du chat : elle flotte au-dessus du fil (comme tout menu déroulant) sans changer sa mise en page ; la dernière ligne peut être coupée par le défilement de la liste."
     }
   ]
 }
