@@ -1,4 +1,4 @@
-"""Environnement du noyau, préparé à chaque (re)démarrage (interne).
+r"""Environnement du noyau, préparé à chaque (re)démarrage (interne).
 
 - ``refresh_user_environment`` : relit l'environnement utilisateur courant
   (registre ``HKCU\Environment`` et variables système sous Windows), pour qu'une
