@@ -29,6 +29,14 @@ const tourFini = (conversationId) =>
     .map((event, i) => ({ workspaceId: WS_CLOUD, conversationId, sequence: i + 1, event }));
 const FIN_TOUR_PRECEDENT = "Fin du tour précédent : les colonnes tiennent dans le panneau, je relance le banc sur les quatre largeurs.";
 const onglets = (liste) => liste.map((id) => ({ id, titre: TITRES[id] ?? id }));
+// axe:defil178 — liens des réponses de la conversation « liensHistorique » (donnees.ts) et
+// clic sur l'un d'eux dans une colonne : au milieu (le lien du milieu, centré) ou tout en bas
+// (le dernier lien) ; ouvre un onglet de l'éditeur (fichier) ou le navigateur (URL).
+const LIENS = { fichier: ".md .chat-file-link", url: ".md .chat-link[title^='https://github']", markdown: ".md .chat-link[title^='https://docs']" };
+const clicLien = (col, genre, position) => ({
+  nom: `${genre}-${position}-colonne${col}`, col, sel: LIENS[genre], position,
+  rang: position === "bas" ? "dernier" : undefined, ouvre: genre === "fichier" ? "fichier" : "url",
+});
 
 /** Stockage local d'un espace avec ces colonnes de conversation. */
 function colonnes(cols, poids) {
@@ -320,6 +328,19 @@ export const SCENES = [
   { id: "collegue-arbre", sim: { fournisseur: false, collegue: true, espaceVide: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, creer: "test", ecrire: "Bonjour", evenementsTour: tourFini("s-1"), arbre: true, temoins: ["sel:.axe-tree-overlay"] },
   // À la réouverture de l'espace : la liste doit montrer les conversations de l'espace (« test »).
   { id: "collegue-liste", sim: { fournisseur: false, collegue: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, temoins: ["test"] },
+  // axe:defil178 — longue conversation défilée au milieu puis tout en bas : un clic sur un lien
+  // de fichier, une URL nue ou un lien Markdown ne fait plus bouger la conversation (en bas, elle
+  // reste en bas) et le lien s'ouvre.
+  { id: "defil-liens", sim: { liensHistorique: true }, stockage: () => colonnes([ids(1)]),
+    defilement: [clicLien(0, "fichier", "milieu"), clicLien(0, "url", "milieu"), clicLien(0, "markdown", "milieu"),
+      clicLien(0, "fichier", "bas"), clicLien(0, "url", "bas"), clicLien(0, "markdown", "bas")],
+    temoins: ["sel:.md .chat-file-link", "sel:.md .chat-link", "appel:open_external_url_command"] },
+  // … et dans la colonne SANS focus (deux colonnes, clics alternés) : changer de colonne recréait
+  // les fils des deux colonnes (retour en bas, clic perdu).
+  { id: "defil-liens-c2", sim: { liensHistorique: true }, stockage: () => colonnes([["c-001"], ["c-002"]]),
+    defilement: [clicLien(1, "fichier", "milieu"), clicLien(0, "url", "milieu"), clicLien(1, "markdown", "milieu"),
+      clicLien(0, "fichier", "bas"), clicLien(1, "url", "bas"), clicLien(0, "markdown", "bas")],
+    temoins: ["sel:.colonne-chat[data-colonne='1'] .md .chat-link", "appel:open_external_url_command"] },
   // axe:bas169 — remonté dans un long chat : bouton flottant « ↓ » cliquable.
   { id: "chat-aller-en-bas", sim: {}, stockage: () => colonnes([ids(3)]), defilerChatHaut: true, temoins: ["clic:[data-testid='chat-aller-en-bas']"] },
   // axe:hist169 — prompt envoyé puis flèche HAUT dans le compositeur vide : il revient.

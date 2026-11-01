@@ -2705,10 +2705,11 @@ export function Workspace({
   // conversation détachée aussi, même si aucune colonne ne la montre).
   useEffect(() => {
     const aCharger = new Set<string>();
-    colonnesChat.forEach((colonne, index) => {
-      if (index === etatColonnesChat.focus) return;
+    colonnesChat.forEach((colonne) => {
+      // axe:defil178 — toute colonne qui ne montre pas la conversation active a son fil
+      // chargé, celle qui vient de prendre le focus comprise (elle garde le sien à l'écran).
       const id = visibleDeColonne(colonne);
-      if (id) aCharger.add(id);
+      if (id && id !== activeConv.id) aCharger.add(id);
     });
     if (chatDetache && chatDetache !== activeConv.id) aCharger.add(chatDetache);
     for (const id of aCharger) {
@@ -2894,7 +2895,11 @@ export function Workspace({
     const streaming = streamingConversationIds.has(conv.id);
     return (
       <ChatPane
-        key={enFocus ? "chat-focus" : `chat-${conv.id}`}
+        // axe:defil178 — même clé, que la colonne ait le focus ou non : changer de colonne
+        // (clic sur un lien d'une colonne sans focus) recréait les ChatPane des deux colonnes,
+        // le défilement repartait en bas et le clic sur le lien était perdu. Une colonne ne
+        // contient qu'un ChatPane : il garde sa place et suit seul ses changements de conversation.
+        key="chat"
         workspacePath={workspacePath}
         conversationId={conv.id}
         activeModel={conv.model}
@@ -3939,7 +3944,11 @@ export function Workspace({
                 const onglets = colonne
                   .map((id) => ongletsChat.find((t) => t.id === id))
                   .filter((t): t is OngletChat => Boolean(t));
-                const visible = enFocus ? activeConv.id : visibleDeColonne(colonne);
+                // axe:defil178 — chaque colonne montre SA conversation (l'active si elle y est) :
+                // la colonne qui prend le focus ne montre plus, le temps du chargement, la
+                // conversation active de la colonne voisine.
+                const visible = visibleDeColonne(colonne);
+                const actifIci = visible !== null && visible === activeConv.id;
                 const conv = visible ? conversationsColonnes[visible] : undefined;
                 return (
                   <Fragment key={index}>
@@ -4003,7 +4012,7 @@ export function Workspace({
                         title={journalSession.title}
                         onClose={() => setJournalSession(null)}
                       />
-                    ) : enFocus ? (
+                    ) : actifIci ? (
                       chatDetache === activeConv.id ? (
                         <p className="onglets-chat__absent">Conversation détachée, devant.</p>
                       ) : (
