@@ -221,6 +221,76 @@ async function clicDroitChemin(page, e) {
   return ecarts.length ? ecarts.join(", ") : null;
 }
 
+// Barre des liens de la conversation (en-tête du chat) : repliée par défaut (bouton avec le
+// nombre de liens), dépliée en liste filtrable par type ; un clic ouvre le lien comme dans le
+// chat, le clic droit sur un fichier ouvre le menu des chemins. La conversation ne bouge pas.
+async function barreLiens(page, e) {
+  const col = `.colonne-chat[data-colonne='${e.col ?? 0}']`;
+  const corps = `${col} .chat-body`;
+  const ecarts = [];
+  const bouton = await page.$(`${col} .chat-links__toggle`);
+  if (!bouton) return "barre des liens absente";
+  const replie = await page.evaluate((c) => ({
+    liste: !!document.querySelector(`${c} .chat-links__list`),
+    nombre: Number(document.querySelector(`${c} .chat-links__toggle`)?.dataset.count ?? -1),
+  }), col);
+  if (replie.liste) ecarts.push("liste dépliée par défaut");
+  if (!(replie.nombre > 0)) ecarts.push(`nombre de liens ${replie.nombre}`);
+  const pos = await page.evaluate((cs) => {
+    const b = document.querySelector(cs);
+    b.scrollTop = Math.round((b.scrollHeight - b.clientHeight) / 2);
+    b.dataset.bancDefil = "1";
+    return Math.round(b.scrollTop);
+  }, corps);
+  await pause(400);
+  await bouton.click();
+  await pause(300);
+  const liste = await page.evaluate((c) => {
+    const items = [...document.querySelectorAll(`${c} .chat-links__item`)].map((x) => x.dataset.lien ?? "");
+    return { items, doublons: items.length - new Set(items).size, filtres: [...document.querySelectorAll(`${c} .chat-links__filter`)].map((x) => x.dataset.type) };
+  }, col);
+  if (!liste.items.length) ecarts.push("liste vide");
+  if (liste.items.length !== replie.nombre) ecarts.push(`${liste.items.length} lignes pour ${replie.nombre} annoncés`);
+  if (liste.doublons) ecarts.push(`${liste.doublons} doublons`);
+  if (e.filtre) {
+    if (!liste.filtres.includes(e.filtre)) ecarts.push(`filtre « ${e.filtre} » absent`);
+    await page.click(`${col} .chat-links__filter[data-type='${e.filtre}']`).catch(() => undefined);
+    await pause(250);
+    const types = await page.evaluate((c) => [...document.querySelectorAll(`${c} .chat-links__item`)].map((x) => x.dataset.type), col);
+    if (!types.length || types.some((t) => t !== e.filtre)) ecarts.push(`filtre ${e.filtre} : ${types.join(",") || "aucune ligne"}`);
+  }
+  const cible = `${col} .chat-links__item`;
+  const lien = await page.evaluate((s) => document.querySelector(s)?.dataset.lien ?? "", cible);
+  if (e.clic === "droit") {
+    const el = await page.$(cible);
+    const b = el && (await el.boundingBox());
+    if (b) await page.mouse.click(b.x + Math.min(b.width / 2, 30), b.y + b.height / 2, { button: "right" });
+    await pause(400);
+    const items = await page.evaluate(() => [...document.querySelectorAll(".chat-path-menu .tree-menu__item")].map((x) => (x.textContent ?? "").trim()));
+    for (const l of ["Afficher dans l'explorateur", "Copier le chemin"]) if (!items.includes(l)) ecarts.push(`menu sans « ${l} »`);
+  } else if (e.clic) {
+    const el = await page.$(cible);
+    const b = el && (await el.boundingBox());
+    if (b) await page.mouse.click(b.x + Math.min(b.width / 2, 30), b.y + b.height / 2);
+    await pause(700);
+  }
+  const apres = await page.evaluate((cs) => {
+    const b = document.querySelector(cs);
+    return {
+      top: Math.round(b?.scrollTop ?? -1), meme: b?.dataset.bancDefil === "1",
+      onglet: document.querySelector(".editor-col .tabs .tab[data-active='true']")?.getAttribute("title") ?? "",
+      url: window.__bancAppels?.open_external_url_command ?? 0,
+    };
+  }, corps);
+  if (!apres.meme) ecarts.push("fil recréé");
+  else if (apres.top !== pos) ecarts.push(`défilement ${pos} -> ${apres.top}`);
+  if (e.clic === "fichier" && !apres.onglet) ecarts.push(`fichier « ${lien} » non ouvert`);
+  if (e.clic === "url" && !apres.url) ecarts.push(`URL « ${lien} » non ouverte`);
+  await page.evaluate((cs) => { const b = document.querySelector(cs); if (b) b.scrollTop = b.scrollHeight; }, corps);
+  console.log(`barre des liens ${e.filtre ?? ""} ${e.clic ?? ""} :${ecarts.length ? " ✗ " + ecarts.join(", ") : " ✓"}`);
+  return ecarts.length ? ecarts.join(", ") : null;
+}
+
 async function cliquerLienSansDefiler(page, e) {
   const corps = `.colonne-chat[data-colonne='${e.col ?? 0}'] .chat-body`;
   const place = await page.evaluate((cs, sel, rang, position) => {
@@ -461,6 +531,10 @@ async function preparerScene(page, si, sc) {
   }
   if (sc.cheminChat) {
     const ecart = await clicDroitChemin(page, sc.cheminChat);
+    if (ecart) sc._echecDefil = (sc._echecDefil ? sc._echecDefil + " ; " : "") + ecart;
+  }
+  if (sc.barreLiens) {
+    const ecart = await barreLiens(page, sc.barreLiens);
     if (ecart) sc._echecDefil = (sc._echecDefil ? sc._echecDefil + " ; " : "") + ecart;
   }
   if (sc.arretForce) {

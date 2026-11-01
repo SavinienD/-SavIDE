@@ -392,4 +392,14 @@ export const SCENES = [
     temoins: ["absent:.chat-path-menu"] },
   { id: "chemin-chat-relatif", sim: { liensHistorique: true }, stockage: () => colonnes([ids(1)]), cheminChat: { menu: "Copier le chemin relatif" },
     temoins: ["absent:.chat-path-menu"] },
+  // Barre des liens de la conversation : repliée (bouton + nombre), dépliée filtrable, clic = même
+  // action que dans le chat, clic droit = menu des chemins ; la conversation ne bouge pas.
+  { id: "liens-barre", sim: { liensHistorique: true }, stockage: () => colonnes([ids(1)]), barreLiens: {},
+    temoins: ["sel:.chat-links__item"] },
+  { id: "liens-barre-fichier", sim: { liensHistorique: true }, stockage: () => colonnes([ids(1)]), barreLiens: { filtre: "code", clic: "fichier" },
+    temoins: ["sel:.editor-col .tabs .tab[data-active='true']"] },
+  { id: "liens-barre-url", sim: { liensHistorique: true }, stockage: () => colonnes([ids(1)]), barreLiens: { filtre: "url", clic: "url" },
+    temoins: ["appel:open_external_url_command"] },
+  { id: "liens-barre-menu", sim: { liensHistorique: true }, stockage: () => colonnes([ids(1)]), barreLiens: { filtre: "code", clic: "droit" },
+    temoins: ["clic:.chat-path-menu .tree-menu__item"] },
 ];
