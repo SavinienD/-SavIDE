@@ -700,7 +700,7 @@ function QuestionPanel({ block, questions, disabled, pending, allowStopQuestions
   }
 
   return h("div", { className: "question" },
-    h("div", { className: "question__kicker" }, "Axecode needs your answer"),
+    h("div", { className: "question__kicker" }, "SavIDE needs your answer"),
     questions.map((question, questionIndex) => h("div", { key: `${block.id}-${questionIndex}`, className: "question__group" },
       h("div", { className: "question__title" }, question.question),
       question.options.length > 0
@@ -1241,7 +1241,7 @@ function App() {
       h("div", { className: "pairing__inner" },
         h("div", { className: "pairing__brand" },
           h("img", { src: "./icons/icon.svg", alt: "" }),
-          h("span", null, "Axecode Remote"),
+          h("span", null, "SavIDE Remote"),
         ),
         h("h1", { className: "pairing__title" }, "Pair this phone"),
         h("p", { className: "pairing__sub" }, "Open Remote on your PC, then scan the QR code or enter the 6-digit code."),
@@ -1277,7 +1277,7 @@ function App() {
           "aria-expanded": wsMenuOpen ? "true" : "false",
         },
           h(StatusDot, { on: canReachPc }),
-          h("span", { className: "ws-switch__name" }, workspace?.name || "Axecode"),
+          h("span", { className: "ws-switch__name" }, workspace?.name || "SavIDE"),
           workspaces.length > 0 && h("span", { className: "ws-switch__caret", "data-open": wsMenuOpen ? "true" : "false" }, "›"),
         ),
         h("div", { className: "pane__sub" }, canReachPc ? "PC connected" : status.relay === "connected" ? "PC unreachable" : `Relay ${status.relay}`),
@@ -1311,7 +1311,7 @@ function App() {
     ),
     showInstallHint && h("div", { className: "hint" },
       h("div", { className: "hint__text" },
-        h("strong", null, "Install Axecode Remote. "),
+        h("strong", null, "Install SavIDE Remote. "),
         isIosDevice()
           ? "Add to Home Screen (Share → Add to Home Screen) to enable notifications on iPhone."
           : "Install the PWA for full-screen chat and notifications.",
@@ -1319,7 +1319,7 @@ function App() {
       h("button", { className: "icon-btn", onClick: dismissInstallHint }, "Got it"),
     ),
     !canReachPc && h("div", { className: "offline" },
-      h("span", null, "Keep Axecode open on your PC with Remote enabled."),
+      h("span", null, "Keep SavIDE open on your PC with Remote enabled."),
       h("button", { className: "icon-btn", onClick: retryConnection }, "Retry"),
     ),
     h("div", { className: "convs" },
@@ -1422,7 +1422,7 @@ function App() {
             rows: 1,
             value: prompt,
             disabled: !canReachPc || sendPending,
-            placeholder: canReachPc ? "Message Axecode…" : "PC unreachable",
+            placeholder: canReachPc ? "Message SavIDE…" : "PC unreachable",
             onChange: (e) => {
               setPrompt(e.target.value);
               e.target.style.height = "auto";

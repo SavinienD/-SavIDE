@@ -1,4 +1,4 @@
-//! Harness layer with the sizes of a real Prime harness (12 prompt notes,
+//! Harness layer with the sizes of a real harness (12 prompt notes,
 //! 35 memories; synthetic text, same lengths).
 
 use axecode_harness::{EntryKind, HarnessPaths, HarnessStore, NewEntry, Scope};

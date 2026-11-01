@@ -1,6 +1,6 @@
-// cloud — « Prime Agent » tab: chat with Prime (portal API, one task at a
+// cloud — « Agent » tab: chat with the server agent (portal API, one task at a
 // time, answer polled every 2 s), tickets and quick links from the local
-// cache of Prime. Everything goes through `cloud_api` (Bearer added in Rust).
+// cache of the portal. Everything goes through `cloud_api` (Bearer added in Rust).
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -8,10 +8,10 @@ import { api } from "../../lib/ipc";
 import {
   CloudError,
   errorText,
-  primeApi,
+  portalApi,
   type ChatMessage,
   type Download,
-  type PrimeMoi,
+  type PortalMoi,
   type QuickLink,
   type Ticket,
 } from "./cloudApi";
@@ -34,21 +34,21 @@ function openLink(url?: string) {
 }
 
 // connexion-google - non connecte : bouton de connexion au lieu d'un panneau vide.
-export function PrimeAgentTab({ active }: { active: boolean }) {
+export function AgentTab({ active }: { active: boolean }) {
   const etat = useCloudState();
   if (etat && !etat.connected) {
     return (
-      <div className="axc-prime" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: 24 }}>
-        <p>Prime Agent nécessite une connexion à Axe Cloud.</p>
+      <div className="axc-agent" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: 24 }}>
+        <p>L'agent nécessite une connexion au cloud.</p>
         <CloudLoginButton className="axc-btn" />
       </div>
     );
   }
-  return <PrimeAgentTabConnecte active={active} />;
+  return <AgentTabConnecte active={active} />;
 }
 
-function PrimeAgentTabConnecte({ active }: { active: boolean }) {
-  const [moi, setMoi] = useState<PrimeMoi | null>(null);
+function AgentTabConnecte({ active }: { active: boolean }) {
+  const [moi, setMoi] = useState<PortalMoi | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState<Pending | null>(null);
@@ -63,7 +63,7 @@ function PrimeAgentTabConnecte({ active }: { active: boolean }) {
 
   const loadHistory = useCallback(async () => {
     try {
-      setMessages((await primeApi.history()).messages ?? []);
+      setMessages((await portalApi.history()).messages ?? []);
     } catch (err) {
       setChatError(errorText(err));
     }
@@ -72,20 +72,20 @@ function PrimeAgentTabConnecte({ active }: { active: boolean }) {
   const loadTickets = useCallback(async () => {
     setTicketsError(null);
     try {
-      setTickets((await primeApi.tickets()).tickets ?? []);
+      setTickets((await portalApi.tickets()).tickets ?? []);
     } catch (err) {
       setTicketsError(errorText(err));
     }
   }, []);
 
   useEffect(() => {
-    void primeApi
+    void portalApi
       .moi()
       .then(setMoi)
       .catch((err) => setChatError(errorText(err)));
     void loadHistory();
     void loadTickets();
-    void primeApi
+    void portalApi
       .links()
       .then((reply) => {
         setLinks(reply.liens ?? []);
@@ -102,18 +102,18 @@ function PrimeAgentTabConnecte({ active }: { active: boolean }) {
       if (stopped) return;
       if (Date.now() - pending.since > POLL_LIMIT_MS) {
         setPending(null);
-        setChatError("Prime n'a pas répondu à temps (5 minutes). Réessayez plus tard.");
+        setChatError("L'agent n'a pas répondu à temps (5 minutes). Réessayez plus tard.");
         return;
       }
       try {
-        const task = await primeApi.task(pending.tache);
+        const task = await portalApi.task(pending.tache);
         if (stopped || task.etat === "en_cours") return;
         setPending(null);
         if (task.etat === "fini") {
           setMessages((list) => [...list, { role: "prime", texte: task.reponse ?? "", date: task.fin ?? new Date().toISOString() }]);
           void loadHistory();
         } else {
-          setChatError(task.erreur || "Prime n'a pas pu répondre.");
+          setChatError(task.erreur || "L'agent n'a pas pu répondre.");
         }
       } catch (err) {
         if (err instanceof CloudError && err.status === 404) {
@@ -142,7 +142,7 @@ function PrimeAgentTabConnecte({ active }: { active: boolean }) {
     if (!text || pending || !chatAllowed) return;
     setChatError(null);
     try {
-      const reply = await primeApi.send(text, fresh);
+      const reply = await portalApi.send(text, fresh);
       setMessages((list) => [...(fresh ? [] : list), { role: "moi", texte: text, date: new Date().toISOString() }]);
       setDraft("");
       setFresh(false);
@@ -164,32 +164,32 @@ function PrimeAgentTabConnecte({ active }: { active: boolean }) {
   };
 
   return (
-    <div className="axc-prime">
-      {/* l8 — le tableau de bord Prime (tickets, surveillances, journal) en un clic ;
+    <div className="axc-agent">
+      {/* l8 — le tableau de bord du portail (tickets, surveillances, journal) en un clic ;
           main.tsx ouvre les liens https dans le navigateur. */}
       <a
         className="axc-l8"
         href="https://cloud.exemple.invalid/prime/"
-        title="Ouvrir le tableau de bord Prime dans le navigateur"
+        title="Ouvrir le tableau de bord dans le navigateur"
       >
-        Tableau de bord Prime ↗
+        Tableau de bord ↗
       </a>
-      <section className="axc-chat" aria-label="Discussion avec Prime">
+      <section className="axc-chat" aria-label="Discussion avec l'agent">
         {moi && !moi.chat ? (
           <p className="axc-banner axc-banner--warn" role="status">
-            {moi.chat_motif || "La discussion avec Prime n'est pas encore ouverte pour votre compte."}
+            {moi.chat_motif || "La discussion avec l'agent n'est pas encore ouverte pour votre compte."}
           </p>
         ) : null}
         <div className="axc-chat__log" ref={logBox}>
           {messages.length === 0 && !pending ? (
             <p className="axc-empty">
-              {fresh ? "Nouvelle conversation : écrivez votre premier message." : "Posez votre question à Prime : un ticket, un client, une procédure…"}
+              {fresh ? "Nouvelle conversation : écrivez votre premier message." : "Posez votre question à l'agent : un ticket, un client, une procédure…"}
             </p>
           ) : null}
           {messages.map((message, index) => (
             <div key={index} className="axc-msg" data-role={message.role}>
               <div className="axc-msg__meta">
-                {message.role === "moi" ? "Vous" : "Prime"} · {timeLabel(message.date)}
+                {message.role === "moi" ? "Vous" : "Agent"} · {timeLabel(message.date)}
               </div>
               {message.role === "prime" ? (
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.texte}</ReactMarkdown>
@@ -200,7 +200,7 @@ function PrimeAgentTabConnecte({ active }: { active: boolean }) {
           ))}
           {pending ? (
             <div className="axc-msg axc-msg--pending" data-role="prime" role="status">
-              <span className="axc-spinner" aria-hidden="true" /> Prime réfléchit… (jusqu'à 5 minutes)
+              <span className="axc-spinner" aria-hidden="true" /> L'agent réfléchit… (jusqu'à 5 minutes)
             </div>
           ) : null}
           {chatError ? (
@@ -214,7 +214,7 @@ function PrimeAgentTabConnecte({ active }: { active: boolean }) {
             className="axc-chat__input"
             rows={2}
             maxLength={8000}
-            placeholder={chatAllowed ? "Votre message à Prime (Entrée pour envoyer, Maj+Entrée pour aller à la ligne)" : "Discussion indisponible"}
+            placeholder={chatAllowed ? "Votre message à l'agent (Entrée pour envoyer, Maj+Entrée pour aller à la ligne)" : "Discussion indisponible"}
             value={draft}
             disabled={!chatAllowed}
             onChange={(event) => setDraft(event.target.value)}
@@ -271,7 +271,7 @@ function PrimeAgentTabConnecte({ active }: { active: boolean }) {
         </section>
         <section>
           <h2 className="axc-section__title">
-            <span>Tickets suivis par Prime</span>
+            <span>Tickets suivis par l'agent</span>
             <button type="button" className="axc-btn axc-btn--ghost" onClick={() => void loadTickets()}>
               Actualiser
             </button>

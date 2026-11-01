@@ -1,7 +1,7 @@
 // 0.1.71 — la dictée n'est proposée que si un moteur de transcription répond.
 // Avant, le micro s'affichait toujours : sans moteur, on obtenait « Transcription
 // impossible… connexion refusée (service arrêté ou port non permis…) ; whisper small
-// (VM)… » (SavIDE, Axecode sans espace). Module pur : testé par tests/voixDisponible.test.cjs.
+// (VM)… » (SavIDE sans espace). Module pur : testé par tests/voixDisponible.test.cjs.
 
 export type MoteurVoix = { url: string; label: string; ok: boolean; error?: string | null };
 export type EtatServiceVoix = { connexion: string; ok: boolean; moteurs?: MoteurVoix[] | null; erreur?: string };

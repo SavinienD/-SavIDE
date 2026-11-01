@@ -1,4 +1,4 @@
-# Axecode Remote relay. Put it behind a TLS reverse proxy (Caddy, Traefik,
+# SavIDE Remote relay. Put it behind a TLS reverse proxy (Caddy, Traefik,
 # nginx): the desktop connects over wss://<your-domain>/ws.
 services:
   relay:

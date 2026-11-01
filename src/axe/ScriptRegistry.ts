@@ -75,7 +75,7 @@ export class ScriptRegistry {
     return info;
   }
 
-  /** Enregistre une source seule (script venu de Prime, pas encore exécutable ici). */
+  /** Enregistre une source seule (script venu du serveur, pas encore exécutable ici). */
   registerSource(info: Omit<ScriptInfo, "enregistreLe">): ScriptInfo {
     const complet = { ...info, enregistreLe: Date.now() };
     this.infos.set(info.name, complet);
@@ -107,8 +107,8 @@ export class ScriptRegistry {
   }
 }
 
-/** Pont inverse Prime → Axe : GET /prime/api/scripts/:id puis enregistrement local. */
-export async function importFromPrime(
+/** Pont inverse serveur → appli : GET /prime/api/scripts/:id puis enregistrement local. */
+export async function importFromServer(
   scriptId: string,
   registre: ScriptRegistry,
   fetcher: typeof fetch = fetch,
@@ -117,13 +117,13 @@ export async function importFromPrime(
   const rep = await fetcher(`${base}/prime/api/registre/v1/scripts/${encodeURIComponent(scriptId)}`, {
     credentials: "include",
   });
-  if (!rep.ok) throw new Error(`Prime a répondu ${rep.status} pour le script ${scriptId}`);
+  if (!rep.ok) throw new Error(`Le serveur a répondu ${rep.status} pour le script ${scriptId}`);
   const brut = (await rep.json()) as Record<string, any>;
   // Registre v1 : {script, manifeste} ; le code se lit à part (/code). Ancien format : {name, source}.
   let corps = brut as { name?: string; nom?: string; source?: string; code?: string };
   if (brut.manifeste) {
     const c = await fetcher(`${base}/prime/api/registre/v1/scripts/${encodeURIComponent(scriptId)}/code`, { credentials: "include" });
-    if (!c.ok) throw new Error(`Prime a répondu ${c.status} pour le code de ${scriptId}`);
+    if (!c.ok) throw new Error(`Le serveur a répondu ${c.status} pour le code de ${scriptId}`);
     corps = { nom: brut.manifeste.nom ?? scriptId, source: await c.text() };
   }
   const name = (corps.name ?? corps.nom ?? scriptId).trim();

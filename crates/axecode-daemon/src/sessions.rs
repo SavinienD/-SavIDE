@@ -1155,11 +1155,11 @@ mod tests {
     #[test]
     fn cloud_identifier_accepts_a_subfolder() {
         let f = Fixture::new();
-        let sub = f.root.join("portail-prime");
+        let sub = f.root.join("projet-demo");
         std::fs::create_dir_all(&sub).unwrap();
         let canonical = std::fs::canonicalize(&sub).unwrap();
         let meta = f
-            .create("axe-cloud://axe-cloud/work/portail-prime")
+            .create("axe-cloud://axe-cloud/work/projet-demo")
             .unwrap();
         assert_eq!(meta.workspace_id, canonical.display().to_string());
     }

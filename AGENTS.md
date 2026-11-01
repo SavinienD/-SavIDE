@@ -16,8 +16,6 @@ Code map:
 ├── LICENSE
 ├── package-lock.json
 ├── package.json
-├── RAPPORT-AXECODE.md # état du projet au point d'arrêt (15/10/2026) : fait, reste à faire, tests, actions
-├── RETOURS-AXECODE.md # retours utilisateur (16/10) : correctifs et vérifications à traiter par Prime
 ├── README.md
 ├── remote # cleanup — relais auto-hébergé (Docker derrière reverse proxy TLS)
 │   ├── .dockerignore
@@ -340,8 +338,8 @@ Code map:
 │   │       └── AppIcon-83.5x83.5@2x.png
 │   └── src
 │       ├── context.rs
-│       ├── cloud.rs # cloud — connexion Axe Cloud (boucle locale + PKCE S256, /app/jeton), jeton dans connection-secrets.json, IPC cloud_login/state/logout/api/open_web, connexion « Axe Cloud » (wss /ws, Bearer)
-│       ├── cloud_tests.rs # tests du mode cloud (boucle locale 127.0.0.1) + cloud_e2e ignoré (contre la porte déployée)
+│       ├── cloud.rs # cloud — connexion cloud (boucle locale + PKCE S256, /app/jeton), jeton dans connection-secrets.json, IPC cloud_login/state/logout/api/open_web, connexion « cloud » (wss /ws, Bearer)
+│       ├── cloud_tests.rs # tests du mode cloud (boucle locale 127.0.0.1) + cloud_e2e ignoré (contre la passerelle déployée)
 │       ├── connections.rs # remote — registre Local/Distante/SSH (connections.json + connection-secrets.json), tunnels ssh, IPC connections_*, call_on(connexion)
 │       ├── conversations.rs
 │       ├── daemon_client.rs # daemon — mode --daemon (service + REPL), attache IDE, IPC daemon_* (param connection), bridge chat -> sessions ; v2-l2.4c — cloud_connection_id/cloud_service_workspace (espace cloud -> chemin réel du service)
@@ -379,23 +377,23 @@ Code map:
     │   ├── HarnessBackupSection.tsx # Settings > Harness : sauvegarde périodique
     │   ├── QuotaIndicator.tsx # quota d'abonnement dans la barre de titre
     │   ├── providers.ts # types + IPC provider_*, entrées du sélecteur de modèles
-    │   ├── theme.css # accent orange Axe + styles des composants axe
+    │   ├── theme.css # accent orange + styles des composants
     │   └── theme.ts # tons dérivés de --axe-bg par luminance, persistance
     ├── components
     │   ├── agents # agents
     │   │   ├── AgentsView.tsx # Vue Agents : arbre des sessions running/idle/inactive, connexion active ou toutes les machines groupées, conversations libres (freechat), ouvrir, message, arrêt
     │   │   ├── ExternalAgents.tsx # agents — agents externes du service (agents.*) : liste 2 s, lancement (brief/libellé/modèle/commande), journal en direct, arrêt, résultat ; lecture seule hors ligne, inerte en local
     │   │   ├── ConnectionSelector.tsx # remote — sélecteur de connexion de la barre latérale (masqué s'il n'y a que Local)
-    │   │   ├── RemoteConversations.tsx # remote — sessions d'une connexion distante : liste, création (modèles Axe Cloud proposés), fil depuis sessions.tree (erreurs de tour visibles), changement de modèle, envoi, arrêt
+    │   │   ├── RemoteConversations.tsx # remote — sessions d'une connexion distante : liste, création (modèles cloud proposés), fil depuis sessions.tree (erreurs de tour visibles), changement de modèle, envoi, arrêt
     │   │   ├── SessionTree.tsx # /tree : arbre du journal, revenir à un point, fork (par connexion)
     │   │   ├── agents.css
     │   │   ├── agentsApi.ts # wrappers daemon_call / daemon_sessions / axe://daemon, routage par connexion ; serviceAgentsApi (agents.list/spawn/status/stop/result en cloud)
     │   │   └── remoteItems.ts # remote — modèles proposés pour une session distante (axe-cloud d'abord, mémorisés par connexion), fil affichable (messages + erreurs), explications lisibles des erreurs
-    │   ├── cloud # cloud — mode Axe Cloud (connexion Google, onglets Prime Agent / Atelier / Terminal)
+    │   ├── cloud # cloud — mode cloud (connexion Google, onglets Agent / Atelier / Terminal)
     │   │   ├── CloudLogin.tsx # écran « Se connecter avec Google » (attente, refus, Mode local)
-    │   │   ├── CloudShell.tsx # barre + onglets Prime Agent / Atelier (RemoteConversations sur la connexion axe-cloud) / Terminal + menu compte
-    │   │   ├── PrimeAgentTab.tsx # chat avec Prime (tâche + relecture), tickets, liens rapides
-    │   │   ├── TerminalTab.tsx # Prime / OpenCode / bash : lien unique /app/code-web ouvert dans le navigateur système
+    │   │   ├── CloudShell.tsx # barre + onglets Agent / Atelier (RemoteConversations sur la connexion axe-cloud) / Terminal + menu compte
+    │   │   ├── AgentTab.tsx # chat avec l'agent du serveur (tâche + relecture), tickets, liens rapides
+    │   │   ├── TerminalTab.tsx # agent / OpenCode / bash : lien unique /app/code-web ouvert dans le navigateur système
     │   │   ├── cloud.css # classes axc-*
     │   │   └── cloudApi.ts # IPC cloud_* + API JSON /prime/api/* et /app/*
     │   ├── settings # harness (fichiers harness)
@@ -420,7 +418,6 @@ Code map:
     │   ├── RemotePanel.tsx
     │   ├── SearchPane.tsx
     │   ├── SettingsPane.tsx
-    │   ├── AxecodeMark.tsx
     │   ├── Splitter.tsx
     │   ├── UpdateBadge.tsx
     │   ├── UpdaterLockScreen.tsx

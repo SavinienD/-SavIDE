@@ -1,6 +1,6 @@
-// parcours-collegue — erreur d'un tour d'IA d'un espace Axe Cloud, en français lisible.
+// parcours-collegue — erreur d'un tour d'IA d'un espace cloud, en français lisible.
 //
-// Le compteur Axe Cloud (127.0.0.1:8096) répond au format Anthropic
+// Le compteur du cloud (127.0.0.1:8096) répond au format Anthropic
 // {"type":"error","error":{"type":"api_error","message":"…"}} ; le client Rust en fait
 // « auth error: Anthropic rejected the API key (authentication_error: …). Check the key in
 // Settings > Providers. » (401), « retryable stream error: HTTP 503 Service Unavailable:
@@ -8,7 +8,7 @@
 // (403)… (crates/axecode-anthropic/src/client.rs, classify_http_error), transmis tels quels
 // par le démon de l'espace (turn_error). Ces textes ne sont PAS modifiés (d'autres écrans les
 // reconnaissent par motif) : on les explique à l'affichage, avec le statut et le message du
-// serveur. `null` : erreur non reconnue, ou conversation hors espace Axe Cloud (texte laissé
+// serveur. `null` : erreur non reconnue, ou conversation hors espace cloud (texte laissé
 // tel quel). Module pur, testé par tests/erreursIA.test.cjs.
 
 const STATUT_DU_TYPE: Record<string, number> = {
@@ -41,7 +41,7 @@ export function lireErreurServeur(brut: string): { statut: number | null; messag
   return { statut, message };
 }
 
-/** Explication en français d'une erreur de tour d'une conversation d'espace Axe Cloud
+/** Explication en français d'une erreur de tour d'une conversation d'espace cloud
  *  (null : erreur non reconnue, ou `espaceCloud` faux : le texte brut reste affiché). */
 export function expliquerErreurIA(brut: string | null | undefined, espaceCloud: boolean): string | null {
   if (!brut || !espaceCloud) return null;
@@ -50,24 +50,24 @@ export function expliquerErreurIA(brut: string | null | undefined, espaceCloud: 
   const fournisseur = /provider `([^`]+)` is not (?:configured|declared)/i.exec(texte);
   if (fournisseur) {
     return fournisseur[1] === "axe-cloud"
-      ? "L'IA n'est pas encore configurée dans votre espace Axe Cloud (fournisseur « axe-cloud » absent). Prévenez l'administrateur."
-      : `Ce modèle n'est pas disponible dans votre espace Axe Cloud (fournisseur « ${fournisseur[1]} »). Choisissez un modèle Axe Cloud dans la liste des modèles, puis renvoyez le message.`;
+      ? "L'IA n'est pas encore configurée dans votre espace cloud (fournisseur « axe-cloud » absent). Prévenez l'administrateur."
+      : `Ce modèle n'est pas disponible dans votre espace cloud (fournisseur « ${fournisseur[1]} »). Choisissez un modèle cloud dans la liste des modèles, puis renvoyez le message.`;
   }
   if (/worker crashed repeatedly|kernel exited|kernel not running|axecode_kernel package not found/i.test(texte)) {
-    return "Le moteur de votre espace Axe Cloud s'est arrêté avant de répondre. Renvoyez le message ; si cela recommence, prévenez l'administrateur.";
+    return "Le moteur de votre espace cloud s'est arrêté avant de répondre. Renvoyez le message ; si cela recommence, prévenez l'administrateur.";
   }
   if (/error sending request|connection refused|dns error|timed out/i.test(texte) && !/\bHTTP \d{3}\b/.test(texte)) {
-    return "Le compteur Axe Cloud ne répond pas : réessayez dans un instant. Si cela dure, prévenez l'administrateur.";
+    return "Le compteur du cloud ne répond pas : réessayez dans un instant. Si cela dure, prévenez l'administrateur.";
   }
   const serveur = lireErreurServeur(texte);
   if (!serveur) return null;
   const { statut, message } = serveur;
   const code = statut ? ` (erreur ${statut})` : "";
   let titre: string;
-  if (statut === 401) titre = `Axe Cloud a refusé la clé de votre espace${code}. Prévenez l'administrateur.`;
-  else if (statut === 403) titre = `Axe Cloud refuse l'accès à l'IA${code}.`;
+  if (statut === 401) titre = `Le cloud a refusé la clé de votre espace${code}. Prévenez l'administrateur.`;
+  else if (statut === 403) titre = `Le cloud refuse l'accès à l'IA${code}.`;
   else if (statut === 429) titre = `Limite d'utilisation de l'IA atteinte${code}.`;
-  else if (statut !== null && statut >= 500) titre = `Le service IA d'Axe Cloud est indisponible pour le moment${code}.`;
-  else titre = `Axe Cloud a refusé la demande${code}.`;
+  else if (statut !== null && statut >= 500) titre = `Le service IA du cloud est indisponible pour le moment${code}.`;
+  else titre = `Le cloud a refusé la demande${code}.`;
   return message ? `${titre} Message du serveur : « ${message} »` : titre;
 }

@@ -24,11 +24,11 @@ test("ponctuation et parenthèses autour d'une URL", () => {
   assert.deepEqual(resume("(https://a.fr/x)"), ["texte:(", "url:https://a.fr/x", "texte:)"]);
 });
 test("chemins Linux et macOS : relatifs, absolus, ~ et numéro de ligne", () => {
-  assert.deepEqual(resume("src/main.rs:12 et /home/agent/a/b.txt"), ["fichier:src/main.rs:12", "texte: et ", "fichier:/home/agent/a/b.txt"]);
+  assert.deepEqual(resume("src/main.rs:12 et /home/moi/a/b.txt"), ["fichier:src/main.rs:12", "texte: et ", "fichier:/home/moi/a/b.txt"]);
   assert.deepEqual(resume("~/Documents/note.md"), ["fichier:~/Documents/note.md"]);
 });
 test("chemins Windows : absolu et relatif à barres inverses", () => {
-  assert.deepEqual(resume("ouvre C:\\Users\\sav\\a.txt puis src\\lib\\ipc.ts"), ["texte:ouvre ", "fichier:C:\\Users\\sav\\a.txt", "texte: puis ", "fichier:src\\lib\\ipc.ts"]);
+  assert.deepEqual(resume("ouvre C:\\Users\\moi\\a.txt puis src\\lib\\ipc.ts"), ["texte:ouvre ", "fichier:C:\\Users\\moi\\a.txt", "texte: puis ", "fichier:src\\lib\\ipc.ts"]);
 });
 test("pas de faux liens : version, adresse e-mail, phrase", () => {
   assert.deepEqual(resume("version 0.1.67 pour a@b.md, fin."), ["texte:version 0.1.67 pour a@b.md, fin."]);

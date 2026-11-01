@@ -1,6 +1,6 @@
-/* Axe theme overrides. Imported after styles.css.
+/* Theme overrides. Imported after styles.css.
  * Background-derived tones (surfaces, lines, text) are set at runtime by
- * src/axe/theme.ts on :root; the accent is the fixed Axe orange. */
+ * src/axe/theme.ts on :root; the accent is the fixed orange. */
 :root {
   --axe-bg: #0b0b0d;
   --axe-accent: #fc610b;

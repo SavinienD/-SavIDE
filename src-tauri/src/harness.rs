@@ -300,7 +300,7 @@ pub(super) fn turn_harness_layer(workspace_root: &std::path::Path, conversation_
 }
 
 // ---------------------------------------------------------------------------
-// shared-brain — one brain: the Axe Cloud space's global harness.
+// shared-brain — one brain: the cloud space's global harness.
 // ---------------------------------------------------------------------------
 
 fn global_paths() -> axecode_harness::HarnessPaths {

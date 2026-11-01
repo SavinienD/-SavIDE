@@ -1,4 +1,4 @@
-# Axecode Remote relay — self-hosted image.
+# SavIDE Remote relay — self-hosted image.
 # Build:  docker build -t axecode-relay remote
 # Run:    docker compose -f remote/docker-compose.yml up -d
 FROM node:20-alpine

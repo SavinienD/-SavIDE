@@ -204,7 +204,7 @@ export function EditorPane({
   const handleMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     setEditorReadySeq((value) => value + 1);
-    // theme — editor colours derived from the Axe background, re-applied on change.
+    // theme — editor colours derived from the theme background, re-applied on change.
     monaco.editor.defineTheme(AXE_MONACO_THEME, monacoThemeData());
     monaco.editor.setTheme(AXE_MONACO_THEME);
     themeUnsubRef.current?.();

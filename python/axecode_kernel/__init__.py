@@ -1,4 +1,4 @@
-"""axecode_kernel — le REPL Python persistant qui fait tourner l'agent d'Axecode.
+"""axecode_kernel — le REPL Python persistant qui fait tourner l'agent de SavIDE.
 
 Le paquet est lancé en ``python -m axecode_kernel`` par le processus Rust
 (``crates/axecode-repl``). Il héberge un ``InteractiveShell`` IPython piloté

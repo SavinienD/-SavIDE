@@ -1,4 +1,4 @@
-// e4 — passerelle temps réel avec le daemon (ws://localhost:8090/prime).
+// e4 — passerelle temps réel avec le daemon (ws://localhost:8090/ws/passerelle).
 //
 // Protocole : le daemon envoie {type:'run', script, args} ; on répond
 // {type:'result', script, outcome, error?}. Reconnexion avec délai croissant.

@@ -337,9 +337,9 @@ export function Workspace({
   const activeConnection = useActiveConnection(); // remote
   // v2-l2.3 — espace de travail CLOUD : fichiers sur la VM, terminal distant, indicateur de synchro.
   const cloudConnection = cloudConnectionFromPath(workspacePath);
-  // e15 — la session Axe Cloud, vue depuis n'importe quelle interface : c'est
-  // elle qui donne le terminal a onglets (Bash du service, terminal local, Prime
-  // Agent epingle), meme quand on travaille sur un dossier local.
+  // e15 — la session cloud, vue depuis n'importe quelle interface : c'est
+  // elle qui donne le terminal a onglets (Bash du service, terminal local, agent
+  // epingle), meme quand on travaille sur un dossier local.
   const [cloudReady, setCloudReady] = useState<string | null>(null);
   useEffect(() => {
     let annule = false;
@@ -375,7 +375,7 @@ export function Workspace({
   // e13 — creation d'une conversation : on demande le nom.
   const [creating, setCreating] = useState(false);
   // e18 — le badge suit la connexion visible : dans un espace cloud c'est lui,
-  // depuis l'interface classique c'est la session Axe Cloud ouverte. Avant, il
+  // depuis l'interface classique c'est la session cloud ouverte. Avant, il
   // n'existait que dans un espace cloud — donc L'utilisateur ne le voyait jamais.
   const connexionCloud = cloudConnection ?? cloudReady;
   useEffect(() => {
@@ -3133,7 +3133,7 @@ export function Workspace({
           display: bottomTab === "conversations" ? "flex" : "none",
         }}
       >
-        {/* e12b — sur un espace (Axe Cloud), ce panneau n'est QUE la liste :
+        {/* e12b — sur un espace (cloud), ce panneau n'est QUE la liste :
             on choisit, on renomme, on archive, on supprime ; la conversation
             elle-meme se lit et s'ecrit dans le volet de droite. Le lecteur integre
             ne reste que pour une connexion distante classique (SSH), ou il n'y a
@@ -3493,8 +3493,8 @@ export function Workspace({
     <>
       {terminalAvailable && (cloudConnection || cloudReady) ? (
         // e8 / e15 — le terminal a onglets (Bash du service, terminal
-        // local, « Prime Agent » epingle) s'affiche aussi depuis l'interface
-        // classique : il suffit d'une session Axe Cloud ouverte. La cle de
+        // local, « Agent » epingle) s'affiche aussi depuis l'interface
+        // classique : il suffit d'une session cloud ouverte. La cle de
         // stockage est stable, donc on retrouve les memes onglets partout.
         <CloudTerminalPanel
           key={cle}
@@ -3670,7 +3670,7 @@ export function Workspace({
           </span>
           <span className="titlebar__brand-name">SavIDE</span>
           {miroir && !EDITION_LOCALE ? (
-            <span className="titlebar__mirror" title={miroir.ok ? "Copie des conversations de ce PC sur la VM (.axe-conversations/) : OK" : !cloudReady ? "Copie des conversations vers la VM impossible : non connecté à Axe Cloud" : `Copie des conversations de ce PC vers la VM en échec : ${miroir.error ?? "erreur inconnue"}`}
+            <span className="titlebar__mirror" title={miroir.ok ? "Copie des conversations de ce PC sur la VM (.axe-conversations/) : OK" : !cloudReady ? "Copie des conversations vers la VM impossible : non connecté au cloud" : `Copie des conversations de ce PC vers la VM en échec : ${miroir.error ?? "erreur inconnue"}`}
               style={{ marginLeft: 8, fontSize: 11, color: miroir.ok ? "#22c55e" : !cloudReady ? "#9ca3af" : "#ef4444" }}>
               {miroir.ok ? `VM ✓ ${miroir.n} · ${new Date(miroir.atMs).toLocaleTimeString("fr-FR")}` : !cloudReady ? "VM —" : "VM ✗"}
             </span>
@@ -3682,7 +3682,7 @@ export function Workspace({
                 title={
                   cloudConnection
                     ? `Espace de travail cloud (${cloudConnection}) : vos fichiers sont sur le serveur`
-                    : `Espace Axe Cloud (${connexionCloud}) : de votre côté tout est à jour`
+                    : `Espace cloud (${connexionCloud}) : de votre côté tout est à jour`
                 }
               >
                 <span className="titlebar__cloud-dot" aria-hidden />
@@ -3710,7 +3710,7 @@ export function Workspace({
           <button
             type="button"
             className="skills-badge"
-            title="Importer un dossier de ce PC dans mon espace Axe Cloud"
+            title="Importer un dossier de ce PC dans mon espace cloud"
             onClick={async () => {
               const { open } = await import("@tauri-apps/plugin-dialog");
               const dir = await open({ directory: true });

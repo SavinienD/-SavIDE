@@ -116,7 +116,7 @@ export function SettingsPane({ workspacePath }: Props) {
   const [oauthBusyId, setOauthBusyId] = useState<string | null>(null);
 
   const [skills, setSkills] = useState<InstalledSkill[] | null>(null);
-  // e16 — les competences de l'espace Axe Cloud (celles de Prime Agent).
+  // e16 — les competences de l'espace cloud (celles de l'agent du serveur).
   // L'interface classique les lit au service : c'est la meme source, rien a
   // recopier. Lecture seule ici, les modifications passent par l'espace.
   const [serviceSkills, setServiceSkills] = useState<InstalledSkill[]>([]);
@@ -141,7 +141,7 @@ export function SettingsPane({ workspacePath }: Props) {
       } catch (e) {
         if (annule) return;
         setServiceSkills([]);
-        setServiceSkillsNote("Les compétences d'Axe Cloud n'ont pas pu être lues.");
+        setServiceSkillsNote("Les compétences du cloud n'ont pas pu être lues.");
       }
     };
     void charger();
@@ -2974,13 +2974,13 @@ function SkillsSection({
             </div>
           )}
 
-          {/* e16 — les competences de Prime Agent, telles que le service
-              les voit : la meme liste que dans l'espace Axe Cloud. */}
+          {/* e16 — les competences de l'agent du serveur, telles que le service
+              les voit : la meme liste que dans l'espace cloud. */}
           {serviceVisible.length > 0 || serviceNote ? (
             <div className="settings-pane__skill-service">
               <div className="settings-pane__skill-service-head">
                 <Icon icon="solar:cloud-check-linear" width={13} height={13} />
-                <span>Espace Axe Cloud</span>
+                <span>Espace cloud</span>
                 <span className="settings-pane__skill-service-count">
                   {serviceVisible.length}
                 </span>
@@ -3395,7 +3395,7 @@ function stripFrontmatter(content: string): string {
 
 type MonacoNs = Parameters<OnMount>[1];
 
-// theme — Settings editors share the Axe theme (light/dark follows the background).
+// theme — Settings editors share the app theme (light/dark follows the background).
 function defineAxecodeCoolTheme(monaco: MonacoNs): void {
   monaco.editor.defineTheme("axecode-cool", monacoThemeData());
   monaco.editor.setTheme("axecode-cool");

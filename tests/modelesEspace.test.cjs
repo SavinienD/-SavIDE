@@ -1,4 +1,4 @@
-// parcours-collegue — modèles proposés dans une conversation d'un espace Axe Cloud.
+// parcours-collegue — modèles proposés dans une conversation d'un espace cloud.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const Module = require("node:module");
@@ -19,14 +19,14 @@ function charger(rel) {
 }
 const E = charger("../src/lib/modelesEspace.ts");
 
-test("espace d'un collègue : les trois modèles Axe Cloud de son espace, même sans fournisseur sur le PC", () => {
+test("espace d'un collègue : les trois modèles cloud de son espace, même sans fournisseur sur le PC", () => {
   const liste = E.modelesEspace({ provider: "axe-cloud", name: "claude-opus-5-5" });
   assert.deepEqual(liste.map((m) => m.value), [
     "axe-cloud:claude-opus-5-5",
     "axe-cloud:claude-sonnet-5-5",
     "axe-cloud:claude-haiku-5-5",
   ]);
-  assert.ok(liste.every((m) => m.provider === "axe-cloud" && m.providerLabel === "Axe Cloud"));
+  assert.ok(liste.every((m) => m.provider === "axe-cloud" && m.providerLabel === "Cloud"));
   // providers.json des espaces : Haiku sans raisonnement, Opus et Sonnet avec.
   assert.deepEqual(liste.map((m) => m.defaultThinking), ["medium", "medium", "off"]);
   assert.deepEqual([...liste[2].thinking], ["off"]);
@@ -97,7 +97,7 @@ test("brouillon du PC (fournisseur de l'espace inconnu du PC) : choix gardé, po
 });
 
 
-test("D10 : compaction et réécriture passent par le PC, désactivées dans un espace Axe Cloud", () => {
+test("D10 : compaction et réécriture passent par le PC, désactivées dans un espace cloud", () => {
   assert.deepEqual(E.actionsDuPc(true), { compaction: false, reecriture: false });
   assert.deepEqual(E.actionsDuPc(false), { compaction: true, reecriture: true });
   assert.match(E.NOTE_COMPACTION_ESPACE, /résumé de la conversation est automatique/);

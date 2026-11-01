@@ -132,7 +132,7 @@ mod harness_backup; // cleanup
 mod models;
 mod offline; // v2-l6
 mod platform;
-mod prime_term; // v2-e12
+mod agent_term; // v2-e12
 mod providers;
 mod remote;
 mod remote_workspace; // cloud L2
@@ -362,7 +362,7 @@ pub fn run() {
         .manage(daemon_client::Bridge::default()) // repl
         .manage(connections::ConnectionsState::default()) // remote
         .manage(cloud::CloudState::default()) // cloud
-        .manage(prime_term::PrimeTerms::default()) // v2-e12
+        .manage(agent_term::AgentTerms::default()) // v2-e12
         .invoke_handler(tauri::generate_handler![
             voice_dictation,
             voix::voix_transcrire, // voix
@@ -583,11 +583,11 @@ pub fn run() {
             terminal::write_terminal,
             terminal::resize_terminal,
             terminal::kill_terminal,
-            // v2-e12 — onglet « Prime Agent » epingle (session de production du portail)
-            prime_term::prime_term_open,
-            prime_term::prime_term_write,
-            prime_term::prime_term_resize,
-            prime_term::prime_term_close,
+            // v2-e12 — onglet « Agent » epingle (session de production du portail)
+            agent_term::agent_term_open,
+            agent_term::agent_term_write,
+            agent_term::agent_term_resize,
+            agent_term::agent_term_close,
             git::git_repository_snapshot_command,
             git::git_init_command,
             git::git_create_worktree_command,
@@ -605,7 +605,7 @@ pub fn run() {
             updater::updater_current_version,
         ])
         .build(tauri::generate_context!())
-        .expect("error while building axecode desktop")
+        .expect("error while building SavIDE desktop")
         .run(|app, event| {
             #[cfg(not(target_os = "macos"))]
             let _ = (&app, &event);

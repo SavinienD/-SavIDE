@@ -11,14 +11,14 @@ const TITRES = {
   "c-002": "Facture OVH d'octobre : rapprochement des lignes et export comptable",
   "c-003": "Tri des tickets Jira du jour",
   "c-004": "Migration des postes du centrex du client (fichier FIC) pour le cabinet Martin et l'atelier Durand",
-  "c-005": "VPN BBATI",
-  "c-006": "Rapport DMARC hmcc.fr",
+  "c-005": "VPN du client",
+  "c-006": "Rapport DMARC exemple.fr",
   "c-007": "Compilation croisée Windows de la 0.1.57 et publication de l'installeur dans les téléchargements",
   "c-008": "Questions sur le pare-feu pfSense du client",
   "c-009": "Résumé de la réunion",
   "x-404": "Ancienne conversation au fichier abîmé",
 };
-// Tour refusé par le compteur Axe Cloud : événements tels que le pont du démon les émet
+// Tour refusé par le compteur du cloud : événements tels que le pont du démon les émet
 // (src-tauri/src/daemon_client.rs : turn_error → error, puis turn_finished).
 const WS_CLOUD = "axe-cloud://axe-cloud/home/collegue/work";
 const ERREUR_503 = "retryable stream error: HTTP 503 Service Unavailable: api_error: Clé Anthropic du serveur indisponible. Préviens l'administrateur.";
@@ -59,7 +59,7 @@ const explorateurFerme = (largeur, hauteur) => ({
 });
 
 export const SCENES = [
-  // Mise à jour disponible (demande de Savinien, 23/10) : badge discret en haut à droite, jamais d'écran bloquant ;
+  // Mise à jour disponible (demande utilisateur) : badge discret en haut à droite, jamais d'écran bloquant ;
   // au clic, fenêtre avec les notes et « Installer maintenant » / « Plus tard ».
   { id: "maj-badge", sim: { majDispo: "0.1.66" }, stockage: () => colonnes([ids(3)]), temoins: ["clic:.titlebar__update[data-state='available'] .titlebar__update-pill", "absent:.updater-lock"] },
   { id: "maj-badge-fenetre", sim: { majDispo: "0.1.66" }, stockage: () => colonnes([ids(3)]), cliquer: ".titlebar__update-pill", temoins: ["sel:.titlebar__update-popover .titlebar__update-popover-notes", "clic:.titlebar__update-popover-btn--primary", "clic:.titlebar__update-popover-btn--ghost", "absent:.updater-lock"] },
@@ -82,7 +82,7 @@ export const SCENES = [
   { id: "dictee-direct-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: ".axe-voix__micro", pauseClics: 4500, temoins: ["sel:.composer__box > .axe-voix__provisoire", "clic:.axe-voix__valider", "clic:.axe-voix__annuler"] },
   { id: "dictee-enregistrement-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: ".axe-voix__micro", temoins: ["clic:.axe-voix__valider", "clic:.axe-voix__annuler"] },
   { id: "c1", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["sel:.thinking-block", "sel:.tool-card__err-dot", "sel:.composer__send"] },
-  // 0.1.75 — capture de Savinien : onglet Git du volet bas, branche au nom long, liste des modifications vide/coupée, onglets tronqués.
+  // 0.1.75 — capture utilisateur : onglet Git du volet bas, branche au nom long, liste des modifications vide/coupée, onglets tronqués.
   { id: "git-branche-longue", sim: { brancheLongue: true }, stockage: () => colonnes([ids(3)]), terminal: true, cliquer: ".terminal-tab[data-tab='git']", pauseClics: 800, temoins: ["sel:.terminal-shell .git-panel__row", "sel:.terminal-shell .git-panel__commit"] },
   { id: "git-branche-longue-local", sim: { brancheLongue: true, cloud: false }, stockage: () => colonnes([ids(3)]), terminal: true, cliquer: ".terminal-tab[data-tab='git']", pauseClics: 800, temoins: ["sel:.terminal-shell .git-panel__row", "sel:.terminal-shell .git-panel__commit"] },
   { id: "c1-terminal", sim: {}, stockage: () => colonnes([ids(3)]), terminal: true, temoins: ["sel:.terminal-shell .terminal-tabs"] },
@@ -192,7 +192,7 @@ export const SCENES = [
   {
     id: "html-memorise",
     sim: { fichierHtml: true },
-    stockage: () => ({ ...colonnes([ids(1)]), "axecode.vueFichiers": { "C:\\Users\\utilisateur\\Documents\\Projets\\axecode\\page.html": true } }),
+    stockage: () => ({ ...colonnes([ids(1)]), "axecode.vueFichiers": { "C:\\Users\\utilisateur\\Documents\\Projets\\savide\\page.html": true } }),
     ouvrirFichier: "page.html",
     clics: [".xv-html .xv-btn--text"],
     temoins: ["sel:iframe.xv-html__frame[sandbox*='allow-scripts']", "sel:iframe.xv-html__frame[srcdoc*=\"connect-src 'none'\"]", "sel:.xv-html__status[data-on='true']"],
@@ -229,7 +229,7 @@ export const SCENES = [
   {
     id: "explorateur-clavier", sim: {}, stockage: () => colonnes([ids(1)]),
     explorateur: { clic: "docs", touches: ["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowDown", "Control+c"] },
-    temoins: ["choisi:scripts/ChatPane.tsx", "presse:C:\\Users\\utilisateur\\Documents\\Projets\\axecode\\scripts\\ChatPane.tsx", "sel:.tree-row[data-entry-path='scripts/ChatPane.tsx'][data-selected='true']"],
+    temoins: ["choisi:scripts/ChatPane.tsx", "presse:C:\\Users\\utilisateur\\Documents\\Projets\\savide\\scripts\\ChatPane.tsx", "sel:.tree-row[data-entry-path='scripts/ChatPane.tsx'][data-selected='true']"],
   },
   // Fin = dernière ligne (défilement qui suit), Ctrl+Maj+C = chemin relatif (séparateur Windows).
   {
@@ -301,7 +301,7 @@ export const SCENES = [
     temoins: ["appel:delete_mcp_server", "absent:.settings-pane__nav-list-item[data-server='github']", "sel:.settings-pane__nav-list-item[data-server='postgres']"] },
   // 0.1.71 — session « test — arrière-plan » : hors de la liste, indicateur sur « test ».
   { id: "arriere-plan-liste", sim: { fournisseur: false, collegue: true, arrierePlan: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, temoins: ["clic:.conv-row__bg"] },
-  // Parcours d'un collègue (Camille) : connecté à Axe Cloud, aucun fournisseur sur son PC,
+  // Parcours d'un collègue (Camille) : connecté au cloud, aucun fournisseur sur son PC,
   // son espace a le fournisseur axe-cloud. Il ouvre son espace, crée « test » (« + »), écrit et envoie.
   { id: "collegue", sim: { fournisseur: false, collegue: true, espaceVide: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, creer: "test", sansFournisseur: true, ecrire: "Bonjour, peux-tu résumer le dossier clients ?", temoins: ["sel:.conv-row"] },
   // … et clique sur ce que lui propose le compositeur (« Connect a provider » s'il est là).

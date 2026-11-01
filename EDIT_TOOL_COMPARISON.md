@@ -1,28 +1,28 @@
-# Comparaison du tool Edit : Axecode vs PI vs OpenCode
+# Comparaison du tool Edit : SavIDE vs PI vs OpenCode
 
 Objectif : comparer uniquement le tool d'édition par remplacement de texte existant. Je ne traite pas le tool `write`/`create`, sauf quand un agent mélange explicitement la création dans son `edit`.
 
 Repos inspectés :
 
-- Axecode, repo courant : `crates/axecode-app/src/edit.rs`, `read.rs`, `agent/history.rs`, `agent/tool_dispatch.rs`.
+- SavIDE, repo courant : `crates/axecode-app/src/edit.rs`, `read.rs`, `agent/history.rs`, `agent/tool_dispatch.rs`.
 - PI : `/Users/hyrak/pi/pi/packages/coding-agent/src/core/tools/edit.ts`, `edit-diff.ts`, `file-mutation-queue.ts`.
 - OpenCode : `/Users/hyrak/opencode/opencode/packages/opencode/src/tool/edit.ts`, `multiedit.ts`, `file/time.ts`, `tool/read.ts`.
 
 ## Résumé exécutif
 
-- **Axecode** est le plus complet et le plus défensif : multi-fichiers, plusieurs edits par fichier, `replaceAll`, fingerprint SHA-256 après `read`, préservation BOM/CRLF, fallbacks de matching très nombreux. Son matching applique la règle exact-first : si `oldContent` apparaît exactement une fois, ce match est accepté avant les fallbacks fuzzy/permissifs. Les faux `oldContent not unique` restent surtout possibles quand aucun match exact n'existe et que les fallbacks trouvent plusieurs candidats équivalents. Il reste moins atomique que PI/OpenCode `edit` seul, car il peut appliquer partiellement des edits déjà planifiés si un edit suivant échoue.
+- **SavIDE** est le plus complet et le plus défensif : multi-fichiers, plusieurs edits par fichier, `replaceAll`, fingerprint SHA-256 après `read`, préservation BOM/CRLF, fallbacks de matching très nombreux. Son matching applique la règle exact-first : si `oldContent` apparaît exactement une fois, ce match est accepté avant les fallbacks fuzzy/permissifs. Les faux `oldContent not unique` restent surtout possibles quand aucun match exact n'existe et que les fallbacks trouvent plusieurs candidats équivalents. Il reste moins atomique que PI/OpenCode `edit` seul, car il peut appliquer partiellement des edits déjà planifiés si un edit suivant échoue.
 - **PI** a le meilleur noyau pour le **multi-edit dans un seul fichier** : tous les `edits[]` sont matchés sur le contenu original, les overlaps sont rejetés, puis les remplacements sont appliqués en reverse. C'est propre et évite les effets de décalage. Mais PI n'a pas de `replaceAll`, n'impose pas un `read` préalable, n'a pas de protection forte contre les fichiers modifiés entre-temps, et son fuzzy matching réécrit le fichier dans un espace normalisé si un fuzzy match est utilisé.
 - **OpenCode** est le plus pragmatique contre les faux “not unique” : il essaie d'abord le match exact simple et retourne tout de suite si ce match exact est unique, avant de tenter les fallbacks. Il a `replaceAll`, un lock par fichier, une vérification “read before edit” via mtime/size, une permission avec diff, puis diagnostics LSP. Mais son `multiedit` n'est pas réellement atomique malgré sa doc : il appelle `edit` en boucle et peut laisser les premiers edits appliqués si un edit suivant échoue. Son `edit` peut aussi créer un fichier avec `oldString: ""`, donc la séparation Edit/Create est moins nette.
 
 **Verdict court :**
 
-- Pour réduire les faux bugs `oldContent not unique`, **Axecode et OpenCode ont le meilleur comportement** sur le point critique : “exact unique wins before fuzzy”.
+- Pour réduire les faux bugs `oldContent not unique`, **SavIDE et OpenCode ont le meilleur comportement** sur le point critique : “exact unique wins before fuzzy”.
 - Pour le design multi-edit, **PI garde la meilleure idée algorithmique** : matcher tous les edits contre l'original et rejeter les overlaps avant d'écrire.
-- Le meilleur design cible serait donc : **Axecode + planning all-or-nothing PI + meilleurs diagnostics de duplicate**.
+- Le meilleur design cible serait donc : **SavIDE + planning all-or-nothing PI + meilleurs diagnostics de duplicate**.
 
 ## Tableau comparatif
 
-| Sujet | Axecode actuel | PI | OpenCode |
+| Sujet | SavIDE actuel | PI | OpenCode |
 |---|---|---|---|
 | Nom du tool | `edit_file` | `edit` | `edit`, plus `multiedit` séparé |
 | Forme d'entrée | `files[]`, chaque item a `path` + `edits[]` | `path` + `edits[]` | `filePath`, `oldString`, `newString`, `replaceAll`; `multiedit` a `edits[]` |
@@ -42,11 +42,11 @@ Repos inspectés :
 | Concurrency | Main turn séquentiel; lock workspace optionnel pour teams | Queue par realpath entre edit/write | Lock par fichier via `FileTime.withLock` |
 | Post-edit | Retourne diff/file changes + met à jour fingerprint | Retourne diff + patch | Permission diff avant écriture, formatage, diff final, diagnostics LSP |
 
-## Axecode actuel
+## SavIDE actuel
 
 ### Interface
 
-Axecode expose `edit_file` avec une forme assez riche :
+SavIDE expose `edit_file` avec une forme assez riche :
 
 ```json
 {
@@ -76,13 +76,13 @@ Détails importants :
 
 ### Sécurité avant écriture
 
-Axecode exige un `read` réussi avant `edit_file`. Le `read` produit un fingerprint : chemin relatif, taille, `modified_ms`, SHA-256. Avant l'edit, Axecode recalcule le fingerprint courant et refuse si le fichier a changé.
+SavIDE exige un `read` réussi avant `edit_file`. Le `read` produit un fingerprint : chemin relatif, taille, `modified_ms`, SHA-256. Avant l'edit, SavIDE recalcule le fingerprint courant et refuse si le fichier a changé.
 
 C'est le mécanisme le plus solide des trois agents, parce que le SHA-256 évite les cas où mtime/size ne suffisent pas.
 
 ### Matching
 
-Axecode essaie :
+SavIDE essaie :
 
 1. match exact ;
 2. match fuzzy avec mapping vers le texte original ;
@@ -91,11 +91,11 @@ Axecode essaie :
 Points forts :
 
 - Préserve CRLF et BOM.
-- Le fuzzy de Axecode mappe le match normalisé vers les offsets originaux, donc il évite mieux que PI de normaliser tout le fichier.
+- Le fuzzy de SavIDE mappe le match normalisé vers les offsets originaux, donc il évite mieux que PI de normaliser tout le fichier.
 - `replaceAll` existe.
 - Les erreurs sont explicites : not found, duplicate, no-op, stale read, partial failure.
 
-Point clé : **Axecode évite les faux doublons exact-vs-fuzzy**.
+Point clé : **SavIDE évite les faux doublons exact-vs-fuzzy**.
 
 `find_unique_replacement_match` applique l'ordre de décision suivant :
 
@@ -117,14 +117,14 @@ Si le modèle demande :
 { "oldContent": "title: \"Hello\"", "newContent": "title: hi" }
 ```
 
-Le match exact est unique : seulement la deuxième ligne. Même si le fuzzy normalise les smart quotes et voit deux lignes équivalentes, Axecode applique le match exact unique. Le fuzzy ne sert que de fallback quand l'exact ne trouve rien.
+Le match exact est unique : seulement la deuxième ligne. Même si le fuzzy normalise les smart quotes et voit deux lignes équivalentes, SavIDE applique le match exact unique. Le fuzzy ne sert que de fallback quand l'exact ne trouve rien.
 
 ### Atomicité
 
-Axecode n'est pas strictement all-or-nothing :
+SavIDE n'est pas strictement all-or-nothing :
 
-- Dans un même fichier, si `edits[0]` réussit puis `edits[1]` échoue, Axecode peut écrire le résultat de `edits[0]` et retourner une erreur partielle.
-- Sur plusieurs fichiers, si un fichier plus tard échoue après des fichiers déjà planifiés, Axecode peut écrire les fichiers précédents puis signaler une erreur partielle.
+- Dans un même fichier, si `edits[0]` réussit puis `edits[1]` échoue, SavIDE peut écrire le résultat de `edits[0]` et retourner une erreur partielle.
+- Sur plusieurs fichiers, si un fichier plus tard échoue après des fichiers déjà planifiés, SavIDE peut écrire les fichiers précédents puis signaler une erreur partielle.
 
 C'est bien documenté dans les messages d'erreur, mais c'est moins sûr que “tout réussit ou rien n'est écrit”.
 
@@ -181,7 +181,7 @@ PI compte aussi les occurrences dans l'espace fuzzy-normalized. Donc un exact ma
 
 PI a un bon lock par fichier : `withFileMutationQueue` sérialise les opérations `edit` et `write` ciblant le même realpath, tout en laissant les fichiers différents avancer en parallèle.
 
-Mais PI n'impose pas un `read` préalable et ne vérifie pas un fingerprint stale avant édition. C'est un gros écart de sécurité par rapport à Axecode/OpenCode.
+Mais PI n'impose pas un `read` préalable et ne vérifie pas un fingerprint stale avant édition. C'est un gros écart de sécurité par rapport à SavIDE/OpenCode.
 
 ## OpenCode
 
@@ -206,7 +206,7 @@ Il expose aussi `multiedit`, qui appelle `edit` en boucle.
 
 Pour un fichier existant, OpenCode impose un `read` préalable via `FileTime.assert`. Le `read` stocke `mtime` + `size`, puis `edit` refuse si l'un des deux a changé.
 
-C'est moins robuste que le SHA-256 de Axecode, mais mieux que PI.
+C'est moins robuste que le SHA-256 de SavIDE, mais mieux que PI.
 
 OpenCode prend aussi un lock par fichier avec `FileTime.withLock`, demande la permission avec un diff avant d'écrire, puis publie les événements de fichier.
 
@@ -224,13 +224,13 @@ OpenCode essaie une chaîne de “replacers” :
 8. context aware ;
 9. multi-occurrence.
 
-La différence cruciale avec Axecode : **OpenCode retourne immédiatement si le match exact simple est unique**. Il ne laisse pas un fallback fuzzy/permissif plus large transformer un exact unique en duplicate.
+La différence cruciale avec SavIDE : **OpenCode retourne immédiatement si le match exact simple est unique**. Il ne laisse pas un fallback fuzzy/permissif plus large transformer un exact unique en duplicate.
 
 C'est probablement la raison pour laquelle OpenCode donne moins souvent l'impression que “old content n'est jamais unique”.
 
 En revanche :
 
-- OpenCode ne normalise pas les smart quotes / Unicode dashes comme PI/Axecode.
+- OpenCode ne normalise pas les smart quotes / Unicode dashes comme PI/SavIDE.
 - Certains fallbacks par anchors peuvent choisir un “best candidate” si les première/dernière lignes matchent et que la similarité est suffisante. Ça peut être pratique, mais c'est moins déterministe qu'un exact-only strict.
 - Le `replaceAll` existe et utilise `content.replaceAll(search, newString)` sur le candidat retenu.
 
@@ -256,7 +256,7 @@ Solution côté prompt/tool description : demander explicitement 2-5 lignes de c
 
 ### 2. Le tool rend l'unicité plus stricte que l'exact match
 
-PI peut déclarer duplicate parce que plusieurs zones deviennent identiques après normalisation fuzzy. Axecode et OpenCode évitent ce faux positif dans le cas exact : si l'exact match est unique, il gagne avant les fallbacks.
+PI peut déclarer duplicate parce que plusieurs zones deviennent identiques après normalisation fuzzy. SavIDE et OpenCode évitent ce faux positif dans le cas exact : si l'exact match est unique, il gagne avant les fallbacks.
 
 Le risque restant existe seulement quand aucun match exact n'existe et que les fallbacks fuzzy/permissifs trouvent plusieurs candidats équivalents.
 
@@ -271,9 +271,9 @@ Le bon compromis selon moi :
 - fuzzy/permissive seulement si exact absent ;
 - si fuzzy/permissive trouve plusieurs candidats, retourner les lignes candidates au modèle pour qu'il ajoute du contexte.
 
-## Recommandations pour Axecode
+## Recommandations pour SavIDE
 
-Je ne copierais pas PI ou OpenCode entièrement. Axecode reprend déjà le point le plus important d'OpenCode côté matching. Les chantiers restants sont :
+Je ne copierais pas PI ou OpenCode entièrement. SavIDE reprend déjà le point le plus important d'OpenCode côté matching. Les chantiers restants sont :
 
 1. **Garder l'exact match prioritaire sur le fuzzy.**  
    Si `oldContent` apparaît exactement une fois, appliquer ce match. Ne pas rejeter parce qu'une normalisation fuzzy trouve plusieurs équivalents.
@@ -287,7 +287,7 @@ Je ne copierais pas PI ou OpenCode entièrement. Axecode reprend déjà le point
 4. **Rendre les edits per-file all-or-nothing.**  
    Si `edits[3]` échoue, ne pas écrire `edits[0..2]`. Les erreurs partielles sont dangereuses pour les agents : elles forcent le modèle à raisonner sur un état mi-appliqué.
 
-5. **Garder le fingerprint SHA-256 de Axecode.**  
+5. **Garder le fingerprint SHA-256 de SavIDE.**  
    C'est meilleur que le mtime/size d'OpenCode et meilleur que l'absence de garde de PI.
 
 6. **Simplifier le schéma public si les modèles se trompent souvent.**  
@@ -303,13 +303,13 @@ Je ne copierais pas PI ou OpenCode entièrement. Axecode reprend déjà le point
 
 Selon le critère :
 
-1. **Moins de faux bugs `oldContent not unique` : Axecode et OpenCode.**  
+1. **Moins de faux bugs `oldContent not unique` : SavIDE et OpenCode.**  
    Les deux ont le comportement important : l'exact unique gagne avant le fuzzy/permissif.
 
 2. **Meilleur multi-edit algorithmique : PI.**  
    Match sur original + overlap check + write unique est le design le plus propre.
 
-3. **Meilleure sécurité globale : Axecode.**  
+3. **Meilleure sécurité globale : SavIDE.**  
    Fingerprint SHA-256, read obligatoire, CRLF/BOM, limites de taille et `replaceAll` sont solides.
 
-Donc mon avis : **pour ton problème précis, Axecode et OpenCode sont les meilleurs sur le faux `oldContent not unique` exact-vs-fuzzy**. Le meilleur design final reste hybride : garder la sécurité de Axecode, garder l'exact-first, prendre l'atomicité/multi-edit de PI et ajouter des diagnostics de duplicate avec lignes candidates.
+Donc mon avis : **pour ton problème précis, SavIDE et OpenCode sont les meilleurs sur le faux `oldContent not unique` exact-vs-fuzzy**. Le meilleur design final reste hybride : garder la sécurité de SavIDE, garder l'exact-first, prendre l'atomicité/multi-edit de PI et ajouter des diagnostics de duplicate avec lignes candidates.

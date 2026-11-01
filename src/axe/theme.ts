@@ -1,7 +1,7 @@
-// Axe theme: a single user-picked background colour drives every surface,
+// Theme: a single user-picked background colour drives every surface,
 // border and text tone (derived by luminance). Semantic colours (errors,
 // success, diff, syntax) switch to a light or dark palette so they stay
-// readable on any background. The accent stays the fixed Axe orange.
+// readable on any background. The accent stays the fixed orange.
 // Persisted in localStorage so it applies before React mounts.
 
 export const AXE_DEFAULT_BG = "#0b0b0d";
@@ -102,7 +102,7 @@ const SEMANTIC = {
     "--diff-add-fg": "#166534",
     "--diff-rem-bg": "rgba(196, 43, 60, 0.10)",
     "--diff-rem-fg": "#9f1239",
-    // Axe "orange ink": the bright accent fails contrast as text on light grounds.
+    // "Orange ink": the bright accent fails contrast as text on light grounds.
     "--accent-text": "#c24b07",
     "--shadow-ambient": "0 0 16px rgba(0, 0, 0, 0.08), 0 0 6px rgba(0, 0, 0, 0.06)",
     "--shadow-focus": "0 4px 14px rgba(0, 0, 0, 0.12)",
@@ -113,7 +113,7 @@ const SEMANTIC = {
 export function deriveThemeVars(bgHex: string): ThemeVars {
   const bg = parseHex(bgHex) ?? (parseHex(AXE_DEFAULT_BG) as Rgb);
   const dark = luminance(bg) < 0.35;
-  // Foreground pole: cool cream on dark backgrounds, Axe ink on light ones.
+  // Foreground pole: cool cream on dark backgrounds, dark ink on light ones.
   const fg: Rgb = dark ? [232, 233, 236] : [26, 26, 29];
   // Opposite pole, used for the editor surface (one shade "deeper").
   const deep: Rgb = dark ? [0, 0, 0] : [255, 255, 255];
@@ -181,7 +181,7 @@ export function loadThemeBg(): string {
   }
 }
 
-/** Persist + apply. Passing `null` resets to the Axe default. */
+/** Persist + apply. Passing `null` resets to the default. */
 export function setThemeBg(bgHex: string | null): string {
   const value = normalizeBg(bgHex);
   try {

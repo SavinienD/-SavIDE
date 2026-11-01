@@ -3,8 +3,8 @@
 // travail, file d'attente, compaction, titres tres longs.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export const WS = "C:\\Users\\utilisateur\\Documents\\Projets\\axecode";
-export const NOM_WS = "axecode";
+export const WS = "C:\\Users\\utilisateur\\Documents\\Projets\\savide";
+export const NOM_WS = "savide";
 export const MODELE = { provider: "anthropic", name: "claude-opus-5-5", effort: "high" as const };
 export const MODES = { act: MODELE, plan: MODELE, goal: MODELE };
 export const T0 = Date.UTC(2026, 9, 22, 8, 0, 0);
@@ -17,8 +17,8 @@ const TITRES = [
   "Facture OVH d'octobre : rapprochement des lignes et export comptable",
   "Tri des tickets Jira du jour",
   "Migration des postes du centrex du client (fichier FIC) pour le cabinet Martin et l'atelier Durand",
-  "VPN BBATI",
-  "Rapport DMARC hmcc.fr",
+  "VPN du client",
+  "Rapport DMARC exemple.fr",
   "Compilation croisée Windows de la 0.1.57 et publication de l'installeur dans les téléchargements",
   "Questions sur le pare-feu pfSense du client",
   "Résumé de la réunion",
@@ -90,7 +90,7 @@ export function historique(options: { compaction?: boolean; long?: boolean } = {
   nOutil = 0;
   const msgs: any[] = [];
   if (options.compaction) {
-    msgs.push({ role: "user", parts: [{ type: "text", text: "Résumé de la conversation compactée : on corrige l'affichage d'Axecode ; le banc d'essai tourne ; il reste la barre de titre et les colonnes.", meta: { compaction_summary: true } }] });
+    msgs.push({ role: "user", parts: [{ type: "text", text: "Résumé de la conversation compactée : on corrige l'affichage de SavIDE ; le banc d'essai tourne ; il reste la barre de titre et les colonnes.", meta: { compaction_summary: true } }] });
     msgs.push({ role: "user", parts: [{ type: "text", text: "", meta: { compaction_marker: true, compacted_at_ms: T0 - 7_200_000 } }] });
   }
   msgs.push(

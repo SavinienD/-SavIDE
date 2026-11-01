@@ -673,7 +673,7 @@ pub(crate) async fn send_repl_message(
 }
 
 /// parcours-collegue — la conversation à envoyer, et si elle est « adoptée ».
-/// Une conversation d'un espace Axe Cloud créée par « + » (`sessions.create` sur la VM)
+/// Une conversation d'un espace cloud créée par « + » (`sessions.create` sur la VM)
 /// n'a pas de ligne dans le magasin du PC : avant, l'envoi s'arrêtait sur
 /// « conversation introuvable ». Le service la connaît (historique, titre) : on l'envoie
 /// telle quelle, sans l'écrire dans le magasin du PC. Hors espace cloud, rien ne change.
@@ -997,7 +997,7 @@ mod tests {
         assert_eq!(cloud_connection_id(Path::new("axe-cloud:///work")), None);
         // Chemins locaux ignorés.
         assert_eq!(cloud_connection_id(Path::new("/home/user/projet")), None);
-        assert_eq!(cloud_connection_id(Path::new("C:\\projets\\axe")), None);
+        assert_eq!(cloud_connection_id(Path::new("C:\\projets\\demo")), None);
     }
 }
 
@@ -1047,7 +1047,7 @@ mod bridge_turn_error_tests {
     fn meme_erreur_journal_puis_flux_une_seule_fois() {
         // 401 du compteur : le démon envoie l'entrée de journal PUIS l'événement de flux.
         let mut turn = BridgeTurn::default();
-        let m = "auth error: Anthropic rejected the API key (authentication_error: Clé Axe invalide ou révoquée.). Check the key in Settings > Providers.".to_string();
+        let m = "auth error: Anthropic rejected the API key (authentication_error: Clé invalide ou révoquée.). Check the key in Settings > Providers.".to_string();
         assert_eq!(first_turn_error(&mut turn, m.clone()), Some(m.clone()));
         assert_eq!(first_turn_error(&mut turn, m.clone()), None);
         assert_eq!(first_turn_error(&mut turn, "autre".into()).as_deref(), Some("autre"));

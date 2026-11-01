@@ -3,7 +3,7 @@
 //! Ollama's OpenAI route (`/v1/chat/completions`) cannot set the context
 //! size: the server then keeps its default (2 048 to 4 096 tokens on most
 //! PCs) and silently cuts the start of the prompt (system prompt, tools,
-//! instructions). The native route accepts `options.num_ctx`, so Axecode's
+//! instructions). The native route accepts `options.num_ctx`, so SavIDE's
 //! whole prompt reaches the model. The request is built by the shared adapter
 //! (OpenAI shape) and converted here; each NDJSON line is turned back into an
 //! OpenAI-like chunk and fed to the shared parser.
@@ -102,7 +102,7 @@ fn split_content(content: &Value) -> (String, Vec<String>) {
     }
 }
 
-/// Context size sent as `num_ctx`: the model window configured in Axecode
+/// Context size sent as `num_ctx`: the model window configured in SavIDE
 /// (32 768 by default for a local model), kept within sane bounds.
 pub(crate) fn num_ctx_for(context_window: u32) -> u32 {
     context_window.clamp(4_096, 262_144)
@@ -114,7 +114,7 @@ pub fn humanize_local_error(label: &str, model: &str, message: &str) -> String {
     if lower.contains("does not support tools") {
         return format!(
             "{label} : le modèle « {model} » ne gère pas les outils (appels de fonctions), \
-             indispensables à Axecode. Choisissez un modèle compatible (par exemple qwen2.5, \
+             indispensables à SavIDE. Choisissez un modèle compatible (par exemple qwen2.5, \
              qwen3, llama3.1, mistral-nemo)."
         );
     }
@@ -136,7 +136,7 @@ pub fn humanize_local_error(label: &str, model: &str, message: &str) -> String {
     format!("{label} a renvoyé une erreur : {message}")
 }
 
-/// Turns Ollama's NDJSON stream into Axecode events.
+/// Turns Ollama's NDJSON stream into SavIDE events.
 pub(crate) fn map_ndjson_stream<S, E>(body: S, model: String, limits: StreamLimits) -> ProviderStream
 where
     S: Stream<Item = std::result::Result<bytes::Bytes, E>> + Send + 'static,
@@ -419,7 +419,7 @@ mod tests {
 
     fn request() -> ProviderRequest {
         ProviderRequest::new(ModelRef::new("ollama", MODEL), vec![ChatMessage::user_text("Dis bonjour")])
-            .with_system("Tu es Axecode.")
+            .with_system("Tu es SavIDE.")
             .with_tools(vec![ToolDescriptor {
                 name: "ls".into(),
                 description: "list files".into(),
@@ -475,7 +475,7 @@ mod tests {
         assert_eq!(body["options"]["num_ctx"], json!(32_768));
         assert_eq!(body["stream"], json!(true));
         assert_eq!(body["messages"][0]["role"], json!("system"));
-        assert_eq!(body["messages"][0]["content"], json!("Tu es Axecode."));
+        assert_eq!(body["messages"][0]["content"], json!("Tu es SavIDE."));
         assert_eq!(body["tools"][0]["function"]["name"], json!("ls"));
     }
 
@@ -620,7 +620,7 @@ mod tests {
         let Ok(base) = std::env::var("AXE_OLLAMA_URL") else { return };
         let p = provider(&base, true, |_| {});
         let long = "Règle : réponds toujours en français, poliment et brièvement.\n".repeat(400);
-        let req = request().with_system(format!("{long}\nTu es Axecode."));
+        let req = request().with_system(format!("{long}\nTu es SavIDE."));
         let mut stream = Box::pin(p.stream(req).await.expect("stream"));
         let (mut text, mut input) = (String::new(), 0);
         while let Some(event) = stream.next().await {

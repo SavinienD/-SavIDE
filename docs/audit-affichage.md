@@ -1,4 +1,4 @@
-# Banc d'affichage d'Axecode (test de régression)
+# Banc d'affichage de SavIDE (test de régression)
 
 Le banc rend la **vraie interface de bureau** (`src/`, React) dans un Chromium sans écran
 (l'appli Windows utilise WebView2, qui est un Chromium), avec le backend Tauri simulé
@@ -42,7 +42,7 @@ d'éléments notés dans le rapport, pour la planche).
   de Windows, plus larges), et agrandi de 10 % **avec les libellés allongés de 30 %** (texte des
   boutons, onglets et titres : marge pour la traduction ; contenu, noms et identifiants non
   touchés). Option `--texte` : `a` = texte × a, `a/b` = texte × a et libellés × b.
-- **Scènes** (19, `scenes.mjs`) : accueil (compte Axe Cloud connecté) ; 1, 2 et 3 colonnes de
+- **Scènes** (19, `scenes.mjs`) : accueil (compte cloud connecté) ; 1, 2 et 3 colonnes de
   conversation ; colonne réduite au minimum par la poignée ; 9 onglets ; terminal ouvert ;
   explorateur détaché ; sans fournisseur (« Connect a provider ») ; tour en cours avec file
   d'attente et sous-agents (« N agent(s) au travail », Stop, Arrière-plan) ; « Arrêt forcé… » ;
@@ -103,7 +103,7 @@ volets), `sim` (options de la simulation : fournisseur, tour, sous-agents…), g
 2. pour chaque correction (liste `CAS` de `planche.mjs` : scène, taille de fenêtre, zone repérée
    par sélecteur, une ligne d'explication en français simple), découpe la même zone dans les
    deux rendus, en JPEG, à 125 % ;
-3. écrit `scripts/audit-affichage/sortie/planche/Axecode-affichage-avant-apres.html` : page
+3. écrit `scripts/audit-affichage/sortie/planche/SavIDE-affichage-avant-apres.html` : page
    autonome, images intégrées, moins de 15 Mo (la qualité JPEG baisse si besoin), avec le
    nombre de défauts avant / après par taille de fenêtre.
 
@@ -112,4 +112,4 @@ et témoins ne dépendent pas des libellés ; une zone introuvable est signalée
 entière est montrée. Options : `--rapide` (seulement les situations illustrées, ~3 min),
 `--sans-captures` (refait la page sans refaire les rendus), `--qualite 0.8`, `--travailleurs 4`.
 Copie sur le PC, depuis Windows :
-`scp <vm>:<dépôt>/scripts/audit-affichage/sortie/planche/Axecode-affichage-avant-apres.html "$env:USERPROFILE\Downloads\"`.
+`scp <vm>:<dépôt>/scripts/audit-affichage/sortie/planche/SavIDE-affichage-avant-apres.html "$env:USERPROFILE\Downloads\"`.

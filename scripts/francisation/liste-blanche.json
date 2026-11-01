@@ -50,7 +50,7 @@
  },
  {
   "fichier": "src/components/settings/ConnectionsPane.tsx",
-  "motif": "^(axecode|\\{\\}|\\$\\{\\})? ?--daemon|https://axe\\.example\\.com",
+  "motif": "^(axecode|\\{\\}|\\$\\{\\})? ?--daemon|https://ide\\.example\\.com",
   "raison": "commande à taper ou adresse d'exemple"
  },
  {
@@ -144,7 +144,7 @@
  },
  {
   "fichier": "src-tauri/src/state.rs",
-  "motif": "^You are Axecode",
+  "motif": "^You are SavIDE",
   "raison": "consigne système envoyée au modèle"
  },
  {
@@ -193,8 +193,8 @@
   "raison": "variable d'environnement, commande ou accélérateur clavier (syntaxe Tauri)"
  },
  {
-  "fichier": "src-tauri/src/prime_term.rs",
-  "texte": "prime terms lock",
+  "fichier": "src-tauri/src/agent_term.rs",
+  "texte": "agent terms lock",
   "raison": "message de panique interne (expect), jamais affiché"
  },
  {
@@ -224,7 +224,7 @@
  },
  {
   "fichier": "src-tauri/src/lib.rs",
-  "motif": "^(unable to open app store|error while building axecode desktop)$",
+  "motif": "^(unable to open app store|error while building SavIDE desktop)$",
   "raison": "messages de panique au démarrage (expect), jamais affichés dans l'appli"
  },
  {

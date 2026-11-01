@@ -1,7 +1,7 @@
-// Scène « collegue » du banc : un collègue (Camille) connecté à Axe Cloud, AUCUN
+// Scène « collegue » du banc : un collègue (Camille) connecté au cloud, AUCUN
 // fournisseur d'IA sur son PC ; son espace sur la VM a le fournisseur « axe-cloud »
-// (compteur 127.0.0.1:8096, clé axk_ personnelle). Données tirées de son espace
-// réel (lecture seule, 22/10) : providers.json = axe-cloud (Opus, Sonnet, Haiku
+// (compteur 127.0.0.1:8096, clé personnelle). Données d'exemple :
+// providers.json = axe-cloud (Opus, Sonnet, Haiku
 // 5.5), conversation « test » créée avec axe-cloud/claude-opus-5-5.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as D from "./donnees";
@@ -49,7 +49,7 @@ export function simulationCollegue(scene: any, base: Record<string, (a: any, bru
       active: CONNEXION,
       connections: [
         { id: "local", name: "Ce PC", kind: "local" },
-        { id: CONNEXION, name: "Axe Cloud", kind: "remote", url: "wss://cloud.exemple.invalid/ws", hasToken: true },
+        { id: CONNEXION, name: "Cloud", kind: "remote", url: "wss://cloud.exemple.invalid/ws", hasToken: true },
       ],
     }),
     connections_state: () => ({ local: "connected", [CONNEXION]: "connected" }),

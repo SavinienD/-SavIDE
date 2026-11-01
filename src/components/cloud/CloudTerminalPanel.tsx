@@ -1,21 +1,21 @@
 // e8 / v2-e12 — le terminal, a onglets :
 //   • « Bash » = une session du service (elle survit a la deconnexion et se reprend) ;
 //   • « Terminal local » = un shell du poste ou tourne l'appli ;
-//   • « Prime Agent » = epingle : on s'ATTACHE a la session de production de Prime
+//   • « Agent » = epingle : on s'ATTACHE a la session de production de l'agent
 //     (le portail la garde ouverte), on ne la relance jamais.
 //
 // e15 — deux changements demandes par l'utilisateur :
 //   1. les onglets se voient aussi depuis l'interface classique (le panneau n'est
-//      plus reserve a l'espace : il suffit d'une session Axe Cloud ouverte) ;
+//      plus reserve a l'espace : il suffit d'une session cloud ouverte) ;
 //   2. un onglet se DETACHE comme dans un navigateur : il part devant dans sa
 //      propre fenetre, les autres restent en bas (detacher le Bash et laisser
-//      Prime Agent dans le panneau). Refermer la fenetre le reancre.
+//      l'agent dans le panneau). Refermer la fenetre le reancre.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { RemoteTerminal } from "./RemoteTerminal";
 import { cloudSubdirFromPath } from "../../lib/ipc"; // cloud-sous-dossier
 import { LocalTerminal } from "./LocalTerminal";
-import { PrimeTerminal } from "./PrimeTerminal";
+import { AgentTerminal } from "./AgentTerminal";
 import { GitPanel } from "../GitPanel"; // git-onglet
 import { FenetreOnglet } from "../onglets/FenetreOnglet"; // e15
 
@@ -43,8 +43,8 @@ type Props = {
 const STORAGE_PREFIX = "axe:e8:terminaux:";
 
 /// L'agent de la machine : epingle, non fermable.
-const PINNED: Tab = { name: "prime", title: "Prime Agent", pinned: true, kind: "prime" };
-// git-onglet - Git en onglet epingle a cote de Prime Agent et des bash.
+const PINNED: Tab = { name: "prime", title: "Agent", pinned: true, kind: "prime" };
+// git-onglet - Git en onglet epingle a cote de l'agent et des bash.
 const GIT_TAB: Tab = { name: "git", title: "Git", pinned: true, kind: "git" };
 
 function kindOf(tab: Tab): Kind {
@@ -68,7 +68,7 @@ function load(workspacePath: string): Tab[] | null {
     // ce sont des bash du service, ils prennent leur vrai nom.
     const migres = list.map((t) => {
       if (!t || typeof t.name !== "string" || t.name.length === 0) return t;
-      if (t.name === "prime") return { ...t, kind: "prime" as Kind, title: "Prime Agent" };
+      if (t.name === "prime") return { ...t, kind: "prime" as Kind, title: "Agent" };
       const ancien = /^Terminal (\d+)$/.exec(t.title ?? "");
       if (ancien) return { ...t, kind: "cloud" as Kind, title: `Bash ${ancien[1]}` };
       return t;
@@ -174,7 +174,7 @@ export function CloudTerminalPanel({ connectionId, workspacePath, storageKey }: 
     [tabs],
   );
 
-  // e15 — detacher / reancrer. Une session cloud ou Prime se rattache par son
+  // e15 — detacher / reancrer. Une session cloud ou de l'agent se rattache par son
   // nom (tmux garde tout) ; un shell local repart, c'est le seul compromis.
   const detacher = useCallback((name: string) => {
     setTabs((list) => list.map((t) => (t.name === name ? { ...t, detached: true } : t)));
@@ -191,7 +191,7 @@ export function CloudTerminalPanel({ connectionId, workspacePath, storageKey }: 
     (tab: Tab) => {
       const kind = kindOf(tab);
       if (kind === "local") return <LocalTerminal workspacePath={workspacePath} sessionId={tab.name} />;
-      if (kind === "prime") return <PrimeTerminal connectionId={connectionId} />;
+      if (kind === "prime") return <AgentTerminal connectionId={connectionId} />;
       if (kind === "git") return <GitPanel workspacePath={workspacePath} active={true} hasStreamingConversation={false} onSwitchWorkspace={async () => undefined} />;
       return <RemoteTerminal key={tab.name} connectionId={connectionId} name={tab.name} cwd={cloudSubdirFromPath(workspacePath)} />;
     },

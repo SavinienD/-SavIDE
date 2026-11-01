@@ -1,5 +1,5 @@
 /* =========================================================================
-   cloud.css — habillage du mode « Axe Cloud » de l'appli SavIDE
+   cloud.css — habillage du mode « cloud » de l'appli SavIDE
    Thème sombre. Les variables (--bg-*, --text-*, --line*, --accent*, --r-*,
    --font-*) sont fournies par l'appli : elles ne sont PAS redéfinies ici.
    Toutes les règles sont préfixées .axc- (aucun sélecteur d'élément global).
@@ -194,10 +194,10 @@
 
 
 /* =========================================================================
-   3. ONGLET PRIME AGENT — discussion + colonne latérale
+   3. ONGLET AGENT — discussion + colonne latérale
    ========================================================================= */
 
-.axc-prime {
+.axc-agent {
   display: grid; grid-template-columns: minmax(0, 1fr) 340px; height: 100%;
 }
 
@@ -371,7 +371,7 @@
 
 /* Une seule colonne sous 1100 px. */
 @media (max-width: 1100px) {
-  .axc-prime { grid-template-columns: 1fr; }
+  .axc-agent { grid-template-columns: 1fr; }
   .axc-side { border-left: none; border-top: 1px solid var(--line); }
 }
 
@@ -401,7 +401,7 @@
 /* Bandeau dans la carte de connexion. */
 .axc-login__card .axc-banner { margin: 0 0 18px; border: 1px solid var(--line); border-radius: var(--r-med); text-align: left; }
 
-/* Lien « Revenir à Axe Cloud » sur l'accueil du mode local. */
+/* Lien « Revenir au cloud » sur l'accueil du mode local. */
 .axc-back-cloud {
   position: fixed; right: 16px; bottom: 14px; z-index: 40;
   padding: 6px 12px; font: inherit; font-size: 12.5px; color: var(--text-2);
@@ -411,7 +411,7 @@
 .axc-back-cloud:hover { color: var(--text-0); border-color: var(--accent); }
 .axc-back-cloud:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* V2 L1: once the user enters Axe, the familiar IDE workspace takes the whole window. */
+/* V2 L1: once the user enters the workspace, the familiar IDE workspace takes the whole window. */
 .axc-connected--workspace {
   display: block;
   height: 100%;

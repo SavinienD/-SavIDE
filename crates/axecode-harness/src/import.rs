@@ -227,7 +227,7 @@ mod tests {
             std::fs::create_dir_all(p.parent().unwrap()).unwrap();
             std::fs::write(p, text).unwrap();
         };
-        write("core/identity.md", "I am Axe.");
+        write("core/identity.md", "I am the agent.");
         write("memory/memory.md", "Remember X.");
         write("projects/active.md", "Project Y.");
         write("knowledge/commands.md", "cmd Z.");

@@ -13,14 +13,14 @@ function charger(rel) {
 const A = charger("../src/components/chat/arrierePlan.ts");
 test("clone d'arrière-plan et sous-agent : pas dans la liste, clone rattaché à la conversation d'origine", () => {
   const l = A.resumesConversations([
-    { id: "c1", name: "Saas Sav", updatedAtMs: 10 },
-    { id: "bg", name: "Saas Sav — arrière-plan", parentId: "c1", status: "running", updatedAtMs: 20 },
+    { id: "c1", name: "Projet démo", updatedAtMs: 10 },
+    { id: "bg", name: "Projet démo — arrière-plan", parentId: "c1", status: "running", updatedAtMs: 20 },
     { id: "sa", name: "t-171", parentId: "c1", status: "idle", updatedAtMs: 30 },
     { id: "c2", name: "Autre", updatedAtMs: 5 },
     { id: "old", name: "X — arrière-plan", parentId: "c2", archived: true },
   ]);
   assert.deepEqual(l.map((c) => c.id), ["c1", "c2"]);
-  assert.deepEqual(l[0].arrierePlan, [{ id: "bg", title: "Saas Sav — arrière-plan", enCours: true }]);
+  assert.deepEqual(l[0].arrierePlan, [{ id: "bg", title: "Projet démo — arrière-plan", enCours: true }]);
   assert.equal(l[1].arrierePlan, undefined);
 });
 test("la liste de l'espace passe par resumesConversations ; indicateur cliquable", () => {

@@ -30,14 +30,14 @@ function modelTag(tags: string[]): string {
 }
 
 /** Settings > Harness: browse, edit, promote/demote entries and roll back refinements. */
-/// e13 — la connexion Axe Cloud, quand la session est ouverte. Le poste ne
+/// e13 — la connexion cloud, quand la session est ouverte. Le poste ne
 /// garde aucun secret : c'est le service qui répond.
 async function connexionCloud(): Promise<string | null> {
   try {
     const etat = await cloudApi.state();
     if (etat?.connected) return etat.connectionId || CLOUD_CONNECTION;
   } catch {
-    // pas connecté à Axe Cloud : on reste sur le harnais du poste.
+    // pas connecté au cloud : on reste sur le harnais du poste.
   }
   return null;
 }
@@ -47,7 +47,7 @@ export function HarnessPane({ workspacePath }: Props) {
   // cleanup — harness Python skills live in Settings > Skills.
   const kinds = HARNESS_KINDS.filter((kind) => kind.id !== "skill");
   const [entries, setEntries] = useState<HarnessEntry[]>([]);
-  // e13 — le harnais de l'espace Axe Cloud (lecture seule ici).
+  // e13 — le harnais de l'espace cloud (lecture seule ici).
   const [serviceEntries, setServiceEntries] = useState<HarnessEntry[]>([]);
   const [serviceConnexion, setServiceConnexion] = useState<string | null>(null);
   const [serviceNote, setServiceNote] = useState<string | null>(null);
@@ -75,7 +75,7 @@ export function HarnessPane({ workspacePath }: Props) {
     } catch (e) {
       setError(String(e));
     }
-    // e13 — depuis le poste, le harnais de l'espace Axe Cloud se lit aussi
+    // e13 — depuis le poste, le harnais de l'espace cloud se lit aussi
     // (c'est la même source : rien à recopier, rien à synchroniser).
     if (cloudConnectionFromPath(workspacePath)) {
       // Dans l'espace lui-même, le harnais affiché EST le harnais de l'espace.
@@ -127,7 +127,7 @@ export function HarnessPane({ workspacePath }: Props) {
     [entries, tab],
   );
 
-  // L'entrée sélectionnée peut venir du poste ou de l'espace Axe Cloud.
+  // L'entrée sélectionnée peut venir du poste ou de l'espace cloud.
   const selectedFromService =
     !!selectedId && !entries.some((entry) => entry.id === selectedId);
   const selected =
@@ -267,7 +267,7 @@ export function HarnessPane({ workspacePath }: Props) {
           Notes, mémoires, skills et sous-agents que l'agent fait évoluer. Portée globale
           (~/.axecode/harness) ou projet (.axecode/harness). La consigne de base reste immuable.
           {serviceConnexion
-            ? " Les entrées de l'espace Axe Cloud s'affichent ici aussi (lecture seule)."
+            ? " Les entrées de l'espace cloud s'affichent ici aussi (lecture seule)."
             : ""}
         </p>
       </header>
@@ -327,7 +327,7 @@ export function HarnessPane({ workspacePath }: Props) {
       ) : null}
       {serviceNote ? (
         <p className="axe-harness__muted">
-          Le harnais d'Axe Cloud n'a pas pu être lu pour l'instant.
+          Le harnais du cloud n'a pas pu être lu pour l'instant.
         </p>
       ) : null}
 
@@ -432,7 +432,7 @@ export function HarnessPane({ workspacePath }: Props) {
             {visibleService.length > 0 ? (
               <>
                 <div className="axe-harness__group">
-                  Espace Axe Cloud
+                  Espace cloud
                   <span className="axe-harness__muted">{visibleService.length}</span>
                 </div>
                 {visibleService.map((entry) => (
@@ -447,7 +447,7 @@ export function HarnessPane({ workspacePath }: Props) {
                     <span
                       className="axe-harness__pill"
                       data-origin="cloud"
-                      title="Entrée de l'espace Axe Cloud"
+                      title="Entrée de l'espace cloud"
                     >
                       cloud
                     </span>
@@ -464,8 +464,8 @@ export function HarnessPane({ workspacePath }: Props) {
               <>
                 {selectedFromService ? (
                   <p className="axe-harness__origin">
-                    Entrée de l'espace <strong>Axe Cloud</strong> — lecture seule ici. Elle
-                    s'écrit depuis l'espace (« Revenir à Axe Cloud ») : rien à recopier sur
+                    Entrée de l'espace <strong>cloud</strong> — lecture seule ici. Elle
+                    s'écrit depuis l'espace (« Revenir au cloud ») : rien à recopier sur
                     le poste, c'est la même source.
                   </p>
                 ) : null}

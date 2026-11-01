@@ -1,5 +1,5 @@
-// Faux compteur Axe Cloud : imite les réponses d'ERREUR du vrai compteur (127.0.0.1:8096,
-// ~/compteur-axe/app.py, fonction erreur_anthropic) pour montrer leur affichage sans vraie clé.
+// Faux compteur du cloud : imite les réponses d'ERREUR du vrai compteur (127.0.0.1:8096,
+// fonction erreur_anthropic du serveur) pour montrer leur affichage sans vraie clé.
 // Aucune requête ne part vers Anthropic. Usage :
 //   node scripts/faux-compteur/faux-compteur.mjs <port> <statut>   (statut : 401 403 429 502 503)
 // Chaque appel reçu est noté sur la sortie (méthode, chemin, statut renvoyé, jamais la clé).
@@ -7,7 +7,7 @@ import http from "node:http";
 
 const REPONSES = {
   // [type Anthropic, message du compteur, en-tête x-should-retry: false]
-  401: ["authentication_error", "Clé Axe invalide ou révoquée.", false],
+  401: ["authentication_error", "Clé invalide ou révoquée.", false],
   403: ["permission_error", "Compte désactivé : l'IA n'est pas accessible.", false],
   429: ["rate_limit_error", "Plafond mensuel IA atteint (20,00 €). Demande à l'administrateur de le relever.", true],
   502: ["api_error", "Anthropic injoignable depuis le serveur, réessaie.", false],

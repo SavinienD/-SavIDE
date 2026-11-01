@@ -7,7 +7,7 @@
 <p align="center">
   <b>IDE à agent IA, édition locale (Windows, Linux, macOS).</b><br/>
   Éditeur, terminal, chat et rollback ; REPL Python persistant, harness auto-évolutif<br/>
-  et sessions qui survivent à la fermeture de l'IDE, inspirés de Prime Agent.
+  et sessions qui survivent à la fermeture de l'IDE.
 </p>
 
 <p align="center">
@@ -16,7 +16,7 @@
 
 ---
 
-> SavIDE (édition locale d'Axecode) est un **fork figé** d'un IDE open source sous licence MIT (voir [Licence](#licence)). Le cordon est coupé : plus aucune
+> SavIDE est un **fork figé** d'un IDE open source sous licence MIT (voir [Licence](#licence)). Le cordon est coupé : plus aucune
 > synchronisation avec l'amont. La boucle d'agent, les outils, les modes et les providers sont désormais maintenus ici.
 
 ## Sommaire
@@ -39,7 +39,7 @@
 
 | Sujet | Décision |
 |---|---|
-| Cerveau | Prime Agent pur : le modèle n'a qu'un outil, exécuter du code dans un kernel IPython persistant. Fichiers, shell, web, images, contexte, sous-agents, harness, MCP et skills sont des modules Python préchargés. |
+| Cerveau | Agent à outil unique : le modèle n'a qu'un outil, exécuter du code dans un kernel IPython persistant. Fichiers, shell, web, images, contexte, sous-agents, harness, MCP et skills sont des modules Python préchargés. |
 | Python | Embarqué dans l'installeur (sidecar) avec IPython préinstallé. |
 | Sessions | Un service d'arrière-plan lancé par l'IDE possède les sessions et leurs kernels. Fermer la fenêtre ne tue rien ; rouvrir l'IDE retrouve les sessions en cours, inactives ou archivées. |
 | Journal | Append-only : chaque message, appel REPL, résultat, changement de modèle et compaction est écrit au moment où il se produit. Branches et forks déplacent un pointeur ; `/tree` montre tout. |
@@ -76,7 +76,7 @@ flowchart LR
     S1 --> P[Providers LLM]
 ```
 
-- **`src/`** — UI React (Monaco, xterm, chat, settings, arbre de fichiers). `src/axe/` porte l'identité et le thème Axe.
+- **`src/`** — UI React (Monaco, xterm, chat, settings, arbre de fichiers). `src/axe/` porte l'identité et le thème de l'appli.
 - **`src-tauri/`** — coque Tauri 2, commandes IPC, I/O workspace, attachement au service.
 - **`crates/axecode-core`** — types indépendants du provider : messages, outils, flux, modèles.
 - **`crates/axecode-app`** — boucle d'agent REPL, compaction, rollback, MCP.
@@ -114,8 +114,8 @@ Les cinq providers d'origine et leurs flux OAuth (Anthropic, OpenAI, Google via 
 ## Thème
 
 Settings > Apparence propose un sélecteur de couleur de fond libre. Les teintes secondaires (panneaux, bordures, texte)
-sont dérivées automatiquement de la luminance choisie pour rester lisibles ; l'orange Axe `#fc610b` reste la couleur
-d'accent. Un bouton « Revenir au défaut Axe » restaure le thème d'origine. Le choix survit au redémarrage.
+sont dérivées automatiquement de la luminance choisie pour rester lisibles ; l'orange `#fc610b` reste la couleur
+d'accent. Un bouton « Revenir au thème par défaut » restaure le thème d'origine. Le choix survit au redémarrage.
 
 ---
 
@@ -147,9 +147,9 @@ le paquet `.deb` se met à jour en réinstallant le nouveau `.deb`).
 Le service d'arrière-plan peut tourner sur une autre machine ; l'IDE s'y connecte depuis **Settings > Connexions** (connexion distante en WebSocket ou par tunnel SSH). L'écoute réseau est **fermée par défaut** ; hors loopback, le service refuse de démarrer sans identifiants et vérifie l'en-tête `Host`. Commandes du binaire (`SavIDE.exe`) :
 
 ```text
-SavIDE.exe --daemon set-password --user axe     # mot de passe lu sur stdin (ou AXECODE_PASSWORD)
+SavIDE.exe --daemon set-password --user moi     # mot de passe lu sur stdin (ou AXECODE_PASSWORD)
 SavIDE.exe --daemon token --label laptop        # affiche un jeton une seule fois
-SavIDE.exe --daemon serve --listen 127.0.0.1:9119 --allow-host axe.example.com
+SavIDE.exe --daemon serve --listen 127.0.0.1:9119 --allow-host ide.example.com
 ```
 
 Exposez-le derrière un reverse proxy HTTPS plutôt que directement.

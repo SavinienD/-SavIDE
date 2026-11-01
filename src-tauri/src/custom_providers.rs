@@ -252,7 +252,7 @@ fn build_provider(
             dialect_for(config.kind),
         );
         // ollama — native /api/chat: Ollama's /v1 route cannot raise the
-        // context size, so it cut Axecode's prompt to its default 2-4k tokens.
+        // context size, so it cut SavIDE's prompt to its default 2-4k tokens.
         if config.kind == ProviderKind::Ollama {
             openai = openai.with_ollama_native();
         }
@@ -679,7 +679,7 @@ mod compaction_window_tests {
     fn meter_settings() -> ProviderSettings {
         // Same shape as the SavIDE's providers.json (models declared at 200 000).
         serde_json::from_value(serde_json::json!({"providers": [{
-            "id": "axe-cloud", "name": "Axe Cloud", "kind": "anthropic_compatible",
+            "id": "axe-cloud", "name": "Cloud", "kind": "anthropic_compatible",
             "baseUrl": "https://agent.example/v1", "enabled": true,
             "models": [{"id": "claude-opus-5-5", "contextWindow": 200000, "maxOutputTokens": 32000},
                        {"id": "claude-sonnet-5-5", "contextWindow": 200000, "maxOutputTokens": 32000},

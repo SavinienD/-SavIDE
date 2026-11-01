@@ -26,7 +26,7 @@ import {
   UI_ZOOM_STEP,
 } from "./zoom"; // zoom
 
-/** Settings > Apparence: text size, Axe presets, free background picker and a live mini-IDE preview. */
+/** Settings > Apparence: text size, presets, free background picker and a live mini-IDE preview. */
 export function AppearanceSection() {
   const [bg, setBg] = useState<string>(() => loadThemeBg());
   const [draft, setDraft] = useState<string>(bg);
@@ -61,7 +61,7 @@ export function AppearanceSection() {
         <p className="axe-appearance__hint">
           Une seule couleur de fond pilote toute l'interface : panneaux, bordures, textes, éditeur
           et terminal en sont dérivés, en version claire ou sombre selon sa luminosité.
-          L'accent reste l'orange Axe.
+          L'accent reste orange.
         </p>
       </header>
 
@@ -174,7 +174,7 @@ export function AppearanceSection() {
             disabled={bg === AXE_DEFAULT_BG}
             onClick={() => setThemeBg(null)}
           >
-            Revenir au défaut Axe
+            Revenir au thème par défaut
           </button>
         </div>
         <p className="axe-appearance__contrast" data-ok={readable || undefined}>

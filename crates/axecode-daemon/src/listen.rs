@@ -352,6 +352,6 @@ mod tests {
         assert!(host_allowed("::1", &[]));
         assert!(host_allowed("localhost", &[]));
         assert!(!host_allowed("evil.example", &[]));
-        assert!(host_allowed("axe.example", &["axe.example".into()]));
+        assert!(host_allowed("ide.example", &["ide.example".into()]));
     }
 }

@@ -1380,7 +1380,7 @@ mod tests {
     #[test]
     fn git_repos_are_listed_and_commits_are_scoped_to_the_chosen_repo() {
         let f = Fixture::new();
-        let proj = f.root.join("portail-prime");
+        let proj = f.root.join("projet-demo");
         std::fs::create_dir_all(proj.join("src")).unwrap();
         for args in [
             vec!["init"],
@@ -1398,17 +1398,17 @@ mod tests {
         }
         let repos = f.call("git.repos", json!({})).unwrap();
         assert_eq!(repos[0]["isRepo"], false);
-        assert_eq!(repos[1]["path"], "portail-prime");
+        assert_eq!(repos[1]["path"], "projet-demo");
         assert_eq!(repos[1]["isRepo"], true);
         // Racine de l'espace non-depot : erreur explicite (l'UI propose alors un depot).
         assert!(f.call("git.status", json!({})).is_err());
-        let st = f.call("git.status", json!({"path":"portail-prime"})).unwrap();
-        assert_eq!(st["repoPath"], "/work/portail-prime");
+        let st = f.call("git.status", json!({"path":"projet-demo"})).unwrap();
+        assert_eq!(st["repoPath"], "/work/projet-demo");
         // Commit cible : chemins donnes depuis la racine de l'espace.
         std::fs::write(proj.join("src/demo.txt"), "hello cloud").unwrap();
         f.call(
             "git.commit",
-            json!({"message":"depuis le projet", "paths":["portail-prime/src/demo.txt"], "path":"portail-prime"}),
+            json!({"message":"depuis le projet", "paths":["projet-demo/src/demo.txt"], "path":"projet-demo"}),
         )
         .unwrap();
         let tracked = git_command(&proj).args(["ls-files"]).output().unwrap();
@@ -1418,7 +1418,7 @@ mod tests {
         assert!(f
             .call(
                 "git.commit",
-                json!({"message":"hors depot", "paths":["hors.txt"], "path":"portail-prime"})
+                json!({"message":"hors depot", "paths":["hors.txt"], "path":"projet-demo"})
             )
             .is_err());
         // Traversee refusee.
@@ -1595,17 +1595,17 @@ mod tests {
     #[test]
     fn git_branches_targets_sub_repository_and_confines_paths() {
         let f = Fixture::new();
-        let proj = f.root.join("portail-prime");
+        let proj = f.root.join("projet-demo");
         std::fs::create_dir_all(&proj).unwrap();
         init_repo(&proj);
         std::fs::write(proj.join("a.txt"), "a").unwrap();
         f.call(
             "git.commit",
-            json!({"message":"init","paths":["portail-prime/a.txt"],"path":"portail-prime"}),
+            json!({"message":"init","paths":["projet-demo/a.txt"],"path":"projet-demo"}),
         )
         .unwrap();
         let b = f
-            .call("git.branches", json!({"repoPath":"portail-prime"}))
+            .call("git.branches", json!({"repoPath":"projet-demo"}))
             .unwrap();
         assert!(!b["current"].as_str().unwrap().is_empty());
         assert!(f.call("git.branches", json!({"repoPath":"../etc"})).is_err());

@@ -103,7 +103,7 @@ export const harnessApi = {
     if (conn) return cloudRpc<HarnessEntry[]>(conn, "harness.list", { kind, scope });
     return invoke<HarnessEntry[]>("harness_list", { input: { workspacePath, kind, scope } });
   },
-  /// e13 — lit le harnais d'un espace Axe Cloud depuis l'interface
+  /// e13 — lit le harnais d'un espace cloud depuis l'interface
   /// classique (volet Réglages > Harnais) : lecture seule, l'écriture reste
   /// dans l'espace, donc rien n'est recopié sur le poste.
   listFrom: (connection: string, kind?: HarnessKind, scope?: HarnessScope) =>

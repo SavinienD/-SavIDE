@@ -189,7 +189,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("axs-web-{}", crate::util::new_id()));
         std::fs::create_dir_all(&dir).unwrap();
         let store = SessionStore::new(&dir);
-        let token = store.create("axe", "test");
+        let token = store.create("admin", "test");
         let header = format!("theme=dark; {COOKIE_NAME}={token}");
         assert!(store.from_cookie_header(&header).is_some());
         assert!(store.validate("nope").is_none());

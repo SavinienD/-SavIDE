@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Banc d'essai de l'affichage d'Axecode — UNE commande, sans intervention :
+// Banc d'essai de l'affichage de SavIDE — UNE commande, sans intervention :
 //   node scripts/audit-affichage/lancer.mjs            audit complet (captures PNG + rapport JSON)
 //   node scripts/audit-affichage/lancer.mjs --strict   test de regression : echoue au premier defaut
 // Options : --situations 800x600,1366x768  --echelles 1,1.25  --texte 1,1.1,1.1/1.3 (« a/b » : texte x a et libellés x b)  --scenes c1,c3
@@ -172,7 +172,7 @@ async function preparerScene(page, si, sc) {
     return;
   }
   if (sc.espaceCloud) {
-    // Accueil > « Dossier du cloud partagé » > « Racine de l'espace » (espace Axe Cloud).
+    // Accueil > « Dossier du cloud partagé » > « Racine de l'espace » (espace cloud).
     await page.waitForFunction(() => [...document.querySelectorAll("button.axc-btn")].some((b) => b.textContent.trim() === "Racine de l'espace"), { timeout: 8000 });
     await cliquerTexte(page, "button.axc-btn", "Racine de l'espace");
   } else if (sc.libre) {
@@ -180,7 +180,7 @@ async function preparerScene(page, si, sc) {
     await page.evaluate(() => document.querySelector("button.welcome__cta:last-of-type")?.click());
   } else {
     await page.evaluate(() => {
-      const b = [...document.querySelectorAll("button.welcome__recent")].find((x) => x.textContent.includes("axecode"));
+      const b = [...document.querySelectorAll("button.welcome__recent")].find((x) => x.textContent.includes("savide"));
       b?.click();
     });
   }
@@ -258,7 +258,7 @@ async function preparerScene(page, si, sc) {
     await pause(900);
   }
   // Scène « collegue » : clic sur le bouton de connexion (.composer__connect-cta, s'il est là), message écrit
-  // puis envoyé, tour simulé : charges complètes (espace Axe Cloud) dans « evenementsTour ».
+  // puis envoyé, tour simulé : charges complètes (espace cloud) dans « evenementsTour ».
   if (sc.clicConnecter) {
     await page.evaluate(() => document.querySelector(".composer__connect-cta")?.click());
     await pause(600);

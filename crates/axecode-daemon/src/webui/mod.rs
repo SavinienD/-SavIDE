@@ -335,7 +335,7 @@ mod tests {
         assert!(!same_origin(&req(&[("host", "a:1"), (CSRF_HEADER_LEGACY, "1"), ("origin", "http://evil")])));
         assert!(is_local(&req(&[("host", "127.0.0.1:9119")]), true));
         assert!(!is_local(&req(&[("host", "127.0.0.1:9119"), ("x-forwarded-for", "1.2.3.4")]), true));
-        assert!(!is_local(&req(&[("host", "axe.example")]), true));
+        assert!(!is_local(&req(&[("host", "ide.example")]), true));
         assert!(!is_local(&req(&[("host", "localhost:9119")]), false));
     }
 }

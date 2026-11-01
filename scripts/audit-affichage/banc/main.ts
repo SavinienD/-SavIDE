@@ -1,4 +1,4 @@
-// Banc d'affichage d'Axecode : point d'entree.
+// Banc d'affichage de SavIDE : point d'entree.
 // 1. lit la scene demandee par le lanceur (window.__BANC_SCENE__) ;
 // 2. prepare le stockage local (dossiers recents, colonnes, file d'attente…) ;
 // 3. installe la simulation Tauri (IPC, fenetres, evenements) AVANT tout module de l'appli ;

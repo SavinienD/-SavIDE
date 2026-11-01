@@ -8,7 +8,7 @@ import {
 } from "./connectionsApi";
 
 // e5 — « Joindre un autre appareil » : ce n'est pas « choisir où tourne
-// l'application » (l'application travaille toujours dans l'espace Axe Cloud),
+// l'application » (l'application travaille toujours dans l'espace cloud),
 // c'est ajouter un service SavIDE déjà installé ailleurs pour lui confier
 // du calcul. Les appareils sont de vrais services distants : SSH ou adresse.
 
@@ -295,7 +295,7 @@ export function ConnectionsPane() {
                 <span>Adresse du service</span>
                 <input
                   value={draft.url}
-                  placeholder="https://axe.example.com ou 192.168.1.20:9119"
+                  placeholder="https://ide.example.com ou 192.168.1.20:9119"
                   onChange={(e) => set({ url: e.target.value })}
                 />
               </>

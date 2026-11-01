@@ -1,5 +1,5 @@
 // fr — résumés d'outils envoyés par le moteur (Rust, agent/tool_summary.rs) avec « tool_ready ».
-// Ils sont en anglais, y compris depuis un espace Axe Cloud encore en 0.1.56 : on les traduit
+// Ils sont en anglais, y compris depuis un espace cloud encore en 0.1.56 : on les traduit
 // à la réception, outil par outil. Le texte libre (description bash écrite par le modèle, JSON des
 // arguments) n'est jamais touché. Les fonctions qui reconnaissent un résumé (sous-agent, skill)
 // acceptent l'anglais et le français.

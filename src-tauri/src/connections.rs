@@ -157,7 +157,7 @@ fn authorization(connection: &Connection) -> Option<String> {
     ))
 }
 
-/// v2-e12 — meme en-tete, pour une connexion nommee (l'onglet Prime Agent s'en sert).
+/// v2-e12 — meme en-tete, pour une connexion nommee (l'onglet de l'agent s'en sert).
 pub(crate) fn authorization_for(id: &str) -> Option<String> {
     authorization(&find(id)?)
 }
@@ -495,10 +495,10 @@ pub(crate) async fn connections_save(
     input: ConnectionSaveInput,
 ) -> std::result::Result<Value, String> {
     let mut connection = input.connection;
-    // cloud — the Axe Cloud connection (URL + token) is managed by the
+    // cloud — the cloud connection (URL + token) is managed by the
     // sign-in only: editing it here could send its token to another host.
     if connection.id == crate::cloud::CLOUD_CONNECTION_ID {
-        return Err("connexion gérée par la connexion Axe Cloud (menu du compte)".into());
+        return Err("connexion gérée par la connexion cloud (menu du compte)".into());
     }
     validate(&mut connection)?;
     let mut file = load_file();

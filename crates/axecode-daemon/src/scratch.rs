@@ -54,17 +54,17 @@ mod tests {
 
     #[test]
     fn detects_scratch_folders() {
-        let data = Path::new("/data/axecode");
-        assert!(is_scratch(data, "/data/axecode/scratch/abc"));
-        assert!(is_scratch(data, "/data/axecode/scratch/abc/"));
-        assert!(!is_scratch(data, "/data/axecode/scratch"));
-        assert!(!is_scratch(data, "/data/axecode/scratchpad/abc"));
+        let data = Path::new("/data/savide");
+        assert!(is_scratch(data, "/data/savide/scratch/abc"));
+        assert!(is_scratch(data, "/data/savide/scratch/abc/"));
+        assert!(!is_scratch(data, "/data/savide/scratch"));
+        assert!(!is_scratch(data, "/data/savide/scratchpad/abc"));
         assert!(!is_scratch(data, "/home/me/project"));
         assert!(!is_scratch(data, ""));
         if cfg!(windows) {
-            let data = Path::new(r"C:\Users\me\AppData\Local\axecode");
-            assert!(is_scratch(data, r"\\?\C:\Users\me\AppData\Local\axecode\scratch\abc"));
-            assert!(is_scratch(data, r"c:/users/me/appdata/local/axecode/scratch/abc"));
+            let data = Path::new(r"C:\Users\me\AppData\Local\savide");
+            assert!(is_scratch(data, r"\\?\C:\Users\me\AppData\Local\savide\scratch\abc"));
+            assert!(is_scratch(data, r"c:/users/me/appdata/local/savide/scratch/abc"));
         }
     }
 }

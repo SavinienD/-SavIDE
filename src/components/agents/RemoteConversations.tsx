@@ -17,7 +17,7 @@ import "./agents.css";
 // remote — Conversations of a remote connection: sessions live on the
 // remote service (they keep running when the IDE closes). Transcript built
 // from the journal (errors included), new session with a model the service
-// can serve (Axe Cloud first), model switch, send, stop, live updates.
+// can serve (cloud first), model switch, send, stop, live updates.
 
 type Props = {
   connectionId: string;
@@ -238,7 +238,7 @@ export function RemoteConversations({ connectionId, defaultWorkspace }: Props) {
       return;
     }
     try {
-      // v2-e10 — le dossier n'est pas demandé : quand la porte le donne
+      // v2-e10 — le dossier n'est pas demandé : quand la passerelle le donne
       // (`defaultWorkspace`), on l'envoie ; sinon on envoie vide et le service
       // prend la racine de travail du compte connecté.
       const meta = await agentsApi.create(newName.trim() || "Nouvelle conversation", defaultWorkspace ?? "", model, connectionId);

@@ -751,7 +751,7 @@ mod tests {
             ("coucou 1h30", 5_400_000, "coucou"),
             ("dis-moi coucou toutes les 10 minutes stp", 600_000, "coucou"),
             ("mets un réveil toutes les 15 min qui dit « pense à boire »", 900_000, "pense à boire"),
-            ("toutes les heures, regarde Zendesk", 3_600_000, "regarde Zendesk"),
+            ("toutes les heures, regarde la messagerie", 3_600_000, "regarde la messagerie"),
             ("tous les jours fais le point", 86_400_000, "fais le point"),
             ("check the build every 5 minutes", 300_000, "check the build"),
             ("print \"ping\" every 2 mins", 120_000, "ping"),

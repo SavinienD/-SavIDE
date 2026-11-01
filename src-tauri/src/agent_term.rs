@@ -1,6 +1,6 @@
-// v2-e12 — onglet « Prime Agent » epingle : l'application s'attache a la session que
-// Prime occupe DEJA en production, a travers le WebSocket terminal du portail
-// (`wss://<hote>/prime/ws/terminal?mode=prime`). Aucune seconde instance de Prime n'est
+// v2-e12 — onglet « Agent » epingle : l'application s'attache a la session que
+// l'agent occupe DEJA en production, a travers le WebSocket terminal du portail
+// (`wss://<hote>/prime/ws/terminal?mode=prime`). Aucune seconde instance de l'agent n'est
 // lancee : on ne fait que relayer des octets de terminal, comme le navigateur le fait.
 //
 // Pourquoi cote Rust et pas dans la page : un WebSocket de navigateur ne peut pas porter
@@ -12,37 +12,37 @@ use futures_util::{SinkExt, StreamExt};
 use tokio::sync::mpsc;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
-pub(super) const PRIME_DATA_EVENT: &str = "prime-term-data";
-pub(super) const PRIME_EXIT_EVENT: &str = "prime-term-exit";
+pub(super) const AGENT_DATA_EVENT: &str = "agent-term-data";
+pub(super) const AGENT_EXIT_EVENT: &str = "agent-term-exit";
 
 /// Les sessions ouvertes : un canal par session, ou tombe ce que tape l'ecran.
 #[derive(Default)]
-pub(crate) struct PrimeTerms {
+pub(crate) struct AgentTerms {
     canaux: StdMutex<HashMap<String, mpsc::UnboundedSender<Message>>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct PrimeOpenInput {
+pub(crate) struct AgentOpenInput {
     pub connection_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct PrimeSessionInput {
+pub(crate) struct AgentSessionInput {
     pub id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct PrimeWriteInput {
+pub(crate) struct AgentWriteInput {
     pub id: String,
     pub data: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct PrimeResizeInput {
+pub(crate) struct AgentResizeInput {
     pub id: String,
     pub cols: u16,
     pub rows: u16,
@@ -50,14 +50,14 @@ pub(crate) struct PrimeResizeInput {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct PrimeDataEvent {
+struct AgentDataEvent {
     id: String,
     data: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct PrimeExitEvent {
+struct AgentExitEvent {
     id: String,
     raison: String,
 }
@@ -82,7 +82,7 @@ fn nouvel_id() -> String {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|duree| duree.as_millis())
         .unwrap_or(0);
-    format!("prime-{millis}-{}", COMPTEUR.fetch_add(1, Ordering::Relaxed))
+    format!("agent-{millis}-{}", COMPTEUR.fetch_add(1, Ordering::Relaxed))
 }
 
 /// Traduction lisible d'un echec de connexion (l'utilisateur lit ce texte).
@@ -92,15 +92,15 @@ fn raison_de(e: &str) -> String {
     } else if e.contains("403") {
         "Le portail a refusé l'accès (jeton expiré ?). Reconnectez-vous.".to_string()
     } else {
-        format!("Prime Agent injoignable ({e}).")
+        format!("Agent injoignable ({e}).")
     }
 }
 
 #[tauri::command]
-pub(crate) async fn prime_term_open(
+pub(crate) async fn agent_term_open(
     app: AppHandle,
-    terms: State<'_, PrimeTerms>,
-    input: PrimeOpenInput,
+    terms: State<'_, AgentTerms>,
+    input: AgentOpenInput,
 ) -> std::result::Result<String, String> {
     let connexion = crate::connections::find(&input.connection_id).ok_or("connexion inconnue")?;
     let url = portail_ws(&connexion.url)?;
@@ -112,7 +112,7 @@ pub(crate) async fn prime_term_open(
     terms
         .canaux
         .lock()
-        .expect("prime terms lock")
+        .expect("agent terms lock")
         .insert(id.clone(), tx);
 
     let identifiant = id.clone();
@@ -189,11 +189,11 @@ pub(crate) async fn prime_term_open(
 }
 
 #[tauri::command]
-pub(crate) async fn prime_term_write(
-    terms: State<'_, PrimeTerms>,
-    input: PrimeWriteInput,
+pub(crate) async fn agent_term_write(
+    terms: State<'_, AgentTerms>,
+    input: AgentWriteInput,
 ) -> std::result::Result<(), String> {
-    let canaux = terms.canaux.lock().expect("prime terms lock");
+    let canaux = terms.canaux.lock().expect("agent terms lock");
     let canal = canaux.get(&input.id).ok_or("session inconnue")?;
     // Le portail lit les frappes en binaire et les redimensionnements en texte JSON.
     canal
@@ -202,11 +202,11 @@ pub(crate) async fn prime_term_write(
 }
 
 #[tauri::command]
-pub(crate) async fn prime_term_resize(
-    terms: State<'_, PrimeTerms>,
-    input: PrimeResizeInput,
+pub(crate) async fn agent_term_resize(
+    terms: State<'_, AgentTerms>,
+    input: AgentResizeInput,
 ) -> std::result::Result<(), String> {
-    let canaux = terms.canaux.lock().expect("prime terms lock");
+    let canaux = terms.canaux.lock().expect("agent terms lock");
     let canal = canaux.get(&input.id).ok_or("session inconnue")?;
     let taille = json!({ "rows": input.rows.max(1), "cols": input.cols.max(1) }).to_string();
     canal
@@ -215,12 +215,12 @@ pub(crate) async fn prime_term_resize(
 }
 
 #[tauri::command]
-pub(crate) async fn prime_term_close(
-    terms: State<'_, PrimeTerms>,
-    input: PrimeSessionInput,
+pub(crate) async fn agent_term_close(
+    terms: State<'_, AgentTerms>,
+    input: AgentSessionInput,
 ) -> std::result::Result<(), String> {
     // Retirer le canal ferme la boucle : la connexion est rendue au portail.
-    terms.canaux.lock().expect("prime terms lock").remove(&input.id);
+    terms.canaux.lock().expect("agent terms lock").remove(&input.id);
     Ok(())
 }
 
@@ -230,8 +230,8 @@ fn pousser(app: &AppHandle, id: &str, en_attente: &mut Vec<u8>) {
             Ok(texte) => {
                 if !texte.is_empty() {
                     let _ = app.emit(
-                        PRIME_DATA_EVENT,
-                        PrimeDataEvent { id: id.to_string(), data: texte.to_string() },
+                        AGENT_DATA_EVENT,
+                        AgentDataEvent { id: id.to_string(), data: texte.to_string() },
                     );
                 }
                 en_attente.clear();
@@ -242,8 +242,8 @@ fn pousser(app: &AppHandle, id: &str, en_attente: &mut Vec<u8>) {
                 if valide > 0 {
                     let texte = String::from_utf8_lossy(&en_attente[..valide]).to_string();
                     let _ = app.emit(
-                        PRIME_DATA_EVENT,
-                        PrimeDataEvent { id: id.to_string(), data: texte },
+                        AGENT_DATA_EVENT,
+                        AgentDataEvent { id: id.to_string(), data: texte },
                     );
                     en_attente.drain(..valide);
                     continue;
@@ -251,8 +251,8 @@ fn pousser(app: &AppHandle, id: &str, en_attente: &mut Vec<u8>) {
                 if let Some(longueur) = erreur.error_len() {
                     let texte = String::from_utf8_lossy(&en_attente[..longueur]).to_string();
                     let _ = app.emit(
-                        PRIME_DATA_EVENT,
-                        PrimeDataEvent { id: id.to_string(), data: texte },
+                        AGENT_DATA_EVENT,
+                        AgentDataEvent { id: id.to_string(), data: texte },
                     );
                     en_attente.drain(..longueur);
                     continue;
@@ -264,7 +264,7 @@ fn pousser(app: &AppHandle, id: &str, en_attente: &mut Vec<u8>) {
 }
 
 fn fin(app: &AppHandle, id: &str, raison: String) {
-    let _ = app.emit(PRIME_EXIT_EVENT, PrimeExitEvent { id: id.to_string(), raison });
+    let _ = app.emit(AGENT_EXIT_EVENT, AgentExitEvent { id: id.to_string(), raison });
 }
 
 #[cfg(test)]

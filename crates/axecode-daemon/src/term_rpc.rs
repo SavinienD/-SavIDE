@@ -107,7 +107,7 @@ fn owner_of(d: &Daemon, id: &str) -> Option<u64> {
 }
 
 /// e8 — onglets epingles : nom de session et binaire de l'agent a y
-/// lancer. Le portail (`~/portail-prime/terminal.py`) utilise les memes noms
+/// lancer. Le portail web du serveur utilise les memes noms
 /// sur le meme socket : un onglet epingle ouvre donc **la meme session**, donc
 /// le meme agent, que le terminal du portail.
 fn mode(id: &str) -> Option<(&'static str, &'static str)> {

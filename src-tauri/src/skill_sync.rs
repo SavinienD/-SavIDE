@@ -1,4 +1,4 @@
-// e4 — empreintes des skills du répertoire partagé (/srv/axe/commun/skills).
+// e4 — empreintes des skills du répertoire partagé du serveur.
 // Renvoie nom -> "taille:mtime" du SKILL.md de chaque sous-dossier. Dossier
 // absent (poste Windows sans montage) : erreur, l'UI retentera au tick suivant.
 use std::collections::BTreeMap;

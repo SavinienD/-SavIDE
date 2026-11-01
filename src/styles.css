@@ -2974,7 +2974,7 @@ textarea {
    SavIDE Design launch popup
    Shown once per session after the boot updater gate resolves. A
    premium layered announcement: aurora glow + grid texture + a sheen
-   sweep on entrance, one bright CTA toward axecodedesign.com, dismissible.
+   sweep on entrance, one bright CTA toward the design site, dismissible.
    ------------------------------------------------------------------ */
 .axecode-design__backdrop {
   position: fixed;
@@ -10289,7 +10289,7 @@ textarea {
 .cloud-term__body .rw-term {
   height: 100%;
 }
-/* v2-e12 — terminal : choix cloud/local, panneaux, avis Prime Agent. */
+/* v2-e12 — terminal : choix cloud/local, panneaux, avis de l'agent. */
 .cloud-term__body {
   display: flex;
   flex-direction: column;
@@ -10329,7 +10329,7 @@ textarea {
   height: 100%;
   padding: 6px 8px;
 }
-.cloud-term__prime {
+.cloud-term__agent {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
@@ -10338,16 +10338,16 @@ textarea {
   color: #c9d3e0;
   line-height: 1.55;
 }
-.cloud-term__prime h3 {
+.cloud-term__agent h3 {
   margin: 0 0 10px;
   font-size: 15px;
   color: #e6edf6;
 }
-.cloud-term__prime p {
+.cloud-term__agent p {
   margin: 0 0 12px;
   font-size: 12.5px;
 }
-.cloud-term__prime button {
+.cloud-term__agent button {
   margin-top: 4px;
 }
 .terminal-tabs__actions {
@@ -10470,7 +10470,7 @@ textarea {
   cursor: nwse-resize; }
 .terminal-tabs__detaches { display: inline-flex; align-items: center; gap: 4px;
   padding: 0 8px; font-size: 11px; color: var(--text-2, #888); }
-/* e16 — les competences du service (Prime Agent) dans l'onglet Skills de
+/* e16 — les competences du service (agent du serveur) dans l'onglet Skills de
    l'interface classique : un bloc a part, en lecture seule, au-dessus des
    competences du poste. */
 .settings-pane__skill-service { margin: 0 0 10px; padding: 8px 10px;

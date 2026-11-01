@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "Axecode — the Prime Agent brain inside the Axecode IDE"
+description = "SavIDE — AI agent IDE (desktop app)"
 default-run = "axecode"
 
 [lib]

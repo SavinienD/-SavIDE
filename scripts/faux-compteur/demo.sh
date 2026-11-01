@@ -1,12 +1,12 @@
 #!/bin/bash
-# Erreurs du compteur Axe Cloud (401, 429, 503…) avec un VRAI démon Axecode et le faux compteur.
+# Erreurs du compteur du cloud (401, 429, 503…) avec un VRAI démon SavIDE et le faux compteur.
 # Aucune vraie clé, aucun appel à Anthropic : le fournisseur « axe-cloud » d'un espace jetable
 # pointe sur le faux compteur local (faux-compteur.mjs), qui répond comme le vrai
-# (~/compteur-axe/app.py, erreur_anthropic). Chaque essai : nouvelle session (modèle
+# compteur du serveur. Chaque essai : nouvelle session (modèle
 # axe-cloud/claude-haiku-5-5), « bonjour », puis l'erreur de tour telle que l'appli la reçoit.
 # Usage : bash scripts/faux-compteur/demo.sh <binaire axecode> <python3 avec IPython> [statut…]
 #   ex. bash scripts/faux-compteur/demo.sh "$CARGO_TARGET_DIR/debug/axecode" \
-#         /opt/axecode/lib/axecode/python-runtime/bin/python3 503 401 429
+#         /chemin/vers/python-runtime/bin/python3 503 401 429
 set -u
 ICI=$(cd "$(dirname "$0")" && pwd)
 DEPOT=$(cd "$ICI/../.." && pwd)
@@ -22,7 +22,7 @@ essai() {
   local statut=$1 port=$((18000 + $1)) h="$TMP/$1"
   local data="$h/home/.local/share/axecode"
   mkdir -p "$data" "$h/work"
-  printf '{"providers":[{"id":"axe-cloud","name":"Axe Cloud (faux compteur)","kind":"anthropic_compatible","baseUrl":"http://127.0.0.1:%s","enabled":true,"models":[{"id":"claude-haiku-5-5","label":"Claude Haiku 5.5","contextWindow":200000,"maxOutputTokens":16000,"supportsTools":true,"supportsReasoning":false,"supportsVision":true}]}],"modelOverrides":{}}' "$port" > "$data/providers.json"
+  printf '{"providers":[{"id":"axe-cloud","name":"Cloud (faux compteur)","kind":"anthropic_compatible","baseUrl":"http://127.0.0.1:%s","enabled":true,"models":[{"id":"claude-haiku-5-5","label":"Claude Haiku 5.5","contextWindow":200000,"maxOutputTokens":16000,"supportsTools":true,"supportsReasoning":false,"supportsVision":true}]}],"modelOverrides":{}}' "$port" > "$data/providers.json"
   # Fausse clé construite à l'exécution (aucune clé dans les sources).
   printf '{"axe-cloud":"%s"}' "axk_$(printf essai)" > "$data/provider-keys.json"
   chmod 600 "$data"/*.json

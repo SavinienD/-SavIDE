@@ -121,7 +121,7 @@ export function ServicePane() {
         <div>
           <h2>Moteur de ton espace</h2>
           <p className="axe-repl__muted">
-            C'est le programme qui fait travailler l'IA{isRemote ? " sur ton espace Axe Cloud" : " sur ce PC"}.
+            C'est le programme qui fait travailler l'IA{isRemote ? " sur ton espace cloud" : " sur ce PC"}.
             Tu peux fermer l'application : les conversations en cours continuent ici.
           </p>
           <ul className="axe-repl__muted">

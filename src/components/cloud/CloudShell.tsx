@@ -6,11 +6,11 @@ import { AxeLogo } from "../../axe/Logo";
 import { WindowControls, isWindowsPlatform } from "../WindowControls";
 import { RemoteConversations } from "../agents/RemoteConversations";
 import { ErrorBoundary } from "../ErrorBoundary"; // robustesse
-import { PrimeAgentTab } from "./PrimeAgentTab";
+import { AgentTab } from "./AgentTab";
 import { TerminalTab } from "./TerminalTab";
-import { CLOUD_CONNECTION, cloudApi, errorText, primeApi, roleLabel, type CloudState } from "./cloudApi";
+import { CLOUD_CONNECTION, cloudApi, errorText, portalApi, roleLabel, type CloudState } from "./cloudApi";
 
-type Tab = "prime" | "atelier" | "terminal";
+type Tab = "agent" | "atelier" | "terminal";
 
 type Props = {
   cloud: CloudState;
@@ -23,8 +23,8 @@ const IS_MAC = typeof navigator !== "undefined" && /Mac/i.test(navigator.userAge
 
 export function CloudShell({ cloud, onLoggedOut, onLocalMode }: Props) {
   const isAdmin = cloud.role === "admin";
-  const [tab, setTab] = useState<Tab>("prime");
-  const [opened, setOpened] = useState<Set<Tab>>(() => new Set<Tab>(["prime"]));
+  const [tab, setTab] = useState<Tab>("agent");
+  const [opened, setOpened] = useState<Set<Tab>>(() => new Set<Tab>(["agent"]));
   const [menuOpen, setMenuOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [workDir, setWorkDir] = useState<string | undefined>(undefined);
@@ -32,14 +32,14 @@ export function CloudShell({ cloud, onLoggedOut, onLocalMode }: Props) {
 
   // Refreshes role / expiry (Rust updates its copy on /app/moi) and the SavIDE folder.
   useEffect(() => {
-    void primeApi
+    void portalApi
       .appMoi()
       .then((moi) => setWorkDir(moi.dossier_atelier ?? undefined))
       .catch(() => undefined);
   }, []);
 
   useEffect(() => {
-    if (!isAdmin && tab !== "prime") setTab("prime");
+    if (!isAdmin && tab !== "agent") setTab("agent");
   }, [isAdmin, tab]);
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export function CloudShell({ cloud, onLoggedOut, onLocalMode }: Props) {
   };
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "prime", label: "Prime Agent" },
+    { id: "agent", label: "Agent" },
     ...(isAdmin
       ? [
           { id: "terminal" as Tab, label: "Terminal" },
@@ -163,9 +163,9 @@ export function CloudShell({ cloud, onLoggedOut, onLocalMode }: Props) {
       ) : null}
 
       <main className="axc-body">
-        <div className="axc-pane" hidden={tab !== "prime"} role="tabpanel">
-          <ErrorBoundary label="onglet Prime Agent">
-            <PrimeAgentTab active={tab === "prime"} />
+        <div className="axc-pane" hidden={tab !== "agent"} role="tabpanel">
+          <ErrorBoundary label="onglet Agent">
+            <AgentTab active={tab === "agent"} />
           </ErrorBoundary>
         </div>
         {isAdmin && opened.has("atelier") ? (

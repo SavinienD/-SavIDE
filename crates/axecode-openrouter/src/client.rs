@@ -18,7 +18,7 @@ use crate::{
 
 const BASE_URL: &str = "https://openrouter.ai/api/v1";
 const USER_AGENT: &str = "SavIDE/0.1";
-const APP_REFERER: &str = "https://github.com/AxeInternational/axecode";
+const APP_REFERER: &str = "https://github.com/SavinienD/-SavIDE";
 const APP_TITLE: &str = "SavIDE";
 const CACHE_BREAKPOINTS: usize = 4;
 // ollama — wait for the first byte of an answer.

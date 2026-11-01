@@ -2,7 +2,7 @@
   "name": "axecode-audit-affichage",
   "private": true,
   "version": "1.0.0",
-  "description": "Banc d'essai de l'affichage d'Axecode : vraie interface (src/), IPC Tauri simulee, Chromium sans ecran.",
+  "description": "Banc d'essai de l'affichage de SavIDE : vraie interface (src/), IPC Tauri simulee, Chromium sans ecran.",
   "type": "module",
   "scripts": {
     "audit": "node lancer.mjs",

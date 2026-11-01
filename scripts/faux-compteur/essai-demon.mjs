@@ -1,4 +1,4 @@
-// Pilote un démon Axecode LOCAL (socket unix) : crée une session avec un modèle Axe Cloud,
+// Pilote un démon SavIDE LOCAL (socket unix) : crée une session avec un modèle cloud,
 // envoie « bonjour », note les événements jusqu'à la fin du tour et affiche l'erreur de tour
 // telle que l'appli la reçoit (turn_error → AgentEvent::Error, daemon_client.rs).
 // Usage : node scripts/faux-compteur/essai-demon.mjs <socket> <dossier de travail> [fournisseur/modèle[@effort]]

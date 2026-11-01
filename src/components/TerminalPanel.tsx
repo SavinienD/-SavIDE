@@ -703,7 +703,7 @@ function loadTerminalSessions(workspacePath: string): TerminalSession[] {
       const sessions = parsed.filter((item) => Number.isInteger(item.index) && typeof item.title === "string").map((item) => ({
         id: `terminal-${item.index}`,
         index: item.index!,
-        // "Prime Agent" was the old default name of the first tab: it only ever ran PowerShell.
+        // Old default name of the first tab (it only ever ran PowerShell).
         // terminal-onglets - ancien titre = chemin de pwsh.exe : on revient a « Terminal N ».
         title: item.title === "Prime Agent" || isExecutablePathTitle(item.title!) ? `Terminal ${item.index}` : item.title!,
         customTitle: typeof item.customTitle === "string" && item.customTitle ? item.customTitle : undefined,
@@ -733,7 +733,7 @@ function createTerminalToken(sessionId: string): string {
   return `${sessionId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-// theme — derived from the Axe theme so light backgrounds get a light terminal.
+// theme — derived from the app theme so light backgrounds get a light terminal.
 function terminalTheme() {
   return xtermTheme();
 }

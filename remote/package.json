@@ -2,7 +2,7 @@
   "name": "axecode-remote-relay",
   "private": true,
   "version": "1.0.0",
-  "description": "Axecode Remote relay: routes opaque E2E frames between a paired phone and its PC, and serves the mobile PWA.",
+  "description": "SavIDE Remote relay: routes opaque E2E frames between a paired phone and its PC, and serves the mobile PWA.",
   "type": "module",
   "engines": {
     "node": ">=18"

@@ -2,8 +2,8 @@
 // journal (`sessions.tree`) instead of the bare message history, so that turn
 // errors (provider missing, AI credit exhausted, monthly cap…) are visible.
 // Also the models proposed for a remote session: the service protocol has no
-// method listing its providers, so the Axe Cloud models (provider `axe-cloud`
-// = cost meter of the Axe Cloud service) come first, then the models already
+// method listing its providers, so the cloud models (provider `axe-cloud`
+// = cost meter of the cloud service) come first, then the models already
 // used by sessions of that machine.
 import type { JournalEntry, JournalTree, SessionMeta } from "./agentsApi";
 import { erreurMoteurEnFrancais } from "../../lib/erreursMoteur";
@@ -12,9 +12,9 @@ export type ModelRefLite = { provider: string; name: string };
 export type ModelChoice = ModelRefLite & { label: string };
 
 export const AXE_CLOUD_MODELS: ModelChoice[] = [
-  { provider: "axe-cloud", name: "claude-opus-5-5", label: "Axe Cloud · Claude Opus 5.5" },
-  { provider: "axe-cloud", name: "claude-sonnet-5-5", label: "Axe Cloud · Claude Sonnet 5.5" },
-  { provider: "axe-cloud", name: "claude-haiku-5-5", label: "Axe Cloud · Claude Haiku 5.5" },
+  { provider: "axe-cloud", name: "claude-opus-5-5", label: "Cloud · Claude Opus 5.5" },
+  { provider: "axe-cloud", name: "claude-sonnet-5-5", label: "Cloud · Claude Sonnet 5.5" },
+  { provider: "axe-cloud", name: "claude-haiku-5-5", label: "Cloud · Claude Haiku 5.5" },
 ];
 export const DEFAULT_REMOTE_MODEL: ModelChoice = AXE_CLOUD_MODELS[0];
 
@@ -27,7 +27,7 @@ export function parseModel(value: string): ModelRefLite | null {
   return provider && provider.trim() && name ? { provider: provider.trim(), name } : null;
 }
 
-/** Axe Cloud models, then the models of the sessions of this machine (most
+/** Cloud models, then the models of the sessions of this machine (most
  *  recent first), then `extra` (e.g. the current or remembered model). */
 export function modelChoices(sessions: SessionMeta[], ...extra: (ModelRefLite | null | undefined)[]): ModelChoice[] {
   const seen = new Map<string, ModelChoice>(AXE_CLOUD_MODELS.map((m) => [modelKey(m), m]));
@@ -41,7 +41,7 @@ export function modelChoices(sessions: SessionMeta[], ...extra: (ModelRefLite | 
 
 const REMEMBERED = "axe.remote-model.";
 
-/** Last model chosen for a new session on this connection, else Axe Cloud Opus. */
+/** Last model chosen for a new session on this connection, else cloud Opus. */
 export function rememberedModel(connectionId: string): ModelRefLite {
   try {
     return parseModel(localStorage.getItem(REMEMBERED + connectionId) ?? "") ?? DEFAULT_REMOTE_MODEL;
@@ -63,10 +63,10 @@ export function explainTurnError(raw: string): string {
   const text = raw.replace(/^runtime error:\s*/i, "").trim();
   const provider = /provider `([^`]+)` is not configured/i.exec(text);
   if (provider) {
-    return `Le service distant ne sait pas servir le fournisseur « ${provider[1]} ». Choisissez un modèle Axe Cloud (par exemple ${modelKey(DEFAULT_REMOTE_MODEL)}) dans la liste « Modèle » ci-dessus, puis renvoyez votre message.`;
+    return `Le service distant ne sait pas servir le fournisseur « ${provider[1]} ». Choisissez un modèle cloud (par exemple ${modelKey(DEFAULT_REMOTE_MODEL)}) dans la liste « Modèle » ci-dessus, puis renvoyez votre message.`;
   }
   if (/credit balance is too low|insufficient[_ ]?(credit|balance|funds)/i.test(text)) {
-    return "Crédit IA épuisé : le compte Anthropic d'Axe Cloud doit être rechargé (console.anthropic.com > Plans & Billing). Aucune réponse n'est possible d'ici là.";
+    return "Crédit IA épuisé : le compte Anthropic du cloud doit être rechargé (console.anthropic.com > Plans & Billing). Aucune réponse n'est possible d'ici là.";
   }
   const cap = /(Plafond mensuel IA atteint[^\n]*)/i.exec(text);
   if (cap) return cap[1];
@@ -74,7 +74,7 @@ export function explainTurnError(raw: string): string {
     return "Le noyau Python de SavIDE est absent sur la machine distante (installation du service incomplète) : à signaler à l'administrateur.";
   }
   if (/rejected the API key|authentication_error|invalid x-api-key|\b401\b/i.test(text)) {
-    return "Clé IA refusée par le fournisseur (clé Axe Cloud absente, expirée ou révoquée) : à signaler à l'administrateur.";
+    return "Clé IA refusée par le fournisseur (clé du cloud absente, expirée ou révoquée) : à signaler à l'administrateur.";
   }
   if (/rate limited|rate_limit_error|overloaded|\b429\b|\b529\b/i.test(text)) {
     return "Fournisseur IA saturé ou limite de débit atteinte : réessayez dans un instant.";
@@ -95,10 +95,10 @@ export function explainTurnError(raw: string): string {
 export function explainConnectionError(raw: string): string {
   const text = raw.replace(/^Error:\s*/i, "").trim();
   if (/authentification refusée|\bHTTP 401\b/i.test(text)) {
-    return "Authentification refusée par le service distant : reconnectez-vous (Axe Cloud) ou vérifiez le jeton de la connexion.";
+    return "Authentification refusée par le service distant : reconnectez-vous (cloud) ou vérifiez le jeton de la connexion.";
   }
   if (/\bHTTP 403\b/i.test(text)) return "Accès refusé : l'SavIDE est réservé aux administrateurs.";
-  if (/\bHTTP (302|303|307)\b/i.test(text)) return "Le service distant demande une connexion : reconnectez-vous à Axe Cloud.";
+  if (/\bHTTP (302|303|307)\b/i.test(text)) return "Le service distant demande une connexion : reconnectez-vous au cloud.";
   if (/\bHTTP (502|503|504)\b/i.test(text)) {
     return "Service SavIDE indisponible pour l'instant (démarrage ou maintenance) : réessayez dans un instant.";
   }

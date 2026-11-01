@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "Headless desktop runtime for axecode"
+description = "Headless desktop runtime for SavIDE"
 
 [dependencies]
 axecode-core = { workspace = true }

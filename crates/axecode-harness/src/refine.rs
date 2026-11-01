@@ -1185,7 +1185,7 @@ pub fn status_json(runner: &RefineRunner, store: &HarnessStore, conversation_id:
 /// + reminder rendering.
 pub fn harness_layer(store: &HarnessStore) -> Result<Option<String>> {
     let mut entries = store.load_all()?;
-    // shared-brain — globals of the Axe Cloud space (read-only mirror).
+    // shared-brain — globals of the cloud space (read-only mirror).
     crate::cloud_mirror::merge_into(&mut entries, &crate::cloud_mirror::read(store.paths()));
     Ok(inject::render_layer(&entries))
 }

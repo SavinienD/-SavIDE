@@ -1,4 +1,4 @@
-// cloud — Axe Cloud sign-in and calls (Axe Cloud plan, step 1).
+// cloud — Cloud sign-in and calls (cloud plan, step 1).
 //
 // Sign-in: the app listens on http://127.0.0.1:<free port>/callback and opens
 // the system browser on <base>/app/connexion (port, state, PKCE S256
@@ -6,7 +6,7 @@
 // redirects to the loopback with a one-time code, exchanged on
 // POST <base>/app/jeton for an app token (`axa_…`). The token lives in
 // `connection-secrets.json` (0600, same mechanism as the other connections)
-// under the « Axe Cloud » connection and is never sent to the frontend.
+// under the « cloud » connection and is never sent to the frontend.
 // `cloud_api` only reaches `/prime/api/*` and `/app/*` on the cloud host and
 // never follows redirects.
 
@@ -16,7 +16,7 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ring::rand::SecureRandom;
 
 pub(crate) const CLOUD_CONNECTION_ID: &str = "axe-cloud";
-const CLOUD_CONNECTION_NAME: &str = "Axe Cloud";
+const CLOUD_CONNECTION_NAME: &str = "Cloud";
 const DEFAULT_BASE: &str = "https://cloud.exemple.invalid";
 const CLOUD_FILE: &str = "cloud.json";
 pub(crate) const CLOUD_EVENT: &str = "axe://cloud-state";
@@ -312,7 +312,7 @@ struct TokenGrant {
     expire_le: String,
 }
 
-/// Stores the token, the identity and the « Axe Cloud » connection (active).
+/// Stores the token, the identity and the « cloud » connection (active).
 async fn store_login(
     app: &AppHandle,
     base: &str,
@@ -354,7 +354,7 @@ async fn store_login(
     Ok(state)
 }
 
-/// Forgets the token and the « Axe Cloud » connection (logout or 401).
+/// Forgets the token and the « cloud » connection (logout or 401).
 async fn forget(app: &AppHandle, expired: bool) -> std::result::Result<Value, String> {
     let mut secrets = crate::connections::load_secrets();
     if secrets.remove(CLOUD_CONNECTION_ID).is_some() {
@@ -382,7 +382,7 @@ async fn forget(app: &AppHandle, expired: bool) -> std::result::Result<Value, St
 
 // ----- HTTP to the cloud host ----------------------------------------------------
 
-const NOT_CONNECTED: &str = "non connecté à Axe Cloud";
+const NOT_CONNECTED: &str = "non connecté au cloud";
 
 fn http_client() -> std::result::Result<reqwest::Client, String> {
     reqwest::Client::builder()
@@ -598,7 +598,7 @@ fn focus_main_window(app: &AppHandle) {
 }
 
 /// Signs in through the system browser (contract §2.4) and activates the
-/// « Axe Cloud » connection. Resolves when the browser comes back, on
+/// « cloud » connection. Resolves when the browser comes back, on
 /// cancel, or after 5 minutes.
 #[tauri::command]
 pub(crate) async fn cloud_login(app: AppHandle) -> std::result::Result<Value, String> {
@@ -687,7 +687,7 @@ pub(crate) async fn cloud_state() -> std::result::Result<Value, String> {
     Ok(public_state(&file, connected))
 }
 
-/// Re-creates the « Axe Cloud » connection if it was deleted in Settings.
+/// Re-creates the « cloud » connection if it was deleted in Settings.
 fn ensure_connection(base: &str) {
     let mut connections = crate::connections::load_file();
     if connections.connections.iter().any(|c| c.id == CLOUD_CONNECTION_ID) {

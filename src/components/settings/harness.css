@@ -54,7 +54,7 @@
 .settings-pane__pyskill-head h2 { margin: 0 0 4px; font-size: calc(15px * var(--text-scale, 1)); }
 .settings-pane__pyskill-body { border-top: 1px solid var(--border, rgba(127,127,127,.2)); padding-top: 8px; }
 
-/* e13 — le harnais de l'espace Axe Cloud se lit aussi depuis l'interface
+/* e13 — le harnais de l'espace cloud se lit aussi depuis l'interface
    classique : un groupe distinct, et des entrees en lecture seule. */
 .axe-harness__group { display: flex; align-items: center; gap: 6px; margin: 10px 0 2px;
   padding: 0 2px; color: var(--text-2); text-transform: uppercase;

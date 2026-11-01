@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Planche avant / après de l'affichage d'Axecode — UNE commande, rejouable :
+// Planche avant / après de l'affichage de SavIDE — UNE commande, rejouable :
 //   node scripts/audit-affichage/planche.mjs                  avant = c066912 (0.1.56), après = branche courante
 //   node scripts/audit-affichage/planche.mjs --avant <rév>    autre version de référence
 //   node scripts/audit-affichage/planche.mjs --sans-captures  réutilise les rendus précédents (mise en page seule)
@@ -8,7 +8,7 @@
 //    fois avec l'interface AVANT (--source <rév>), une fois avec celle de la branche ;
 // 2. pour chaque correction, la même zone est découpée dans les deux rendus (JPEG) ;
 // 3. une page HTML autonome est écrite (images intégrées, moins de 15 Mo) :
-//    scripts/audit-affichage/sortie/planche/Axecode-affichage-avant-apres.html
+//    scripts/audit-affichage/sortie/planche/SavIDE-affichage-avant-apres.html
 // Les images viennent du banc (Chromium sans écran), pas de la WebView2 de Windows.
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync, statSync, existsSync } from "node:fs";
@@ -25,7 +25,7 @@ const opt = (nom, defaut) => {
 const drapeau = (nom) => argv.includes(`--${nom}`);
 const AVANT = opt("avant", "c066912");
 const SORTIE = resolve(opt("sortie", join(ici, "sortie", "planche")));
-const FICHIER = join(SORTIE, "Axecode-affichage-avant-apres.html");
+const FICHIER = join(SORTIE, "SavIDE-affichage-avant-apres.html");
 const RAPIDE = drapeau("rapide");
 const QUALITE = Number(opt("qualite", "0.8"));
 // Images prises à 125 % (mise à l'échelle Windows courante) : nettes sur un tel écran.
@@ -65,7 +65,7 @@ const CAS = [
   },
   {
     id: "accueil-compte", scene: "accueil", taille: "1366x768", zone: [".welcome__titlebar .titlebar__window-controls", "#root > .axc-btn"], marge: 14,
-    titre: "Accueil : bouton du compte Axe Cloud",
+    titre: "Accueil : bouton du compte cloud",
     texte: "Le compte et « Se déconnecter » étaient posés sur Réduire / Agrandir / Fermer de Windows ; ils sont maintenant à leur gauche.",
   },
   {
@@ -221,7 +221,7 @@ async function construire(qualite) {
   const nbScenes = rApres.scenes.length, nbSituations = rApres.situations.length;
   return `<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Axecode : affichage, avant / après</title>
+<title>SavIDE : affichage, avant / après</title>
 <style>
 :root{color-scheme:dark}
 body{margin:0;background:#111317;color:#e8e9ec;font:15px/1.5 "Segoe UI",system-ui,sans-serif}
@@ -246,7 +246,7 @@ img{display:block;max-width:100%;height:auto;border:1px solid #2a2e36;border-rad
 ul{margin:0 0 10px;padding-left:20px}
 .pied{font-size:13px;color:#9aa0aa}
 </style></head><body><main>
-<h1>Axecode : défauts d'affichage, avant / après</h1>
+<h1>SavIDE : défauts d'affichage, avant / après</h1>
 <p class="sous">Textes coupés, boutons qui se chevauchent ou sortent de l'écran, de 800 à 1920 px de large, à 100, 125 et 150 %, avec 1 à 3 colonnes de conversation.</p>
 <div class="tuiles">
 <div class="tuile ko"><b>${rAvant.totalDefauts}</b>défauts ${echapper(nomAvant.toLowerCase())}</div>
@@ -256,7 +256,7 @@ ul{margin:0 0 10px;padding-left:20px}
 <table><tr><th>Fenêtre</th><th>${echapper(nomAvant)}</th><th>${echapper(nomApres)}</th></tr>${lignes}</table>
 ${sections.join("\n")}
 <section class="cas"><h2>Corrigé aussi, sans changement visible ici</h2><ul>${SANS_IMAGE.map((t) => `<li>${echapper(t)}</li>`).join("")}</ul></section>
-<p class="pied">Images du banc d'essai : la vraie interface d'Axecode affichée par Chromium sans écran (le moteur de WebView2), avec des données d'exemple. Ce n'est pas votre écran : à confirmer sur le PC après installation.${manques.length ? ` Non illustré (écran absent des rendus) : ${echapper(manques.join(", "))}.` : ""}<br>
+<p class="pied">Images du banc d'essai : la vraie interface de SavIDE affichée par Chromium sans écran (le moteur de WebView2), avec des données d'exemple. Ce n'est pas votre écran : à confirmer sur le PC après installation.${manques.length ? ` Non illustré (écran absent des rendus) : ${echapper(manques.join(", "))}.` : ""}<br>
 Rendus : avant ${echapper(rAvant.revision ?? revAvant)}, après ${echapper(rApres.revision ?? "")} · ${echapper(new Date().toLocaleString("fr-FR"))}</p>
 </main></body></html>
 `;

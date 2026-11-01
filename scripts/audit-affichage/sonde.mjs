@@ -59,7 +59,7 @@ if (sc.espaceCloud) {
   await page.waitForFunction(() => [...document.querySelectorAll("button.axc-btn")].some((x) => x.textContent.trim() === "Racine de l'espace"), { timeout: 8000 }).catch(() => undefined);
   await page.evaluate(() => { const b = [...document.querySelectorAll("button.axc-btn")].find((x) => x.textContent.trim() === "Racine de l'espace"); b?.click(); });
 } else {
-  await page.evaluate(() => { const b = [...document.querySelectorAll("button.welcome__recent")].find((x) => x.textContent.includes("axecode")); b?.click(); });
+  await page.evaluate(() => { const b = [...document.querySelectorAll("button.welcome__recent")].find((x) => x.textContent.includes("savide")); b?.click(); });
 }
 await page.waitForSelector(".workspace .composer", { timeout: 10000 }).catch(() => console.log("pas d'espace"));
 await pause(1500);

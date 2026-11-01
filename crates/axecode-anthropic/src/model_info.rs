@@ -57,9 +57,9 @@ fn model_info(model_id: &str) -> &'static AnthropicModelInfo {
         .unwrap_or(&MODELS[0])
 }
 
-/// compaction — Anthropic-compatible endpoints (the Axe Cloud meter, model
+/// compaction — Anthropic-compatible endpoints (a cost meter, model
 /// discovery) declare 200 000 tokens; a known Claude model keeps its real
-/// window (Prime Agent runs Opus 5.5 past 800 k without any beta). Only
+/// window (Opus 5.5 runs past 800 k without any beta). Only
 /// raises the window; user overrides are applied after.
 pub fn apply_known_window(caps: &mut ModelCapabilities) {
     if let Some(info) = MODELS.iter().find(|info| info.id == caps.model.name) {

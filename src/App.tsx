@@ -70,7 +70,7 @@ export default function App() {
   );
 
   // Démarrage : directement l'accueil. Les mises à jour ne sont plus forcées
-  // (demande de Savinien, 23/10) : <UpdateBadge /> affiche « Mise à jour X
+  // (demande utilisateur) : <UpdateBadge /> affiche « Mise à jour X
   // disponible » en haut à droite et n'installe que sur clic.
   useEffect(() => {
     let cancelled = false;
@@ -78,8 +78,8 @@ export default function App() {
     (async () => {
       // 2. Accueil. v2-e12d — l'application s'ouvre toujours sur
       //    l'interface classique du poste (dossiers recents, conversations
-      //    libres, ouvrir un dossier). L'espace Axe Cloud n'est plus l'ecran
-      //    d'arrivee : il reste a un clic (« Revenir a Axe Cloud »), et une
+      //    libres, ouvrir un dossier). L'espace cloud n'est plus l'ecran
+      //    d'arrivee : il reste a un clic (« Revenir au cloud »), et une
       //    session cloud ouverte n'est jamais imposee au demarrage.
       if (cancelled) return;
       setState({ kind: "welcome" });
@@ -142,7 +142,7 @@ export default function App() {
     setState({ kind: "welcome" });
   }, []);
 
-  // v2-e12d — depuis l'accueil classique, « Revenir a Axe Cloud » ouvre
+  // v2-e12d — depuis l'accueil classique, « Revenir au cloud » ouvre
   // directement l'IDE sur l'espace quand la session est deja ouverte (comme au
   // demarrage en L2.3) ; sinon on passe par l'ecran de connexion.
   const enterCloudMode = useCallback(async () => {
@@ -162,7 +162,7 @@ export default function App() {
       const bootstrap = await api.openCloudWorkspace(CLOUD_CONNECTION);
       setState({ kind: "workspace", bootstrap, layout: "ide" });
     } catch (err) {
-      setBootError("Retour à Axe Cloud : " + String(err)); // retour-cloud
+      setBootError("Retour au cloud : " + String(err)); // retour-cloud
       try {
         const cloud = await cloudApi.state();
         setState(cloud.connected ? { kind: "cloud", cloud } : { kind: "cloud_login", notice: null });
@@ -197,7 +197,7 @@ export default function App() {
     return (
       <ConnectedScreen
         cloud={state.cloud}
-        onOpenPrime={() => cloudApi.openWeb("/prime/").then(() => undefined)}
+        onOpenPortal={() => cloudApi.openWeb("/prime/").then(() => undefined)}
         onEnterWorkspace={enterCloudMode}
         onLogout={async () => { await cloudApi.logout(); setState({ kind: "cloud_login", notice: null }); }}
       />
@@ -222,7 +222,7 @@ export default function App() {
           deriveName={deriveName}
         />
         {/* cloud — way back to the cloud mode from the local home screen. */}
-        {/* un-seul-espace - plus de « Revenir a Axe Cloud » : un seul espace, sur la VM. */}
+        {/* un-seul-espace - plus de « Revenir au cloud » : un seul espace, sur la VM. */}
         {/* accueil-compte - sous Windows, à gauche des boutons Réduire/Agrandir/Fermer (138 px) : il était posé dessus. */}
         {/* Mise à jour disponible : badge discret en haut à droite (rien si MAJ_AUTO est coupé). */}
         <div className="welcome__maj" style={{ position: "fixed", top: EDITION_LOCALE ? 12 : 52, right: isWindowsPlatform() ? 150 : 16, zIndex: 50 }}>

@@ -157,7 +157,7 @@ async function sendPush(subscription, payload) {
     return { ok: false, error: "Web Push VAPID keys are not configured." };
   }
   const body = JSON.stringify({
-    title: payload?.title || "Axecode",
+    title: payload?.title || "SavIDE",
     body: payload?.body || "Response ready",
     conversationId: payload?.conversation_id || payload?.conversationId || null,
   });
@@ -327,7 +327,7 @@ setInterval(() => {
 }, 30_000).unref();
 
 server.listen(PORT, HOST, () => {
-  console.log(`Axecode remote relay listening on http://${HOST}:${PORT}`);
+  console.log(`SavIDE remote relay listening on http://${HOST}:${PORT}`);
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
     console.warn("Web Push disabled: set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY.");
   }

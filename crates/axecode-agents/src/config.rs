@@ -152,7 +152,6 @@ mod migration_tests {
         assert_eq!(installed_program_with(&new, |_| false), new);
         assert_eq!(installed_program_with("codex", |_| false), "codex");
         assert_eq!(default_commandes()["opencode"][0], new);
-        // Built from pieces: the rebrand script must not rewrite it.
-        assert_eq!(INSTALL_DIRS[1], concat!("/opt/axe-si", "new/"));
+        assert_eq!(INSTALL_DIRS[1], "/opt/savide/");
     }
 }

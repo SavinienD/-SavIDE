@@ -1,6 +1,6 @@
-# Relais Axecode Remote (auto-hébergé)
+# Relais SavIDE Remote (auto-hébergé)
 
-Ce dossier contient le petit relais qui permet de piloter Axecode depuis un
+Ce dossier contient le petit relais qui permet de piloter SavIDE depuis un
 téléphone. C'est **la seule pièce à héberger** : l'application de bureau tourne
 sur votre PC, la PWA mobile est servie par ce relais. Aucun relais public n'est
 fourni : vous déployez le vôtre, puis vous saisissez son URL dans
@@ -23,7 +23,7 @@ Prérequis : un serveur avec Docker + Docker Compose et un nom de domaine
 pointant dessus (ex. `relay.exemple.fr`).
 
 ```bash
-git clone <ce dépôt> axecode && cd axecode/remote
+git clone <ce dépôt> savide && cd savide/remote
 # Optionnel : notifications push
 npx web-push generate-vapid-keys   # puis renseigner .env (jamais commité)
 cat > .env <<'EOF'

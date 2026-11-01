@@ -68,7 +68,7 @@ function sessions(scene: Scene) {
     createdAtMs: D.T0 - i * 60_000, updatedAtMs: D.T0 - i * 30_000, children: [], entryCount: 40 + i, archived: false,
   });
   const out: any[] = D.conversations().map((c, i) => base(c.id, c.title, undefined, i === 0 && scene.tour === "en_cours" ? "running" : "idle", i));
-  const noms = ["audit-affichage", "construction-windows-0.1.57", "tri-tickets", "verif-planche", "rapport-dmarc"];
+  const noms = ["audit-affichage", "construction-windows-0.1.57", "tri-du-jour", "verif-planche", "rapport-hebdo"];
   for (let i = 0; i < n; i += 1) out.push(base(`sa-${i + 1}`, noms[i % noms.length], active, "running", i));
   return out;
 }
@@ -129,7 +129,7 @@ export function installerSimulation(scene: Scene): void {
           scene.filePause = false;
           return { ok: true };
         case "fs.list":
-          return ["projets", "clients", "factures", "documentation-client", "FIC_axe", ".axecode"].map((name) => ({ name, kind: "directory" }));
+          return ["projets", "clients", "factures", "documentation-client", "fiches-clients", ".axecode"].map((name) => ({ name, kind: "directory" }));
         case "status":
           return { running: true, version: "0.1.57", sessions: { total: 12, running: 2, idle: 10, inactive: 0 } };
         case "agents.list":
@@ -156,7 +156,7 @@ export function installerSimulation(scene: Scene): void {
           return null;
       }
     },
-    freechat_index: () => ({ scratchRoot: "C:\\Users\\utilisateur\\AppData\\Local\\ancien-editeur\\axecode\\data\\libre", conversations: D.conversations(6).map((c) => ({ ...c, workspaceId: "C:\\Users\\utilisateur\\AppData\\Local\\ancien-editeur\\axecode\\data\\libre", messageCount: 12 })) }),
+    freechat_index: () => ({ scratchRoot: "C:\\Users\\utilisateur\\AppData\\Local\\savide\\data\\libre", conversations: D.conversations(6).map((c) => ({ ...c, workspaceId: "C:\\Users\\utilisateur\\AppData\\Local\\savide\\data\\libre", messageCount: 12 })) }),
     // Conversation sans dossier (layout « chat ») : même amorce qu'un espace, racine = dossier « libre ».
     freechat_open: () => ({
       workspace: { path: D.WS, name: "libre" },
@@ -243,9 +243,9 @@ export function installerSimulation(scene: Scene): void {
     },
     probe_mcp_tools: () =>
       mcp.map((s) => ({ serverId: s.id, serverName: s.name, enabled: s.enabled, ok: s.enabled, tools: s.enabled ? [{ toolName: "lire", description: "Lire" }] : [], transport: "stdio", authRequired: false, authenticated: false, error: null })),
-    prime_term_open: () => "prime-1",
-    prime_term_resize: () => null,
-    prime_term_write: () => null,
+    agent_term_open: () => "agent-1",
+    agent_term_resize: () => null,
+    agent_term_write: () => null,
     cancel_turn: () => true,
     list_tool_settings: () => ({
       tools: [{ name: "agent", description: "Sous-agents", defaultDescription: "Sous-agents", enabled: true }],
@@ -269,7 +269,7 @@ export function installerSimulation(scene: Scene): void {
     "plugin:window|is_focused": () => true,
     "plugin:window|scale_factor": () => window.devicePixelRatio,
     "plugin:window|inner_size": () => ({ width: window.innerWidth * window.devicePixelRatio, height: window.innerHeight * window.devicePixelRatio }),
-    "plugin:window|title": () => "Axecode",
+    "plugin:window|title": () => "SavIDE",
   };
   // Conversation listee mais illisible (fichier abime, moteur en erreur) : scene « colonne-introuvable ».
   function listeConversations() {
@@ -299,7 +299,7 @@ export function installerSimulation(scene: Scene): void {
       viewer_read_bytes: async (a: any) => { const b = await octets(nom(a)); return b.slice(a.offset, a.offset + a.length).buffer; },
     });
   }
-  // Scène « collegue » : espace Axe Cloud d'un collègue sans fournisseur sur son PC.
+  // Scène « collegue » : espace cloud d'un collègue sans fournisseur sur son PC.
   if (scene.collegue) Object.assign(h, simulationCollegue(scene, { ...h }));
   mockWindows("main");
   mockConvertFileSrc("windows");

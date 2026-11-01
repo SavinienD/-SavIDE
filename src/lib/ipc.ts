@@ -1580,21 +1580,21 @@ export const api = {
       input: { sessionId, token },
     });
   },
-  // v2-e12 — onglet « Prime Agent » epingle : la session de production, servie par le
+  // v2-e12 — onglet « Agent » epingle : la session de production, servie par le
   // portail. C'est l'application qui ouvre le WebSocket (l'en-tete d'autorisation ne peut pas
-  // venir d'une page), puis les octets arrivent par les evenements `prime-term-data` /
-  // `prime-term-exit`.
-  primeTermOpen(connectionId: string) {
-    return invoke<string>("prime_term_open", { input: { connectionId } });
+  // venir d'une page), puis les octets arrivent par les evenements `agent-term-data` /
+  // `agent-term-exit`.
+  agentTermOpen(connectionId: string) {
+    return invoke<string>("agent_term_open", { input: { connectionId } });
   },
-  primeTermWrite(id: string, data: string) {
-    return invoke<void>("prime_term_write", { input: { id, data } });
+  agentTermWrite(id: string, data: string) {
+    return invoke<void>("agent_term_write", { input: { id, data } });
   },
-  primeTermResize(id: string, cols: number, rows: number) {
-    return invoke<void>("prime_term_resize", { input: { id, cols, rows } });
+  agentTermResize(id: string, cols: number, rows: number) {
+    return invoke<void>("agent_term_resize", { input: { id, cols, rows } });
   },
-  primeTermClose(id: string) {
-    return invoke<void>("prime_term_close", { input: { id } });
+  agentTermClose(id: string) {
+    return invoke<void>("agent_term_close", { input: { id } });
   },
   // ── Auto-updater ──────────────────────────────────────────────────────
   // Round-trips to the `tauri-plugin-updater` integration. Progress events

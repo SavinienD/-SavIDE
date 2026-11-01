@@ -1440,10 +1440,10 @@ mod tests {
     #[test]
     fn os_path_drops_the_windows_verbatim_prefix() {
         let os = |path: &str| os_path(Path::new(path)).to_string_lossy().into_owned();
-        assert_eq!(os(r"\\?\C:\Users\savin\AXECODE"), r"C:\Users\savin\AXECODE");
+        assert_eq!(os(r"\\?\C:\Users\moi\PROJET"), r"C:\Users\moi\PROJET");
         assert_eq!(os(r"\\?\UNC\server\share\p"), r"\\server\share\p");
         assert_eq!(os(r"\\?\Volume{abc}\p"), r"\\?\Volume{abc}\p");
-        assert_eq!(os("/home/agent/project"), "/home/agent/project");
+        assert_eq!(os("/home/moi/project"), "/home/moi/project");
     }
 
     #[test]

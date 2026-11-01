@@ -8,7 +8,7 @@
 
 use axecode_core::{ChatMessage, ModelCapabilities, Part, ToolDescriptor};
 
-/// Room always kept free for the answer (Prime Agent keeps 16 384 tokens).
+/// Room always kept free for the answer (16 384 tokens).
 pub(crate) const MIN_HEADROOM: u32 = 16_384;
 
 /// Automatic compactions allowed in one turn (same cap as the agent loop).
@@ -94,7 +94,7 @@ mod tests {
     fn the_answer_always_fits_in_the_window() {
         // 95 % of 200 k = 190 k + 32 k of output would overflow.
         assert_eq!(threshold(&caps(200_000), 95, 32_000), 168_000);
-        // Small output budget: Prime's 16 384 tokens of headroom.
+        // Small output budget: the 16 384 tokens of headroom.
         assert_eq!(threshold(&caps(200_000), 95, 4_096), 183_616);
         assert_eq!(threshold(&caps(10_000), 95, 32_000), 0);
     }

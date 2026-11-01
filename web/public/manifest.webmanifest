@@ -1,7 +1,7 @@
 {
-  "name": "Axecode",
-  "short_name": "Axecode",
-  "description": "Vos conversations Axecode depuis n'importe quel navigateur.",
+  "name": "SavIDE",
+  "short_name": "SavIDE",
+  "description": "Vos conversations SavIDE depuis n'importe quel navigateur.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

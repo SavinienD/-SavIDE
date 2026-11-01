@@ -1,12 +1,12 @@
 // cloud — « Terminal » tab (admin): opens /prime/terminal on the server
-// (Prime, OpenCode or bash in tmux, resumed after a cut) in the system
+// (the agent, OpenCode or bash in tmux, resumed after a cut) in the system
 // browser, already signed in through /app/code-web. Never in a window of the
 // app: a remote page there would reach the app's local commands.
 import { useState } from "react";
 import { cloudApi, errorText } from "./cloudApi";
 
 const CHOICES = [
-  { id: "prime", title: "Prime", text: "La session de Prime sur le serveur (reprise si elle existe déjà)." },
+  { id: "prime", title: "Agent", text: "La session de l'agent sur le serveur (reprise si elle existe déjà)." },
   { id: "opencode", title: "OpenCode", text: "L'assistant de code gratuit, dans un terminal du serveur." },
   { id: "bash", title: "bash", text: "Un terminal du serveur, pour l'administration." },
 ] as const;

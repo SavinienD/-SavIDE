@@ -1,4 +1,4 @@
-// parcours-collegue — modèles proposés dans une conversation d'un espace Axe Cloud.
+// parcours-collegue — modèles proposés dans une conversation d'un espace cloud.
 //
 // Le tour d'une conversation d'espace part sur le démon de l'espace (VM) : seuls les
 // fournisseurs de l'ESPACE comptent, jamais ceux du PC (un collègue n'en a aucun ; ceux de
@@ -11,7 +11,7 @@ import type { ModelEntry } from "./models";
 import type { ModeModelSettings, ModelRef, ThinkingLevel } from "../types";
 
 export const FOURNISSEUR_ESPACE = "axe-cloud";
-const LIBELLE_FOURNISSEUR = "Axe Cloud";
+const LIBELLE_FOURNISSEUR = "Cloud";
 const ICONE = "solar:plug-circle-linear";
 const AVEC_REFLEXION: readonly ThinkingLevel[] = ["off", "low", "medium", "high"];
 const SANS_REFLEXION: readonly ThinkingLevel[] = ["off"];
@@ -50,7 +50,7 @@ export function modelesEspace(modeleConversation?: ModelRef | null): ModelEntry[
 
 /** parcours-collegue (D10) — actions du compositeur qui passent par le PC (magasin et
  *  fournisseurs du PC : compact_conversation, réécriture depuis un message, src-tauri/src/
- *  turns.rs). Dans une conversation d'espace Axe Cloud elles échouaient (« conversation not
+ *  turns.rs). Dans une conversation d'espace cloud elles échouaient (« conversation not
  *  found », « provider `axe-cloud` is not configured… ») : elles y sont désactivées. La
  *  compaction reste automatique dans l'espace (démon : seuil de 95 %, dépassement de contexte). */
 export function actionsDuPc(espaceCloud: boolean): { compaction: boolean; reecriture: boolean } {
@@ -58,7 +58,7 @@ export function actionsDuPc(espaceCloud: boolean): { compaction: boolean; reecri
 }
 
 export const NOTE_COMPACTION_ESPACE =
-  "Dans un espace Axe Cloud, le résumé de la conversation est automatique : il se fait quand la conversation devient trop longue.";
+  "Dans un espace cloud, le résumé de la conversation est automatique : il se fait quand la conversation devient trop longue.";
 
 /** Choix du modèle d'une conversation d'espace : le PC d'abord (magasin et registre du PC).
  *  S'il ne connaît pas la conversation (créée par « + » sur la VM : « conversation not

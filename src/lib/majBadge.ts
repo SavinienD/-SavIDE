@@ -1,4 +1,4 @@
-// Badge « Mise à jour X disponible » (demande de Savinien, 23/10) : jamais
+// Badge « Mise à jour X disponible » (demande utilisateur) : jamais
 // d'installation automatique ; le badge s'affiche et attend un clic.
 import type { UpdateInfo } from "../types";
 

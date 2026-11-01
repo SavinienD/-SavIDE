@@ -430,7 +430,7 @@ impl AnthropicProvider {
     }
 
     /// `Some("1h")` when the 1-hour prompt cache is used: API key (never a
-    /// subscription login) on api.anthropic.com or on the Axe Cloud meter.
+    /// subscription login) on api.anthropic.com or on the cloud meter.
     /// `AXECODE_CACHE_TTL=1h` forces it, `5m` turns it off.
     fn cache_ttl(&self) -> Option<&'static str> {
         if CACHE_TTL_REFUSED.load(Ordering::Relaxed) {

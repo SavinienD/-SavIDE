@@ -1,4 +1,4 @@
-// e4 — écran « Registre » (étape 4) + « Publier vers Prime » (étape 1), via l'API du portail
+// e4 — écran « Registre » (étape 4) + « Publier vers le serveur » (étape 1), via l'API du portail
 // /prime/api/registre/v1 (le jeton de l'app est ajouté côté Rust par cloudApi).
 import { useCallback, useEffect, useState } from "react";
 import { errorText, getJson, postJson } from "../cloud/cloudApi";
@@ -71,7 +71,7 @@ export function RegistrePane() {
           ))}
         </tbody>
       </table>
-      <h4>Publier vers Prime</h4>
+      <h4>Publier vers le serveur</h4>
       <div className="registre-pane__form">
         <input placeholder="identifiant (ex. export-tickets)" value={form.id} onChange={(e) => setForm({ ...form, id: e.target.value })} />
         <input placeholder="titre" value={form.titre} onChange={(e) => setForm({ ...form, titre: e.target.value })} />
@@ -80,7 +80,7 @@ export function RegistrePane() {
           <option>python</option><option>node</option><option>bash</option>
         </select>
         <textarea rows={6} placeholder="code du script" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
-        <button type="button" disabled={!form.id || !form.code} onClick={() => void publier()}>Publier vers Prime</button>
+        <button type="button" disabled={!form.id || !form.code} onClick={() => void publier()}>Publier vers le serveur</button>
       </div>
       <h4>Exécutions</h4>
       <ul className="registre-pane__execs">

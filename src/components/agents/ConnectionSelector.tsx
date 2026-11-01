@@ -25,7 +25,7 @@ export function ConnectionSelector({ onManage }: Props) {
     try {
       const list = await connectionsApi.list();
       // e1 — le poste local n'est plus une connexion proposee : il n'y a
-      // plus qu'un espace, celui d'Axe Cloud.
+      // plus qu'un espace, celui du cloud.
       setConnections(list.connections.filter((c) => c.kind !== "local"));
       setLive(await connectionsApi.state());
     } catch {

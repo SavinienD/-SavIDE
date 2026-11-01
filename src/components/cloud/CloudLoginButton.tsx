@@ -1,11 +1,11 @@
 import { EDITION_LOCALE } from "../../lib/edition";
-// connexion-google - bouton « Se connecter (Google Axe) » : relance le flux cloud_login existant
+// connexion-google - bouton « Se connecter (Google) » : relance le flux cloud_login existant
 // (navigateur systeme, compte @exemple.invalid). Une fois connecte, affiche l'e-mail.
 import { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import { cloudApi, errorText, type CloudState } from "./cloudApi";
 
-/** Etat de la session Axe Cloud, tenu a jour par l'evenement axe://cloud-state. */
+/** Etat de la session cloud, tenu a jour par l'evenement axe://cloud-state. */
 export function useCloudState(): CloudState | null {
   const [etat, setEtat] = useState<CloudState | null>(null);
   useEffect(() => {
@@ -53,7 +53,7 @@ function CloudLoginButtonCloud({
     const role = etat.role || "compte";
     return (
       <span className="titlebar__compte" style={style}>
-        <span className="titlebar__email" title={`${etat.email} — connecté à Axe Cloud (${role})`}>
+        <span className="titlebar__email" title={`${etat.email} — connecté au cloud (${role})`}>
           {etat.email}
         </span>
         <button
@@ -71,7 +71,7 @@ function CloudLoginButtonCloud({
   }
   if (etat?.connected) {
     return (
-      <span className={className} style={style} title={`Connecté à Axe Cloud (${etat.role || "compte"})`}>
+      <span className={className} style={style} title={`Connecté au cloud (${etat.role || "compte"})`}>
         {etat.email}
         {/* deconnexion - changer de compte */}
         <button type="button" style={{ marginLeft: 6, fontSize: 11, cursor: "pointer", minHeight: 22, padding: "2px 8px" /* accueil-compte - cible de 20 px au moins */ }} title="Se déconnecter (changer de compte)"
@@ -93,7 +93,7 @@ function CloudLoginButtonCloud({
       setEnCours(false);
     }
   };
-  const libelle = enCours ? "Connexion… (navigateur)" : "Se connecter (Google Axe)";
+  const libelle = enCours ? "Connexion… (navigateur)" : "Se connecter (Google)";
   return (
     <button
       type="button"
@@ -116,7 +116,7 @@ function CloudLoginButtonCloud({
 }
 
 function deconnecter() {
-  if (!window.confirm("Se déconnecter d'Axe Cloud ?")) return;
+  if (!window.confirm("Se déconnecter du cloud ?")) return;
   void cloudApi
     .logout()
     .then(() => window.location.reload())

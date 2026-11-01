@@ -777,7 +777,7 @@ export function ChatPane({
   }, [loadAgentTeamsEnabled]);
 
   const customModels = useMemo(() => customModelEntries(customProviders), [customProviders]); // providers
-  // parcours-collegue — conversation d'un espace Axe Cloud : le tour part sur le démon de
+  // parcours-collegue — conversation d'un espace cloud : le tour part sur le démon de
   // l'espace (VM), donc les modèles proposés sont ceux de l'espace, jamais ceux du PC (un
   // collègue n'en a aucun : avant, « Connect a provider » et Send grisé).
   const espaceCloud = cloudConnectionFromPath(workspacePath) !== null;
@@ -2153,7 +2153,7 @@ export function ChatPane({
     history.length === 0 ||
     !modelEntry;
   // parcours-collegue (D10) — la compaction manuelle passe par le magasin et les fournisseurs
-  // du PC (src-tauri/src/turns.rs) : dans un espace Axe Cloud, le bouton et /compact expliquent
+  // du PC (src-tauri/src/turns.rs) : dans un espace cloud, le bouton et /compact expliquent
   // qu'elle est automatique au lieu d'échouer (« conversation not found »).
   const compactionAilleurs = !actionsDuPc(espaceCloud).compaction;
 
@@ -2226,7 +2226,7 @@ export function ChatPane({
   }, [compactDisabled, compactInstructionOpen]);
 
   useEffect(() => {
-    // parcours-collegue (D10) — espace Axe Cloud : son démon compacte lui-même ; la
+    // parcours-collegue (D10) — espace cloud : son démon compacte lui-même ; la
     // compaction du PC (magasin et fournisseurs du PC) échouerait.
     if (compactionAilleurs) return;
     if (contextEstimate.conversationId !== conversationId) return;

@@ -2666,7 +2666,7 @@ mod suppression_tests {
             remove_mcp_server(&settings, "mcp_postgresql", Some("PostgreSQL")).unwrap();
         assert_eq!(removed.id, "mcp_postgres");
         assert_eq!(next.servers.len(), 1);
-        // L'identifiant prime sur le nom.
+        // L'identifiant l'emporte sur le nom.
         let (_, removed) = remove_mcp_server(&settings, "a", Some("PostgreSQL")).unwrap();
         assert_eq!(removed.id, "a");
     }

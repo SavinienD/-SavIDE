@@ -1,5 +1,5 @@
-// cloud — typed wrappers over the Axe Cloud IPC (src-tauri/src/cloud.rs)
-// and the JSON API of the Prime portal (/prime/api/*) and of the porte (/app/*).
+// cloud — typed wrappers over the cloud IPC (src-tauri/src/cloud.rs)
+// and the JSON API of the portal (/prime/api/*) and of the gateway (/app/*).
 // The app token never reaches this side: Rust adds it to every call.
 import { invoke } from "@tauri-apps/api/core";
 import { EDITION_LOCALE } from "../../lib/edition";
@@ -33,7 +33,7 @@ export type AppMoi = {
 };
 
 /** GET /prime/api/moi (portal). */
-export type PrimeMoi = {
+export type PortalMoi = {
   email: string;
   role: string;
   chat: boolean;
@@ -121,8 +121,8 @@ export function errorText(error: unknown): string {
   return String(error);
 }
 
-export const primeApi = {
-  moi: () => getJson<PrimeMoi>("/prime/api/moi"),
+export const portalApi = {
+  moi: () => getJson<PortalMoi>("/prime/api/moi"),
   appMoi: () => getJson<AppMoi>("/app/moi"),
   history: () => getJson<{ messages: ChatMessage[]; session?: string | null }>("/prime/api/chat/historique"),
   send: (message: string, nouvelle = false) =>

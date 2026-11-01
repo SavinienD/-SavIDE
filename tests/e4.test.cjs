@@ -46,11 +46,11 @@ test("ScriptRegistry : enregistrer, lister, persister, recharger", async () => {
   assert.deepEqual(new R.ScriptRegistry(st).list(), []);
 });
 
-test("importFromPrime : GET /prime/api/scripts/:id puis registre", async () => {
+test("importFromServer : GET /prime/api/scripts/:id puis registre", async () => {
   const r = new R.ScriptRegistry(memoire());
   let url;
   const fetcher = async (u) => ((url = u), { ok: true, json: async () => ({ name: "p1", source: "async () => 1" }) });
-  const info = await R.importFromPrime("abc 1", r, fetcher);
+  const info = await R.importFromServer("abc 1", r, fetcher);
   assert.equal(url, "/prime/api/registre/v1/scripts/abc%201");
   assert.equal(info.origine, "prime");
   assert.equal(r.get("p1").primeId, "abc 1");
@@ -58,15 +58,15 @@ test("importFromPrime : GET /prime/api/scripts/:id puis registre", async () => {
   const f2 = async (u) => (appels.push(u), u.endsWith("/code")
     ? { ok: true, text: async () => "print(42)" }
     : { ok: true, json: async () => ({ script: {}, manifeste: { nom: "v1" } }) });
-  assert.equal((await R.importFromPrime("q", r, f2)).source, "print(42)");
+  assert.equal((await R.importFromServer("q", r, f2)).source, "print(42)");
   assert.equal(appels.length, 2);
-  await assert.rejects(R.importFromPrime("x", r, async () => ({ ok: false, status: 404 })), /404/);
+  await assert.rejects(R.importFromServer("x", r, async () => ({ ok: false, status: 404 })), /404/);
 });
 
 test("ScriptBridge : run -> result via un vrai serveur WS", async () => {
   const wss = new WebSocketServer({ port: 0 });
   await new Promise((ok) => wss.on("listening", ok));
-  const url = `ws://127.0.0.1:${wss.address().port}/prime`;
+  const url = `ws://127.0.0.1:${wss.address().port}/passerelle`;
   const reponses = [];
   const fini = new Promise((ok) =>
     wss.on("connection", (sock) => {

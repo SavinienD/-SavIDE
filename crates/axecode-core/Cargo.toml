@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
-description = "Provider-agnostic types for the axecode CLI"
+description = "Provider-agnostic types for SavIDE"
 
 [dependencies]
 base64 = { workspace = true }

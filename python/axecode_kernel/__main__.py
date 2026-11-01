@@ -39,7 +39,7 @@ from axecode_kernel import bridge
 
 MAX_CAPTURE = 2_000_000  # chars kept per stream per execution (host truncates further)
 # The snapshot goes to the host as one line after every turn: variables over
-# these sizes (pickled) are left out of it, like Prime's snapshot caps.
+# these sizes (pickled) are left out of it.
 SNAPSHOT_MAX_VARIABLE_BYTES = 16 * 1024 * 1024
 SNAPSHOT_MAX_BYTES = 64 * 1024 * 1024
 # A snapshot must never hang the end of a turn: the conversation would stay

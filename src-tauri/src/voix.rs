@@ -90,7 +90,7 @@ pub(crate) struct VoixTranscrireInput {
 }
 
 /// Connexions de service à essayer, dans l'ordre : celle de l'espace cloud
-/// ouvert, la connexion active, Axe Cloud, les autres ; le service local en dernier.
+/// ouvert, la connexion active, cloud, les autres ; le service local en dernier.
 fn connexions(workspace_path: Option<&str>) -> Vec<Option<String>> {
     let mut ids: Vec<String> = Vec::new();
     if let Some(id) = workspace_path.and_then(|p| crate::daemon_client::cloud_connection_id(Path::new(p))) {

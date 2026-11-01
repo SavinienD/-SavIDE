@@ -134,7 +134,7 @@ impl HarnessPaths {
     }
 }
 
-/// harnais-equipe - dossier du harnais d'équipe (ex. /srv/axe/harnais-equipe).
+/// harnais-equipe - dossier du harnais d'équipe (ex. /srv/equipe/harnais).
 pub const TEAM_ENV: &str = "AXE_HARNESS_EQUIPE";
 /// Auteur noté dans les entrées publiées vers l'équipe (sinon `USER`).
 pub const TEAM_AUTHOR_ENV: &str = "AXE_HARNESS_AUTEUR";

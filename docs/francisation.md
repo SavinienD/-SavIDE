@@ -1,4 +1,4 @@
-# Francisation de l'interface d'Axecode (0.1.57)
+# Francisation de l'interface de SavIDE (0.1.57)
 
 Demande de l'utilisateur (22/10/2026, 11 h 23) : « oui mets tout en français ». Toute l'interface passe en
 français, sans système de traduction : les textes sont remplacés sur place, le français est la seule langue.
@@ -22,7 +22,7 @@ français, sans système de traduction : les textes sont remplacés sur place, l
 - On ne touche **jamais** : identifiants, clés, noms de commandes `invoke`, événements, classes CSS, `data-*`,
   valeurs comparées par le code, chemins, variables d'environnement, ni les **textes envoyés au modèle**
   (consignes système, descriptions d'outils, messages de reprise, plans).
-- Noms gardés tels quels : Axecode, Axe Cloud, Claude, Opus, Sonnet, OpenAI, OpenRouter, Gemini, Kimi, Git,
+- Noms gardés tels quels : SavIDE, Claude, Opus, Sonnet, OpenAI, OpenRouter, Gemini, Kimi, Git,
   GitHub, MCP, skill(s), pull request (PR), diff, HEAD, PATH, et les autres noms de produits.
 
 ## Règles pour ne rien casser (textes comparés par le code)
@@ -35,7 +35,7 @@ français, sans système de traduction : les textes sont remplacés sur place, l
   « rate limited: … » (`src/lib/erreursMoteur.ts`, appliqué à l'affichage seulement : l'état garde le texte brut).
 - Si un texte change des deux côtés, le front accepte **l'ancien et le nouveau** (la 0.1.57 du PC parle à
   des espaces encore en 0.1.56) : « Sub-agent » et « Sous-agent », « blocked by » et « bloquée par ».
-- Avant chaque commit : `python3 ~/axe-cloud/coherence-textes.py e675c11 .` (0 CASSÉ, 0 SANS PRODUCTEUR).
+- Avant chaque commit : contrôle de cohérence des textes front / moteur (0 CASSÉ, 0 SANS PRODUCTEUR).
 
 ## Outils
 

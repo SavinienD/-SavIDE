@@ -1,5 +1,5 @@
 "use strict";
-// Détecteur des textes visibles en anglais (francisation d'Axecode).
+// Détecteur des textes visibles en anglais (francisation de SavIDE).
 // Utilisé par scripts/francisation/inventaire.mjs et tests/francais.test.cjs.
 const fs = require("node:fs");
 const path = require("node:path");

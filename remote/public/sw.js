@@ -38,7 +38,7 @@ self.addEventListener("push", (event) => {
   } catch {
     data = {};
   }
-  const title = data.title || "Axecode";
+  const title = data.title || "SavIDE";
   const options = {
     body: data.body || "Response ready",
     tag: data.conversationId || "axecode-response-ready",

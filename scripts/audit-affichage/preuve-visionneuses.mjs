@@ -26,7 +26,7 @@ page.on("request", async (q) => {
 const scene = { fournisseur: true, fichiers: noms };
 await page.goto(`http://127.0.0.1:${port}/scripts/audit-affichage/banc.html?s=${encodeURIComponent(JSON.stringify(scene))}`);
 await page.waitForSelector(".welcome", { timeout: 20000 }); await new Promise(r=>setTimeout(r,800));
-await page.evaluate(() => [...document.querySelectorAll("button.welcome__recent")].find((x) => x.textContent.includes("axecode"))?.click());
+await page.evaluate(() => [...document.querySelectorAll("button.welcome__recent")].find((x) => x.textContent.includes("savide"))?.click());
 await page.waitForSelector(".workspace .composer", { timeout: 20000 }).catch(async()=>{console.log("ERREURS",errs.slice(0,3));console.log(JSON.stringify(await page.evaluate(()=>Object.keys(window.__bancInconnues||{}))));console.log((await page.evaluate(()=>document.body.innerText)).slice(0,400));process.exit(2)});
 await page.waitForSelector(".tree-row", { timeout: 15000 });
 const res = [];
