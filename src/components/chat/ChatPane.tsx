@@ -459,6 +459,12 @@ export function ChatPane({
   externalDrops,
   dropZoneRef,
 }: Props) {
+  // axe:defil178 — rappel stable : onOpenFile change à chaque onglet ouvert (Workspace.openFile
+  // dépend des onglets) ; avant, chaque clic sur un lien de fichier recréait aussi le contenu
+  // de tous les messages Markdown (lien cliqué et focus perdus, diagrammes recalculés).
+  const onOpenFileRef = useRef(onOpenFile);
+  onOpenFileRef.current = onOpenFile;
+  const ouvrirFichier = useCallback((path: string) => onOpenFileRef.current(path), []);
   const conversationViewsRef = useRef<Map<string, ChatViewState>>(new Map());
   // sub-n — sous-agents (descendants) de la conversation active en cours d'execution.
   const [agentsAuTravail, setAgentsAuTravail] = useState(0);
@@ -3562,7 +3568,7 @@ export function ChatPane({
                     rewriteHistoryIndex={
                       viewingSubAgent ? null : rewriteState?.historyIndex ?? null
                     }
-                    onOpenFile={onOpenFile}
+                    onOpenFile={ouvrirFichier}
                     onAnswerQuestion={viewingSubAgent ? () => {} : handleQuestionAnswer}
                     answerQuestionDisabled={viewingSubAgent}
                     allowStopQuestions={!viewingSubAgent && effectiveMode === "plan"}
@@ -3640,7 +3646,7 @@ export function ChatPane({
         showTeamTasks={activeTeamNames.size > 0}
         teamAgentColors={teamAgentColors}
         teamMessageRecipient={viewingSubAgent ? activeSubAgent?.name : undefined}
-        onOpenFile={onOpenFile}
+        onOpenFile={ouvrirFichier}
         onQueuedPromptSend={viewingSubAgent ? undefined : handleQueuedPromptSend}
         onQueuedPromptEdit={viewingSubAgent ? undefined : handleQueuedPromptEdit}
         onQueuedPromptDelete={viewingSubAgent ? undefined : handleQueuedPromptDelete}

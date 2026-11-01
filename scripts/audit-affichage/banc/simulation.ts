@@ -180,7 +180,7 @@ export function installerSimulation(scene: Scene): void {
     freechat_open: () => ({
       workspace: { path: D.WS, name: "libre" },
       conversations: listeConversations(),
-      activeConversation: D.conversationSauvee(active, { compaction: !!scene.compaction }),
+      activeConversation: D.conversationSauvee(active, { compaction: !!scene.compaction, liens: !!scene.liensHistorique }),
       modeModelSettings: D.MODES,
     }),
     list_active_turns: () => (tourActif ? [{ workspaceId: D.WS, conversationId: active, startedAtMs: Date.now() - 95_000, latestSequence: evenementsTour(scene).length }] : []),
@@ -196,7 +196,7 @@ export function installerSimulation(scene: Scene): void {
     open_workspace: () => ({
       workspace: { path: D.WS, name: D.NOM_WS },
       conversations: listeConversations(),
-      activeConversation: D.conversationSauvee(active, { compaction: !!scene.compaction }),
+      activeConversation: D.conversationSauvee(active, { compaction: !!scene.compaction, liens: !!scene.liensHistorique }),
       modeModelSettings: D.MODES,
     }),
     list_conversations: () => listeConversations(),
@@ -205,7 +205,7 @@ export function installerSimulation(scene: Scene): void {
       if (String(a.conversationId ?? "").startsWith("x-")) throw new Error(`conversation introuvable : ${a.conversationId}`);
       return chargerConversation(a);
     },
-    _charger_conversation: (a) => D.conversationSauvee(a.conversationId ?? D.idConv(0), { compaction: !!scene.compaction && (a.conversationId ?? "") === active, long: (a.conversationId ?? "") === active }),
+    _charger_conversation: (a) => D.conversationSauvee(a.conversationId ?? D.idConv(0), { compaction: !!scene.compaction && (a.conversationId ?? "") === active, long: (a.conversationId ?? "") === active || !!scene.liensHistorique, liens: !!scene.liensHistorique }),
     estimate_context: () => D.contexte(scene.compaction ? 30_000 : 92_000),
     estimate_sub_agent_context: () => D.contexte(40_000),
     list_configured_model_providers: () => (fournisseur ? ["anthropic", "openai"] : []),

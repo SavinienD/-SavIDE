@@ -158,6 +158,57 @@ async function cliquerTexte(page, selecteur, texte) {
   }, selecteur, texte);
 }
 
+// axe:defil178 — clic (vrai pointeur) sur un lien du chat d'une colonne : fichier, URL ou lien
+// Markdown. Le défilement de la conversation ne bouge pas (au milieu : même scrollTop ; en bas :
+// toujours en bas), le fil n'est pas recréé et le lien s'ouvre (onglet de l'éditeur ou navigateur).
+// Rend null si tout va bien, sinon la description de l'écart.
+async function cliquerLienSansDefiler(page, e) {
+  const corps = `.colonne-chat[data-colonne='${e.col ?? 0}'] .chat-body`;
+  const place = await page.evaluate((cs, sel, rang, position) => {
+    const b = document.querySelector(cs);
+    const liens = b ? [...b.querySelectorAll(sel)] : [];
+    const el = rang === "dernier" ? liens[liens.length - 1] : liens[rang ?? Math.floor(liens.length / 2)];
+    if (!el) return false;
+    if (position === "bas") b.scrollTop = b.scrollHeight;
+    else {
+      const r = el.getBoundingClientRect(), rb = b.getBoundingClientRect();
+      b.scrollTop += r.top + r.height / 2 - (rb.top + rb.height / 2);
+    }
+    return true;
+  }, corps, e.sel, e.rang, e.position);
+  if (!place) return `${e.nom} : lien ${e.sel} absent`;
+  await pause(500);
+  const lire = (marquer) => page.evaluate((cs, sel, rang, marquer) => {
+    const b = document.querySelector(cs);
+    if (!b) return null;
+    if (marquer) b.dataset.bancDefil = "1";
+    const liens = [...b.querySelectorAll(sel)];
+    const el = rang === "dernier" ? liens[liens.length - 1] : liens[rang ?? Math.floor(liens.length / 2)];
+    const r = el?.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    return {
+      top: Math.round(b.scrollTop), bas: Math.round(b.scrollHeight - b.clientHeight - b.scrollTop),
+      meme: b.dataset.bancDefil === "1", texte: (el?.textContent ?? "").trim(),
+      x: r ? r.x + Math.min(r.width / 2, 24) : 0, y: r ? r.y + r.height / 2 : 0,
+      visible: !!r && r.top >= rb.top && r.bottom <= rb.bottom,
+      url: window.__bancAppels?.open_external_url_command ?? 0,
+      onglet: document.querySelector(".editor-col .tabs .tab[data-active='true']")?.getAttribute("title") ?? "",
+    };
+  }, corps, e.sel, e.rang, marquer);
+  const avant = await lire(true);
+  if (!avant.visible) return `${e.nom} : lien hors de l'écran`;
+  if (e.position === "bas" ? avant.bas > 1 : avant.bas < 40 || avant.top < 40) return `${e.nom} : conversation pas ${e.position === "bas" ? "en bas" : "au milieu"} avant le clic (top ${avant.top}, ${avant.bas} px du bas)`;
+  await page.mouse.click(avant.x, avant.y);
+  await pause(e.attente ?? 900);
+  const apres = await lire(false);
+  const ecarts = [];
+  if (!apres || !apres.meme) ecarts.push("fil recréé");
+  else if (e.position === "bas" ? apres.bas > 1 : apres.top !== avant.top) ecarts.push(e.position === "bas" ? `plus en bas (${apres.bas} px du bas)` : `défilement ${avant.top} -> ${apres.top}`);
+  if (e.ouvre === "url" && !(apres && apres.url > avant.url)) ecarts.push("URL non ouverte");
+  if (e.ouvre === "fichier" && !(apres && apres.onglet && avant.texte.endsWith(apres.onglet))) ecarts.push(`fichier non ouvert (onglet actif « ${apres?.onglet ?? ""} »)`);
+  console.log(`défilement ${e.nom} : ${avant.top} -> ${apres?.top} (${apres?.bas} px du bas)${ecarts.length ? " ✗ " + ecarts.join(", ") : " ✓"}`);
+  return ecarts.length ? `${e.nom} : ${ecarts.join(", ")}` : null;
+}
+
 async function preparerScene(page, si, sc) {
   const scene = {
     ...sc.sim,
@@ -343,6 +394,12 @@ async function preparerScene(page, si, sc) {
     if (t.entree) await page.keyboard.press("Enter");
     await pause(300);
   }
+  // axe:defil178 — clics sur des liens du chat sans faire bouger la conversation.
+  delete sc._echecDefil;
+  for (const e of sc.defilement ?? []) {
+    const ecart = await cliquerLienSansDefiler(page, e);
+    if (ecart) sc._echecDefil = (sc._echecDefil ? sc._echecDefil + " ; " : "") + ecart;
+  }
   if (sc.arretForce) {
     const stop = "[data-focus=true] .composer__send[data-variant='stop']";
     await page.waitForSelector(stop, { visible: true, timeout: 6000 }).catch(() => undefined);
@@ -501,6 +558,7 @@ async function auditer(page, si, sc, journal, preparation) {
   }
   if (!verif.polices) preparation = (preparation ? preparation + " ; " : "") + "polices Geist non chargées";
   if (sc._echecPoignee) preparation = (preparation ? preparation + " ; " : "") + "poignée : " + sc._echecPoignee;
+  if (sc._echecDefil) preparation = (preparation ? preparation + " ; " : "") + "défilement : " + sc._echecDefil;
   if (verif.manquants.length) preparation = (preparation ? preparation + " ; " : "") + "témoins absents : " + verif.manquants.join(", ");
   if (preparation) audit.defauts.unshift({ regle: "scene-incomplete", element: sc.id, libelle: "", detail: preparation, rect: { x: 0, y: 0, l: 1, h: 1 }, gravite: 0, cle: "scene-incomplete|" + sc.id });
   const defZones = { ...(ZONES["*"] ?? {}), ...(ZONES[sc.id] ?? {}) };

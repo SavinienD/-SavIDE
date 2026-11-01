@@ -86,7 +86,13 @@ const DIFF = [
   },
 ];
 
-export function historique(options: { compaction?: boolean; long?: boolean } = {}) {
+// axe:defil178 — « liens » : chaque réponse du milieu cite un chemin de fichier, une URL nue et un
+// lien Markdown (clic au milieu d'une longue conversation : le défilement ne doit pas bouger).
+const LIENS_TOUR = (i: number) =>
+  ` Détail dans \`src/banc/etape-${i + 1}.ts\`, la [notice du banc ${i + 1}](https://docs.exemple.fr/banc/${i + 1}) ` +
+  `et https://github.com/axe/axecode/actions/runs/4242${i}/job/77${i}.`;
+
+export function historique(options: { compaction?: boolean; long?: boolean; liens?: boolean } = {}) {
   nOutil = 0;
   const msgs: any[] = [];
   if (options.compaction) {
@@ -139,7 +145,7 @@ export function historique(options: { compaction?: boolean; long?: boolean } = {
               outil("python", { code: "import json\nrapport = json.load(open('sortie/rapport.json'))\nprint(len(rapport['defauts']))" }, "Traceback (most recent call last):\n  File \"<stdin>\", line 2, in <module>\nFileNotFoundError: [Errno 2] No such file or directory: 'sortie/rapport.json'", true),
             ],
           },
-          { texte: "Voici l'état : 8 défauts restants, surtout dans la barre de titre et les onglets de colonnes. Je corrige d'abord la barre de titre, puis les colonnes, puis le compositeur." },
+          { texte: "Voici l'état : 8 défauts restants, surtout dans la barre de titre et les onglets de colonnes. Je corrige d'abord la barre de titre, puis les colonnes, puis le compositeur." + (options.liens ? LIENS_TOUR(i) : "") },
         ],
       ),
     );
@@ -147,7 +153,7 @@ export function historique(options: { compaction?: boolean; long?: boolean } = {
   return msgs;
 }
 
-export function conversationSauvee(id: string, options: { compaction?: boolean; long?: boolean } = {}) {
+export function conversationSauvee(id: string, options: { compaction?: boolean; long?: boolean; liens?: boolean } = {}) {
   return {
     id,
     workspaceId: WS,
