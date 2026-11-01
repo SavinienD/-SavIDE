@@ -158,7 +158,7 @@ async function cliquerTexte(page, selecteur, texte) {
   }, selecteur, texte);
 }
 
-// axe:defil178 — clic (vrai pointeur) sur un lien du chat d'une colonne : fichier, URL ou lien
+// defil178 — clic (vrai pointeur) sur un lien du chat d'une colonne : fichier, URL ou lien
 // Markdown. Le défilement de la conversation ne bouge pas (au milieu : même scrollTop ; en bas :
 // toujours en bas), le fil n'est pas recréé et le lien s'ouvre (onglet de l'éditeur ou navigateur).
 // Rend null si tout va bien, sinon la description de l'écart.
@@ -394,7 +394,7 @@ async function preparerScene(page, si, sc) {
     if (t.entree) await page.keyboard.press("Enter");
     await pause(300);
   }
-  // axe:defil178 — clics sur des liens du chat sans faire bouger la conversation.
+  // defil178 — clics sur des liens du chat sans faire bouger la conversation.
   delete sc._echecDefil;
   for (const e of sc.defilement ?? []) {
     const ecart = await cliquerLienSansDefiler(page, e);

@@ -6,7 +6,7 @@ const test = require("node:test");
 const ts = require("typescript");
 const { JSDOM } = require("jsdom");
 
-// axe:defil178 — cliquer sur un lien du chat (fichier, URL, lien Markdown) ne fait plus bouger la
+// defil178 — cliquer sur un lien du chat (fichier, URL, lien Markdown) ne fait plus bouger la
 // conversation : les messages ne sont plus recréés (Markdown) et changer de colonne ne recrée
 // plus les fils (Workspace). Scènes du banc : defil-liens et defil-liens-c2.
 const dom = new JSDOM("<!doctype html><body></body>");

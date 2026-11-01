@@ -86,7 +86,7 @@ const DIFF = [
   },
 ];
 
-// axe:defil178 — « liens » : chaque réponse du milieu cite un chemin de fichier, une URL nue et un
+// defil178 — « liens » : chaque réponse du milieu cite un chemin de fichier, une URL nue et un
 // lien Markdown (clic au milieu d'une longue conversation : le défilement ne doit pas bouger).
 const LIENS_TOUR = (i: number) =>
   ` Détail dans \`src/banc/etape-${i + 1}.ts\`, la [notice du banc ${i + 1}](https://docs.exemple.fr/banc/${i + 1}) ` +

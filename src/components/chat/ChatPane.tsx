@@ -459,7 +459,7 @@ export function ChatPane({
   externalDrops,
   dropZoneRef,
 }: Props) {
-  // axe:defil178 — rappel stable : onOpenFile change à chaque onglet ouvert (Workspace.openFile
+  // defil178 — rappel stable : onOpenFile change à chaque onglet ouvert (Workspace.openFile
   // dépend des onglets) ; avant, chaque clic sur un lien de fichier recréait aussi le contenu
   // de tous les messages Markdown (lien cliqué et focus perdus, diagrammes recalculés).
   const onOpenFileRef = useRef(onOpenFile);

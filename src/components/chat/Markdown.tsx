@@ -152,7 +152,7 @@ export function FileLinkedText({ text, onOpenFile }: Props) {
  * streaming token-by-token re-renders don't trash the whole tree.
  */
 export const Markdown = memo(function Markdown({ text, onOpenFile: ouvrirDemande }: Props) {
-  // axe:defil178 — composants stables : recréés à chaque rendu, ils changeaient de type pour
+  // defil178 — composants stables : recréés à chaque rendu, ils changeaient de type pour
   // React, qui démontait puis remontait chaque paragraphe, bloc de code et diagramme (à chaque
   // morceau de texte reçu, à chaque nouvel onOpenFile) : lien cliqué et focus perdus. Le rappel
   // passe par une référence : le dernier reçu sert, sans recréer les composants.

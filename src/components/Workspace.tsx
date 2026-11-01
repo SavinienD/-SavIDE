@@ -2706,7 +2706,7 @@ export function Workspace({
   useEffect(() => {
     const aCharger = new Set<string>();
     colonnesChat.forEach((colonne) => {
-      // axe:defil178 — toute colonne qui ne montre pas la conversation active a son fil
+      // defil178 — toute colonne qui ne montre pas la conversation active a son fil
       // chargé, celle qui vient de prendre le focus comprise (elle garde le sien à l'écran).
       const id = visibleDeColonne(colonne);
       if (id && id !== activeConv.id) aCharger.add(id);
@@ -2895,7 +2895,7 @@ export function Workspace({
     const streaming = streamingConversationIds.has(conv.id);
     return (
       <ChatPane
-        // axe:defil178 — même clé, que la colonne ait le focus ou non : changer de colonne
+        // defil178 — même clé, que la colonne ait le focus ou non : changer de colonne
         // (clic sur un lien d'une colonne sans focus) recréait les ChatPane des deux colonnes,
         // le défilement repartait en bas et le clic sur le lien était perdu. Une colonne ne
         // contient qu'un ChatPane : il garde sa place et suit seul ses changements de conversation.
@@ -3944,7 +3944,7 @@ export function Workspace({
                 const onglets = colonne
                   .map((id) => ongletsChat.find((t) => t.id === id))
                   .filter((t): t is OngletChat => Boolean(t));
-                // axe:defil178 — chaque colonne montre SA conversation (l'active si elle y est) :
+                // defil178 — chaque colonne montre SA conversation (l'active si elle y est) :
                 // la colonne qui prend le focus ne montre plus, le temps du chargement, la
                 // conversation active de la colonne voisine.
                 const visible = visibleDeColonne(colonne);

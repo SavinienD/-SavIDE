@@ -29,7 +29,7 @@ const tourFini = (conversationId) =>
     .map((event, i) => ({ workspaceId: WS_CLOUD, conversationId, sequence: i + 1, event }));
 const FIN_TOUR_PRECEDENT = "Fin du tour précédent : les colonnes tiennent dans le panneau, je relance le banc sur les quatre largeurs.";
 const onglets = (liste) => liste.map((id) => ({ id, titre: TITRES[id] ?? id }));
-// axe:defil178 — liens des réponses de la conversation « liensHistorique » (donnees.ts) et
+// defil178 — liens des réponses de la conversation « liensHistorique » (donnees.ts) et
 // clic sur l'un d'eux dans une colonne : au milieu (le lien du milieu, centré) ou tout en bas
 // (le dernier lien) ; ouvre un onglet de l'éditeur (fichier) ou le navigateur (URL).
 const LIENS = { fichier: ".md .chat-file-link", url: ".md .chat-link[title^='https://github']", markdown: ".md .chat-link[title^='https://docs']" };
@@ -364,7 +364,7 @@ export const SCENES = [
   { id: "collegue-arbre", sim: { fournisseur: false, collegue: true, espaceVide: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, creer: "test", ecrire: "Bonjour", evenementsTour: tourFini("s-1"), arbre: true, temoins: ["sel:.axe-tree-overlay"] },
   // À la réouverture de l'espace : la liste doit montrer les conversations de l'espace (« test »).
   { id: "collegue-liste", sim: { fournisseur: false, collegue: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, temoins: ["test"] },
-  // axe:defil178 — longue conversation défilée au milieu puis tout en bas : un clic sur un lien
+  // defil178 — longue conversation défilée au milieu puis tout en bas : un clic sur un lien
   // de fichier, une URL nue ou un lien Markdown ne fait plus bouger la conversation (en bas, elle
   // reste en bas) et le lien s'ouvre.
   { id: "defil-liens", sim: { liensHistorique: true }, stockage: () => colonnes([ids(1)]),
