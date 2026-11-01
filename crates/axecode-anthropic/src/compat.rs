@@ -21,7 +21,7 @@ struct ModelBody {
 
 fn http() -> Result<reqwest::Client> {
     reqwest::Client::builder()
-        .user_agent(cli_version::user_agent())
+        .user_agent(cli_version::api_key_user_agent())
         .timeout(std::time::Duration::from_secs(20))
         .build()
         .map_err(|err| AppError::Network(err.to_string()))

@@ -104,7 +104,7 @@ pub struct AnthropicProvider {
 impl AnthropicProvider {
     pub fn new(config: AnthropicConfig) -> Result<Self> {
         let http = reqwest::Client::builder()
-            .user_agent(cli_version::user_agent())
+            .user_agent(cli_version::user_agent_for(config.credential.is_oauth()))
             .build()
             .map_err(|err| AppError::Network(err.to_string()))?;
         Ok(Self { config, http })
@@ -143,7 +143,7 @@ impl AnthropicProvider {
             .header("content-type", "application/json")
             .header("anthropic-dangerous-direct-browser-access", "true")
             .header("anthropic-beta", self.beta_header(is_oauth))
-            .header("user-agent", cli_version::user_agent());
+            .header("user-agent", cli_version::user_agent_for(is_oauth));
 
         if is_oauth {
             request = request
@@ -922,6 +922,52 @@ mod tests {
     use axecode_core::{ChatMessage, Part, Role, ToolResultImage};
 
     use super::*;
+
+    /// Fake Anthropic endpoint: an API-key request must not pose as Claude
+    /// Code (claude-cli user-agent), or the API refuses it for lack of credit.
+    #[tokio::test]
+    async fn api_key_request_does_not_send_claude_cli_user_agent() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut buf = vec![0u8; 65536];
+            let mut seen = Vec::new();
+            loop {
+                let n = socket.read(&mut buf).await.unwrap();
+                seen.extend_from_slice(&buf[..n]);
+                if n == 0 || seen.windows(4).any(|w| w == b"\r\n\r\n") {
+                    break;
+                }
+            }
+            let body = "{}";
+            let reply = format!(
+                "HTTP/1.1 200 OK\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            socket.write_all(reply.as_bytes()).await.unwrap();
+            String::from_utf8_lossy(&seen).to_lowercase()
+        });
+        let config = AnthropicConfig::compatible(
+            "custom-anthropic-compatible-1",
+            format!("http://{addr}"),
+            "sk-ant-test",
+            Vec::new(),
+        );
+        let provider = AnthropicProvider::new(config).unwrap();
+        provider
+            .send_json_accept("/v1/messages", &serde_json::json!({"model": "m"}), "application/json")
+            .await
+            .unwrap();
+        let request = server.await.unwrap();
+        assert!(request.starts_with("post /v1/messages "), "{request}");
+        assert!(request.contains("x-api-key: sk-ant-test"));
+        assert!(!request.contains("authorization:"));
+        assert!(!request.contains("claude-cli"), "{request}");
+        assert!(!request.contains("oauth-2025"));
+        assert!(request.contains("user-agent: savide/"));
+    }
 
     #[test]
     fn endpoint_accepts_base_url_with_or_without_v1() {

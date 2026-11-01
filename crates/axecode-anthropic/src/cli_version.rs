@@ -68,6 +68,22 @@ pub fn user_agent() -> String {
     format!("claude-cli/{}", version())
 }
 
+/// `user-agent` for API-key requests. Anthropic bills a `claude-cli/*`
+/// request as a Claude Code one: with a plain console key it answers
+/// "Your credit balance is too low" even when the key works elsewhere.
+pub fn api_key_user_agent() -> String {
+    format!("savide/{}", env!("CARGO_PKG_VERSION"))
+}
+
+/// `user-agent` matching the credential kind.
+pub fn user_agent_for(is_oauth: bool) -> String {
+    if is_oauth {
+        user_agent()
+    } else {
+        api_key_user_agent()
+    }
+}
+
 /// Kick off a background refresh when the cached version is older than the TTL.
 ///
 /// Never blocks the caller and never fails: any lookup problem leaves the
