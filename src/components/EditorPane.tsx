@@ -7,11 +7,12 @@ import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
 import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
 import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { Icon } from "@iconify/react";
 import { languageForPath } from "../lib/language";
 import { fileIcon } from "../lib/fileIcon";
 import { Markdown } from "./chat/Markdown";
+import { caseDansLigne } from "./chat/casesMarkdown";
 import { memoriserVue, vueMemorisee } from "../lib/vueFichier"; // html
 import type { EditorRevealTarget, EditorTab } from "../types";
 import { ImageContextMenu } from "./ImageContextMenu";
@@ -345,6 +346,47 @@ export function EditorPane({
     showTextEditor,
   ]);
 
+  // case cliquée dans l'aperçu : la modification passe par Monaco (Ctrl+Z possible),
+  // puis le fichier est enregistré dès que l'onglet a reçu le nouveau texte.
+  const enregistrerApresRef = useRef<string | null>(null);
+  const basculerCaseApercu = useCallback((ligne: number) => {
+    const editor = editorRef.current;
+    const model = editor?.getModel();
+    const path = currentPathRef.current;
+    if (!editor || !model || !path || ligne > model.getLineCount()) return;
+    const c = caseDansLigne(model.getLineContent(ligne));
+    if (!c) return;
+    const col = c.colonne + 1;
+    editor.pushUndoStop();
+    editor.executeEdits("cases-apercu", [{ range: new monacoNs.Range(ligne, col, ligne, col + 1), text: c.nouveau }]);
+    editor.pushUndoStop();
+    enregistrerApresRef.current = path;
+  }, []);
+  const toucheApercu = useCallback((e: ReactKeyboardEvent<HTMLDivElement>) => {
+    const editor = editorRef.current;
+    if (!editor || !(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const k = e.key.toLowerCase();
+    const action = k === "z" ? (e.shiftKey ? "redo" : "undo") : k === "y" && !e.shiftKey ? "redo" : null;
+    if (!action) return;
+    e.preventDefault();
+    const model = editor.getModel();
+    if (!model) return;
+    // Monaco masqué (aperçu) : editor.trigger("undo") ne fait rien sans focus ; le modèle, si.
+    enregistrerApresRef.current = currentPathRef.current; // enregistré si le texte change
+    // undo()/redo() du modèle : présents à l'exécution, absents des types publics de Monaco.
+    const pile = model as unknown as { undo(): unknown; redo(): unknown };
+    void (action === "undo" ? pile.undo() : pile.redo());
+  }, []);
+  useEffect(() => {
+    const path = enregistrerApresRef.current;
+    if (!path) return;
+    const idx = tabs.findIndex((t) => t.relativePath === path);
+    const tab = tabs[idx];
+    if (!tab || tab.buffer !== editorRef.current?.getModel()?.getValue()) return;
+    enregistrerApresRef.current = null;
+    if (tab.dirty) onSave(idx);
+  }, [tabs, onSave]);
+
   const onEditorChange = useCallback(
     (value: string | undefined) => {
       if (!activeTab) return;
@@ -620,8 +662,12 @@ export function EditorPane({
                 />
               </div>
               {activeIsMarkdown && activePreview && (
-                <div className="editor-md-preview">
-                  <Markdown text={activeTab.buffer} onOpenFile={handleOpenFileLink} />
+                <div className="editor-md-preview" tabIndex={-1} onKeyDown={readOnlyEditor ? undefined : toucheApercu}>
+                  <Markdown
+                    text={activeTab.buffer}
+                    onOpenFile={handleOpenFileLink}
+                    onToggleTask={readOnlyEditor ? undefined : basculerCaseApercu}
+                  />
                 </div>
               )}
               {activeOverlay && viewerSpec && (

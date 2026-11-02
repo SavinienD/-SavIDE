@@ -247,8 +247,8 @@ export function installerSimulation(scene: Scene): void {
     },
     // enregistrement d'un fichier : le contenu écrit est gardé (window.__bancQcm).
     write_workspace_file_command: (a) => {
-      const rel = a.input?.relativePath ?? "";
-      const content = a.input?.content ?? "";
+      const rel = a.relativePath ?? "";
+      const content = a.content ?? "";
       if (rel === "qcm.md") window.__bancQcm = content;
       return { name: rel.split("/").pop(), relativePath: rel, absolutePath: D.WS + "\\" + rel.replace(/\//g, "\\"), editable: true, content, reason: null, size: content.length, lastModifiedMs: Date.now(), imageMediaType: null, imageData: null };
     },
