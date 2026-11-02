@@ -392,4 +392,16 @@ export const SCENES = [
     temoins: ["absent:.chat-path-menu"] },
   { id: "chemin-chat-relatif", sim: { liensHistorique: true }, stockage: () => colonnes([ids(1)]), cheminChat: { menu: "Copier le chemin relatif" },
     temoins: ["absent:.chat-path-menu"] },
+  // aperçu d'un QCM .md : cliquer une case la coche/décoche et ENREGISTRE le fichier
+  // (seule la bonne ligne change, CRLF gardé, la fausse case du bloc de code ignorée) ; Ctrl+Z annule.
+  { id: "cases-cocher", sim: { fichierQcm: true }, stockage: () => colonnes([ids(1)]), ouvrirFichier: "qcm.md",
+    clics: [".editor-preview-toggle", ".editor-md-preview ul:nth-of-type(1) > li:nth-child(1) input[type='checkbox']"],
+    temoins: ["qcm:# QCM\r\n\r\n<!-- id: q1 -->\r\n1. Choix A ?\r\n\r\n- [x] oui\r\n- [x] non\r\n\r\n```md\r\n- [ ] pas une case\r\n```\r\n\r\n<!-- id: q2 -->\r\n- [X] déjà\r\n- [ ] autre\r\n", "sel:.editor-md-preview ul:nth-of-type(1) > li:nth-child(1) input:checked"] },
+  { id: "cases-decocher", sim: { fichierQcm: true }, stockage: () => colonnes([ids(1)]), ouvrirFichier: "qcm.md",
+    clics: [".editor-preview-toggle", ".editor-md-preview ul:nth-of-type(2) > li:nth-child(1) input[type='checkbox']"],
+    temoins: ["qcm:# QCM\r\n\r\n<!-- id: q1 -->\r\n1. Choix A ?\r\n\r\n- [ ] oui\r\n- [x] non\r\n\r\n```md\r\n- [ ] pas une case\r\n```\r\n\r\n<!-- id: q2 -->\r\n- [ ] déjà\r\n- [ ] autre\r\n"] },
+  { id: "cases-annuler", sim: { fichierQcm: true }, stockage: () => colonnes([ids(1)]), ouvrirFichier: "qcm.md",
+    clics: [".editor-preview-toggle", ".editor-md-preview ul:nth-of-type(1) > li:nth-child(2) input[type='checkbox']"],
+    touches: ["Control+z"],
+    temoins: ["qcm:# QCM\r\n\r\n<!-- id: q1 -->\r\n1. Choix A ?\r\n\r\n- [ ] oui\r\n- [x] non\r\n\r\n```md\r\n- [ ] pas une case\r\n```\r\n\r\n<!-- id: q2 -->\r\n- [X] déjà\r\n- [ ] autre\r\n", "sel:.editor-md-preview ul:nth-of-type(1) > li:nth-child(2) input:checked"] },
 ];

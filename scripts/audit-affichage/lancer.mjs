@@ -443,6 +443,15 @@ async function preparerScene(page, si, sc) {
     await page.evaluate((s) => document.querySelector(s)?.click(), sel);
     await pause(400);
   }
+  // « touches » : raccourcis clavier envoyés à l'élément qui a le focus (ex. Control+z).
+  for (const t of sc.touches ?? []) {
+    const parties = t.split("+");
+    const touche = parties.pop();
+    for (const m of parties) await page.keyboard.down(m);
+    await page.keyboard.press(touche);
+    for (const m of parties.reverse()) await page.keyboard.up(m);
+    await pause(500);
+  }
   // fournisseurs-178 — « taper » : texte tapé au clavier dans un champ (son contenu remplacé,
   // ou complété avec « ajouter »), puis Entrée si « entree ».
   for (const t of sc.taper ?? []) {
@@ -605,6 +614,7 @@ async function auditer(page, si, sc, journal, preparation) {
     const special = (t) =>
       t.startsWith("champ:") ? champ(t.slice(6))
       : t.startsWith("enregistre:") ? enregistre(t.slice(11))
+      : t.startsWith("qcm:") ? window.__bancQcm === t.slice(4) // contenu enregistré
       : t.startsWith("presse:") ? window.__bancPresse === t.slice(7)
       : t.startsWith("premier:") ? lignes()[0]?.dataset.entryPath === t.slice(8)
       : t.startsWith("choisi:") ? lignes().filter((l) => l.dataset.selected === "true").map((l) => l.dataset.entryPath).join("|") === t.slice(7)

@@ -25,6 +25,7 @@ declare global {
     __BANC_SCENE__?: Scene;
     __bancAppels?: Record<string, number>;
     __bancInconnues?: Record<string, unknown>;
+    __bancQcm?: string;
     __bancEmettre?: (evenement: string, charge: unknown) => Promise<void>;
   }
 }
@@ -236,12 +237,20 @@ export function installerSimulation(scene: Scene): void {
       const liste = D.entrees(dossier);
       // html — scènes « html-* » : une page HTML à la racine de l'espace.
       if (scene.fichierHtml && !dossier) liste.push({ name: "page.html", relativePath: "page.html", absolutePath: D.WS + "\\page.html", kind: "file", hasChildren: false });
+      if (scene.fichierQcm && !dossier) liste.push({ name: "qcm.md", relativePath: "qcm.md", absolutePath: D.WS + "\\qcm.md", kind: "file", hasChildren: false });
       return liste;
     },
     read_workspace_file_command: (a) => {
       const rel = a.input?.relativePath ?? a.relativePath ?? "";
-      const content = rel === "page.html" ? D.PAGE_HTML : "";
+      const content = rel === "page.html" ? D.PAGE_HTML : rel === "qcm.md" ? (window.__bancQcm ?? D.QCM_MD) : "";
       return { name: rel.split("/").pop(), relativePath: rel, absolutePath: D.WS + "\\" + rel.replace(/\//g, "\\"), editable: true, content, reason: null, size: content.length, lastModifiedMs: D.T0, imageMediaType: null, imageData: null };
+    },
+    // enregistrement d'un fichier : le contenu écrit est gardé (window.__bancQcm).
+    write_workspace_file_command: (a) => {
+      const rel = a.input?.relativePath ?? "";
+      const content = a.input?.content ?? "";
+      if (rel === "qcm.md") window.__bancQcm = content;
+      return { name: rel.split("/").pop(), relativePath: rel, absolutePath: D.WS + "\\" + rel.replace(/\//g, "\\"), editable: true, content, reason: null, size: content.length, lastModifiedMs: Date.now(), imageMediaType: null, imageData: null };
     },
     list_workspace_files_command: () => D.entrees(""),
     // explorateur — « Ouvrir avec… » et « Ouvrir dans l'explorateur » (comptés dans __bancAppels).
