@@ -256,6 +256,7 @@ async fn run_inner(
 
         let (sent_system, sent_history) =
             stable_request(&mut lock(&shared.stable_prefix), &system, volatile_from, &reminders, &history);
+        let sent_history = without_foreign_signed_parts(sent_history, &origin_of(&meta.model));
         let mut provider_request = ProviderRequest::new(meta.model.clone(), sent_history)
             .with_system(sent_system)
             .with_tools(tools)
@@ -299,6 +300,8 @@ async fn run_inner(
             *lock(&shared.last_call_size) = Some((billed as u64, sent_chars));
         }
         stop_reason = Some(reason);
+        let mut assistant = assistant;
+        tag_signed_parts(&mut assistant, &origin_of(&meta.model));
         if !assistant.parts.is_empty() {
             sink.record(JournalEntryKind::Message {
                 message: assistant.clone(),
@@ -662,6 +665,74 @@ pub(crate) fn stable_request(
         }
     }
     (frozen, sent)
+}
+
+/// Provider and model that produced a reasoning block.
+fn origin_of(model: &axecode_core::ModelRef) -> String {
+    format!("{}/{}", model.provider, model.name)
+}
+
+/// Marks reasoning blocks with the model that produced them: their
+/// signature or encrypted content is only valid for that model.
+fn tag_signed_parts(message: &mut ChatMessage, origin: &str) {
+    for part in &mut message.parts {
+        if let Part::Thinking { meta, .. } = part {
+            let mut value = meta.take().unwrap_or_else(|| json!({}));
+            if let Some(object) = value.as_object_mut() {
+                object.entry("origin").or_insert_with(|| json!(origin));
+            }
+            *meta = Some(value);
+        }
+    }
+}
+
+/// Drops the reasoning blocks produced by another provider or model (the
+/// answers themselves stay), so a conversation can switch models.
+pub(crate) fn without_foreign_signed_parts(mut history: Vec<ChatMessage>, origin: &str) -> Vec<ChatMessage> {
+    for message in &mut history {
+        message.parts.retain(|part| match part {
+            Part::Thinking { meta, .. } => meta
+                .as_ref()
+                .and_then(|meta| meta.get("origin"))
+                .and_then(Value::as_str)
+                .map_or(true, |from| from == origin),
+            _ => true,
+        });
+    }
+    history.retain(|message| !message.parts.is_empty());
+    history
+}
+
+#[cfg(test)]
+mod model_switch_tests {
+    use super::*;
+    use axecode_core::ModelRef;
+
+    #[test]
+    fn switching_model_drops_reasoning_of_the_previous_one() {
+        let opus = origin_of(&ModelRef::new("anthropic", "claude-opus-5-5"));
+        let gpt = origin_of(&ModelRef::new("openai", "gpt-5"));
+        let mut answer = ChatMessage {
+            role: Role::Assistant,
+            parts: vec![
+                Part::Thinking {
+                    text: "why".into(),
+                    meta: Some(json!({"provider": "anthropic", "signature": "s"})),
+                },
+                Part::Text { text: "answer".into(), meta: None },
+            ],
+        };
+        tag_signed_parts(&mut answer, &opus);
+        let history = vec![ChatMessage::user_text("q1"), answer, ChatMessage::user_text("q2")];
+
+        let same = without_foreign_signed_parts(history.clone(), &opus);
+        assert_eq!(same[1].parts.len(), 2, "same model keeps its reasoning");
+
+        let other = without_foreign_signed_parts(history, &gpt);
+        assert_eq!(other.len(), 3);
+        assert_eq!(other[1].parts.len(), 1);
+        assert!(matches!(&other[1].parts[0], Part::Text { text, .. } if text == "answer"));
+    }
 }
 
 #[cfg(test)]
