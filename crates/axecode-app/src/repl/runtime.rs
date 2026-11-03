@@ -100,6 +100,16 @@ pub(crate) struct Shared {
     pub last_call_size: Mutex<Option<(u64, u64)>>,
     /// MCP servers, connected on first use by the `mcp` module.
     pub mcp: Mutex<Option<Arc<crate::McpToolRegistry>>>,
+    /// System prompt and session-state texts already sent in this
+    /// conversation (see `turn::stable_request`).
+    pub stable_prefix: Mutex<StablePrefix>,
+}
+
+#[derive(Default)]
+pub(crate) struct StablePrefix {
+    pub system: Option<String>,
+    /// (history index of a user message, state text sent with it)
+    pub states: Vec<(usize, String)>,
 }
 
 impl Shared {
@@ -221,6 +231,7 @@ impl ReplRuntime {
             last_input_tokens: Mutex::new(0),
             last_call_size: Mutex::new(None),
             mcp: Mutex::new(None),
+            stable_prefix: Mutex::new(Default::default()),
         });
         Arc::new_cyclic(|me| Self {
             shared,

@@ -254,13 +254,12 @@ async fn run_inner(
             }
         }
 
-        let mut provider_request = ProviderRequest::new(meta.model.clone(), history.clone())
-            .with_system(system)
+        let (sent_system, sent_history) =
+            stable_request(&mut lock(&shared.stable_prefix), &system, volatile_from, &reminders, &history);
+        let mut provider_request = ProviderRequest::new(meta.model.clone(), sent_history)
+            .with_system(sent_system)
             .with_tools(tools)
             .with_cache_key(meta.id.clone());
-        if let Some(offset) = volatile_from {
-            provider_request = provider_request.with_volatile_system_from(offset);
-        }
         provider_request.effort = meta.model.effort;
         provider_request.max_output_tokens = max_output_tokens;
 
@@ -601,6 +600,108 @@ async fn pause(delay: Duration, sink: &Arc<dyn TurnSink>) -> bool {
             return false;
         }
         tokio::time::sleep(left.min(CANCEL_POLL)).await;
+    }
+}
+
+/// Keeps every request of a conversation on the same prefix: replayed
+/// thinking blocks are only accepted while the system prompt and the earlier
+/// messages are byte-identical to when they were produced.
+///
+/// * The system prompt is frozen at its first value; if the stable part later
+///   changes (harness edited during the conversation), the new layer is sent
+///   as session state instead.
+/// * Session state (todo, goal, peer messages...) is attached to the user
+///   message it was sent with, and that same text is sent again with that
+///   message on every later request.
+pub(crate) fn stable_request(
+    prefix: &mut super::runtime::StablePrefix,
+    system: &str,
+    volatile_from: Option<usize>,
+    reminders: &[String],
+    history: &[ChatMessage],
+) -> (String, Vec<ChatMessage>) {
+    let (stable, volatile) = match volatile_from {
+        Some(at) if at <= system.len() && system.is_char_boundary(at) => {
+            (&system[..at], system[at..].trim())
+        }
+        _ => (system, ""),
+    };
+    let mut state = volatile.to_string();
+    let frozen = prefix.system.get_or_insert_with(|| stable.to_string()).clone();
+    if frozen != stable {
+        let layer = reminders
+            .iter()
+            .map(|block| block.trim())
+            .filter(|block| !block.is_empty())
+            .collect::<Vec<_>>()
+            .join("\n\n");
+        if !layer.is_empty() {
+            state = format!("{layer}\n\n{state}").trim().to_string();
+        }
+    }
+    // Entries past the end of the history (compaction, edit) are forgotten.
+    let len = history.len();
+    prefix.states.retain(|(index, _)| *index < len);
+    if let Some(last) = len.checked_sub(1) {
+        let is_user = history[last].role == Role::User;
+        let known = prefix.states.iter().any(|(index, _)| *index == last);
+        let unchanged = prefix.states.last().is_some_and(|(_, text)| *text == state);
+        if is_user && !known && !state.is_empty() && !unchanged {
+            prefix.states.push((last, state));
+        }
+    }
+    let mut sent = history.to_vec();
+    for (index, text) in &prefix.states {
+        if let Some(message) = sent.get_mut(*index) {
+            if message.role == Role::User {
+                message.parts.push(Part::Text {
+                    text: text.clone(),
+                    meta: None,
+                });
+            }
+        }
+    }
+    (frozen, sent)
+}
+
+#[cfg(test)]
+mod stable_prefix_tests {
+    use super::*;
+    use crate::repl::prompt;
+
+    fn split(todo: &str, layer: &str) -> (String, Option<usize>, Vec<String>) {
+        let reminders = vec![layer.to_string()];
+        let state = vec![format!("<todo_list_state>\n{todo}\n</todo_list_state>")];
+        let (system, at) = prompt::system_prompt_split("\n## files\n", None, &reminders, &state);
+        (system, at, reminders)
+    }
+
+    #[test]
+    fn two_turns_keep_the_system_prompt_and_earlier_messages_identical() {
+        let mut prefix = super::super::runtime::StablePrefix::default();
+        let mut history = vec![ChatMessage::user_text("first")];
+        let (system, at, reminders) = split("- 1 [pending] a", "## Notes\n- old");
+        let (system_1, sent_1) = stable_request(&mut prefix, &system, at, &reminders, &history);
+
+        history.push(ChatMessage {
+            role: Role::Assistant,
+            parts: vec![Part::Text { text: "answer".into(), meta: None }],
+        });
+        history.push(ChatMessage::user_text("second"));
+        // Todo state and harness layer both changed between the two turns.
+        let (system, at, reminders) = split("- 1 [done] a", "## Notes\n- new");
+        let (system_2, sent_2) = stable_request(&mut prefix, &system, at, &reminders, &history);
+
+        assert_eq!(system_1.as_bytes(), system_2.as_bytes());
+        assert!(!system_1.contains("todo_list_state"));
+        let json = |m: &ChatMessage| serde_json::to_string(m).unwrap();
+        assert_eq!(json(&sent_1[0]), json(&sent_2[0]), "earlier user message must not change");
+        assert!(json(&sent_1[0]).contains("[pending]"));
+        let last = json(sent_2.last().unwrap());
+        assert!(last.contains("[done]") && last.contains("- new"));
+        // A third request of the same turn (tool round) changes nothing earlier.
+        let (_, sent_3) = stable_request(&mut prefix, &system, at, &reminders, &history);
+        assert_eq!(json(&sent_2[2]), json(&sent_3[2]));
     }
 }
 
