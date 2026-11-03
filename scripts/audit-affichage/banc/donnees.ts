@@ -118,7 +118,7 @@ export function historique(options: { compaction?: boolean; long?: boolean; lien
           texte:
             "Trouvé : la **jauge de contexte** garde `min-width: 140px`. Je la laisse se réduire et je passe les libellés secondaires en icônes sous 420 px.\n\n" +
             "| Largeur | Avant | Après |\n|---|---|---|\n| 800 px | Send coupé | OK |\n| 1024 px | OK | OK |\n\n" +
-            "```css\n.composer__gauge { min-width: 0; flex: 0 1 auto; }\n.composer__send { flex: none; white-space: nowrap; }\n```",
+            "```css\n.composer__gauge { min-width: 0; flex: 0 1 auto; }\n/* ligne longue : la jauge se réduit avant le bouton Send, qui garde toujours sa largeur, même à 800 px avec trois colonnes ouvertes FIN-LIGNE-LONGUE */\n.composer__send { flex: none; white-space: nowrap; }\n```",
           outils: [
             outil("edit_file", { path: "src/styles.css", old_string: "min-width: 140px", new_string: "min-width: 0" }, "Fichier modifié.", false, { file_changes: DIFF }),
             outil("bash", { command: "npx tsc -p . && node --test tests/", description: "Vérifier" }, "stream error: connection reset by peer (os error 104) while reading the response body from https://api.anthropic.com/v1/messages", true),

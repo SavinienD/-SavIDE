@@ -92,6 +92,10 @@ export const SCENES = [
     temoins: ["sel:[data-testid='voix-modele-local'] input[type='radio']:checked", "Moyen (small)", "Petit (base)"] },
   // 0.1.75 — dictée en direct : texte provisoire grisé au-dessus du compositeur pendant l'enregistrement.
   // copier-code — bouton « Copier » d'un bloc de code du chat : clic puis retour « Copié ».
+  // copie-selection — sélection à la souris du texte au-dessus d'un bloc de code + du bloc (ligne longue
+  // coupée par le défilement horizontal), puis Ctrl+C : le presse-papiers a les lignes ENTIÈRES.
+  { id: "copie-selection-code", sim: {}, stockage: () => colonnes([ids(3)]), copieSelection: {},
+    temoins: ["sel:.chat-body .bloc-copie"] },
   { id: "copier-code", sim: {}, stockage: () => colonnes([ids(3)]), cliquer: ".chat-body .bloc-copie__btn", defilerAvantClic: true, pauseClics: 50, temoins: ["sel:.bloc-copie[data-etat='copie'] .bloc-copie__btn"] },
   { id: "dictee-direct", sim: {}, stockage: () => colonnes([ids(3)]), cliquer: ".axe-voix__micro", pauseClics: 4500, temoins: ["sel:.composer__box > .axe-voix__provisoire", "clic:.axe-voix__valider"] },
   { id: "dictee-direct-c3", sim: {}, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]), cliquer: ".axe-voix__micro", pauseClics: 4500, temoins: ["sel:.composer__box > .axe-voix__provisoire", "clic:.axe-voix__valider", "clic:.axe-voix__annuler"] },

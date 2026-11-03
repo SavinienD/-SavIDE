@@ -1,6 +1,7 @@
 // copier-code — bouton « Copier » au survol (en haut à droite) de chaque bloc de code
 // du chat et des blocs de commande / sortie des outils ; retour « Copié ».
-import { useRef, useState, type HTMLAttributes, type ReactNode } from "react";
+import { useEffect, useRef, useState, type HTMLAttributes, type ReactNode } from "react";
+import { installerCopieSelection } from "./copieSelection";
 
 export async function copierTexte(texte: string): Promise<boolean> {
   try {
@@ -34,6 +35,8 @@ export function PreCopiable({ children, ...rest }: Props) {
   const [etat, setEtat] = useState<"repos" | "copie" | "echec">("repos");
   const survol = useRef(false);
   const minuterie = useRef<number | null>(null);
+  // copie-selection — sélection qui traverse le bloc : lignes entières copiées (cf. copieSelection.ts).
+  useEffect(() => installerCopieSelection(), []);
   const copier = async (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();

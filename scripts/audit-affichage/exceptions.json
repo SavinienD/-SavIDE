@@ -4,7 +4,7 @@
     {
       "regle": "chevauchement",
       "selecteur": ".chat-body__bas",
-      "situation": "/copier-code$",
+      "situation": "/(copier-code|copie-selection-code)$",
       "raison": "Scène copier-code : le fil est remonté jusqu'au bloc de code, le bouton flottant « Aller en bas » apparaît donc au-dessus du contenu, comme prévu."
     },
     {
