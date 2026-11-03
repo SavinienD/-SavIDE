@@ -410,3 +410,53 @@ async fn quiet_system_note_does_not_start_a_turn() {
     wait_turns(&counters, 1).await;
     std::fs::remove_dir_all(dir).ok();
 }
+
+
+// File en attente : poussée pendant un tour, elle part à la fin du tour,
+// sans aucun client qui regarde la conversation (changement de projet).
+#[tokio::test(flavor = "multi_thread")]
+async fn queue_pushed_during_turn_leaves_at_end() {
+    let (d, counters, _dir) = daemon(false, |_| {});
+    let id = create(&d);
+    d.send_user(&id, ChatMessage::user_text("slow")).unwrap();
+    wait_turns(&counters, 1).await;
+    for (i, t) in ["apres-un", "apres-deux"].iter().enumerate() {
+        d.dispatch(0, "queue.push", json!({"sessionId": id, "item": {"id": format!("q{i}"), "text": t,
+            "message": {"role": "user", "parts": [{"type": "text", "text": t}]}}}))
+            .await
+            .unwrap();
+    }
+    wait_text(&d, &id, "reply to: apres-deux").await;
+    wait_status(&d, &id, SessionStatus::Idle, Duration::from_secs(5)).await;
+    let q = d.dispatch(0, "queue.list", json!({"sessionId": id})).await.unwrap();
+    assert_eq!(q, json!([]));
+}
+
+
+
+// « Envoyer maintenant » / « Arrière-plan » : Stop puis queue.resume pendant
+// que le tour s'arrête encore → le message part à la fin du tour. Un Stop sur
+// une session libre ne met pas la file en pause.
+#[tokio::test(flavor = "multi_thread")]
+async fn stop_then_resume_sends_queue_after_turn() {
+    let (d, counters, _dir) = daemon(false, |_| {});
+    let id = create(&d);
+    d.send_user(&id, ChatMessage::user_text("slow")).unwrap();
+    wait_turns(&counters, 1).await;
+    d.dispatch(0, "queue.push", json!({"sessionId": id, "item": {"id": "q0", "text": "tout-de-suite",
+        "message": {"role": "user", "parts": [{"type": "text", "text": "tout-de-suite"}]}}}))
+        .await
+        .unwrap();
+    stop(&d, &id).await;
+    let st = d.dispatch(0, "queue.state", json!({"sessionId": id})).await.unwrap();
+    assert_eq!(st["paused"], json!(true), "Stop seul : file en pause");
+    d.dispatch(0, "queue.resume", json!({"sessionId": id})).await.unwrap();
+    wait_text(&d, &id, "reply to: tout-de-suite").await;
+
+    // Stop sur une session libre : pas de pause.
+    wait_status(&d, &id, SessionStatus::Idle, Duration::from_secs(5)).await;
+    let other = create(&d);
+    stop(&d, &other).await;
+    let st = d.dispatch(0, "queue.state", json!({"sessionId": other})).await.unwrap();
+    assert_eq!(st["paused"], json!(false));
+}

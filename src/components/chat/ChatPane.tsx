@@ -2869,7 +2869,7 @@ export function ChatPane({
             ...queue.filter((q) => q.id !== last.id),
           ]),
         );
-        void onStop().catch(() => undefined);
+        void arreterPuisEnvoyerFile(last.id).catch(() => undefined);
         return;
       }
       lastEnterAtRef.current = now;
@@ -3165,6 +3165,22 @@ export function ChatPane({
     [conversationId, setSubAgentViewsForConversation, workspacePath],
   );
 
+  // file-envoi-immediat — « envoyer maintenant » (flèche ou double Entrée)
+  // pendant un tour : l'élément passe en tête de la file du service, le tour
+  // s'arrête, puis la file reprend (un Stop la met en pause, voulu pour le
+  // bouton Stop, pas ici) : le message part dès la fin du tour.
+  const arreterPuisEnvoyerFile = useCallback(
+    async (itemId: string) => {
+      await deplacerFile(workspacePath, conversationId, itemId, 0).catch(() => {});
+      try {
+        await onStop();
+      } finally {
+        await reprendreFile(workspacePath, conversationId).catch(() => {});
+      }
+    },
+    [workspacePath, conversationId, onStop],
+  );
+
   const handleQueuedPromptSend = useCallback(
     (id: string) => {
       const itemIndex = queuedPrompts.findIndex((prompt) => prompt.id === id);
@@ -3188,8 +3204,7 @@ export function ChatPane({
             return moveQueuedPrompt(queue, id, first.id);
           }),
         );
-        void deplacerFile(workspacePath, conversationId, id, 0).catch(() => {});
-        void onStop().catch((err) => {
+        void arreterPuisEnvoyerFile(id).catch((err) => {
           setView((prev) => ({
             ...prev,
             lastError: String(err),
@@ -3205,7 +3220,7 @@ export function ChatPane({
       conversationOccupee,
       conversationId,
       isStreaming,
-      onStop,
+      arreterPuisEnvoyerFile,
       queuedPrompts,
       sendQueuedPrompt,
       view.status,
