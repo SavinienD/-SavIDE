@@ -1,6 +1,8 @@
 import {
   Children,
   cloneElement,
+  createContext,
+  useContext,
   isValidElement,
   memo,
   useCallback,
@@ -16,12 +18,18 @@ import { api } from "../../lib/ipc";
 import { MermaidDiagram } from "./MermaidDiagram";
 import { PreCopiable } from "./PreCopiable"; // copier-code
 import { useMenuCheminChat } from "./MenuCheminChat";
+import { caseDansLigne } from "./casesMarkdown";
 import { decouperLiens, estFichier, estUrl, raccourcirUrl } from "./liensChat";
 
 type Props = {
   text: string;
   onOpenFile: (path: string) => void;
+  /** aperçu d'un fichier : clic sur une case = ligne (base 1) de sa source. Absent (chat) : cases figées. */
+  onToggleTask?: (ligne: number) => void;
 };
+
+/** ligne source de l'élément de liste en cours (pour sa case), null hors liste à cocher. */
+const LigneCase = createContext<{ ligne: number; source: string } | null>(null);
 
 type LinkifyOptions = {
   onOpenFile: (path: string) => void;
@@ -53,6 +61,29 @@ function UrlLink({ href, children }: { href: string; children: ReactNode }) {
     >
       {children}
     </a>
+  );
+}
+
+/** case d'une liste à cocher : cliquable seulement si sa ligne source en est bien une. */
+function CaseTache({ basculer, ...props }: JSX.IntrinsicElements["input"] & { basculer: (ligne: number) => void }) {
+  const ctx = useContext(LigneCase);
+  if (props.type !== "checkbox") return <input {...props} />;
+  const ligne = ctx?.ligne ?? 0;
+  const source = ctx ? ctx.source.split("\n")[ligne - 1] ?? "" : "";
+  if (!ctx || !caseDansLigne(source.replace(/\r$/, ""))) return <input {...props} />;
+  return (
+    <input
+      type="checkbox"
+      className="md-task"
+      checked={Boolean(props.checked)}
+      data-ligne={ligne}
+      title={props.checked ? "Décocher (enregistre le fichier)" : "Cocher (enregistre le fichier)"}
+      onChange={(e) => {
+        e.currentTarget.focus({ preventScroll: true }); // Ctrl+Z juste après (WebKit ne donne pas le focus au clic)
+        basculer(ligne);
+      }}
+      onClick={(e) => e.stopPropagation()}
+    />
   );
 }
 
@@ -157,7 +188,7 @@ export function FileLinkedText({ text, onOpenFile }: Props) {
  * Markdown renderer tuned for chat. GFM + highlight.js. Memoized so
  * streaming token-by-token re-renders don't trash the whole tree.
  */
-export const Markdown = memo(function Markdown({ text, onOpenFile: ouvrirDemande }: Props) {
+export const Markdown = memo(function Markdown({ text, onOpenFile: ouvrirDemande, onToggleTask }: Props) {
   // defil178 — composants stables : recréés à chaque rendu, ils changeaient de type pour
   // React, qui démontait puis remontait chaque paragraphe, bloc de code et diagramme (à chaque
   // morceau de texte reçu, à chaque nouvel onOpenFile) : lien cliqué et focus perdus. Le rappel
@@ -165,6 +196,12 @@ export const Markdown = memo(function Markdown({ text, onOpenFile: ouvrirDemande
   const ouvrirRef = useRef(ouvrirDemande);
   ouvrirRef.current = ouvrirDemande;
   const onOpenFile = useCallback((path: string) => ouvrirRef.current(path), []);
+  // même principe pour la bascule des cases (seule sa présence recrée les composants).
+  const basculerRef = useRef(onToggleTask);
+  basculerRef.current = onToggleTask;
+  const cliquable = Boolean(onToggleTask);
+  const texteRef = useRef(text);
+  texteRef.current = text;
   const components = useMemo<Components>(
     () => ({
       pre({ children }) {
@@ -191,8 +228,14 @@ export const Markdown = memo(function Markdown({ text, onOpenFile: ouvrirDemande
       p({ children }) {
         return <p>{linkifyChildren(children, { onOpenFile })}</p>;
       },
-      li({ children }) {
-        return <li>{linkifyChildren(children, { onOpenFile })}</li>;
+      li({ children, node, className }) {
+        const contenu = <li className={className}>{linkifyChildren(children, { onOpenFile })}</li>;
+        const ligne = node?.position?.start.line;
+        if (!cliquable || !ligne || !String(className ?? "").includes("task-list-item")) return contenu;
+        return <LigneCase.Provider value={{ ligne, source: texteRef.current }}>{contenu}</LigneCase.Provider>;
+      },
+      input({ node: _node, ...props }) {
+        return <CaseTache {...props} basculer={(n) => basculerRef.current?.(n)} />;
       },
       h1({ children }) {
         return <h1>{linkifyChildren(children, { onOpenFile })}</h1>;
@@ -254,7 +297,7 @@ export const Markdown = memo(function Markdown({ text, onOpenFile: ouvrirDemande
         );
       },
     }),
-    [onOpenFile],
+    [onOpenFile, cliquable],
   );
   return (
     <div className="md">

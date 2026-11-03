@@ -246,6 +246,9 @@ export function contexte(used = 168_000) {
   };
 }
 
+// QCM des scènes « cases-* » (CRLF, cases cochées, une fausse case dans du code).
+export const QCM_MD = "# QCM\r\n\r\n<!-- id: q1 -->\r\n1. Choix A ?\r\n\r\n- [ ] oui\r\n- [x] non\r\n\r\n```md\r\n- [ ] pas une case\r\n```\r\n\r\n<!-- id: q2 -->\r\n- [X] déjà\r\n- [ ] autre\r\n";
+
 // html — page des scènes « html-* » : image et style locaux, image distante
 // (doit être bloquée par la CSP de l'aperçu) et script (coupé par défaut).
 export const PAGE_HTML = `<!doctype html>
