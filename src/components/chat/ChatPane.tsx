@@ -103,6 +103,7 @@ import {
 import type { AgentEvent } from "../../types";
 import { libelleStop } from "./arretForce"; // stop-force
 import { agentsApi } from "../agents/agentsApi"; // sub-n
+import { estWindows, formaterTexte, modPrincipal } from "../../lib/plateforme";
 
 type Attachment = {
   path: string;
@@ -481,8 +482,7 @@ export function ChatPane({
     () => ({
       afficher: avecExplorateur ? (chemin) => onRevealPathRef.current?.(chemin) : undefined,
       copier: (chemin, genre) => {
-        const plateforme = typeof navigator !== "undefined" ? navigator.platform || navigator.userAgent || "" : "";
-        const c = cheminsACopier(chemin, workspacePathRef.current ?? "", /win/i.test(plateforme));
+        const c = cheminsACopier(chemin, workspacePathRef.current ?? "", estWindows());
         void navigator.clipboard?.writeText(genre === "relatif" ? c.relatif ?? c.complet : c.complet).catch(() => {});
       },
     }),
@@ -1874,7 +1874,7 @@ export function ChatPane({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey && event.key === "End")) return;
+      if (!(modPrincipal(event) && event.key === "End")) return;
       const pane = bodyRef.current?.parentElement;
       const actif = document.activeElement;
       if (!pane || !(actif === document.body || pane.contains(actif))) return;
@@ -3659,7 +3659,7 @@ export function ChatPane({
           type="button"
           className="chat-body__bas"
           data-testid="chat-aller-en-bas"
-          title="Aller en bas (Ctrl+Fin)"
+          title={formaterTexte("Aller en bas (Ctrl+Fin)")}
           aria-label="Aller en bas"
           onClick={allerEnBas}
         >

@@ -25,6 +25,7 @@ import {
   UI_ZOOM_MIN,
   UI_ZOOM_STEP,
 } from "./zoom"; // zoom
+import { formaterRaccourci } from "../lib/plateforme";
 
 /** Settings > Apparence: text size, presets, free background picker and a live mini-IDE preview. */
 export function AppearanceSection() {
@@ -93,7 +94,7 @@ export function AppearanceSection() {
           </button>
         </div>
         <span className="axe-appearance__hint">
-          Agrandit ou réduit toute la fenêtre (le zoom d'origine de SavIDE). Glissez le curseur à la souris, ou Ctrl +, Ctrl −, Ctrl 0.
+          Agrandit ou réduit toute la fenêtre (le zoom d'origine de SavIDE). Glissez le curseur à la souris, ou {["Ctrl + +", "Ctrl + −", "Ctrl + 0"].map((c) => formaterRaccourci(c)).join(", ")}.
         </span>
       </section>
 

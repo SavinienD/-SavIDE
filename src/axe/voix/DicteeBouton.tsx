@@ -5,6 +5,7 @@ import { formaterDuree } from "./inserer";
 import { useDictee } from "./useDictee";
 import { useDicteeDisponible } from "./useDicteeDisponible"; // 0.1.71
 import "./voix.css";
+import { formaterTexte } from "../../lib/plateforme";
 
 /**
  * voix — bouton micro du compositeur, « comme le message vocal de ChatGPT » :
@@ -87,7 +88,7 @@ export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
         type="button"
         className="composer__iconbtn axe-voix__micro"
         aria-label="Dicter"
-        title="Dicter (Ctrl+Maj+D) : transcription Whisper gratuite (VM ou poste), en direct, texte modifiable avant envoi"
+        title={formaterTexte("Dicter (Ctrl+Maj+D) : transcription Whisper gratuite (VM ou poste), en direct, texte modifiable avant envoi")}
         data-actif={d.phase === "repos" || d.phase === "erreur" ? "false" : "true"}
         onClick={() => void d.demarrer()}
         tabIndex={enregistre || d.phase === "transcription" ? -1 : 0}
@@ -117,7 +118,7 @@ export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
             type="button"
             className="axe-voix__rond axe-voix__valider"
             aria-label="Dicter"
-            title="Terminer et transcrire (Ctrl+Maj+D)"
+            title={formaterTexte("Terminer et transcrire (Ctrl+Maj+D)")}
             disabled={d.phase !== "enregistrement"}
             onClick={() => void d.terminer()}
           >

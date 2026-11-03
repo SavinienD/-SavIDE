@@ -24,12 +24,11 @@ import {
   type CleTri,
   type TriExplorateur,
 } from "../lib/arbreFichiers";
+import { estMac, estWindows } from "../lib/plateforme";
 
 // explorateur — système du poste (raccourcis Cmd sur macOS, séparateur « \ » sous Windows).
-const PLATEFORME =
-  typeof navigator !== "undefined" ? navigator.platform || navigator.userAgent || "" : "";
-const EST_MAC = /mac/i.test(PLATEFORME);
-const EST_WINDOWS = /win/i.test(PLATEFORME);
+const EST_MAC = estMac();
+const EST_WINDOWS = estWindows();
 const LIBELLE_REVELER = EST_MAC
   ? "Afficher dans le Finder"
   : EST_WINDOWS

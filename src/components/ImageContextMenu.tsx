@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Icon } from "@iconify/react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { api } from "../lib/ipc";
+import { estMac, estWindows } from "../lib/plateforme";
 
 type Props = {
   x: number;
@@ -157,10 +158,8 @@ function extensionFromName(name: string): string {
 }
 
 function revealLabel(): string {
-  const platform =
-    typeof navigator !== "undefined" ? navigator.platform.toLowerCase() : "";
-  if (platform.includes("mac")) return "Afficher dans le Finder";
-  if (platform.includes("win")) return "Afficher dans l'Explorateur";
+  if (estMac()) return "Afficher dans le Finder";
+  if (estWindows()) return "Afficher dans l'Explorateur";
   return "Afficher dans le gestionnaire de fichiers";
 }
 

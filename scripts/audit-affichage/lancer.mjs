@@ -15,7 +15,7 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync, rmSync, statSync, l
 import { fileURLToPath } from "node:url";
 import { dirname, resolve, join, extname } from "node:path";
 import { trouverNavigateur } from "./navigateur.mjs";
-import { emulerWindows } from "./windows.mjs";
+import { emulerMac, emulerWindows } from "./windows.mjs";
 import { SCENES } from "./scenes.mjs";
 import { WS_BANC } from "./constantes.mjs";
 
@@ -415,10 +415,11 @@ async function preparerScene(page, si, sc) {
     if (g) await glisser(page, g, -2000);
   }
   if (sc.reduireVolets) {
-    await page.keyboard.down("Control"); await page.keyboard.press("KeyB"); await page.keyboard.up("Control");
+    const mod = sc.mac ? "Meta" : "Control";
+    await page.keyboard.down(mod); await page.keyboard.press("KeyB"); await page.keyboard.up(mod);
     await pause(300);
-    await page.keyboard.down("Control"); await page.keyboard.down("Alt"); await page.keyboard.press("KeyB");
-    await page.keyboard.up("Alt"); await page.keyboard.up("Control");
+    await page.keyboard.down(mod); await page.keyboard.down("Alt"); await page.keyboard.press("KeyB");
+    await page.keyboard.up("Alt"); await page.keyboard.up(mod);
     await pause(300);
   }
   delete sc._echecPoignee;
@@ -500,9 +501,9 @@ async function preparerScene(page, si, sc) {
   }
   if (sc.reglages) {
     // Raccourci de l'appli : Ctrl + , (axe/raccourcis.ts).
-    await page.keyboard.down("Control");
+    await page.keyboard.down(sc.mac ? "Meta" : "Control");
     await page.keyboard.press("Comma");
-    await page.keyboard.up("Control");
+    await page.keyboard.up(sc.mac ? "Meta" : "Control");
     await page.waitForSelector(".settings-pane", { visible: true, timeout: 5000 }).catch(() => undefined);
   }
   // html — ouvre un fichier de l'arbre (clic sur sa ligne) dans l'éditeur.
@@ -796,6 +797,8 @@ async function executer(page, travail, journal, rendre) {
   const { l, h, sc } = travail;
   const premiere = situations.find((s) => s.largeur === l && s.hauteur === h);
   let preparation = null;
+  // Système simulé par scène : Windows par défaut, macOS si « mac: true ».
+  await (sc.mac ? emulerMac : emulerWindows)(page);
   try {
     await preparerScene(page, premiere, sc);
   } catch (err) {

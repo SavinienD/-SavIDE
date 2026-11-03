@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { RACCOURCIS } from "./raccourcis";
+import { RACCOURCIS, combinaisonAffichee } from "./raccourcis";
+import { estMac, formaterRaccourci } from "../lib/plateforme";
 
 /** raccourcis — Settings > Raccourcis : pense-bête en lecture seule, lu
  *  directement dans le registre (axe/raccourcis.ts), avec recherche. */
@@ -9,7 +10,7 @@ export function RaccourcisSection() {
     const n = (t: string) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const f = n(q.trim());
     const liste = RACCOURCIS.filter(
-      (r) => !f || n(`${r.libelle} ${r.combinaison} ${r.categorie}`).includes(f),
+      (r) => !f || n(`${r.libelle} ${r.combinaison} ${combinaisonAffichee(r)} ${r.categorie}`).includes(f),
     );
     const m = new Map<string, typeof liste>();
     for (const r of liste) m.set(r.categorie, [...(m.get(r.categorie) ?? []), r]);
@@ -17,11 +18,11 @@ export function RaccourcisSection() {
   }, [q]);
 
   return (
-    <div className="axe-appearance">
+    <div className="axe-appearance axe-raccourcis" data-mac={estMac() ? "true" : "false"}>
       <header>
         <h2>Raccourcis</h2>
         <p className="axe-appearance__hint">
-          Tous les raccourcis clavier de SavIDE. Sur macOS, Ctrl = Cmd.
+          Tous les raccourcis clavier de SavIDE.{estMac() ? " ⌘ = Cmd, ⌥ = Option, ⇧ = Maj." : ""}
         </p>
       </header>
       <section className="axe-appearance__block">
@@ -49,9 +50,9 @@ export function RaccourcisSection() {
                       {r.libelle}
                       {r.windowsSeulement ? " (Windows)" : ""}
                     </td>
-                    <td style={{ padding: "6px 0", textAlign: "right", whiteSpace: "nowrap" }}>
-                      <kbd style={{ fontFamily: "var(--font-mono, monospace)", padding: "2px 6px", border: "1px solid var(--line-1, rgba(128,128,128,.4))", borderRadius: 4 }}>
-                        {r.combinaison}
+                    <td style={{ padding: "6px 0 6px 12px", textAlign: "right" }}>
+                      <kbd style={{ display: "inline-block", whiteSpace: "normal", overflowWrap: "anywhere", fontFamily: "var(--font-mono, monospace)", padding: "2px 6px", border: "1px solid var(--line-1, rgba(128,128,128,.4))", borderRadius: 4 }}>
+                        {formaterRaccourci(r.combinaison)}
                       </kbd>
                     </td>
                   </tr>
