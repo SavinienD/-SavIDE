@@ -465,6 +465,23 @@ pub(crate) struct VoixEtatInput {
     workspace_path: Option<String>,
 }
 
+/// macOS : ouvre Réglages Système > Confidentialité et sécurité > Micro.
+#[tauri::command]
+pub(crate) async fn voix_ouvrir_reglages_micro() -> std::result::Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        crate::__nw_std("open")
+            .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Err("disponible seulement sur macOS".into())
+    }
+}
+
 /// État des moteurs pour Réglages > Dictée : `voice.status` de chaque service,
 /// présence d'une clé OpenAI (jamais la clé elle-même).
 #[tauri::command]

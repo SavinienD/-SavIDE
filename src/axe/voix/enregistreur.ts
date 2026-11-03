@@ -39,12 +39,25 @@ export function classerErreurMicro(err: unknown): ErreurMicro {
   return "autre";
 }
 
-export function messageErreurMicro(type: ErreurMicro): string {
+export type Plateforme = "mac" | "windows" | "linux";
+
+export function plateformeCourante(): Plateforme {
+  const p = typeof navigator !== "undefined" ? `${navigator.platform} ${navigator.userAgent}` : "";
+  if (/mac/i.test(p)) return "mac";
+  if (/win/i.test(p)) return "windows";
+  return "linux";
+}
+
+export function messageErreurMicro(type: ErreurMicro, plateforme: Plateforme = plateformeCourante()): string {
   switch (type) {
     case "non-supporte":
       return "Enregistrement audio indisponible dans cette fenêtre.";
     case "refuse":
-      return "Micro refusé. Autorisez-le (invite de l'appli, ou Paramètres Windows > Confidentialité > Microphone > « Autoriser les applications de bureau »).";
+      if (plateforme === "mac")
+        return "Micro refusé par macOS. Autorisez SavIDE dans Réglages Système > Confidentialité et sécurité > Micro, puis relancez l'appli.";
+      if (plateforme === "windows")
+        return "Micro refusé. Autorisez-le (invite de l'appli, ou Paramètres Windows > Confidentialité > Microphone > « Autoriser les applications de bureau »).";
+      return "Micro refusé. Autorisez l'accès au micro pour SavIDE dans les réglages du système.";
     case "aucun-micro":
       return "Aucun micro détecté.";
     case "occupe":
