@@ -95,6 +95,7 @@ export const SCENES = [
   { id: "git-branche-longue-local", sim: { brancheLongue: true, cloud: false }, stockage: () => colonnes([ids(3)]), terminal: true, cliquer: ".terminal-tab[data-tab='git']", pauseClics: 800, temoins: ["sel:.terminal-shell .git-panel__row", "sel:.terminal-shell .git-panel__commit"] },
   { id: "c1-terminal", sim: {}, stockage: () => colonnes([ids(3)]), terminal: true, temoins: ["sel:.terminal-shell .terminal-tabs"] },
   { id: "explorateur-hauteur", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["sel:.sidebar__section .tree-row"] },
+  { id: "agent-terminal-retreci", sim: {}, stockage: () => colonnes([ids(3)]), terminal: true, cliquer: ".terminal-tab[data-tab='prime']", pauseClics: 800, retrecirTerminal: 60, temoins: ["sel:.terminal-shell .cloud-term__local-host .xterm-screen"] },
   { id: "c1-terminal-redim", sim: {}, stockage: () => colonnes([ids(3)]), terminal: true, redimTerminal: 37, temoins: ["sel:.terminal-shell .terminal-tabs"] },
   { id: "c1-explorateur-ferme", sim: {}, stockage: (l, h) => ({ ...colonnes([ids(3)]), ...explorateurFerme(l, h) }), temoins: ["sel:.volet-flottant"] },
   { id: "c2", sim: {}, stockage: () => colonnes([ids(2), ["c-003"]]), terminal: true, temoins: ["sel:.colonne-chat + .gutter + .colonne-chat"] },
