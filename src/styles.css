@@ -428,6 +428,48 @@ textarea {
 .welcome__recent:hover {
   background: var(--bg-3);
 }
+/* axe:recents-180 — dossiers récents : liste bornée qui défile, croix de retrait par carte. */
+.welcome__recents[data-liste="dossiers"] {
+  max-height: min(380px, 45vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+.welcome__recent-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+}
+.welcome__recent-item > .welcome__recent {
+  padding-right: 40px;
+}
+.welcome__recent-retirer {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
+}
+.welcome__recent-item:hover .welcome__recent-retirer,
+.welcome__recent-item:focus-within .welcome__recent-retirer {
+  opacity: 1;
+}
+.welcome__recent-retirer:hover,
+.welcome__recent-retirer:focus-visible {
+  color: var(--text-0);
+  background: var(--bg-5);
+}
 .welcome__recent:active {
   background: var(--bg-4);
   transform: translateY(1px);
