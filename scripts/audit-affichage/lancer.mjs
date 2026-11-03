@@ -164,6 +164,51 @@ async function cliquerTexte(page, selecteur, texte) {
 // Rend null si tout va bien, sinon la description de l'écart.
 // Clic droit sur un chemin de fichier du chat : menu « Afficher dans
 // l'explorateur », « Copier le chemin », « Copier le chemin relatif » ; la conversation ne bouge pas.
+// copie-selection — glisser du début du texte qui précède un bloc de code jusqu'au bout VISIBLE de sa
+// dernière ligne, puis Ctrl+C. Le texte copié (celui de l'appli si elle gère « copy », sinon la
+// sélection du navigateur) doit garder la ligne longue entière et le texte d'avant.
+async function copieSelection(page) {
+  const pts = await page.evaluate(() => {
+    const pre = [...document.querySelectorAll(".colonne-chat .chat-body .md .bloc-copie pre")].find((p) => p.textContent.includes("FIN-LIGNE-LONGUE"));
+    if (!pre) return null;
+    pre.scrollIntoView({ block: "center" });
+    const avant = pre.closest(".bloc-copie").previousElementSibling;
+    window.__bancCopie = null;
+    window.addEventListener("copy", (ev) => {
+      window.__bancCopie = ev.defaultPrevented ? ev.clipboardData.getData("text/plain") : String(window.getSelection());
+    }, { once: true });
+    const t1 = document.createTreeWalker(avant, NodeFilter.SHOW_TEXT).nextNode();
+    const r1 = document.createRange();
+    r1.setStart(t1, 0); r1.setEnd(t1, 1);
+    const a = r1.getBoundingClientRect(), b = pre.getBoundingClientRect();
+    // Rangée de la ligne longue (2e ligne du bloc) : on lâche la souris à droite, dans la partie visible.
+    const w = document.createTreeWalker(pre, NodeFilter.SHOW_TEXT);
+    let tl = w.nextNode();
+    while (tl && !tl.textContent.includes("/* ligne longue")) tl = w.nextNode();
+    const i0 = tl.textContent.indexOf("/* ligne longue");
+    const r2 = document.createRange(); r2.setStart(tl, i0); r2.setEnd(tl, i0 + 2);
+    const ligne = r2.getBoundingClientRect();
+    return { x1: a.left + 1, y1: a.top + a.height / 2, x2: b.right - 40, y2: ligne.top + ligne.height / 2, debut: t1.textContent.slice(0, 5), largeur: pre.scrollWidth > pre.clientWidth };
+  });
+  if (!pts) return "bloc de code à ligne longue introuvable";
+  if (!pts.largeur) return "la ligne longue ne déborde pas (pas de défilement horizontal)";
+  await page.mouse.move(pts.x1, pts.y1);
+  await page.mouse.down();
+  await page.mouse.move((pts.x1 + pts.x2) / 2, (pts.y1 + pts.y2) / 2, { steps: 5 });
+  await page.mouse.move(pts.x2, pts.y2, { steps: 5 });
+  await page.mouse.up();
+  await page.keyboard.down("Control"); await page.keyboard.press("c"); await page.keyboard.up("Control");
+  await pause(200);
+  const copie = await page.evaluate(() => window.__bancCopie);
+  if (copie == null) return "aucun évènement copy";
+  const ecarts = [];
+  if (!copie.toLowerCase().startsWith(pts.debut.toLowerCase())) ecarts.push("début du texte au-dessus absent");
+  if (!copie.includes("FIN-LIGNE-LONGUE */")) ecarts.push("ligne longue tronquée");
+  if (!copie.includes("flex: 0 1 auto; }\n/* ligne longue")) ecarts.push("retours à la ligne du bloc perdus");
+  if (copie.includes(".composer__send")) ecarts.push("ligne non sélectionnée copiée");
+  return ecarts.length ? ecarts.join(", ") + " — copié : " + JSON.stringify(copie).slice(0,120) + " / attendu " + pts.debut : null;
+}
+
 async function clicDroitChemin(page, e) {
   const corps = `.colonne-chat[data-colonne='${e.col ?? 0}'] .chat-body`;
   await page.evaluate(() => {
@@ -547,6 +592,10 @@ async function preparerScene(page, si, sc) {
   }
   if (sc.cheminChat) {
     const ecart = await clicDroitChemin(page, sc.cheminChat);
+    if (ecart) sc._echecDefil = (sc._echecDefil ? sc._echecDefil + " ; " : "") + ecart;
+  }
+  if (sc.copieSelection) {
+    const ecart = await copieSelection(page);
     if (ecart) sc._echecDefil = (sc._echecDefil ? sc._echecDefil + " ; " : "") + ecart;
   }
   if (sc.barreLiens) {
