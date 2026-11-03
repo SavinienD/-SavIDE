@@ -28,6 +28,8 @@ type Props = {
   onNouvelle: () => void;
   /** e17b — un onglet d'une autre colonne est déposé ici (position). */
   onDeposer?: (id: string, position: number) => void;
+  /** Conversations dont un tour est en cours (rond animé). */
+  enCours?: ReadonlySet<string>;
 };
 
 export function OngletsChat({
@@ -41,6 +43,7 @@ export function OngletsChat({
   onDeposer,
   fermable = false,
   onFermerColonne,
+  enCours,
 }: Props) {
   // onglets-place — trop d'onglets pour la colonne : ils gardent leur taille
   // minimale (plus de croix posées sur l'onglet voisin) et la bande défile, à la
@@ -79,6 +82,7 @@ export function OngletsChat({
               className="onglets-chat__tab"
               data-active={estActif ? "true" : "false"}
               data-detached={estDetache ? "true" : "false"}
+              data-streaming={enCours?.has(onglet.id) ? "true" : "false"}
               title={estDetache ? `${onglet.titre} — détachée, devant` : onglet.titre}
               // e17b — glisser l'onglet vers une autre colonne (ou « + »).
               draggable={!estDetache}
@@ -108,11 +112,15 @@ export function OngletsChat({
                 }
               }}
             >
-              <Icon
-                icon={estDetache ? "solar:pip-linear" : "solar:chat-round-dots-linear"}
-                width={12}
-                height={12}
-              />
+              {enCours?.has(onglet.id) ? (
+                <span className="onglets-chat__spinner" role="status" aria-label="Agent en cours" />
+              ) : (
+                <Icon
+                  icon={estDetache ? "solar:pip-linear" : "solar:chat-round-dots-linear"}
+                  width={12}
+                  height={12}
+                />
+              )}
               <span className="onglets-chat__titre">{onglet.titre}</span>
               {estActif ? (
                 <button

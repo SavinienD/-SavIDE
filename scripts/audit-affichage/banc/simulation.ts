@@ -184,10 +184,12 @@ export function installerSimulation(scene: Scene): void {
       activeConversation: D.conversationSauvee(active, { compaction: !!scene.compaction, liens: !!scene.liensHistorique }),
       modeModelSettings: D.MODES,
     }),
-    list_active_turns: () => (tourActif ? [{ workspaceId: D.WS, conversationId: active, startedAtMs: Date.now() - 95_000, latestSequence: evenementsTour(scene).length }] : []),
+    // Tour en cours : par défaut sur la conversation active ; « tourConv » / « tourWs »
+    // le placent sur une autre ligne, ou avec le chemin sous une autre forme (\\?\, casse).
+    list_active_turns: () => (tourActif ? [{ workspaceId: (scene.tourWs as string | undefined) ?? D.WS, conversationId: (scene.tourConv as string | undefined) ?? active, startedAtMs: Date.now() - 95_000, latestSequence: evenementsTour(scene).length }] : []),
     replay_active_turn_events: (a) => {
       const id = a.conversationId ?? a.input?.conversationId;
-      if (!tourActif || id !== active) return { active: false, workspaceId: D.WS, conversationId: id, latestSequence: 0, events: [] };
+      if (!tourActif || id !== ((scene.tourConv as string | undefined) ?? active)) return { active: false, workspaceId: D.WS, conversationId: id, latestSequence: 0, events: [] };
       const events = evenementsTour(scene);
       return { active: true, workspaceId: D.WS, conversationId: id, startedAtMs: Date.now() - 95_000, latestSequence: events.length, events };
     },

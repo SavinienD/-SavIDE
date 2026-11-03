@@ -103,6 +103,7 @@ import { FreechatView } from "./freechat/FreechatView"; // freechat
 import { AxeLogo } from "../axe/Logo";
 import { UpdateBadge } from "./UpdateBadge";
 import { declarerActivite } from "../lib/activite";
+import { toursDeLEspace } from "../lib/toursActifs";
 import { importerDossier } from "../lib/importDossier"; // import
 import { invoke } from "@tauri-apps/api/core";
 import { SkillsBadge } from "../axe/E4Vues"; // e4
@@ -195,6 +196,9 @@ export function Workspace({
   const [conversations, setConversations] = useState<ConversationSummary[]>(
     bootstrap.conversations,
   );
+  const conversationsRef = useRef(conversations);
+  conversationsRef.current = conversations;
+  const cleConversations = conversations.map((c) => c.id).join("|");
   const [activeConv, setActiveConv] = useState<SavedConversation>(
     bootstrap.activeConversation,
   );
@@ -1703,8 +1707,11 @@ export function Workspace({
 
   const syncActiveTurns = useCallback(
     (activeTurns: ActiveTurnSummary[]) => {
-      const workspaceTurns = activeTurns.filter(
-        (turn) => turn.workspaceId === workspacePathRef.current,
+      // Même règle que l'accueil (chemin normalisé) + conversations affichées.
+      const workspaceTurns = toursDeLEspace(
+        activeTurns,
+        workspacePathRef.current,
+        conversationsRef.current.map((c) => c.id),
       );
       const activeIds = new Set(workspaceTurns.map((turn) => turn.conversationId));
       setStreamingConversationIds((prev) => {
@@ -1823,7 +1830,8 @@ export function Workspace({
     return () => {
       cancelled = true;
     };
-  }, [syncActiveTurns, workspacePath]);
+    // La liste arrive après l'amorce : relire les tours quand elle change.
+  }, [syncActiveTurns, workspacePath, cleConversations]);
 
   useEffect(() => {
     let cancelled = false;
@@ -4018,6 +4026,7 @@ export function Workspace({
                     <OngletsChat
                       onglets={onglets}
                       actif={visible ?? ""}
+                      enCours={streamingConversationIds}
                       detache={chatDetache}
                       onActiver={(id) => {
                         setJournalSession(null); // sub-m
