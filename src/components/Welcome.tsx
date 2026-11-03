@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { Icon } from "@iconify/react";
-import { loadRecents } from "../lib/recents";
+import { loadRecents, removeRecent } from "../lib/recents";
 import { api, cloudRpc } from "../lib/ipc";
 import { CloudLoginButton, useCloudState } from "./cloud/CloudLoginButton";
 import { CLOUD_CONNECTION } from "./cloud/cloudApi";
@@ -235,12 +235,13 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, deriveName }
           <section className="welcome__section">
             <h2 className="welcome__section-heading">Dossiers récents</h2>
             {recents.length > 0 ? (
-              <div className="welcome__recents">
-                {recents.slice(0, MAX_VISIBLE_RECENTS).map((recent) => {
+              <div className="welcome__recents" data-liste="dossiers">
+                {recents.map((recent) => {
                   const isActive = [...active.workspaces].some((id) => samePath(id, recent.path));
+                  const nom = recent.name || deriveName(recent.path);
                   return (
+                    <div key={recent.path} className="welcome__recent-item">
                     <button
-                      key={recent.path}
                       className="welcome__recent"
                       data-active={isActive ? "true" : "false"}
                       onClick={() => onPick(recent.path)}
@@ -254,11 +255,21 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, deriveName }
                       </span>
                       <span className="welcome__recent-body">
                         <span className="welcome__recent-name">
-                          {recent.name || deriveName(recent.path)}
+                          {nom}
                         </span>
                         <span className="welcome__recent-path">{displayPath(recent.path)}</span>
                       </span>
                     </button>
+                    <button
+                      type="button"
+                      className="welcome__recent-retirer"
+                      title="Retirer de la liste (le dossier n'est pas supprimé)"
+                      aria-label={`Retirer ${nom} de la liste`}
+                      onClick={(e) => { e.stopPropagation(); setRecents(removeRecent(recent.path)); }}
+                    >
+                      <Icon icon="solar:close-circle-linear" width={16} height={16} />
+                    </button>
+                    </div>
                   );
                 })}
               </div>
