@@ -6,7 +6,7 @@
 import { WS_BANC as WS } from "./constantes.mjs";
 
 const ids = (n, depart = 0) => Array.from({ length: n }, (_, i) => `c-${String(depart + i + 1).padStart(3, "0")}`);
-const recents25 = () => Array.from({ length: 25 }, (_, i) => ({ path: `C:\\Users\\Savinien\\Documents\\Clients\\client-${String(i + 1).padStart(2, "0")}`, name: `client-${String(i + 1).padStart(2, "0")}`, lastOpenedMs: 1_790_000_000_000 - i * 3_600_000 }));
+const recents25 = () => Array.from({ length: 25 }, (_, i) => ({ path: `C:\\Users\\utilisateur\\Documents\\Clients\\client-${String(i + 1).padStart(2, "0")}`, name: `client-${String(i + 1).padStart(2, "0")}`, lastOpenedMs: 1_790_000_000_000 - i * 3_600_000 }));
 const TITRES = {
   "c-001": "Corriger tous les défauts d'affichage de la barre de titre, du compositeur et des colonnes à 800 px avec la mise à l'échelle Windows à 150 %",
   "c-002": "Facture OVH d'octobre : rapprochement des lignes et export comptable",
