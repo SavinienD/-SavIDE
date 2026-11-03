@@ -602,8 +602,16 @@ async function auditer(page, si, sc, journal, preparation) {
       const p = (window.__bancFournisseurs?.providers ?? []).find((x) => x.id === f);
       return !!p && p.models.map((m) => m.id).join(",") === liste;
     };
+    // « defile:<sél> » : le premier élément visible défile (contenu plus haut que lui, overflow auto/scroll) ;
+    // « compte:<sél>=<n> » : n éléments visibles ; « stocke:<clé>=<n> » : tableau JSON de n entrées dans le stockage local.
+    const defile = (sel) => { const e = visibles(sel)[0]; return !!e && e.scrollHeight > e.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(e).overflowY); };
+    const compte = (spec) => { const i = spec.lastIndexOf("="); return visibles(spec.slice(0, i)).length === Number(spec.slice(i + 1)); };
+    const stocke = (spec) => { const i = spec.lastIndexOf("="); try { return JSON.parse(localStorage.getItem(spec.slice(0, i)) ?? "[]").length === Number(spec.slice(i + 1)); } catch { return false; } };
     const special = (t) =>
-      t.startsWith("champ:") ? champ(t.slice(6))
+      t.startsWith("defile:") ? defile(t.slice(7))
+      : t.startsWith("compte:") ? compte(t.slice(7))
+      : t.startsWith("stocke:") ? stocke(t.slice(7))
+      : t.startsWith("champ:") ? champ(t.slice(6))
       : t.startsWith("enregistre:") ? enregistre(t.slice(11))
       : t.startsWith("presse:") ? window.__bancPresse === t.slice(7)
       : t.startsWith("premier:") ? lignes()[0]?.dataset.entryPath === t.slice(8)

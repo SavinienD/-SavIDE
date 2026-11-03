@@ -6,6 +6,7 @@
 import { WS_BANC as WS } from "./constantes.mjs";
 
 const ids = (n, depart = 0) => Array.from({ length: n }, (_, i) => `c-${String(depart + i + 1).padStart(3, "0")}`);
+const recents25 = () => Array.from({ length: 25 }, (_, i) => ({ path: `C:\\Users\\Savinien\\Documents\\Clients\\client-${String(i + 1).padStart(2, "0")}`, name: `client-${String(i + 1).padStart(2, "0")}`, lastOpenedMs: 1_790_000_000_000 - i * 3_600_000 }));
 const TITRES = {
   "c-001": "Corriger tous les défauts d'affichage de la barre de titre, du compositeur et des colonnes à 800 px avec la mise à l'échelle Windows à 150 %",
   "c-002": "Facture OVH d'octobre : rapprochement des lignes et export comptable",
@@ -72,6 +73,12 @@ export const SCENES = [
   { id: "maj-badge", sim: { majDispo: "0.1.66" }, stockage: () => colonnes([ids(3)]), temoins: ["clic:.titlebar__update[data-state='available'] .titlebar__update-pill", "absent:.updater-lock"] },
   { id: "maj-badge-fenetre", sim: { majDispo: "0.1.66" }, stockage: () => colonnes([ids(3)]), cliquer: ".titlebar__update-pill", temoins: ["sel:.titlebar__update-popover .titlebar__update-popover-notes", "clic:.titlebar__update-popover-btn--primary", "clic:.titlebar__update-popover-btn--ghost", "absent:.updater-lock"] },
   { id: "maj-badge-accueil", sim: { majDispo: "0.1.66" }, espace: false, temoins: ["clic:.welcome__maj .titlebar__update-pill"] },
+  // 25 dossiers récents : la liste défile, chaque carte a sa croix ; la croix retire l'entrée sans ouvrir le dossier.
+  { id: "accueil-recents", sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25() }),
+    temoins: ["defile:.welcome__recents[data-liste='dossiers']", "compte:.welcome__recents[data-liste='dossiers'] .welcome__recent=25", "compte:.welcome__recent-retirer=25"] },
+  { id: "accueil-recents-retrait", sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25() }),
+    clics: [".welcome__recents[data-liste='dossiers'] .welcome__recent-retirer"],
+    temoins: ["compte:.welcome__recents[data-liste='dossiers'] .welcome__recent=24", "stocke:axecode.recentWorkspaces=24", "absent:.workspace"] },
   { id: "accueil", sim: { cloud: true }, espace: false, temoins: ["sel:button.welcome__cta", "absent:svg linearGradient"] },
   // 0.1.71 — bulle d'info de la dictée (« Transcrit par … en 6,0 s, nettoyé par l'IA. ») : elle débordait du compositeur.
   { id: "dictee-info", sim: {}, stockage: () => colonnes([ids(3)]), cliquer: [".axe-voix__micro", ".axe-voix__valider"], pauseClics: 1500, attendre: ".axe-voix__bulle--info", temoins: ["clic:.axe-voix__bulle--info"] },
