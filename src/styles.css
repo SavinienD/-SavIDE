@@ -1757,6 +1757,16 @@ textarea {
 .conv-row[data-streaming="true"] .conv-row__icon {
   color: var(--text-0);
 }
+/* Même rond sur l'onglet du chat pendant un tour. */
+.onglets-chat__spinner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  border-top-color: currentColor;
+  animation: spin 0.7s linear infinite;
+  flex: 0 0 10px;
+}
 .conv-row__spinner {
   width: 12px;
   height: 12px;

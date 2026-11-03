@@ -280,6 +280,10 @@ export const SCENES = [
     attendus: ["finir le lot 3 avec"],
   },
   // Clic sur « N agent(s) au travail » : ouvre la conversation (journal) de l'agent, comme la vue Agents.
+  // Tour en cours : rond animé sur la ligne de la liste et sur l'onglet, même quand
+  // le démon rend le chemin sous une autre forme (\\?\ + casse) ou quand le tour est sur une autre conversation.
+  { id: "activite-liste-chemin", sim: { tour: "en_cours", tourWs: "\\\\?\\c:\\users\\utilisateur\\documents\\projets\\savide" }, stockage: () => colonnes([ids(3)]), temoins: ["sel:.conv-row[data-streaming='true'] .conv-row__spinner", "sel:.onglets-chat__tab[data-streaming='true'] .onglets-chat__spinner"] },
+  { id: "activite-liste-autre", sim: { tour: "en_cours", tourConv: "c-002" }, stockage: () => colonnes([ids(3)]), temoins: ["sel:.conv-row[data-streaming='true'] .conv-row__spinner", "sel:.onglets-chat__tab[data-streaming='true'] .onglets-chat__spinner", "sel:.composer__send:not([data-variant='stop'])"] },
   { id: "bandeau-agents-clic", sim: { tour: "en_cours", sousAgents: 2 }, stockage: () => colonnes([ids(3)]), clicBandeau: true, temoins: ["sel:.axe-journal", "sel:.axe-agents"] },
   // Bug : après le chat d'un agent, un clic sur une conversation de la liste doit l'afficher (plus le journal de l'agent).
   { id: "agent-puis-conversation", sim: { tour: "en_cours", sousAgents: 2 }, stockage: () => colonnes([ids(3)]), clicBandeau: true, puisConversation: TITRES["c-002"], temoins: ["sel:.colonne-chat[data-focus='true'] .chat-body"] },
