@@ -542,13 +542,13 @@ async function preparerScene(page, si, sc) {
     // Le volet bas rétrécit après l'ouverture (fenêtre réduite, volet latéral élargi) :
     // xterm doit se replier sur la nouvelle largeur, rien ne doit rester rogné à droite.
     // D'abord large (volet ou fenêtre agrandis), puis plus étroit qu'au départ.
-    const largeur0 = await page.evaluate(() => document.querySelector(".terminal-shell .cloud-term")?.getBoundingClientRect().width ?? 0);
+    const largeur0 = await page.evaluate(() => document.querySelector(".terminal-shell .cloud-term, .terminal-shell .terminal-viewport")?.getBoundingClientRect().width ?? 0);
     await page.evaluate((w) => {
-      for (const t of document.querySelectorAll(".terminal-shell .cloud-term")) { t.style.flex = "0 0 auto"; t.style.width = `${w}px`; }
+      for (const t of document.querySelectorAll(".terminal-shell .cloud-term, .terminal-shell .terminal-viewport")) { t.style.flex = "0 0 auto"; t.style.width = `${w}px`; }
     }, largeur0 + 900);
     await pause(500);
     await page.evaluate((w) => {
-      for (const t of document.querySelectorAll(".terminal-shell .cloud-term")) t.style.width = `${w}px`;
+      for (const t of document.querySelectorAll(".terminal-shell .cloud-term, .terminal-shell .terminal-viewport")) t.style.width = `${w}px`;
     }, Math.max(160, largeur0 - sc.retrecirTerminal));
     await pause(500);
   }

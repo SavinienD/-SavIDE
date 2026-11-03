@@ -10,6 +10,7 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import { api } from "../../lib/ipc";
+import { reprendreTaille } from "./repriseTaille";
 
 type Props = { connectionId: string };
 
@@ -73,6 +74,12 @@ export function AgentTerminal({ connectionId }: Props) {
       if (!session.id) return;
       void api.agentTermWrite(session.id, d).catch(() => undefined);
     });
+    // La session tmux est partagée (portail, SSH) : on renvoie toujours notre taille,
+    // même quand xterm n'a pas changé de colonnes (voir repriseTaille.ts).
+    const envoyerTaille = () => {
+      if (!session.id || el.clientWidth < 40 || el.clientHeight < 20) return;
+      void api.agentTermResize(session.id, term.cols, term.rows).catch(() => undefined);
+    };
     const onResize = term.onResize(({ cols, rows }) => {
       if (!session.id) return;
       void api.agentTermResize(session.id, cols, rows).catch(() => undefined);
@@ -83,8 +90,10 @@ export function AgentTerminal({ connectionId }: Props) {
       } catch {
         /* en cours de mesure */
       }
+      envoyerTaille();
     });
     ro.observe(el);
+    const offReprise = reprendreTaille(el, envoyerTaille);
     void brancher();
 
     return () => {
@@ -92,6 +101,7 @@ export function AgentTerminal({ connectionId }: Props) {
       onData.dispose();
       onResize.dispose();
       ro.disconnect();
+      offReprise();
       for (const off of offs) off();
       // On se detache : la session de l'agent, elle, continue de tourner.
       if (session.id) void api.agentTermClose(session.id).catch(() => undefined);

@@ -16,6 +16,7 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import { errorText } from "./cloudApi";
+import { reprendreTaille } from "./repriseTaille";
 
 type Props = { connectionId: string; cwd?: string; name?: string };
 
@@ -130,12 +131,15 @@ export function RemoteTerminal({ connectionId, cwd, name }: Props) {
       realigner();
     });
     ro.observe(el);
+    // Session tmux partagée : reprendre la taille au retour vers le terminal.
+    const offReprise = reprendreTaille(el, realigner);
     void ouvrir();
 
     return () => {
       disposed = true;
       if (minuterie !== null) window.clearTimeout(minuterie);
       ro.disconnect();
+      offReprise();
       onData.dispose();
       onResize.dispose();
       if (unlisten) unlisten();
