@@ -50,8 +50,8 @@ export function RaccourcisSection() {
                       {r.libelle}
                       {r.windowsSeulement ? " (Windows)" : ""}
                     </td>
-                    <td style={{ padding: "6px 0", textAlign: "right", whiteSpace: "nowrap" }}>
-                      <kbd style={{ fontFamily: "var(--font-mono, monospace)", padding: "2px 6px", border: "1px solid var(--line-1, rgba(128,128,128,.4))", borderRadius: 4 }}>
+                    <td style={{ padding: "6px 0 6px 12px", textAlign: "right" }}>
+                      <kbd style={{ display: "inline-block", whiteSpace: "normal", overflowWrap: "anywhere", fontFamily: "var(--font-mono, monospace)", padding: "2px 6px", border: "1px solid var(--line-1, rgba(128,128,128,.4))", borderRadius: 4 }}>
                         {formaterRaccourci(r.combinaison)}
                       </kbd>
                     </td>
