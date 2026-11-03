@@ -323,8 +323,13 @@ impl Daemon {
             }
             methods::SESSIONS_STOP => {
                 let id = sid(&params)?;
+                // file-pause — pause seulement si un tour tournait vraiment
+                // (un Stop sur une session libre ne bloque pas la file).
+                let running = lock(&self.sessions).get(&id).is_some_and(|s| s.cancel.is_some());
                 self.stop(&id)?;
-                crate::queue_rpc::pause_after_stop(self, &id); // file-pause
+                if running {
+                    crate::queue_rpc::pause_after_stop(self, &id);
+                }
                 ok(json!({"ok": true}))
             }
             methods::SESSIONS_HISTORY => {

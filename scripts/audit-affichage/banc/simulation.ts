@@ -83,6 +83,7 @@ export function installerSimulation(scene: Scene): void {
   const fournisseur = scene.fournisseur !== false;
   const active = scene.active ?? D.idConv(0);
   const tourActif = scene.tour === "en_cours" || scene.tour === "erreur";
+  const filesSim = new Map<string, any[]>(); // file-demon
   const cloud = scene.cloud !== false;
   if (scene.accelerer) accelerer(900, 16_001, 25);
   let mcp: any[] = ((scene.mcp as string[] | undefined) ?? []).map((nom) => ({ id: `cat_${nom}`, name: nom, command: "npx", args: ["-y", `@exemple/${nom}`], env: [], headers: [], enabled: true }));
@@ -139,8 +140,29 @@ export function installerSimulation(scene: Scene): void {
       liste.push({ id: i.itemId ?? `q-${liste.length + 1}`, text: i.message?.text ?? "", display: i.display ?? null, createdAtMs: 0 });
       return null;
     },
+    // file-demon — file du service simulée (migration du stockage local, affichage).
+    queue_push: (a: any) => {
+      const inp = a?.input ?? a;
+      const id = inp?.message?.conversationId;
+      if (!id) return null;
+      const file = (filesSim.get(id) ?? []).filter((i: any) => i.id !== inp.itemId);
+      file.splice(inp.index ?? file.length, 0, { id: inp.itemId, text: inp.message.text, display: inp.display, createdAtMs: Date.now() });
+      filesSim.set(id, file);
+      return file;
+    },
     daemon_call: (a) => {
+      const fileDe = (p: any) => filesSim.get(p?.sessionId) ?? [];
       switch (a.method) {
+        case "queue.state":
+          return { items: fileDe(a.params), paused: false };
+        case "queue.list":
+          return fileDe(a.params);
+        case "queue.remove":
+          filesSim.set(a.params?.sessionId, fileDe(a.params).filter((i: any) => i.id !== a.params?.itemId));
+          return null;
+        case "queue.move":
+        case "queue.resume":
+          return null;
         case "queue.state":
           return { items: filesBanc[a.params?.sessionId] ?? [], paused: scene.filePause === true };
         case "queue.list":

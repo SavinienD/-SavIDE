@@ -69,7 +69,7 @@ import { getActiveConnection, LOCAL_CONNECTION, useActiveConnection } from "./se
 import { ChatPane, type ExternalDropFeed } from "./chat/ChatPane";
 import { createConversationActions } from "./chat/actionsConversation"; // e17a
 import { filesPartagees } from "./chat/fileAttente"; // file-attente
-import { migrerFilesNavigateur } from "./chat/fileDemon"; // file-demon
+import { migrerFilesNavigateur, reprendreFile } from "./chat/fileDemon"; // file-demon
 import { messageArchiveEchec } from "./chat/archiveErreur"; // archive-erreur
 import { avecNote, mettreEnArrierePlan } from "./chat/arrierePlan"; // arriere-plan
 import {
@@ -2395,9 +2395,12 @@ export function Workspace({
         await sleep(100);
       }
       if (streamingIdsRef.current.has(conversation.id)) libererConversation(conversation.id);
+      // file-envoi-immediat — l'arrêt d'« Arrière-plan » a mis la file en
+      // pause côté service ; ici on veut justement que le message en file parte.
+      await reprendreFile(workspacePath, conversation.id).catch(() => {});
       return resultat;
     },
-    [cloudConnection, libererConversation],
+    [cloudConnection, libererConversation, workspacePath],
   );
 
   // file-demon — la file des conversations non affichées est envoyée par
