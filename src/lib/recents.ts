@@ -2,7 +2,7 @@ import type { RecentWorkspace } from "../types";
 
 const RECENTS_KEY = "axecode.recentWorkspaces";
 const LAST_KEY = "axecode.lastWorkspace";
-// axe:recents-180 — historique des dossiers récents (l'accueil les affiche tous, en liste qui défile).
+// historique des dossiers récents (l'accueil les affiche tous, en liste qui défile).
 const MAX_RECENTS = 30;
 
 export function loadRecents(): RecentWorkspace[] {
@@ -35,7 +35,7 @@ export function recordRecent(path: string, name: string): RecentWorkspace[] {
   return next;
 }
 
-/** axe:recents-180 — retire un dossier de l'historique (le dossier lui-même n'est jamais touché). */
+/** retire un dossier de l'historique (le dossier lui-même n'est jamais touché). */
 export function removeRecent(path: string): RecentWorkspace[] {
   const next = loadRecents().filter((r) => r.path !== path);
   try {

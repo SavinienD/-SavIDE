@@ -428,7 +428,7 @@ textarea {
 .welcome__recent:hover {
   background: var(--bg-3);
 }
-/* axe:recents-180 — dossiers récents : liste bornée qui défile, croix de retrait par carte. */
+/* dossiers récents : liste bornée qui défile, croix de retrait par carte. */
 .welcome__recents[data-liste="dossiers"] {
   max-height: min(380px, 45vh);
   overflow-y: auto;

@@ -279,7 +279,7 @@ async function preparerScene(page, si, sc) {
   await attendre(page, ".welcome");
   if (sc.espace === false) {
     await pause(500);
-    // axe:recents-180 — clics sur l'accueil lui-même (ex. croix d'un dossier récent).
+    // clics sur l'accueil lui-même (ex. croix d'un dossier récent).
     for (const sel of sc.clics ?? []) {
       await page.waitForSelector(sel, { timeout: 5000 }).catch(() => undefined);
       await page.evaluate((s) => document.querySelector(s)?.click(), sel);
