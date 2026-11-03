@@ -401,7 +401,6 @@
       const hp = p.clientHeight, he = el.getBoundingClientRect().height;
       if (hp > 0 && he < hp - 4) noter("volet-non-rempli", el, `${Math.round(he)} px sur ${Math.round(hp)} px`, null, 3);
     }
-    return { defauts, exceptes, mesures: { largeur: vp.r, hauteur: vp.b, interactifs: inter_.length } };
     // terminal-coupe : la dernière ligne du terminal (invite, barre d'état d'un
     // programme plein écran) doit tenir entière dans la zone visible du volet.
     // (tous les terminaux xterm : terminal local du volet, terminal Git, terminal du service).
@@ -427,6 +426,21 @@
       window.__mesureTerminal.push({ lignes: derniere.parentElement.childElementCount, bas: +rl.bottom.toFixed(1), basVisible: +basVisible.toFixed(1) });
       if (rl.height > 0 && rl.bottom > basVisible + 0.5) {
         noter("terminal-coupe", derniere, `dernière ligne : bas ${rl.bottom.toFixed(1)} > bas visible ${basVisible.toFixed(1)}`, depuis(rl), 2);
+      }
+    }
+    // terminal-rogne-droite : l'écran de xterm (cols × largeur de cellule) ne doit pas
+    // dépasser à droite la zone visible de son hôte (sinon la fin des lignes est cachée).
+    for (const vue of document.querySelectorAll(".xterm")) {
+      if (!visible(vue)) continue;
+      const ecran = vue.querySelector(".xterm-screen");
+      if (!ecran) continue;
+      let droiteVisible = Math.min(vue.parentElement.getBoundingClientRect().right, window.innerWidth);
+      for (let a = vue.parentElement; a && a !== document.documentElement; a = a.parentElement) {
+        if (css(a).overflowX !== "visible") droiteVisible = Math.min(droiteVisible, a.getBoundingClientRect().right);
+      }
+      const re = ecran.getBoundingClientRect();
+      if (re.width > 0 && re.right > droiteVisible + 1) {
+        noter("terminal-rogne-droite", ecran, `écran xterm : droite ${re.right.toFixed(1)} > droite visible ${droiteVisible.toFixed(1)}`, null, 2);
       }
     }
     return { defauts, exceptes, mesures: { largeur: vp.r, hauteur: vp.b, interactifs: inter_.length, terminal: window.__mesureTerminal ?? null } };
