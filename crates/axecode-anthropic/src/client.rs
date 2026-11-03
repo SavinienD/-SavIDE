@@ -30,6 +30,10 @@ const CODE_SYSTEM_PREFIX: &str = "You are Claude Code, Anthropic's official CLI 
 //     context-length overflow and triggered auto-compaction on tiny inputs.
 const COMMON_BETA: &str = "fine-grained-tool-streaming-2025-05-14";
 const OAUTH_BETA: &str = "claude-code-20250219,oauth-2025-04-20";
+/// Lets a request say what to do with a replayed thinking block whose
+/// signature belongs to another prefix (`thinking.block_binding`). Only sent
+/// when the history holds thinking blocks, so other requests stay unchanged.
+const THINKING_BINDING_BETA: &str = "thinking-binding-controls-2026-08-01";
 const CACHE_BREAKPOINTS: usize = 4;
 /// cache — set once an endpoint refused `cache_control.ttl`: later
 /// requests of this process use the default 5-minute cache.
@@ -131,7 +135,11 @@ impl AnthropicProvider {
             })
     }
 
-    async fn post(&self, route: &str) -> Result<(reqwest::RequestBuilder, String)> {
+    async fn post(
+        &self,
+        route: &str,
+        extra_beta: Option<&str>,
+    ) -> Result<(reqwest::RequestBuilder, String)> {
         // Cheap no-op unless the cached Claude Code version lookup expired.
         cli_version::ensure_fresh(&self.http);
         let token = self.config.credential.bearer_or_key(&self.http).await?;
@@ -142,7 +150,7 @@ impl AnthropicProvider {
             .header("anthropic-version", &self.config.api_version)
             .header("content-type", "application/json")
             .header("anthropic-dangerous-direct-browser-access", "true")
-            .header("anthropic-beta", self.beta_header(is_oauth))
+            .header("anthropic-beta", self.beta_header(is_oauth, extra_beta))
             .header("user-agent", cli_version::user_agent_for(is_oauth));
 
         if is_oauth {
@@ -161,8 +169,9 @@ impl AnthropicProvider {
         route: &str,
         body: &T,
         accept: &'static str,
+        extra_beta: Option<&str>,
     ) -> Result<reqwest::Response> {
-        let (request, token) = self.post(route).await?;
+        let (request, token) = self.post(route, extra_beta).await?;
         let response = request
             .header("accept", accept)
             .json(body)
@@ -182,7 +191,7 @@ impl AnthropicProvider {
             .await
             .map_err(map_refresh_failure)?;
 
-        let (request, _) = self.post(route).await?;
+        let (request, _) = self.post(route, extra_beta).await?;
         request
             .header("accept", accept)
             .json(body)
@@ -203,8 +212,9 @@ impl AnthropicProvider {
         body: &T,
         accept: &'static str,
         retry_transient: bool,
+        extra_beta: Option<&str>,
     ) -> Result<reqwest::Response> {
-        let response = self.send_json_accept(route, body, accept).await?;
+        let response = self.send_json_accept(route, body, accept, extra_beta).await?;
         if response.status().is_success() || !response.status().is_client_error() {
             return Ok(response);
         }
@@ -228,7 +238,7 @@ impl AnthropicProvider {
             "anthropic requires a newer claude-cli version; retrying the request"
         );
 
-        let retry = self.send_json_accept(route, body, accept).await?;
+        let retry = self.send_json_accept(route, body, accept, extra_beta).await?;
         if retry.status().is_success() || !retry.status().is_client_error() {
             return Ok(retry);
         }
@@ -245,12 +255,15 @@ impl AnthropicProvider {
         ))
     }
 
-    fn beta_header(&self, is_oauth: bool) -> String {
+    fn beta_header(&self, is_oauth: bool, extra_beta: Option<&str>) -> String {
         let mut values = Vec::new();
         if is_oauth {
             values.push(OAUTH_BETA.to_string());
         }
         values.push(COMMON_BETA.to_string());
+        if let Some(extra) = extra_beta {
+            values.push(extra.to_string());
+        }
         if let Some(extra) = &self.config.extra_beta {
             if !extra.is_empty() {
                 values.push(extra.clone());
@@ -318,6 +331,7 @@ impl Provider for AnthropicProvider {
                 &body,
                 "application/json",
                 false,
+                None,
             )
             .await?;
 
@@ -346,22 +360,36 @@ impl Provider for AnthropicProvider {
         let mut body = self.messages_request(&request)?;
         let ttl = self.cache_ttl();
         apply_cache_ttl(&mut body, ttl);
-        let first = self
-            .send_json_version_aware("/v1/messages", &body, "text/event-stream", true)
-            .await;
-        let response = match first {
-            // cache — endpoint without the 1-hour cache: retry once with
-            // the default one, and never ask again in this process.
-            Err(AppError::InvalidRequest(message))
-                if ttl.is_some() && is_cache_ttl_rejection(&message) =>
-            {
-                tracing::warn!(error = %message, "1-hour prompt cache refused; using the 5-minute cache");
-                CACHE_TTL_REFUSED.store(true, Ordering::Relaxed);
-                apply_cache_ttl(&mut body, None);
-                self.send_json_version_aware("/v1/messages", &body, "text/event-stream", true)
-                    .await?
+        let mut stripped = false;
+        let mut ttl = ttl;
+        let response = loop {
+            let beta = binding_beta(&body);
+            let attempt = self
+                .send_json_version_aware("/v1/messages", &body, "text/event-stream", true, beta)
+                .await;
+            match attempt {
+                // cache — endpoint without the 1-hour cache: retry once with
+                // the default one, and never ask again in this process.
+                Err(AppError::InvalidRequest(message))
+                    if ttl.is_some() && is_cache_ttl_rejection(&message) =>
+                {
+                    tracing::warn!(error = %message, "1-hour prompt cache refused; using the 5-minute cache");
+                    CACHE_TTL_REFUSED.store(true, Ordering::Relaxed);
+                    ttl = None;
+                    apply_cache_ttl(&mut body, None);
+                }
+                // A replayed thinking block was refused (signature bound to
+                // another conversation, or an endpoint that does not know
+                // `block_binding`): resend once without the earlier thinking.
+                Err(AppError::InvalidRequest(message))
+                    if !stripped && is_thinking_replay_rejection(&message) =>
+                {
+                    tracing::warn!(error = %message, "replayed thinking refused; resending without earlier thinking blocks");
+                    stripped = true;
+                    strip_replayed_thinking(&mut body);
+                }
+                other => break other?,
             }
-            other => other?,
         };
 
         if !response.status().is_success() {
@@ -408,6 +436,14 @@ impl AnthropicProvider {
             .collect::<Result<Vec<_>>>()?;
         if let Some(text) = volatile_system {
             append_volatile_state(&mut messages, text);
+        }
+        let mut thinking = thinking;
+        if let Some(config) = thinking.as_mut() {
+            if config.kind == "adaptive" && has_replayed_thinking(&messages) {
+                config.block_binding = Some(wire::BlockBinding {
+                    prefix_mismatch_behavior: "drop_block",
+                });
+            }
         }
         Ok(wire::MessagesRequest {
             model: &request.model.name,
@@ -592,6 +628,7 @@ fn effort_to_output(
             kind: "adaptive",
             budget_tokens: None,
             display: Some("summarized"),
+            block_binding: None,
         }),
         Some(wire::OutputConfig {
             effort: match effort {
@@ -882,6 +919,47 @@ fn classify_http_error(
     }
 }
 
+fn has_replayed_thinking(messages: &[wire::WireMessage<'_>]) -> bool {
+    messages.iter().any(|message| {
+        message
+            .content
+            .iter()
+            .any(|part| matches!(part, wire::WirePart::Thinking { .. }))
+    })
+}
+
+/// The beta value to send with this body: only when it asks for
+/// `thinking.block_binding`.
+fn binding_beta(body: &wire::MessagesRequest<'_>) -> Option<&'static str> {
+    body.thinking
+        .as_ref()
+        .and_then(|config| config.block_binding)
+        .map(|_| THINKING_BINDING_BETA)
+}
+
+/// Removes every replayed thinking block (and `block_binding`, which some
+/// compatible endpoints refuse), keeping the other blocks of each turn.
+fn strip_replayed_thinking(body: &mut wire::MessagesRequest<'_>) {
+    for message in &mut body.messages {
+        message
+            .content
+            .retain(|part| !matches!(part, wire::WirePart::Thinking { .. }));
+    }
+    body.messages.retain(|message| !message.content.is_empty());
+    if let Some(config) = body.thinking.as_mut() {
+        config.block_binding = None;
+    }
+}
+
+/// A 400 about a replayed thinking block: bad or foreign signature, or an
+/// endpoint that refuses `block_binding` / its beta value.
+fn is_thinking_replay_rejection(message: &str) -> bool {
+    let lower = message.to_ascii_lowercase();
+    (lower.contains("thinking") && lower.contains("signature"))
+        || lower.contains("block_binding")
+        || lower.contains(THINKING_BINDING_BETA)
+}
+
 fn is_transient_http_status(status: reqwest::StatusCode) -> bool {
     matches!(
         status.as_u16(),
@@ -957,7 +1035,7 @@ mod tests {
         );
         let provider = AnthropicProvider::new(config).unwrap();
         provider
-            .send_json_accept("/v1/messages", &serde_json::json!({"model": "m"}), "application/json")
+            .send_json_accept("/v1/messages", &serde_json::json!({"model": "m"}), "application/json", None)
             .await
             .unwrap();
         let request = server.await.unwrap();
@@ -1392,6 +1470,185 @@ mod tests {
         assert!(!is_cache_ttl_rejection(
             "invalid_request_error: Your credit balance is too low to access the Anthropic API."
         ));
+    }
+
+    async fn read_full_request(socket: &mut tokio::net::TcpStream) -> (String, String) {
+        use tokio::io::AsyncReadExt;
+        let mut buffer = [0u8; 4096];
+        let mut received = Vec::new();
+        let head_end = loop {
+            let read = socket.read(&mut buffer).await.unwrap();
+            if read == 0 {
+                break received.len();
+            }
+            received.extend_from_slice(&buffer[..read]);
+            if let Some(index) = received.windows(4).position(|w| w == b"\r\n\r\n") {
+                break index + 4;
+            }
+        };
+        let head = String::from_utf8_lossy(&received[..head_end]).to_string();
+        let length: usize = head
+            .lines()
+            .find_map(|line| {
+                let (name, value) = line.split_once(':')?;
+                name.trim()
+                    .eq_ignore_ascii_case("content-length")
+                    .then(|| value.trim().parse().ok())?
+            })
+            .unwrap_or(0);
+        while received.len() < head_end + length {
+            let read = socket.read(&mut buffer).await.unwrap();
+            if read == 0 {
+                break;
+            }
+            received.extend_from_slice(&buffer[..read]);
+        }
+        let body = String::from_utf8_lossy(&received[head_end..]).to_string();
+        (head, body)
+    }
+
+    fn header_value(head: &str, wanted: &str) -> String {
+        head.lines()
+            .find_map(|line| {
+                let (name, value) = line.split_once(':')?;
+                name.trim()
+                    .eq_ignore_ascii_case(wanted)
+                    .then(|| value.trim().to_string())
+            })
+            .unwrap_or_default()
+    }
+
+    /// Fake endpoint that refuses the first request with `first_error`, then
+    /// streams; returns the (anthropic-beta, body) of each request.
+    async fn replay_after_thinking_error(
+        first_error: &'static str,
+        credential: Credential,
+    ) -> Vec<(String, serde_json::Value)> {
+        use std::sync::{Arc, Mutex};
+        use tokio::io::AsyncWriteExt;
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let recorded = Arc::new(Mutex::new(Vec::new()));
+        let recorder = recorded.clone();
+        let server = tokio::spawn(async move {
+            for attempt in 0..2 {
+                let (mut socket, _) = listener.accept().await.unwrap();
+                let (head, body) = read_full_request(&mut socket).await;
+                recorder.lock().unwrap().push((
+                    header_value(&head, "anthropic-beta"),
+                    serde_json::from_str::<serde_json::Value>(&body).unwrap(),
+                ));
+                let (status, body) = if attempt == 0 {
+                    ("400 Bad Request", first_error)
+                } else {
+                    ("200 OK", "event: message_stop\ndata: {}\n\n")
+                };
+                let response = format!(
+                    "HTTP/1.1 {status}\r\ncontent-type: application/json\r\ncontent-length: {}\r\nconnection: close\r\n\r\n{}",
+                    body.len(),
+                    body
+                );
+                socket.write_all(response.as_bytes()).await.unwrap();
+                socket.flush().await.unwrap();
+            }
+        });
+
+        let provider = AnthropicProvider::new(AnthropicConfig {
+            base_url: format!("http://{addr}"),
+            api_version: "2023-06-01".into(),
+            ..AnthropicConfig::new(credential)
+        })
+        .unwrap();
+        let mut request = ProviderRequest::new(
+            ModelRef::new("anthropic", "claude-opus-5-5"),
+            vec![
+                ChatMessage::user_text("first"),
+                ChatMessage {
+                    role: Role::Assistant,
+                    parts: vec![
+                        Part::Thinking {
+                            text: "earlier reasoning".into(),
+                            meta: Some(serde_json::json!({"signature": "sig-from-elsewhere"})),
+                        },
+                        Part::Text {
+                            text: "earlier answer".into(),
+                            meta: None,
+                        },
+                    ],
+                },
+                ChatMessage::user_text("second"),
+            ],
+        );
+        request.effort = Some(Effort::High);
+        let _stream = provider
+            .stream(request)
+            .await
+            .expect("the request should be resent without the refused thinking");
+        server.await.unwrap();
+        let recorded = recorded.lock().unwrap().clone();
+        recorded
+    }
+
+    fn thinking_blocks(body: &serde_json::Value) -> usize {
+        body["messages"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .flat_map(|message| message["content"].as_array().unwrap().iter())
+            .filter(|part| part["type"] == "thinking")
+            .count()
+    }
+
+    const BOUND_ELSEWHERE: &str = r#"{"type":"error","error":{"type":"invalid_request_error","message":"messages.1.content.0: Invalid `signature` in `thinking` block. The block is bound to a different conversation. Remove the block, or set `thinking.block_binding.prefix_mismatch_behavior` to \"drop_block\". That setting requires the `thinking-binding-controls-2026-08-01` value in the `anthropic-beta` header."}}"#;
+
+    #[tokio::test]
+    async fn thinking_bound_elsewhere_is_dropped_then_stripped_once() {
+        for credential in [
+            Credential::from_api_key("test-key"),
+            Credential::from_oauth_parts("test-access", "test-refresh", i64::MAX, None),
+        ] {
+            let recorded = replay_after_thinking_error(BOUND_ELSEWHERE, credential).await;
+            assert_eq!(recorded.len(), 2, "exactly one resend");
+            let (beta, body) = &recorded[0];
+            assert!(beta.contains("thinking-binding-controls-2026-08-01"), "{beta}");
+            assert_eq!(
+                body["thinking"]["block_binding"]["prefix_mismatch_behavior"],
+                "drop_block"
+            );
+            assert_eq!(thinking_blocks(body), 1);
+            let (beta, body) = &recorded[1];
+            assert!(!beta.contains("thinking-binding"), "{beta}");
+            assert!(body["thinking"].get("block_binding").is_none());
+            assert_eq!(body["thinking"]["type"], "adaptive");
+            assert_eq!(thinking_blocks(body), 0);
+            assert_eq!(body["messages"].as_array().unwrap().len(), 3);
+            assert_eq!(body["messages"][1]["content"][0]["text"], "earlier answer");
+        }
+    }
+
+    #[tokio::test]
+    async fn endpoint_refusing_the_binding_beta_gets_a_plain_request() {
+        let refused = r#"{"type":"error","error":{"type":"invalid_request_error","message":"Unexpected value(s) `thinking-binding-controls-2026-08-01` for the `anthropic-beta` header."}}"#;
+        let recorded =
+            replay_after_thinking_error(refused, Credential::from_api_key("test-key")).await;
+        assert_eq!(recorded.len(), 2);
+        assert!(!recorded[1].0.contains("thinking-binding"));
+        assert_eq!(thinking_blocks(&recorded[1].1), 0);
+    }
+
+    #[test]
+    fn no_binding_without_replayed_thinking() {
+        let provider =
+            AnthropicProvider::new(AnthropicConfig::new(Credential::from_api_key("k"))).unwrap();
+        let mut request = ProviderRequest::new(
+            ModelRef::new("anthropic", "claude-opus-5-5"),
+            vec![ChatMessage::user_text("hi")],
+        );
+        request.effort = Some(Effort::High);
+        let body = provider.messages_request(&request).unwrap();
+        assert!(binding_beta(&body).is_none());
+        assert!(serde_json::to_value(&body).unwrap()["thinking"].get("block_binding").is_none());
     }
 
     async fn read_request(socket: &mut tokio::net::TcpStream) -> String {

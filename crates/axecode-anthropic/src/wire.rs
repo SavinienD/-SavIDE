@@ -60,6 +60,15 @@ pub struct ThinkingConfig {
     pub budget_tokens: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub display: Option<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub block_binding: Option<BlockBinding>,
+}
+
+/// What the API does with a replayed thinking block whose signature is bound
+/// to another prefix (edited history, other account, copied conversation).
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct BlockBinding {
+    pub prefix_mismatch_behavior: &'static str,
 }
 
 #[derive(Debug, Serialize)]
