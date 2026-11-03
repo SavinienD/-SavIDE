@@ -20,6 +20,7 @@ import {
   type FreechatRow,
 } from "./freechatApi";
 import "./freechat.css";
+import { formaterTexte } from "../../lib/plateforme";
 
 type Props = {
   /** IDE workspace of free conversations (the scratch root). */
@@ -157,7 +158,7 @@ export function FreechatView(props: Props) {
             className="titlebar__btn"
             data-on={props.settingsOpen ? "true" : "false"}
             onClick={props.settingsOpen ? props.onCloseSettings : props.onOpenSettings}
-            title="Réglages (Ctrl+,)"
+            title={formaterTexte("Réglages (Ctrl+,)")}
           >
             <Icon icon="solar:settings-linear" width={12} height={12} />
             <span className="titlebar__btn-label">Réglages</span>

@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon } from "@iconify/react";
+import { formaterTexte, modPrincipal } from "../../lib/plateforme";
 
 const STEPS = [0.05, 0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8, 12, 16, 24, 32];
 
@@ -58,7 +59,8 @@ export function ZoomableImage({ src, alt, checker = false, meta, fallback }: Pro
     const el = scrollRef.current;
     if (!el) return;
     const onWheel = (event: WheelEvent) => {
-      if (!event.ctrlKey) return;
+      // Pincement du pavé tactile = ctrlKey (tous systèmes) ; Cmd + molette sur macOS.
+      if (!event.ctrlKey && !modPrincipal(event)) return;
       event.preventDefault();
       stepRef.current(event.deltaY < 0 ? 1 : -1);
     };
@@ -106,11 +108,11 @@ export function ZoomableImage({ src, alt, checker = false, meta, fallback }: Pro
         />
       </div>
       <div className="xv-image__zoom">
-        <button type="button" className="xv-btn" onClick={() => stepZoom(-1)} title="Dézoomer (Ctrl + molette)">
+        <button type="button" className="xv-btn" onClick={() => stepZoom(-1)} title={formaterTexte("Dézoomer (Ctrl + molette)")}>
           <Icon icon="solar:minus-circle-linear" width={14} height={14} />
         </button>
         <span className="xv-image__pct">{Math.round(scale * 100)} %</span>
-        <button type="button" className="xv-btn" onClick={() => stepZoom(1)} title="Zoomer (Ctrl + molette)">
+        <button type="button" className="xv-btn" onClick={() => stepZoom(1)} title={formaterTexte("Zoomer (Ctrl + molette)")}>
           <Icon icon="solar:add-circle-linear" width={14} height={14} />
         </button>
         <button type="button" className="xv-btn xv-btn--text" data-active={zoom === "fit" ? "true" : "false"} onClick={() => setZoom("fit")}>

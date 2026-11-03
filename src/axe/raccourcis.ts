@@ -9,6 +9,8 @@
 // rien que Monaco ou xterm utilisent déjà de façon courante, Ctrl+Tab laissé au
 // terminal (cycle de ses onglets, TerminalPanel.tsx).
 
+import { estMac, estWindows, formaterRaccourci, modPrincipal } from "../lib/plateforme";
+
 export type RaccourciId =
   | "nouvelleConversation"
   | "fermerOnglet"
@@ -94,18 +96,15 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "deplacerColonne", categorie: "Onglets", libelle: "Déplacer un fichier vers une autre colonne (écran partagé)", combinaison: "Clic droit sur l'onglet, ou glisser", touche: { touches: [] } },
 ];
 
-function estMac(): boolean {
-  return typeof navigator !== "undefined" && /mac/i.test(navigator.platform);
-}
-
-function estWindows(): boolean {
-  return typeof navigator !== "undefined" && /win/i.test(navigator.platform);
+/** Combinaison telle qu'affichée sur ce système (⌘ ⌥ ⇧ sur macOS). */
+export function combinaisonAffichee(r: Raccourci, mac: boolean = estMac()): string {
+  return formaterRaccourci(r.combinaison, mac);
 }
 
 /** Vrai si l'événement correspond à la combinaison. Exporté pour les tests. */
-export function correspond(r: Raccourci, e: KeyboardEvent): boolean {
+export function correspond(r: Raccourci, e: KeyboardEvent, mac: boolean = estMac()): boolean {
   const t = r.touche;
-  const ctrl = estMac() ? e.metaKey : e.ctrlKey;
+  const ctrl = modPrincipal(e, mac);
   if (!!t.ctrl !== ctrl) return false;
   if (!!t.alt !== e.altKey) return false;
   // Shift : exigé quand demandé ; ignoré pour les zooms (Ctrl + = / + selon le clavier).

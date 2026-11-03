@@ -131,6 +131,7 @@ import type {
   WorkspaceEntry,
   WorkspaceFileChangedPayload,
 } from "../types";
+import { estMac, formaterTexte, modPrincipal } from "../lib/plateforme";
 
 type Props = {
   bootstrap: WorkspaceBootstrap;
@@ -166,7 +167,7 @@ const GOAL_COMPACTION_CONTINUATION_PROMPT =
   "Continue working toward the active goal from the compacted context. Do not repeat completed work. If the goal is now truly complete, audit it and call update_goal with status complete.";
 const IS_WINDOWS = isWindowsPlatform();
 // barre-place — feux de fenêtre macOS en haut à gauche : la barre les évite.
-const IS_MAC = typeof navigator !== "undefined" && /mac/i.test(navigator.platform);
+const IS_MAC = estMac();
 
 // raccourcis — pousser un dossier du PC sur la VM (bouton de la barre de titre et Ctrl+Maj+U).
 async function pousserDossierCloud(): Promise<void> {
@@ -2449,7 +2450,7 @@ export function Workspace({
   }, [gaucheReduite, droiteReduite]);
   useEffect(() => {
     const touche = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.code !== "KeyB") return;
+      if (!modPrincipal(e) || e.shiftKey || e.code !== "KeyB") return;
       e.preventDefault();
       if (e.altKey) setDroiteReduite((v) => !v);
       else setGaucheReduite((v) => !v);
@@ -3651,7 +3652,7 @@ export function Workspace({
             className="titlebar__btn"
             data-on={gaucheReduite ? "false" : "true"}
             onClick={() => setGaucheReduite((v) => !v)}
-            title={gaucheReduite ? "Afficher le volet de gauche (Ctrl+B)" : "Réduire le volet de gauche (Ctrl+B)"}
+            title={formaterTexte(gaucheReduite ? "Afficher le volet de gauche (Ctrl+B)" : "Réduire le volet de gauche (Ctrl+B)")}
             aria-label={gaucheReduite ? "Afficher le volet de gauche" : "Réduire le volet de gauche"}
           >
             <Icon icon="solar:sidebar-minimalistic-linear" width={12} height={12} />
@@ -3660,7 +3661,7 @@ export function Workspace({
             className="titlebar__btn"
             data-on={droiteReduite ? "false" : "true"}
             onClick={() => setDroiteReduite((v) => !v)}
-            title={droiteReduite ? "Afficher le volet de droite (Ctrl+Alt+B)" : "Réduire le volet de droite (Ctrl+Alt+B)"}
+            title={formaterTexte(droiteReduite ? "Afficher le volet de droite (Ctrl+Alt+B)" : "Réduire le volet de droite (Ctrl+Alt+B)")}
             aria-label={droiteReduite ? "Afficher le volet de droite" : "Réduire le volet de droite"}
           >
             <Icon icon="solar:sidebar-minimalistic-linear" width={12} height={12} style={{ transform: "scaleX(-1)" }} />
@@ -3672,7 +3673,7 @@ export function Workspace({
             data-on={settingsActive ? "true" : "false"}
             data-action="reglages"
             onClick={() => openSettings()}
-            title="Réglages (Ctrl+,)"
+            title={formaterTexte("Réglages (Ctrl+,)")}
           >
             <Icon icon="solar:settings-linear" width={12} height={12} />
             <span className="titlebar__btn-label">Réglages</span>

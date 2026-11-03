@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { UnlistenFn } from "@tauri-apps/api/event";
+import { estWindows } from "../lib/plateforme";
 
 /// Returns true when the webview is running on Windows.
 ///
@@ -8,13 +9,7 @@ import type { UnlistenFn } from "@tauri-apps/api/event";
 /// WebView2) and falls back to the legacy user-agent sniff. Designed to be
 /// safe to call during module evaluation and SSR.
 export function isWindowsPlatform(): boolean {
-  if (typeof navigator === "undefined") return false;
-  const uaData = (navigator as Navigator & {
-    userAgentData?: { platform?: string };
-  }).userAgentData;
-  const platform =
-    uaData?.platform ?? navigator.platform ?? navigator.userAgent ?? "";
-  return /win/i.test(platform);
+  return estWindows();
 }
 
 /// Native-feel custom window controls (minimize / maximize / close) that we

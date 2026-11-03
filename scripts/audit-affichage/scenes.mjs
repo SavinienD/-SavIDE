@@ -103,6 +103,8 @@ export const SCENES = [
   { id: "c3-explorateur-ferme", sim: {}, stockage: (l, h) => ({ ...colonnes([ids(2), ["c-003"], ["c-004"]]), ...explorateurFerme(l, h) }) },
   // Demande de l'utilisateur : réduire entièrement les volets (Ctrl+B gauche, Ctrl+Alt+B droite).
   { id: "volets-reduits", sim: {}, stockage: () => colonnes([ids(2)]), reduireVolets: true, temoins: ["sel:.main[data-gauche-reduit='true'][data-droite-reduit='true']"] },
+  // macOS : mêmes volets avec ⌘B et ⌥⌘B (Ctrl seul ne doit plus rien faire).
+  { id: "volets-reduits-mac", mac: true, sim: {}, stockage: () => colonnes([ids(2)]), reduireVolets: true, temoins: ["sel:.main[data-gauche-reduit='true'][data-droite-reduit='true']"] },
   // Poignée entre deux colonnes de conversation : glissée, les largeurs doivent changer.
   { id: "c2-poignee", sim: {}, stockage: () => colonnes([ids(2), ["c-003"]]), elargirChat: true, glisserPoigneeColonnes: 120 },
   { id: "c2-colonne-min", sim: {}, stockage: () => colonnes([ids(2), ["c-003"]]), reduireColonne: true },
@@ -292,6 +294,11 @@ export const SCENES = [
   { id: "ide-barre", sim: {}, stockage: () => colonnes([ids(3)]), temoins: ["clic:.titlebar__btn[data-action='accueil']", "clic:.titlebar__btn[data-action='reglages']",
     "sel:.titlebar__brand-mark svg[data-logo='wordmark'] rect.logo__fond", "absent:svg linearGradient"] },
   { id: "reglages", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, temoins: ["sel:.settings-pane"] },
+  // Raccourcis : Ctrl/Alt sous Windows, ⌘/⌥/⇧ sous macOS (navigator.platform simulé).
+  { id: "raccourcis-windows", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, clics: [".settings-pane__nav-item[data-section='shortcuts']"],
+    temoins: ["sel:.axe-raccourcis[data-mac='false'] kbd"] },
+  { id: "raccourcis-mac", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, clics: [".settings-pane__nav-item[data-section='shortcuts']"],
+    temoins: ["sel:.axe-raccourcis[data-mac='true'] kbd", "sel:.titlebar__btn[data-action='reglages'][title*='⌘']"] },
   // fournisseurs-178 — Réglages > Fournisseurs configurables, Ollama local avec qwen3:4b (capture d'un utilisateur) :
   // l'IDENTIFIANT (nom exact envoyé à Ollama) est une colonne visible et modifiable ; « qwen3:8b » tapé dans la ligne
   // de qwen3:4b est bien l'identifiant enregistré (avant : seul le libellé changeait, qwen3:4b restait appelé).
