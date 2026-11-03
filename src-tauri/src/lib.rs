@@ -368,6 +368,7 @@ pub fn run() {
             voix::voix_transcrire, // voix
             voix::voix_annuler,
             voix::voix_etat,
+            voix::voix_ouvrir_reglages_micro,
             voix::voix_modele_local, // micro-local
             import_dossier::push_folder_cloud,
             // daemon

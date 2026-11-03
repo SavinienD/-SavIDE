@@ -6,6 +6,7 @@ import {
   EnregistreurVoix,
   messageErreurMicro,
   microDisponible,
+  plateformeCourante,
 } from "./enregistreur";
 import { lireReglagesVoix } from "./reglages";
 import { blobEnPcm16k, MIME_PCM, pcmEnBase64 } from "./pcm"; // micro-local
@@ -73,7 +74,7 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
   const [phase, setPhase] = useState<PhaseDictee>("repos");
   const [niveaux, setNiveaux] = useState<number[]>(() => Array(NB_BARRES).fill(0));
   const [dureeMs, setDureeMs] = useState(0);
-  const [erreur, setErreur] = useState<{ message: string; winH: boolean } | null>(null);
+  const [erreur, setErreur] = useState<{ message: string; winH: boolean; reglagesMac?: boolean } | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const enregistreur = useRef<EnregistreurVoix | null>(null);
   const demandeCourante = useRef<string | null>(null);
@@ -279,8 +280,10 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
     animation.current = window.requestAnimationFrame(tick);
   }, []);
 
-  const echouer = useCallback((message: string, winH = true) => {
-    setErreur({ message, winH });
+  // Win+H n'existe que sous Windows ; sur Mac, un refus du micro propose d'ouvrir les Réglages.
+  const echouer = useCallback((message: string, winH = true, reglagesMac = false) => {
+    const plateforme = plateformeCourante();
+    setErreur({ message, winH: winH && plateforme === "windows", reglagesMac: reglagesMac && plateforme === "mac" });
     setPhase("erreur");
   }, []);
 
@@ -301,7 +304,8 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
       await enr.demarrer();
     } catch (err) {
       enregistreur.current = null;
-      echouer(messageErreurMicro(classerErreurMicro(err)));
+      const type = classerErreurMicro(err);
+      echouer(messageErreurMicro(type), true, type === "refuse");
       return;
     }
     if (enregistreur.current !== enr) {
@@ -460,7 +464,12 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
     [arreterAnimation, arreterDirect],
   );
 
+  const ouvrirReglagesMicro = useCallback(() => {
+    void invoke("voix_ouvrir_reglages_micro").catch(() => undefined);
+  }, []);
+
   return {
+    ouvrirReglagesMicro,
     provisoire,
     direct,
     phase,

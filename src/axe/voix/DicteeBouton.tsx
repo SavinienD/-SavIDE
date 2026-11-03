@@ -169,6 +169,11 @@ export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
                 Dictée Windows (Win+H)
               </button>
             )}
+            {d.erreur.reglagesMac && (
+              <button type="button" onClick={d.ouvrirReglagesMicro}>
+                Ouvrir les Réglages
+              </button>
+            )}
             <button type="button" onClick={() => void d.demarrer()}>
               Réessayer
             </button>

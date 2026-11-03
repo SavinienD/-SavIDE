@@ -42,3 +42,11 @@ test("refus du micro : message propre à chaque système", () => {
   assert.doesNotMatch(E.messageErreurMicro("refuse", "linux"), /Windows|Réglages Système/);
   assert.equal(E.classerErreurMicro({ name: "NotAllowedError" }), "refuse");
 });
+
+test("bouton « Ouvrir les Réglages » : commande Rust enregistrée, Win+H réservé à Windows", () => {
+  assert.match(lire("src-tauri/src/voix.rs"), /fn voix_ouvrir_reglages_micro[\s\S]*Privacy_Microphone/);
+  assert.match(lire("src-tauri/src/lib.rs"), /voix::voix_ouvrir_reglages_micro/);
+  const u = lire("src/axe/voix/useDictee.ts");
+  assert.match(u, /winH && plateforme === "windows"/);
+  assert.match(lire("src/axe/voix/DicteeBouton.tsx"), /d\.erreur\.reglagesMac/);
+});
