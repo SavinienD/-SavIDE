@@ -318,6 +318,16 @@ export const SCENES = [
   // fournisseurs-178 — Réglages > Fournisseurs configurables, Ollama local avec qwen3:4b (capture d'un utilisateur) :
   // l'IDENTIFIANT (nom exact envoyé à Ollama) est une colonne visible et modifiable ; « qwen3:8b » tapé dans la ligne
   // de qwen3:4b est bien l'identifiant enregistré (avant : seul le libellé changeait, qwen3:4b restait appelé).
+  // comptes — Réglages > Fournisseurs : la carte OpenAI montrait l'e-mail et « Plus »,
+  // la carte Claude connectée (abonnement OAuth) rien. Chaque compte connecté montre son e-mail et son offre.
+  { id: "fournisseurs-comptes", sim: { comptes: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='providers']"],
+    temoins: ["sel:.settings-pane__provider-card[data-fournisseur='anthropic'] [data-compte='email']",
+      "sel:.settings-pane__provider-card[data-fournisseur='anthropic'] [data-compte='offre']",
+      "sel:.settings-pane__provider-card[data-fournisseur='openai'] [data-compte='email']",
+      "sel:.settings-pane__provider-card[data-fournisseur='openai'] [data-compte='offre']",
+      "sel:.settings-pane__provider-card[data-fournisseur='google'] [data-compte='email']",
+      "claude@example.com", "Plus", "Google AI Pro"] },
   { id: "fournisseurs-identifiant", sim: { fournisseursLocaux: true }, stockage: () => colonnes([ids(1)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row"],
     taper: [{ sel: ".axe-providers__models input[data-champ='id']", texte: "qwen3:8b" }],

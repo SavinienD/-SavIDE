@@ -179,6 +179,9 @@ export type OpenAiProviderStatus = {
 export type AnthropicProviderStatus = {
   connected: boolean;
   connectionState: ProviderConnectionState;
+  /** Compte de l'abonnement Claude (profil OAuth), si connu. */
+  email?: string | null;
+  planType?: string | null;
   expiresAtMs?: number | null;
   lastRefreshMs?: number | null;
   loginId?: string | null;
