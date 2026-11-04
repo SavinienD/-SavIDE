@@ -564,21 +564,35 @@ async fn prepare_repl(
         None => crate::freechat::session_workspace(&workspace_root, &conversation.id),
     };
     let session_name = crate::freechat::session_name(&conversation.title, input.text.trim());
-    client
-        .call(
-            "sessions.ensure",
-            json!({
-                "sessionId": conversation.id,
-                "request": {
-                    "name": session_name,
-                    "workspaceId": session_workspace.display().to_string(),
-                    "model": model,
-                    "systemPromptExtra": extra.trim(),
-                },
-                "history": conversation.history,
-            }),
-        )
-        .await?;
+    let ensure = json!({
+        "sessionId": conversation.id,
+        "request": {
+            "name": session_name,
+            "workspaceId": session_workspace.display().to_string(),
+            "model": model,
+            "systemPromptExtra": extra.trim(),
+        },
+        "history": conversation.history,
+    });
+    let local = cloud_connection_id(&workspace_root).is_none();
+    let mut client = client;
+    let mut ensured = client.call("sessions.ensure", ensure.clone()).await;
+    // moteur-local — a local daemon that stopped answering: forget it, the next
+    // connection probes it and replaces it, then the request is sent once more.
+    if local && ensured.as_ref().is_err_and(|e| axecode_daemon::client::is_timeout(e)) {
+        *app.state::<DaemonState>().client.lock().await = None;
+        client = connect(app).await?;
+        ensured = client.call("sessions.ensure", ensure).await;
+    }
+    ensured.map_err(|e| {
+        if local && axecode_daemon::client::is_timeout(&e) {
+            data_dir()
+                .map(|dir| axecode_daemon::client::not_started(&dir, "il ne répond pas (sessions.ensure, 60 s)"))
+                .unwrap_or(e)
+        } else {
+            e
+        }
+    })?;
     // parcours-collegue — conversation adoptée : son modèle n'est connu que du service,
     // le modèle choisi dans le compositeur lui est toujours appliqué.
     if adopted || conversation.model != model {

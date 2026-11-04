@@ -57,6 +57,14 @@ pub async fn run(args: Vec<String>, factory: Arc<dyn SessionRuntimeFactory>) -> 
                 .with_writer(Mutex::new(log))
                 .with_ansi(false)
                 .try_init();
+            // moteur-local — the first lines say which binary started, so a log
+            // left by an old copy of the app (moved, updated) is recognised.
+            tracing::info!(
+                version = env!("CARGO_PKG_VERSION"),
+                pid = std::process::id(),
+                exe = %std::env::current_exe().map(|p| p.display().to_string()).unwrap_or_default(),
+                "daemon starting"
+            );
             if client::connect_existing(&data_dir, None).await.is_some() {
                 tracing::info!("a daemon is already running for this data dir");
                 return Ok(());

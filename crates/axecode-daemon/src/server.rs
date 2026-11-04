@@ -442,6 +442,9 @@ impl Daemon {
     }
 }
 
+/// moteur-local — past this delay a request is reported in the log.
+const SLOW_REQUEST: Duration = Duration::from_secs(10);
+
 pub(crate) async fn serve_client(daemon: Arc<Daemon>, stream: BoxStream) {
     let (read, mut write) = tokio::io::split(stream);
     let (tx, mut rx) = mpsc::unbounded_channel::<String>();
@@ -469,9 +472,25 @@ pub(crate) async fn serve_client(daemon: Arc<Daemon>, stream: BoxStream) {
         let daemon = daemon.clone();
         let tx = tx.clone();
         tokio::spawn(async move {
-            let response = match daemon
-                .dispatch(client, &request.method, request.params)
-                .await
+            // moteur-local — a request that does not finish is named in the log
+            // (the client only sees its own deadline).
+            let started = std::time::Instant::now();
+            let dispatched = daemon.dispatch(client, &request.method, request.params);
+            tokio::pin!(dispatched);
+            let result = match tokio::time::timeout(SLOW_REQUEST, &mut dispatched).await {
+                Ok(result) => result,
+                Err(_) => {
+                    tracing::warn!(method = %request.method, "request still running after 10 s");
+                    let result = dispatched.await;
+                    tracing::warn!(
+                        method = %request.method,
+                        elapsed_ms = started.elapsed().as_millis() as u64,
+                        "slow request finished"
+                    );
+                    result
+                }
+            };
+            let response = match result
             {
                 Ok(result) => Response {
                     id: request.id,
