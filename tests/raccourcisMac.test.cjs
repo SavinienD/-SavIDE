@@ -78,3 +78,39 @@ test("le terminal garde Ctrl+C (sens terminal) : pas de copie interceptée", () 
   const t = lire("../src/components/TerminalPanel.tsx");
   assert.doesNotMatch(t, /key(?:\.toLowerCase\(\))? === "c"/);
 });
+
+// raccourcis.ts importe ../lib/plateforme (TypeScript) : chargeur .ts pour require.
+require.extensions[".ts"] = (m, fichier) => {
+  m._compile(ts.transpileModule(fs.readFileSync(fichier, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText, fichier);
+};
+const R = charger("../src/axe/raccourcis.ts");
+const ev = (o) => ({ key: "", code: "", ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, ...o });
+const r = (id) => R.RACCOURCIS.find((x) => x.id === id);
+
+test("macOS : ⌘F, ⇧⌘N, ⌘J, ⌘, lus avec Cmd ; Ctrl seul ne déclenche rien", () => {
+  assert.equal(R.correspond(r("rechercherMac"), ev({ key: "f", code: "KeyF", metaKey: true }), true), true);
+  assert.equal(R.correspond(r("nouvelleConversation"), ev({ key: "N", code: "KeyN", metaKey: true, shiftKey: true }), true), true);
+  assert.equal(R.correspond(r("terminal"), ev({ key: "j", code: "KeyJ", metaKey: true }), true), true);
+  assert.equal(R.correspond(r("settings"), ev({ key: ",", code: "Comma", metaKey: true }), true), true);
+  assert.equal(R.correspond(r("terminal"), ev({ key: "j", code: "KeyJ", ctrlKey: true }), true), false);
+});
+
+test("macOS : Option change le caractère, la touche physique compte", () => {
+  const alt = { id: "x", touche: { ctrl: true, alt: true, touches: ["b"] } };
+  assert.equal(R.correspond(alt, ev({ key: "∫", code: "KeyB", metaKey: true, altKey: true }), true), true);
+  assert.equal(R.correspond(alt, ev({ key: "∫", code: "KeyB", ctrlKey: true, altKey: true }), false), false);
+});
+
+test("⌘F laissé à l'éditeur et au terminal", () => {
+  const dans = { closest: (s) => (s.includes(".monaco-editor") ? {} : null) };
+  assert.equal(R.dansEditeur(dans), true);
+  assert.equal(R.dansEditeur({ closest: () => null }), false);
+  assert.equal(r("rechercherMac").macSeulement && r("rechercherMac").horsEditeur, true);
+});
+
+test("menu natif macOS : pas de raccourci qui vole ⇧⌘N à la page", () => {
+  const rs = lire("../src-tauri/src/platform.rs");
+  assert.match(rs, /#\[cfg\(not\(target_os = "macos"\)\)\]\s*let new_window_builder = new_window_builder\.accelerator\("CmdOrCtrl\+Shift\+N"\)/);
+  assert.match(rs, /\.copy_with_text\(/);
+  assert.match(rs, /\.paste_with_text\(/);
+});

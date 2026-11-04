@@ -39,7 +39,8 @@ export type RaccourciId =
   | "nouvelleLigne"
   | "annulerDictee"
   | "fermerMolette"
-  | "deplacerColonne";
+  | "deplacerColonne"
+  | "rechercherMac";
 
 type Touche = {
   /** Ctrl (ou Cmd sur macOS). */
@@ -59,6 +60,10 @@ export type Raccourci = {
   touche: Touche;
   /** Vrai si Windows seulement (Ctrl+W est laissé au système ailleurs). */
   windowsSeulement?: boolean;
+  /** Vrai si macOS seulement (WKWebView n'a pas la recherche Ctrl+F de WebView2). */
+  macSeulement?: boolean;
+  /** Laissé à l'éditeur et au terminal quand ils ont le focus (leur propre ⌘F). */
+  horsEditeur?: boolean;
 };
 
 export const RACCOURCIS: Raccourci[] = [
@@ -74,6 +79,7 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "ongletSuivant", categorie: "Onglets", libelle: "Onglet de fichier suivant", combinaison: "Ctrl + Page suiv.", touche: { ctrl: true, touches: ["pagedown"] } },
   { id: "ongletPrecedent", categorie: "Onglets", libelle: "Onglet de fichier précédent", combinaison: "Ctrl + Page préc.", touche: { ctrl: true, touches: ["pageup"] } },
   { id: "enregistrer", categorie: "Onglets", libelle: "Enregistrer le fichier", combinaison: "Ctrl + S", touche: { ctrl: true, touches: ["s"] } },
+  { id: "rechercherMac", categorie: "Onglets", libelle: "Rechercher dans les fichiers (hors éditeur et terminal)", combinaison: "Ctrl + F", touche: { ctrl: true, touches: ["f"] }, macSeulement: true, horsEditeur: true },
   { id: "rechercheFichiers", categorie: "Onglets", libelle: "Rechercher dans les fichiers", combinaison: "Ctrl + Maj + F", touche: { ctrl: true, shift: true, touches: ["f"] } },
 
   { id: "terminal", categorie: "Panneaux", libelle: "Afficher / masquer le terminal", combinaison: "Ctrl + J", touche: { ctrl: true, touches: ["j"] } },
@@ -111,17 +117,30 @@ export function correspond(r: Raccourci, e: KeyboardEvent, mac: boolean = estMac
   const ignoreShift = r.id === "zoomPlus" || r.id === "zoomMoins";
   if (!ignoreShift && !!t.shift !== e.shiftKey) return false;
   const key = (e.key || "").toLowerCase();
-  return t.touches.some((k) => (k.startsWith("code:") ? e.code === k.slice(5) : key === k));
+  return t.touches.some((k) => {
+    if (k.startsWith("code:")) return e.code === k.slice(5);
+    if (key === k) return true;
+    // macOS : Option change le caractère (⌥⌘B donne « ∫ ») ; on lit alors la touche physique.
+    return mac && e.altKey && /^[a-z]$/.test(k) && e.code === `Key${k.toUpperCase()}`;
+  });
 }
 
 type Actions = Partial<Record<RaccourciId, () => void>>;
 const fournisseurs: Actions[] = [];
 let installe = false;
 
+/** Vrai si la touche vient de l'éditeur Monaco ou du terminal (ils gèrent ⌘F eux-mêmes). */
+export function dansEditeur(cible: EventTarget | null): boolean {
+  const el = cible as { closest?: (s: string) => unknown } | null;
+  return Boolean(el && typeof el.closest === "function" && el.closest(".monaco-editor, .xterm"));
+}
+
 function surTouche(e: KeyboardEvent): void {
   for (const r of RACCOURCIS) {
     if (r.windowsSeulement && !estWindows()) continue;
+    if (r.macSeulement && !estMac()) continue;
     if (!correspond(r, e)) continue;
+    if (r.horsEditeur && dansEditeur(e.target)) continue;
     // Le fournisseur le plus récent (vue au premier plan) l'emporte.
     for (let i = fournisseurs.length - 1; i >= 0; i--) {
       const action = fournisseurs[i][r.id];

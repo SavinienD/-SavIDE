@@ -48,7 +48,7 @@ export function RaccourcisSection() {
                   <tr key={r.id} style={{ borderBottom: "1px solid var(--line-0, rgba(128,128,128,.2))" }}>
                     <td style={{ padding: "6px 0" }}>
                       {r.libelle}
-                      {r.windowsSeulement ? " (Windows)" : ""}
+                      {r.windowsSeulement ? " (Windows)" : r.macSeulement ? " (macOS)" : ""}
                     </td>
                     <td style={{ padding: "6px 0 6px 12px", textAlign: "right" }}>
                       <kbd style={{ display: "inline-block", whiteSpace: "normal", overflowWrap: "anywhere", fontFamily: "var(--font-mono, monospace)", padding: "2px 6px", border: "1px solid var(--line-1, rgba(128,128,128,.4))", borderRadius: 4 }}>

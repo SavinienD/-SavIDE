@@ -35,9 +35,12 @@ fn build_desktop_menu<R: Runtime>(app: &AppHandle<R>) -> Result<Menu<R>> {
     let close_tab_item = MenuItemBuilder::with_id(CLOSE_ACTIVE_TAB_MENU_ID, "Fermer l'onglet")
         .accelerator("CmdOrCtrl+W")
         .build(app)?;
-    let new_window_item = MenuItemBuilder::with_id(NEW_WINDOW_MENU_ID, "Nouvelle fenêtre")
-        .accelerator("CmdOrCtrl+Shift+N")
-        .build(app)?;
+    // macOS : ⇧⌘N est « Nouvelle conversation » dans la page ; un raccourci de menu
+    // natif passe avant la page et le volerait. Pas de raccourci ici sur macOS.
+    let new_window_builder = MenuItemBuilder::with_id(NEW_WINDOW_MENU_ID, "Nouvelle fenêtre");
+    #[cfg(not(target_os = "macos"))]
+    let new_window_builder = new_window_builder.accelerator("CmdOrCtrl+Shift+N");
+    let new_window_item = new_window_builder.build(app)?;
 
     let file_menu = SubmenuBuilder::new(app, "Fichier")
         .item(&close_tab_item)

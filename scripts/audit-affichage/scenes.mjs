@@ -313,6 +313,8 @@ export const SCENES = [
   // Raccourcis : Ctrl/Alt sous Windows, ⌘/⌥/⇧ sous macOS (navigator.platform simulé).
   { id: "raccourcis-windows", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, clics: [".settings-pane__nav-item[data-section='shortcuts']"],
     temoins: ["sel:.axe-raccourcis[data-mac='false'] kbd"] },
+  // macOS : ⌘F (hors éditeur) ouvre la recherche dans les fichiers.
+  { id: "mac-cmd-f", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), touches: ["Meta+f"], temoins: ["sel:.sidebar__head-btn[data-active='true']"] },
   { id: "raccourcis-mac", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, clics: [".settings-pane__nav-item[data-section='shortcuts']"],
     temoins: ["sel:.axe-raccourcis[data-mac='true'] kbd", "sel:.titlebar__btn[data-action='reglages'][title*='⌘']"] },
   // fournisseurs-178 — Réglages > Fournisseurs configurables, Ollama local avec qwen3:4b (capture d'un utilisateur) :

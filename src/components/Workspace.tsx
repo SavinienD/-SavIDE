@@ -2843,6 +2843,7 @@ export function Workspace({
       if (activeTabIndex >= 0) void saveTab(activeTabIndex);
     },
     rechercheFichiers: () => setFileSearchOpen(true),
+    rechercherMac: () => setFileSearchOpen(true),
     nouvelleConversation: () => startCreate(),
     ongletSuivant: () => {
       if (tabs.length) activateFileTab((Math.max(activeTabIndex, -1) + 1) % tabs.length);
