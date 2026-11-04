@@ -11,6 +11,7 @@ import {
 } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Icon } from "@iconify/react";
 import { api } from "../lib/ipc";
 import { titreAffiche } from "../lib/titres";
@@ -133,6 +134,8 @@ import type {
   WorkspaceFileChangedPayload,
 } from "../types";
 import { estMac, formaterTexte, modPrincipal } from "../lib/plateforme";
+import { dansRect, messageDepotVide, pointCss } from "../lib/depot";
+import { loadUiZoom } from "../axe/zoom";
 
 type Props = {
   bootstrap: WorkspaceBootstrap;
@@ -1914,6 +1917,7 @@ export function Workspace({
     targetRelative: string | null;
   }>({ active: false, targetRelative: null });
   const [importError, setImportError] = useState<string | null>(null);
+  const echelleDepotRef = useRef<number | null>(null);
 
   const findFolderTargetAt = useCallback(
     (x: number, y: number): string | null => {
@@ -1935,30 +1939,20 @@ export function Workspace({
       try {
         const u = await getCurrentWebview().onDragDropEvent(async (event) => {
           const type = event.payload.type;
-          const position =
+          // Échelle relue à chaque entrée (écran changé entre deux glisser).
+          if (type === "enter" || echelleDepotRef.current === null) {
+            echelleDepotRef.current = await getCurrentWindow().scaleFactor().catch(() => null);
+          }
+          const physique =
             "position" in event.payload ? event.payload.position : null;
+          const position = physique
+            ? pointCss(physique, echelleDepotRef.current ?? window.devicePixelRatio ?? 1, loadUiZoom())
+            : null;
           const chatRect = chatDropZoneRef.current?.getBoundingClientRect();
           const sidebarRect =
             fileTreeDropZoneRef.current?.getBoundingClientRect();
-          const overChat = (() => {
-            if (!chatRect || !position) return false;
-            return (
-              position.x >= chatRect.left &&
-              position.x <= chatRect.right &&
-              position.y >= chatRect.top &&
-              position.y <= chatRect.bottom
-            );
-          })();
-          const overSidebar = (() => {
-            if (overChat) return false;
-            if (!sidebarRect || !position) return false;
-            return (
-              position.x >= sidebarRect.left &&
-              position.x <= sidebarRect.right &&
-              position.y >= sidebarRect.top &&
-              position.y <= sidebarRect.bottom
-            );
-          })();
+          const overChat = dansRect(position, chatRect);
+          const overSidebar = !overChat && dansRect(position, sidebarRect);
 
           if (type === "enter" || type === "over") {
             for (const handler of dragSubsRef.current) handler(overChat);
@@ -1981,7 +1975,10 @@ export function Workspace({
             for (const handler of dragSubsRef.current) handler(false);
             setFileTreeDropState({ active: false, targetRelative: null });
             const paths = event.payload.paths ?? [];
-            if (!paths.length) return;
+            if (!paths.length) {
+              if (overChat || overSidebar) setImportError(messageDepotVide(estMac()));
+              return;
+            }
             if (overChat) {
               const attachments = paths.map((path) => ({
                 path,

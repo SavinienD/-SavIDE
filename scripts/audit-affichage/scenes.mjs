@@ -315,6 +315,10 @@ export const SCENES = [
     temoins: ["sel:.axe-raccourcis[data-mac='false'] kbd"] },
   // macOS : ⌘F (hors éditeur) ouvre la recherche dans les fichiers.
   { id: "mac-cmd-f", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), touches: ["Meta+f"], temoins: ["sel:.sidebar__head-btn[data-active='true']"] },
+  // Glisser-déposer : Finder/Explorateur vers le champ du chat, écran Retina (×2) ; dépôt sans chemin = message.
+  { id: "depot-chat-mac", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), depot: { echelle: 2, cible: ".composer", chemins: ["/Users/marc/Desktop/Capture d’écran 2026-11-05.png"] }, temoins: ["sel:.composer .chips .chip"] },
+  { id: "depot-chat-windows", sim: {}, stockage: () => colonnes([ids(3)]), depot: { cible: ".composer", chemins: ["C:\\Users\\a\\rapport.pdf"] }, temoins: ["sel:.composer .chips .chip"] },
+  { id: "depot-vide-mac", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), depot: { echelle: 2, cible: ".composer", chemins: [] }, temoins: ["sel:.sidebar__import-error"] },
   { id: "raccourcis-mac", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, clics: [".settings-pane__nav-item[data-section='shortcuts']"],
     temoins: ["sel:.axe-raccourcis[data-mac='true'] kbd", "sel:.titlebar__btn[data-action='reglages'][title*='⌘']"] },
   // fournisseurs-178 — Réglages > Fournisseurs configurables, Ollama local avec qwen3:4b (capture d'un utilisateur) :

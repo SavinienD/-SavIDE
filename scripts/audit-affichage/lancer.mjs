@@ -565,6 +565,25 @@ async function preparerScene(page, si, sc) {
     await page.evaluate((s) => document.querySelector(s)?.click(), sel);
     await pause(400);
   }
+
+  // depot — glisser-déposer simulé depuis le système (événements Tauri, position en
+  // pixels PHYSIQUES comme sur un écran Retina) : « depot: { cible, chemins } ».
+  if (sc.depot) {
+    // « echelle » : écran Retina simulé au moment du dépôt (le banc ne prépare la scène qu'à l'échelle 1).
+    if (sc.depot.echelle) { await page.setViewport({ ...page.viewport(), deviceScaleFactor: sc.depot.echelle }); await pause(300); }
+    const position = await page.evaluate((sel) => {
+      const r = document.querySelector(sel)?.getBoundingClientRect();
+      if (!r) return null;
+      const d = window.devicePixelRatio || 1;
+      return { x: (r.left + r.width / 2) * d, y: (r.top + r.height / 2) * d };
+    }, sc.depot.cible);
+    if (!position) throw new Error(`depot : cible absente ${sc.depot.cible}`);
+    const paths = sc.depot.chemins ?? [];
+    await page.evaluate((p) => window.__bancEmettre?.("tauri://drag-enter", { paths: p.paths, position: p.position }), { paths, position });
+    await page.evaluate((p) => window.__bancEmettre?.("tauri://drag-over", { position: p }), position);
+    await page.evaluate((p) => window.__bancEmettre?.("tauri://drag-drop", { paths: p.paths, position: p.position }), { paths, position });
+    await pause(600);
+  }
   // « touches » : raccourcis clavier envoyés à l'élément qui a le focus (ex. Control+z).
   for (const t of sc.touches ?? []) {
     const parties = t.split("+");
