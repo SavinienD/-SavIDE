@@ -259,7 +259,8 @@ export function installerSimulation(scene: Scene): void {
     get_google_provider_status: () => scene.comptes ? { ...statut(true), email: "gemini@example.com", userTier: "Google AI Pro", projectId: "projet-gemini" } : statut(false),
     get_kimi_provider_status: () => statut(false),
     get_openrouter_provider_status: () => ({ ...statut(false), hasApiKey: false }),
-    daemon_sessions: () => sessions(scene),
+    // « sessionsDemon » = liste du service sous sa forme réelle.
+    daemon_sessions: () => (Array.isArray(scene.sessionsDemon) ? scene.sessionsDemon : sessions(scene)),
     list_workspace_entries_command: (a) => {
       const dossier = a.relativePath ?? a.input?.relativePath ?? "";
       const liste = D.entrees(dossier);

@@ -939,6 +939,34 @@ pub(super) async fn register_active_turn(
     emit_active_turns_changed(app, &state.active_turn_details).await;
 }
 
+/// Tour lancé par le service lui-même (résultat d'un sous-agent, réveil d'un guet,
+/// /heartbeat, file d'attente) et adopté par le pont : il compte comme tour en cours
+/// (accueil, liste, onglets, reprise du fil). Avant, seul l'envoi depuis la fenêtre
+/// l'enregistrait : la carte du dossier restait sans rond pendant tout ce tour.
+/// Rend vrai si le tour vient d'être ajouté (un tour déjà suivi garde ses événements).
+pub(crate) fn record_adopted_turn(
+    active: &mut HashMap<String, ActiveTurnRecord>,
+    workspace_id: &str,
+    conversation_id: &str,
+    started_at_ms: i64,
+) -> bool {
+    if active.contains_key(conversation_id) {
+        return false;
+    }
+    active.insert(
+        conversation_id.to_string(),
+        ActiveTurnRecord {
+            workspace_id: workspace_id.to_string(),
+            conversation_id: conversation_id.to_string(),
+            started_at_ms,
+            events: Vec::new(),
+            replay_events: Vec::new(),
+            next_sequence: 1,
+        },
+    );
+    true
+}
+
 pub(super) async fn emit_active_turns_changed(
     app: &AppHandle,
     active_turn_details: &Arc<StdMutex<HashMap<String, ActiveTurnRecord>>>,

@@ -790,6 +790,23 @@ pub(crate) fn bridge_event(app: &AppHandle, event: &DaemonEvent, source: &str) {
                 app.state::<DesktopState>().store.conversation_workspace_by_id(session_id).ok().flatten()
             });
             if let Some(workspace_id) = workspace {
+                // Enregistré AVANT l'émission de « turn_started » (numéros d'ordre de la reprise),
+                // puis signalé à l'accueil et aux listes (active-turns-changed).
+                let state = app.state::<DesktopState>();
+                let ajoute = state
+                    .active_turn_details
+                    .lock()
+                    .map(|mut active| {
+                        crate::turns::record_adopted_turn(&mut active, &workspace_id, session_id, crate::turns::now_ms())
+                    })
+                    .unwrap_or(false);
+                if ajoute {
+                    let app = app.clone();
+                    let details = state.active_turn_details.clone();
+                    tauri::async_runtime::spawn(async move {
+                        emit_active_turns_changed(&app, &details).await;
+                    });
+                }
                 turns.insert(session_id.to_string(), BridgeTurn { workspace_id, ..Default::default() });
                 events.push(AgentEvent::TurnStarted);
             }
@@ -953,6 +970,24 @@ fn relaunched(app: &AppHandle, session_id: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // Tour relancé par le service (formes réelles : dossier local sous forme \\?\) : il entre
+    // dans les tours en cours, et un tour déjà suivi n'est pas remis à zéro.
+    #[test]
+    fn tour_adopte_compte_comme_tour_en_cours() {
+        let mut active = HashMap::new();
+        let ws = r"\\?\C:\Users\utilisateur\Documents\mon-projet";
+        let id = "45127dc0-5b2f-4f50-a166-5a7523cc769e";
+        assert!(crate::turns::record_adopted_turn(&mut active, ws, id, 1));
+        let tours = crate::turns::active_turn_summaries_from_map(&active);
+        assert_eq!(tours.len(), 1);
+        assert_eq!(tours[0].workspace_id, ws);
+        assert_eq!(tours[0].conversation_id, id);
+        active.get_mut(id).unwrap().next_sequence = 7;
+        assert!(!crate::turns::record_adopted_turn(&mut active, ws, id, 2));
+        assert_eq!(active[id].next_sequence, 7);
+        assert_eq!(active[id].started_at_ms, 1);
+    }
 
     // reecrire-repl — « Modifier » le 2e message : la branche repart de la réponse 1.
     #[test]

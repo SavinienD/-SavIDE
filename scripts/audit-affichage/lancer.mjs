@@ -414,6 +414,11 @@ async function preparerScene(page, si, sc) {
     }
     // raccourcis tapés sur l'accueil (ex. Control+3 : 3e dossier récent).
     await taperTouches(page, sc.touches);
+    // Événements du service rejoués sur l'accueil (« status » d'une session).
+    for (const e of sc.emissions ?? []) {
+      if (e.demon) await page.evaluate((charge) => window.__bancEmettre?.("axe://daemon", charge), e.demon);
+      await pause(e.pause ?? 150);
+    }
     return;
   }
   if (sc.espaceCloud) {
