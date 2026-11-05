@@ -6516,6 +6516,16 @@ textarea {
   line-height: 1.5;
   letter-spacing: -0.005em;
 }
+/* file-envoi-affiche — message de la file en cours d'envoi */
+.msg[data-envoi="en-cours"] .user-text {
+  opacity: 0.8;
+}
+.msg__envoi {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--fs-xs, 11px);
+  color: var(--text-3);
+}
 .user-text[data-rewindable="true"] {
   cursor: pointer;
   transition: background 150ms ease;

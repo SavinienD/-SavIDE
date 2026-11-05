@@ -129,6 +129,24 @@ export const SCENES = [
   // file-pause — après un Stop, la file attend : bouton « Reprendre la file ».
   { id: "file-en-pause", sim: { filePause: true }, stockage: () => ({ ...colonnes([ids(2), ["c-003"]]), ...fileAttente("c-001", 2) }), temoins: ["clic:[data-testid='reprendre-file']", "sel:.todo-strip__queue"] },
   { id: "arret-force", sim: { tour: "en_cours", sousAgents: 1, accelerer: true }, stockage: () => ({ ...colonnes([ids(2), ["c-003"], ["c-004"]]), ...fileAttente("c-001", 2) }), arretForce: true, temoins: ["sel:.composer__send[data-variant='stop'][data-force='true']", "sel:.axe-agents-bandeau"] },
+  // file-envoi-affiche — « envoyer maintenant » pendant un tour (flèche de la file, double Entrée) : le tour
+  // s'arrête (turn_finished), le service enverra le message plus tard ; en attendant, la bulle du message est
+  // déjà dans la conversation (« en cours d'envoi »), retirée de la file, et le bouton reste « Stop ».
+  { id: "file-envoi-maintenant", sim: { tour: "en_cours", arretFinit: true }, stockage: () => ({ ...colonnes([ids(2)]), ...fileAttente("c-001", 2) }),
+    cliquer: ".todo-strip__queue-action[aria-label='Envoyer maintenant le message en attente']",
+    temoins: ["sel:.msg[data-role='user'][data-envoi='en-cours']", "sel:.composer__send[data-variant='stop']", "compte:.todo-strip__queue-item=1"] },
+  { id: "file-double-entree", sim: { tour: "en_cours", arretFinit: true }, stockage: () => ({ ...colonnes([ids(2)]), ...fileAttente("c-001", 2) }),
+    doubleEntree: ".composer textarea",
+    temoins: ["sel:.msg[data-role='user'][data-envoi='en-cours']", "sel:.composer__send[data-variant='stop']", "compte:.todo-strip__queue-item=1"] },
+  // Le service envoie lui-même le 1er message de la file à la fin du tour (« sending ») : il apparaît tout de suite
+  // dans la conversation, et la fin de l'ancien tour reçue entre-temps ne remet pas « Envoyer ».
+  { id: "file-depart-auto", sim: { tour: "en_cours" }, stockage: () => ({ ...colonnes([ids(2)]), ...fileAttente("c-001", 2) }),
+    emissions: [
+      { demon: { event: "queue", sessionId: "c-001", data: { sessionId: "c-001", paused: false, sending: "f-1", items: [{ id: "f-2", text: "ok", display: { attachments: [] } }] } } },
+      { agent: { type: "turn_finished", duration_ms: null } },
+      { agent: { type: "turn_started" } },
+    ],
+    temoins: ["Quand tu auras fini, relance le banc à 800 px", "sel:.composer__send[data-variant='stop']", "compte:.todo-strip__queue-item=1", "absent:.msg[data-envoi='en-cours']"] },
   // attendus : le détail de l'erreur, affiché tel quel avant comme après la traduction du préfixe (« Réponse interrompue : … »).
   { id: "erreur-compaction", sim: { tour: "erreur", compaction: true }, stockage: () => colonnes([ids(3)]), temoins: ["sel:.tool-card__pre[data-error='true']", "sel:.compaction-marker, .compaction-summary"], attendus: ["error decoding response body"] },
   { id: "colonne-introuvable", sim: { conversationIllisible: true }, stockage: () => colonnes([ids(2), ["x-404"]]), temoins: ["sel:.colonne-chat[data-colonne='1']"] },

@@ -7,6 +7,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { cloudConnectionFromPath } from "../../lib/ipc";
 import { filesPartagees, PREFIXE_CLE_FILE, relireFile, type ElementFile } from "./fileAttente";
+import { SuiviDeparts, type Mouvement, type SignalFile } from "./departFile"; // file-envoi-affiche
 
 export type ElementDemon = {
   id: string;
@@ -60,6 +61,7 @@ export async function pousserFile(
 }
 
 export function retirerFile(workspacePath: string, conversationId: string, itemId: string) {
+  DEPARTS.retirer(itemId); // file-envoi-affiche — retiré, pas parti
   return appel(workspacePath, "queue.remove", { sessionId: conversationId, itemId });
 }
 
@@ -108,9 +110,53 @@ export async function relireFileDemon(workspacePath: string, conversationId: str
   }
 }
 
-function appliquer(conversationId: string, items: ElementDemon[], paused?: boolean) {
-  filesPartagees().modifierFile(conversationId, () => items.map((i) => versAffichage(i)));
+function appliquer(conversationId: string, items: ElementDemon[], paused?: boolean, signal: SignalFile = {}) {
+  // file-envoi-affiche — le message en départ reste hors de la file affichée ;
+  // celui que le service envoie (ou remet en file après un échec) est signalé aux volets.
+  const affiches = items.map((i) => versAffichage<ElementFile>(i));
+  const mouvements = DEPARTS.recevoir(conversationId, affiches, signal);
+  filesPartagees().modifierFile(conversationId, () => DEPARTS.visibles(conversationId, affiches));
   noterPause(conversationId, items.length === 0 ? false : paused);
+  for (const mouvement of mouvements) {
+    for (const f of Array.from(ABONNES_MOUVEMENTS)) {
+      try {
+        f(conversationId, mouvement);
+      } catch (err) {
+        console.error("départ de la file", err);
+      }
+    }
+  }
+}
+
+// file-envoi-affiche — messages de la file qui partent (bulle tout de suite dans la
+// conversation, voir departFile.ts).
+export const DEPARTS = new SuiviDeparts<ElementFile>();
+const ABONNES_MOUVEMENTS = new Set<(conversationId: string, mouvement: Mouvement<ElementFile>) => void>();
+export function abonnerMouvements(
+  f: (conversationId: string, mouvement: Mouvement<ElementFile>) => void,
+): () => void {
+  ABONNES_MOUVEMENTS.add(f);
+  return () => {
+    ABONNES_MOUVEMENTS.delete(f);
+  };
+}
+
+/** « Envoyer maintenant » : le message quitte la file affichée, bulle « en cours d'envoi ». */
+export function annoncerDepart(conversationId: string, item: ElementFile): void {
+  DEPARTS.annoncer(conversationId, item);
+  filesPartagees().modifierFile(conversationId, (file) => file.filter((e) => e.id !== item.id));
+}
+
+/** L'envoi n'a pas pu partir : le message redevient un message en file (en tête). */
+export function annulerDepart(conversationId: string): ElementFile | null {
+  const item = DEPARTS.annuler(conversationId);
+  if (!item) return null;
+  const service = DEPARTS.derniere(conversationId);
+  filesPartagees().modifierFile(conversationId, (file) => {
+    if (service.some((e) => e.id === item.id)) return DEPARTS.visibles(conversationId, service);
+    return file.some((e) => e.id === item.id) ? file : [item, ...file];
+  });
+  return item;
 }
 
 let ecoute = false;
@@ -118,13 +164,18 @@ let ecoute = false;
 export function ecouterFilesDemon(): void {
   if (ecoute) return;
   ecoute = true;
-  void listen<{ event?: string; sessionId?: string; data?: { sessionId?: string; items?: ElementDemon[]; paused?: boolean } }>(
+  void listen<{
+    event?: string;
+    sessionId?: string;
+    data?: { sessionId?: string; items?: ElementDemon[]; paused?: boolean; sending?: string; failed?: string; error?: string };
+  }>(
     "axe://daemon",
     (e) => {
       const p = e.payload;
       if (p?.event !== "queue") return;
       const id = p.data?.sessionId ?? p.sessionId;
-      if (id) appliquer(id, p.data?.items ?? [], p.data?.paused);
+      const d = p.data;
+      if (id) appliquer(id, d?.items ?? [], p.data?.paused, { sending: d?.sending, failed: d?.failed, error: d?.error });
     },
   ).catch(() => {
     ecoute = false;

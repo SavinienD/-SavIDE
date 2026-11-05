@@ -696,6 +696,21 @@ async function preparerScene(page, si, sc) {
     // micro-local — attendre un élément (ex. bulle de la dictée après le décodage audio).
     if (sc.attendre) await page.waitForSelector(sc.attendre, { timeout: 10000 }).catch(() => undefined);
   }
+  // file-envoi-affiche — « doubleEntree » : focus dans la saisie, Entrée deux fois (< 500 ms) ;
+  // « emissions » : événements rejoués dans l'ordre, { agent: événement } (« agent-event ») ou
+  // { demon: charge } (« axe://daemon », ex. file du service).
+  if (sc.doubleEntree) {
+    await page.focus(sc.doubleEntree).catch(() => undefined);
+    await page.keyboard.press("Enter");
+    await pause(120);
+    await page.keyboard.press("Enter");
+    await pause(300);
+  }
+  for (const e of sc.emissions ?? []) {
+    if (e.agent) await page.evaluate((charge) => window.__bancEmettre?.("agent-event", charge), { conversationId: sc.conversation ?? "c-001", workspaceId: WS_BANC, event: e.agent });
+    else if (e.demon) await page.evaluate((charge) => window.__bancEmettre?.("axe://daemon", charge), e.demon);
+    await pause(e.pause ?? 150);
+  }
   if (sc.retrecirTerminal) {
     // Le volet bas rétrécit après l'ouverture (fenêtre réduite, volet latéral élargi) :
     // xterm doit se replier sur la nouvelle largeur, rien ne doit rester rogné à droite.

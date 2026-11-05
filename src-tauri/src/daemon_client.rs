@@ -929,6 +929,13 @@ async fn finish_turn(app: AppHandle, workspace_id: String, session_id: String) {
             }
         }
     }
+    // file-envoi-affiche — pendant la copie, le service a déjà envoyé le message
+    // suivant de la file et le pont a adopté son tour (« turn_started » émis) : la fin
+    // de l'ancien tour, émise maintenant, arriverait APRÈS ce début et l'IDE montrerait
+    // « Envoyer » (et plus de suivi) pendant tout le nouveau tour. Ce tour-là finira seul.
+    if relaunched(&app, &session_id) {
+        return;
+    }
     let _ = emit_agent_event(&app, &workspace_id, &session_id, &AgentEvent::TurnFinished { duration_ms: None });
     state
         .active_turn_details
@@ -936,6 +943,11 @@ async fn finish_turn(app: AppHandle, workspace_id: String, session_id: String) {
         .map(|mut active| active.remove(&session_id))
         .ok();
     emit_active_turns_changed(&app, &state.active_turn_details).await;
+}
+
+/// file-envoi-affiche — un nouveau tour de la session est déjà suivi par le pont.
+fn relaunched(app: &AppHandle, session_id: &str) -> bool {
+    bridge(app).turns.lock().map(|turns| turns.contains_key(session_id)).unwrap_or(false)
 }
 
 #[cfg(test)]

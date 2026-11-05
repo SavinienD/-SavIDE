@@ -81,7 +81,7 @@ test("Markdown : un nouveau rappel onOpenFile (onglet ouvert) ne recrée rien et
 test("ChatPane : rappel d'ouverture stable pour les messages et la liste des tâches", () => {
   const pane = lire("src/components/chat/ChatPane.tsx");
   assert.match(pane, /const ouvrirFichier = useCallback\(\(path: string\) => onOpenFileRef\.current\(path\), \[\]\);/);
-  assert.equal((pane.match(/onOpenFile=\{ouvrirFichier\}/g) ?? []).length, 3); // messages, liste des tâches, barre des liens
+  assert.equal((pane.match(/onOpenFile=\{ouvrirFichier\}/g) ?? []).length, 4); // messages, liste des tâches, barre des liens, message de la file en cours d'envoi
 });
 
 test("Workspace : changer de colonne ne recrée pas les fils, chaque colonne garde sa conversation", () => {

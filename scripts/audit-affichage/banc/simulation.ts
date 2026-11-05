@@ -312,7 +312,15 @@ export function installerSimulation(scene: Scene): void {
     agent_term_open: () => "agent-1",
     agent_term_resize: () => null,
     agent_term_write: () => null,
-    cancel_turn: () => true,
+    // file-envoi-affiche — « arretFinit » : comme le vrai pont, le tour arrêté se termine
+    // (turn_finished) peu après le Stop ; le message de la file part plus tard (le service).
+    cancel_turn: (a) => {
+      if (scene.arretFinit) {
+        const conversationId = a?.conversationId ?? active;
+        window.setTimeout(() => void emit("agent-event", { conversationId, workspaceId: D.WS, event: { type: "turn_finished", duration_ms: null } }), 60);
+      }
+      return true;
+    },
     list_tool_settings: () => ({
       tools: [{ name: "agent", description: "Sous-agents", defaultDescription: "Sous-agents", enabled: true }],
       planModePrompt: "", defaultPlanModePrompt: "", imageProvider: "gptImage2", openaiImageUseSubscription: true,

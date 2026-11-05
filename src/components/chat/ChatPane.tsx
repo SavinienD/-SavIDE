@@ -39,6 +39,8 @@ import { TodoStrip, type QueuedPromptStripItem } from "./TodoStrip";
 import { filesPartagees } from "./fileAttente"; // file-attente
 import { abonnerPauses, fileEnPause, instantanePauses, reprendreFile } from "./fileDemon"; // file-pause
 import { deplacerFile, ecouterFilesDemon, migrerFilesNavigateur, pousserFile, relireFileDemon, retirerFile } from "./fileDemon"; // file-demon
+import { abonnerMouvements, annoncerDepart, annulerDepart, DEPARTS } from "./fileDemon"; // file-envoi-affiche
+import { ERREUR_DEPART } from "./departFile"; // file-envoi-affiche
 import { avecNote, noteConversation } from "./arrierePlan"; // arriere-plan
 import { fileIcon } from "../../lib/fileIcon";
 import { DicteeBouton } from "../../axe/voix/DicteeBouton"; // voix
@@ -563,6 +565,15 @@ export function ChatPane({
   const promptQueuesByConversation = etatFiles.files;
   // Compaction + relance, ou mise en arrière-plan : rien ne part de la file.
   const conversationOccupee = etatFiles.occupations.has(conversationId);
+  // file-envoi-affiche — message de la file « en départ » (envoyer maintenant, double
+  // Entrée) : bulle « en cours d'envoi » et bouton Stop jusqu'à ce que le service l'envoie.
+  useSyncExternalStore(DEPARTS.abonner, DEPARTS.instantane);
+  const departFile = DEPARTS.enDepart(conversationId) as QueuedPrompt | null;
+  const historyRef = useRef(history);
+  historyRef.current = history;
+  // Conversations dont la fin de l'ancien tour (arrivée après le départ du message suivant
+  // de la file, avant le début de son tour) ne doit pas remettre « Envoyer ».
+  const finAncienTourRef = useRef(new Set<string>());
   const [editingQueuedPrompt, setEditingQueuedPrompt] =
     useState<EditingQueuedPrompt | null>(null);
   const [activeSubAgentId, setActiveSubAgentId] = useState<string | null>(null);
@@ -1678,6 +1689,10 @@ export function ChatPane({
 
   const applyEventToConversationView = useCallback(
     (cid: string, event: AgentEvent) => {
+      // file-envoi-affiche — le message suivant de la file est déjà parti (bulle,
+      // tour en préparation) : la fin de l'ancien tour ne le remet pas à « Envoyer ».
+      if (event.type === "turn_started") finAncienTourRef.current.delete(cid);
+      else if (event.type === "turn_finished" && finAncienTourRef.current.delete(cid)) return;
       const viewBeforeEvent =
         cid === viewConversationIdRef.current
           ? viewRef.current
@@ -1985,7 +2000,12 @@ export function ChatPane({
     if (!value && currentAttachments.length === 0) {
       return;
     }
-    if (view.status === "streaming" || isStreaming || conversationOccupee) {
+    if (
+      view.status === "streaming" ||
+      isStreaming ||
+      conversationOccupee ||
+      DEPARTS.enDepart(conversationId) !== null // file-envoi-affiche
+    ) {
       const editing =
         editingQueuedPrompt?.conversationId === conversationId
           ? editingQueuedPrompt
@@ -2859,18 +2879,13 @@ export function ChatPane({
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       const now = Date.now();
-      const busy = view.status === "streaming" || isStreaming || conversationOccupee;
+      const busy =
+        view.status === "streaming" || isStreaming || conversationOccupee || departFile !== null;
       // queue - Entree = file ; double Entree (< 500 ms) = envoi immediat.
       if (busy && text.trim() === "" && now - lastEnterAtRef.current < 500 && queuedPrompts.length > 0) {
         lastEnterAtRef.current = 0;
         const last = queuedPrompts[queuedPrompts.length - 1];
-        setPromptQueuesByConversation((current) =>
-          updatePromptQueue(current, conversationId, (queue) => [
-            last,
-            ...queue.filter((q) => q.id !== last.id),
-          ]),
-        );
-        void arreterPuisEnvoyerFile(last.id).catch(() => undefined);
+        void arreterPuisEnvoyerFile(last).catch(() => undefined);
         return;
       }
       lastEnterAtRef.current = now;
@@ -3170,17 +3185,95 @@ export function ChatPane({
   // pendant un tour : l'élément passe en tête de la file du service, le tour
   // s'arrête, puis la file reprend (un Stop la met en pause, voulu pour le
   // bouton Stop, pas ici) : le message part dès la fin du tour.
+  // file-envoi-affiche — dès le clic, le message quitte la file affichée et sa bulle
+  // « en cours d'envoi » entre dans la conversation, bouton Stop (tour en préparation) ;
+  // si une étape échoue, il redevient un message en file, avec l'erreur.
   const arreterPuisEnvoyerFile = useCallback(
-    async (itemId: string) => {
-      await deplacerFile(workspacePath, conversationId, itemId, 0).catch(() => {});
+    async (item: QueuedPrompt) => {
+      annoncerDepart(conversationId, item);
+      setSendTick((t) => t + 1);
+      const echouer = (err: unknown) => {
+        if (annulerDepart(conversationId)) {
+          setView((prev) => ({ ...prev, lastError: String(err) }));
+        }
+      };
+      try {
+        await deplacerFile(workspacePath, conversationId, item.id, 0);
+      } catch (err) {
+        echouer(err);
+        return;
+      }
       try {
         await onStop();
+      } catch (err) {
+        echouer(err);
       } finally {
-        await reprendreFile(workspacePath, conversationId).catch(() => {});
+        await reprendreFile(workspacePath, conversationId).catch(echouer);
       }
     },
     [workspacePath, conversationId, onStop],
   );
+
+  // file-envoi-affiche — le service envoie un message de la file (envoyer maintenant
+  // ou fin de tour) : sa bulle entre tout de suite dans la conversation, tour en
+  // préparation (Stop). S'il le remet en file (échec), la bulle en sort avec l'erreur.
+  useEffect(
+    () =>
+      abonnerMouvements((cid, mouvement) => {
+        if (cid !== viewConversationIdRef.current) return;
+        const blocId = `u-file-${mouvement.item.id}`;
+        if (mouvement.type === "parti") {
+          const item = mouvement.item;
+          const prev = viewRef.current;
+          if (prev.blocks.some((b) => b.id === blocId)) return;
+          if (prev.status === "streaming") finAncienTourRef.current.add(cid);
+          const avec = appendUserMessage(
+            prev,
+            item.text,
+            optimisticNextUserHistoryIndex(historyRef.current, prev),
+            userAttachmentsFromQueue(item.attachments as AttachmentInput[]),
+          );
+          const blocks = avec.blocks.slice();
+          blocks[blocks.length - 1] = { ...blocks[blocks.length - 1], id: blocId };
+          const next = beginTurn({ ...avec, blocks });
+          viewRef.current = next;
+          conversationViewsRef.current.set(cid, next);
+          setView(next);
+          setSendTick((t) => t + 1);
+          return;
+        }
+        finAncienTourRef.current.delete(cid);
+        const prev = viewRef.current;
+        const sansBulle = prev.blocks.some((b) => b.id === blocId);
+        const next: ChatViewState = sansBulle
+          ? {
+              ...prev,
+              blocks: prev.blocks.filter((b) => b.id !== blocId),
+              status: "stopped",
+              streamPhase: "idle",
+              turnStartedAtMs: null,
+              lastError: mouvement.erreur,
+            }
+          : { ...prev, lastError: mouvement.erreur };
+        viewRef.current = next;
+        conversationViewsRef.current.set(cid, next);
+        setView(next);
+      }),
+    [],
+  );
+
+  // file-envoi-affiche — sans nouvelles du service (tour fini, rien parti) : le message
+  // revient dans la file au lieu de laisser « Stop » indéfiniment.
+  useEffect(() => {
+    if (!departFile) return;
+    const minuterie = window.setInterval(() => {
+      if (viewRef.current.status === "streaming") return;
+      if (!DEPARTS.expirer(conversationId, Date.now())) return;
+      annulerDepart(conversationId);
+      setView((prev) => ({ ...prev, lastError: ERREUR_DEPART }));
+    }, 5_000);
+    return () => window.clearInterval(minuterie);
+  }, [departFile, conversationId]);
 
   const handleQueuedPromptSend = useCallback(
     (id: string) => {
@@ -3193,19 +3286,12 @@ export function ChatPane({
         isStreaming ||
         activeSubAgentId !== null ||
         FILES_PARTAGEES.envoiEnCours(conversationId) ||
-        conversationOccupee;
+        conversationOccupee ||
+        DEPARTS.enDepart(conversationId) !== null; // file-envoi-affiche
       if (streaming) {
-        // Bring this prompt to the front of the queue so the auto-dequeue
-        // effect picks it up right after the current turn stops, then ask
-        // the active turn to stop.
-        setPromptQueuesByConversation((current) =>
-          updatePromptQueue(current, conversationId, (queue) => {
-            const first = queue[0];
-            if (!first || first.id === id) return queue;
-            return moveQueuedPrompt(queue, id, first.id);
-          }),
-        );
-        void arreterPuisEnvoyerFile(id).catch((err) => {
+        // The service sends it once the current turn has stopped; its bubble
+        // shows right away (file-envoi-affiche).
+        void arreterPuisEnvoyerFile(item).catch((err) => {
           setView((prev) => ({
             ...prev,
             lastError: String(err),
@@ -3639,6 +3725,18 @@ export function ChatPane({
               )}
             </>
           )}
+          {departFile && !viewingSubAgent ? (
+            // file-envoi-affiche — message de la file en cours d'envoi (le tour en cours s'arrête).
+            <div className="msg" data-role="user" data-envoi="en-cours">
+              <div
+                className="msg__body user-text"
+                title="Envoi en cours : le message part dès que le tour en cours est arrêté"
+              >
+                <TexteUtilisateur text={departFile.text} onOpenFile={ouvrirFichier} />
+                <span className="msg__envoi">Envoi en cours…</span>
+              </div>
+            </div>
+          ) : null}
           {displayView.lastError && (
             <div
               className="tool-card__pre"
@@ -3927,7 +4025,7 @@ export function ChatPane({
               }
               value={text}
               placeholder={
-                view.status === "streaming" || isStreaming || conversationOccupee
+                view.status === "streaming" || isStreaming || conversationOccupee || departFile
                   ? "Mettre en file d'attente…"
                   : "Écrire à l'agent… (@ : fichier, / : skill)"
               }
@@ -4297,7 +4395,7 @@ export function ChatPane({
                   </span>
                 </button>
               ) : null}
-              {view.status === "streaming" ? (
+              {view.status === "streaming" || departFile ? (
                 <button
                   className="composer__send"
                   data-variant="stop"
@@ -4307,7 +4405,11 @@ export function ChatPane({
                       ? "Le moteur n'a pas confirmé l'arrêt : il a été renvoyé, cliquer libère la conversation"
                       : undefined
                   }
-                  onClick={() => void onStop()}
+                  onClick={() => {
+                    // file-envoi-affiche — Stop pendant la préparation : le message reste en file.
+                    annulerDepart(conversationId);
+                    void onStop();
+                  }}
                 >
                   <span className="composer__send-label">{libelleStop(stopForce)}</span>
                 </button>

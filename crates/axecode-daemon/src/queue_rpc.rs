@@ -12,6 +12,9 @@
 //! - `queue.remove {sessionId, itemId}` ; `queue.move {sessionId, itemId, index}`
 //! - `queue.clear {sessionId}`
 //! Chaque changement diffuse l'événement `queue` `{sessionId, items}`.
+//! file-envoi-affiche — quand le service envoie le premier message, cet
+//! événement porte aussi `sending: <id>` (l'IDE affiche la bulle tout de suite) ;
+//! s'il doit le remettre en file (échec), `failed: <id>` et `error`.
 
 use std::{
     collections::HashMap,
@@ -117,6 +120,17 @@ fn save(d: &Daemon, id: &str, items: &[QueueItem]) {
 
 /// Modifie la file d'une session (sauvée + diffusée).
 fn edit<R>(d: &Daemon, id: &str, f: impl FnOnce(&mut Vec<QueueItem>) -> R) -> R {
+    edit_signal(d, id, f, |_| None)
+}
+
+/// Comme [`edit`], avec des champs en plus dans l'événement `queue` (calculés
+/// d'après le résultat de la modification : `sending`, `failed`…).
+fn edit_signal<R>(
+    d: &Daemon,
+    id: &str,
+    f: impl FnOnce(&mut Vec<QueueItem>) -> R,
+    signal: impl FnOnce(&R) -> Option<Value>,
+) -> R {
     let (out, items) = {
         let mut q = lock(&d.queues);
         ensure_loaded(d, &mut q);
@@ -132,7 +146,11 @@ fn edit<R>(d: &Daemon, id: &str, f: impl FnOnce(&mut Vec<QueueItem>) -> R) -> R 
         (out, (snapshot, paused))
     };
     let (items, paused) = items;
-    d.broadcast("queue", Some(id), json!({"sessionId": id, "items": items, "paused": paused}));
+    let mut data = json!({"sessionId": id, "items": items, "paused": paused});
+    if let (Some(obj), Some(Value::Object(extra))) = (data.as_object_mut(), signal(&out)) {
+        obj.extend(extra);
+    }
+    d.broadcast("queue", Some(id), data);
     out
 }
 
@@ -161,14 +179,20 @@ pub fn dispatch_next(d: &Daemon, id: &str) {
             return; // file-pause — après un Stop, on attend « Reprendre la file »
         }
     }
-    let next = edit(d, id, |items| (!items.is_empty()).then(|| items.remove(0)));
+    let next = edit_signal(
+        d,
+        id,
+        |items| (!items.is_empty()).then(|| items.remove(0)),
+        |item| item.as_ref().map(|i| json!({"sending": i.id})),
+    );
     let Some(item) = next else { return };
     if let Some(model) = item.model.clone() {
         let _ = d.set_model(id, model);
     }
     if let Err(err) = d.send_user(id, item.message.clone()) {
         tracing::warn!(session = %id, error = %err, "queued message not sent, back in queue");
-        edit(d, id, |items| items.insert(0, item));
+        let failed = json!({"failed": item.id, "error": err.to_string()});
+        edit_signal(d, id, |items| items.insert(0, item), |_| Some(failed));
     }
 }
 
@@ -287,5 +311,61 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
             Ok(json!({"ok": true}))
         }
         _ => Err(SessionError::Protocol(format!("unknown method: {m}"))),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use axecode_core::{CreateSessionRequest, ModelRef};
+    use serde_json::{json, Value};
+    use tokio::sync::mpsc;
+
+    use crate::daemon::Daemon;
+
+    // file-envoi-affiche — l'événement « queue » qui retire le message envoyé
+    // porte `sending` : l'IDE montre sa bulle dès son départ.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn le_message_envoye_est_annonce() {
+        let dir = std::env::temp_dir().join(format!("axe-file-envoi-{}", uuid::Uuid::new_v4()));
+        let mut config = crate::DaemonConfig::new(dir.clone());
+        config.auto_shutdown = false;
+        let d = Daemon::new(config, Arc::new(crate::stub::EchoFactory));
+        let (tx, mut rx) = mpsc::unbounded_channel();
+        let client = d.add_client("test".into(), tx);
+        d.attach(client, "*", true);
+        let id = d
+            .create(CreateSessionRequest {
+                name: "t".into(),
+                workspace_id: "ws".into(),
+                model: ModelRef::new("x", "y"),
+                parent_id: None,
+                system_prompt_extra: None,
+                initial_message: None,
+            })
+            .unwrap()
+            .id;
+        let msg = |t: &str| json!({"role": "user", "parts": [{"type": "text", "text": t}]});
+        // Session libre : le message poussé part tout de suite.
+        super::dispatch(&d, "queue.push", &json!({"sessionId": id, "item": {"id": "q1", "text": "un", "message": msg("un")}}))
+            .unwrap();
+        let mut annonces = Vec::new();
+        let fin = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        while std::time::Instant::now() < fin && annonces.is_empty() {
+            match rx.try_recv() {
+                Ok(line) => {
+                    let v: Value = serde_json::from_str(&line).unwrap();
+                    if v["event"] == "queue" && v["data"]["sending"].is_string() {
+                        annonces.push(v["data"].clone());
+                    }
+                }
+                Err(_) => tokio::time::sleep(std::time::Duration::from_millis(20)).await,
+            }
+        }
+        assert_eq!(annonces.len(), 1, "aucun événement queue avec sending");
+        assert_eq!(annonces[0]["sending"], json!("q1"));
+        assert_eq!(annonces[0]["items"], json!([]));
+        std::fs::remove_dir_all(dir).ok();
     }
 }
