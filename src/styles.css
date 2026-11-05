@@ -444,6 +444,32 @@ textarea {
 .welcome__recent-item > .welcome__recent {
   padding-right: 40px;
 }
+/* numéro de Ctrl+1…9 (⌘1…9) à la place de la croix de retrait : hors du flux (la
+   largeur des colonnes de l'accueil ne bouge pas) ; la croix le remplace au survol. */
+.welcome__recent-num {
+  position: absolute;
+  top: 50%;
+  right: 11px;
+  transform: translateY(-50%);
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 5px;
+  border: 1px solid var(--line-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono, monospace);
+  font-size: calc(11px * var(--text-scale, 1));
+  line-height: 1;
+  color: var(--text-3);
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+.welcome__recent-item:hover .welcome__recent-num,
+.welcome__recent-item:focus-within .welcome__recent-num {
+  opacity: 0;
+}
 .welcome__recent-retirer {
   position: absolute;
   top: 50%;

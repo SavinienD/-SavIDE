@@ -2875,7 +2875,7 @@ export function Workspace({
   useEffect(() => {
     const ids = Object.keys(actionsRaccourcisRef.current) as (keyof typeof actionsRaccourcisRef.current)[];
     const relais: Parameters<typeof fournirActions>[0] = {};
-    for (const id of ids) relais[id] = () => actionsRaccourcisRef.current[id]?.();
+    for (const id of ids) relais[id] = (e) => actionsRaccourcisRef.current[id]?.(e);
     return fournirActions(relais);
   }, []);
 

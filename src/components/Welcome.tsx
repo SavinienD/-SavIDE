@@ -14,6 +14,9 @@ import type {
   RecentWorkspace,
 } from "../types";
 import { AxeLogo } from "../axe/Logo";
+import { infoBulleNumero } from "../axe/raccourcis";
+import { agentsApi } from "./agents/agentsApi";
+import { dossierAuTravail, majSessionsEnCours, sessionsEnCours } from "../lib/toursActifs";
 import { WindowControls, isWindowsPlatform } from "./WindowControls";
 import {
   conversationTitle,
@@ -65,6 +68,9 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, deriveName }
   const [chats, setChats] = useState<FreechatRow[]>([]);
   const [picking, setPicking] = useState(false);
   const [active, setActive] = useState(() => activeSets([]));
+  // Sessions « running » du service local (sous-agents et tours relancés par le service
+  // compris), lues au montage puis tenues à jour par ses événements « status ».
+  const [service, setService] = useState<Map<string, string>>(() => new Map());
 
   useEffect(() => {
     setRecents(loadRecents());
@@ -107,6 +113,38 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, deriveName }
     })();
     return () => {
       cancelled = true;
+      if (unlisten) unlisten();
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let unlisten: UnlistenFn | null = null;
+    const relire = () => {
+      void agentsApi
+        .list("local")
+        .then((sessions) => {
+          if (!cancelled) setService(sessionsEnCours(sessions));
+        })
+        .catch(() => {});
+    };
+    relire();
+    // Filet : un service relancé (nouvelle connexion) n'a pas rejoué les « status » manqués.
+    const minuterie = window.setInterval(relire, 30_000);
+    (async () => {
+      const u = await agentsApi.onEvent((event) => {
+        if (!event.connectionId && event.event === "daemon") {
+          setService(new Map()); // service arrêté : plus rien ne tourne
+          return;
+        }
+        setService((avant) => majSessionsEnCours(avant, event) ?? avant);
+      });
+      if (cancelled) u();
+      else unlisten = u;
+    })();
+    return () => {
+      cancelled = true;
+      window.clearInterval(minuterie);
       if (unlisten) unlisten();
     };
   }, []);
@@ -236,14 +274,18 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, deriveName }
             <h2 className="welcome__section-heading">Dossiers récents</h2>
             {recents.length > 0 ? (
               <div className="welcome__recents" data-liste="dossiers">
-                {recents.map((recent) => {
-                  const isActive = [...active.workspaces].some((id) => samePath(id, recent.path));
+                {recents.map((recent, i) => {
+                  const isActive = dossierAuTravail(recent.path, active.workspaces, service);
                   const nom = recent.name || deriveName(recent.path);
+                  // les 9 premiers : numéro de Ctrl+1…9 (⌘1…9) sur la carte et dans l'info-bulle.
+                  const numero = i < 9 ? i + 1 : null;
                   return (
                     <div key={recent.path} className="welcome__recent-item">
                     <button
                       className="welcome__recent"
                       data-active={isActive ? "true" : "false"}
+                      data-numero={numero ?? undefined}
+                      title={numero ? infoBulleNumero(`Ouvrir ${nom}`, "dossierRecent", numero) : undefined}
                       onClick={() => onPick(recent.path)}
                     >
                       <span className="welcome__recent-icon">
@@ -259,6 +301,11 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, deriveName }
                         </span>
                         <span className="welcome__recent-path">{displayPath(recent.path)}</span>
                       </span>
+                      {numero && (
+                        <span className="welcome__recent-num" aria-hidden="true">
+                          {numero}
+                        </span>
+                      )}
                     </button>
                     <button
                       type="button"

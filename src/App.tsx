@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Welcome } from "./components/Welcome";
 import { Workspace } from "./components/Workspace";
 import { UpdateBadge } from "./components/UpdateBadge";
-import { recordRecent, deriveName } from "./lib/recents";
+import { recordRecent, deriveName, dossierRecentNumero } from "./lib/recents";
+import { fournirActions, numeroTouche } from "./axe/raccourcis";
+import { samePath } from "./components/freechat/freechatApi";
 import { api } from "./lib/ipc";
 import { freechatApi } from "./components/freechat/freechatApi"; // freechat
 import { CloudLogin } from "./components/cloud/CloudLogin"; // cloud
@@ -53,6 +55,30 @@ export default function App() {
       setBootError(String(err));
     }
   }, []);
+
+  // Ctrl+1…9 (⌘1…9) : n-ième dossier récent de l'accueil, lu au moment
+  // de l'appui, ouvert comme un clic sur sa carte (accueil, dossier ouvert, vue libre).
+  // Le dossier déjà ouvert ne se rouvre pas ; un appui pendant une ouverture est ignoré.
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const ouvertureNumeroRef = useRef(false);
+  useEffect(
+    () =>
+      fournirActions({
+        dossierRecent: (e) => {
+          const n = numeroTouche(e);
+          const cible = n ? dossierRecentNumero(n) : null;
+          if (!cible || ouvertureNumeroRef.current) return;
+          const s = stateRef.current;
+          if (s.kind === "workspace" && s.layout === "ide" && samePath(s.bootstrap.workspace.path, cible.path)) return;
+          ouvertureNumeroRef.current = true;
+          void openWorkspace(cible.path).finally(() => {
+            ouvertureNumeroRef.current = false;
+          });
+        },
+      }),
+    [openWorkspace],
+  );
 
   // freechat — free conversation view.
   const openFreeChat = useCallback(

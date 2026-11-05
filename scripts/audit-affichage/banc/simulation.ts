@@ -24,6 +24,8 @@ declare global {
   interface Window {
     __BANC_SCENE__?: Scene;
     __bancAppels?: Record<string, number>;
+    /** dossiers passés à open_workspace, dans l'ordre. */
+    __bancOuverts?: string[];
     __bancInconnues?: Record<string, unknown>;
     __bancQcm?: string;
     __bancEmettre?: (evenement: string, charge: unknown) => Promise<void>;
@@ -218,7 +220,7 @@ export function installerSimulation(scene: Scene): void {
     connections_list: () => ({ active: "local", connections: [{ id: "local", name: "Ce PC", kind: "local" }] }),
     connections_state: () => ({ local: "connected" }),
     connections_set_active: () => null,
-    open_workspace: () => ({
+    open_workspace: (a) => (((window.__bancOuverts ??= []).push(String(a.workspacePath ?? ""))), {
       workspace: { path: D.WS, name: D.NOM_WS },
       conversations: listeConversations(),
       activeConversation: D.conversationSauvee(active, { compaction: !!scene.compaction, liens: !!scene.liensHistorique }),
@@ -257,7 +259,8 @@ export function installerSimulation(scene: Scene): void {
     get_google_provider_status: () => scene.comptes ? { ...statut(true), email: "gemini@example.com", userTier: "Google AI Pro", projectId: "projet-gemini" } : statut(false),
     get_kimi_provider_status: () => statut(false),
     get_openrouter_provider_status: () => ({ ...statut(false), hasApiKey: false }),
-    daemon_sessions: () => sessions(scene),
+    // « sessionsDemon » = liste du service sous sa forme réelle.
+    daemon_sessions: () => (Array.isArray(scene.sessionsDemon) ? scene.sessionsDemon : sessions(scene)),
     list_workspace_entries_command: (a) => {
       const dossier = a.relativePath ?? a.input?.relativePath ?? "";
       const liste = D.entrees(dossier);

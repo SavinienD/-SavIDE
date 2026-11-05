@@ -7,6 +7,22 @@ import { WS_BANC as WS } from "./constantes.mjs";
 
 const ids = (n, depart = 0) => Array.from({ length: n }, (_, i) => `c-${String(depart + i + 1).padStart(3, "0")}`);
 const recents25 = () => Array.from({ length: 25 }, (_, i) => ({ path: `C:\\Users\\utilisateur\\Documents\\Clients\\client-${String(i + 1).padStart(2, "0")}`, name: `client-${String(i + 1).padStart(2, "0")}`, lastOpenedMs: 1_790_000_000_000 - i * 3_600_000 }));
+// formes réelles (sessions.list du service du poste) : préfixe \\?\ côté service,
+// chemin simple dans les dossiers récents.
+const SESSIONS_DOSSIER = (parent, enfants) => {
+  const ws = "\\\\?\\C:\\Users\\utilisateur\\Documents\\mon-projet";
+  const s = (id, name, status, parentId) => ({ id, name, status, parentId, workspaceId: ws, children: [], archived: false, scratch: false,
+    model: { provider: "anthropic", name: "claude-opus-5-5" }, createdAtMs: 1_792_483_646_503, updatedAtMs: 1_793_890_099_980, entryCount: 6656 });
+  return [s("45127dc0-5b2f-4f50-a166-5a7523cc769e", "principal", parent),
+    s("ec1006d0-ea7d-434a-9bb9-cee9728310c4", "sous-agent-1", enfants, "45127dc0-5b2f-4f50-a166-5a7523cc769e"),
+    s("507297f4-0000-4000-8000-000000000000", "sous-agent-2", enfants, "45127dc0-5b2f-4f50-a166-5a7523cc769e"),
+    { ...s("550dc56f-0000-4000-8000-000000000000", "wifis", "inactive"), workspaceId: "\\\\?\\C:\\Users\\utilisateur\\Documents\\compta" }];
+};
+const RECENTS_ACTIVITE = () => [
+  { path: "C:\\Users\\utilisateur\\Documents\\site-web", name: "site-web", lastOpenedMs: 1_793_890_000_000 },
+  { path: "C:\\Users\\utilisateur\\Documents\\mon-projet", name: "mon-projet", lastOpenedMs: 1_793_880_000_000 },
+  { path: "C:\\Users\\utilisateur\\Documents\\compta", name: "compta", lastOpenedMs: 1_793_870_000_000 },
+];
 const TITRES = {
   "c-001": "Corriger tous les défauts d'affichage de la barre de titre, du compositeur et des colonnes à 800 px avec la mise à l'échelle Windows à 150 %",
   "c-002": "Facture OVH d'octobre : rapprochement des lignes et export comptable",
@@ -316,6 +332,24 @@ export const SCENES = [
   // le démon rend le chemin sous une autre forme (\\?\ + casse) ou quand le tour est sur une autre conversation.
   { id: "activite-liste-chemin", sim: { tour: "en_cours", tourWs: "\\\\?\\c:\\users\\utilisateur\\documents\\projets\\savide" }, stockage: () => colonnes([ids(3)]), temoins: ["sel:.conv-row[data-streaming='true'] .conv-row__spinner", "sel:.onglets-chat__tab[data-streaming='true'] .onglets-chat__spinner"] },
   { id: "activite-liste-autre", sim: { tour: "en_cours", tourConv: "c-002" }, stockage: () => colonnes([ids(3)]), temoins: ["sel:.conv-row[data-streaming='true'] .conv-row__spinner", "sel:.onglets-chat__tab[data-streaming='true'] .onglets-chat__spinner", "sel:.composer__send:not([data-variant='stop'])"] },
+  // accueil, dossier LOCAL (formes réelles du service, sessions.list) :
+  // le parent est « idle » entre deux tours, ses sous-agents « running » ; aucun tour envoyé par
+  // la fenêtre (list_active_turns vide). Le rond doit venir du service lui-même.
+  { id: "accueil-activite-sous-agents", sim: { cloud: true, sessionsDemon: SESSIONS_DOSSIER("idle", "running") }, espace: false,
+    stockage: () => ({ "axecode.recentWorkspaces": RECENTS_ACTIVITE() }),
+    temoins: ["sel:.welcome__recent[data-active='true'] .welcome__recent-spinner", "compte:.welcome__recent[data-active='true']=1",
+      "sel:.welcome__recent[data-active='true'][title^='Ouvrir mon-projet']"] },
+  // Tour relancé par le service (résultat d'un sous-agent) : seul l'événement « status » l'annonce.
+  { id: "accueil-activite-evenement", sim: { cloud: true, sessionsDemon: SESSIONS_DOSSIER("idle", "inactive") }, espace: false,
+    stockage: () => ({ "axecode.recentWorkspaces": RECENTS_ACTIVITE() }),
+    emissions: [{ demon: { event: "status", sessionId: "45127dc0-5b2f-4f50-a166-5a7523cc769e", data: SESSIONS_DOSSIER("running", "inactive")[0] } }],
+    temoins: ["sel:.welcome__recent[data-active='true'][title^='Ouvrir mon-projet'] .welcome__recent-spinner", "compte:.welcome__recent[data-active='true']=1"] },
+  // Fin du tour (« idle ») : le rond s'en va ; un événement d'une connexion distante ne compte pas.
+  { id: "accueil-activite-fin", sim: { cloud: true, sessionsDemon: SESSIONS_DOSSIER("running", "inactive") }, espace: false,
+    stockage: () => ({ "axecode.recentWorkspaces": RECENTS_ACTIVITE() }),
+    emissions: [{ demon: { event: "status", sessionId: "45127dc0-5b2f-4f50-a166-5a7523cc769e", data: SESSIONS_DOSSIER("idle", "inactive")[0] } },
+      { demon: { event: "status", sessionId: "c-distant", connectionId: "axe-cloud", data: { id: "c-distant", status: "running", workspaceId: "C:\\Users\\utilisateur\\Documents\\compta" } } }],
+    temoins: ["absent:.welcome__recent-spinner", "compte:.welcome__recent[data-active='true']=0"] },
   { id: "bandeau-agents-clic", sim: { tour: "en_cours", sousAgents: 2 }, stockage: () => colonnes([ids(3)]), clicBandeau: true, temoins: ["sel:.axe-journal", "sel:.axe-agents"] },
   // Bug : après le chat d'un agent, un clic sur une conversation de la liste doit l'afficher (plus le journal de l'agent).
   { id: "agent-puis-conversation", sim: { tour: "en_cours", sousAgents: 2 }, stockage: () => colonnes([ids(3)]), clicBandeau: true, puisConversation: TITRES["c-002"], temoins: ["sel:.colonne-chat[data-focus='true'] .chat-body"] },
@@ -331,6 +365,25 @@ export const SCENES = [
   // Raccourcis : Ctrl/Alt sous Windows, ⌘/⌥/⇧ sous macOS (navigator.platform simulé).
   { id: "raccourcis-windows", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, clics: [".settings-pane__nav-item[data-section='shortcuts']"],
     temoins: ["sel:.axe-raccourcis[data-mac='false'] kbd"] },
+  // Ctrl+1…9 (⌘1…9 sur Mac) : n-ième dossier récent dans l'ordre affiché sur l'accueil,
+  // depuis l'accueil ou depuis un dossier ouvert (même le curseur dans le champ du chat, sans y taper de chiffre),
+  // numéro 1…9 sur les cartes et dans leur info-bulle ; ligne du pense-bête.
+  { id: "accueil-numeros", sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25() }),
+    temoins: ["compte:.welcome__recent-num=9", "sel:.welcome__recent[data-numero='3'][title$='· Ctrl+3']", "absent:.welcome__recent[data-numero='10']"] },
+  { id: "accueil-ctrl-chiffre", sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25() }), touches: ["Control+3"],
+    temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\client-03", "ouvertures:1", "sel:.workspace .composer"] },
+  { id: "accueil-numeros-mac", mac: true, sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25() }),
+    temoins: ["compte:.welcome__recent-num=9", "sel:.welcome__recent[data-numero='9'][title$='· ⌘9']"] },
+  { id: "accueil-cmd-chiffre-mac", mac: true, sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25() }), touches: ["Meta+9"],
+    temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\client-09", "ouvertures:1"] },
+  { id: "ide-ctrl-chiffre", sim: {}, stockage: () => colonnes([ids(3)]), saisir: "bonjour", touches: ["Control+2"],
+    temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\cabinet-martin", "ouvertures:2"] },
+  { id: "ide-ctrl-1-courant", sim: {}, stockage: () => colonnes([ids(3)]), saisir: "bonjour", touches: ["Control+1"],
+    temoins: ["ouvertures:1", "valeur:bonjour"] },
+  { id: "ide-cmd-chiffre-mac", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), saisir: "bonjour", touches: ["Meta+2"],
+    temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\cabinet-martin", "ouvertures:2"] },
+  { id: "raccourcis-dossiers", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, clics: [".settings-pane__nav-item[data-section='shortcuts']"],
+    temoins: ["sel:.axe-raccourcis tr[data-raccourci='dossierRecent'] kbd", "sel:.axe-raccourcis tr[data-raccourci='focusExplorateur'] kbd"] },
   // macOS : ⌘F (hors éditeur) ouvre la recherche dans les fichiers.
   { id: "mac-cmd-f", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), touches: ["Meta+f"], temoins: ["sel:.sidebar__head-btn[data-active='true']"] },
   // Glisser-déposer : Finder/Explorateur vers le champ du chat, écran Retina (×2) ; dépôt sans chemin = message.

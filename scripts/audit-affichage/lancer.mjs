@@ -383,6 +383,18 @@ async function cliquerLienSansDefiler(page, e) {
   return ecarts.length ? `${e.nom} : ${ecarts.join(", ")}` : null;
 }
 
+/** « touches » d'une scène : « Control+z », « Meta+3 »… envoyées à l'élément qui a le focus. */
+async function taperTouches(page, touches) {
+  for (const t of touches ?? []) {
+    const parties = t.split("+");
+    const touche = parties.pop();
+    for (const m of parties) await page.keyboard.down(m);
+    await page.keyboard.press(touche);
+    for (const m of parties.reverse()) await page.keyboard.up(m);
+    await pause(500);
+  }
+}
+
 async function preparerScene(page, si, sc) {
   const scene = {
     ...sc.sim,
@@ -399,6 +411,13 @@ async function preparerScene(page, si, sc) {
       await page.waitForSelector(sel, { timeout: 5000 }).catch(() => undefined);
       await page.evaluate((s) => document.querySelector(s)?.click(), sel);
       await pause(400);
+    }
+    // raccourcis tapés sur l'accueil (ex. Control+3 : 3e dossier récent).
+    await taperTouches(page, sc.touches);
+    // Événements du service rejoués sur l'accueil (« status » d'une session).
+    for (const e of sc.emissions ?? []) {
+      if (e.demon) await page.evaluate((charge) => window.__bancEmettre?.("axe://daemon", charge), e.demon);
+      await pause(e.pause ?? 150);
     }
     return;
   }
@@ -585,14 +604,7 @@ async function preparerScene(page, si, sc) {
     await pause(600);
   }
   // « touches » : raccourcis clavier envoyés à l'élément qui a le focus (ex. Control+z).
-  for (const t of sc.touches ?? []) {
-    const parties = t.split("+");
-    const touche = parties.pop();
-    for (const m of parties) await page.keyboard.down(m);
-    await page.keyboard.press(touche);
-    for (const m of parties.reverse()) await page.keyboard.up(m);
-    await pause(500);
-  }
+  await taperTouches(page, sc.touches);
   // fournisseurs-178 — « taper » : texte tapé au clavier dans un champ (son contenu remplacé,
   // ou complété avec « ajouter »), puis Entrée si « entree ».
   for (const t of sc.taper ?? []) {
@@ -802,6 +814,10 @@ async function auditer(page, si, sc, journal, preparation) {
       : t.startsWith("enregistre:") ? enregistre(t.slice(11))
       : t.startsWith("qcm:") ? window.__bancQcm === t.slice(4) // contenu enregistré
       : t.startsWith("presse:") ? window.__bancPresse === t.slice(7)
+      // « ouvert:<chemin> » : dernier dossier passé à open_workspace ;
+      // « ouvertures:<n> » : nombre d'appels à open_workspace.
+      : t.startsWith("ouvert:") ? (window.__bancOuverts ?? []).at(-1) === t.slice(7)
+      : t.startsWith("ouvertures:") ? (window.__bancOuverts ?? []).length === Number(t.slice(11))
       : t.startsWith("premier:") ? lignes()[0]?.dataset.entryPath === t.slice(8)
       : t.startsWith("choisi:") ? lignes().filter((l) => l.dataset.selected === "true").map((l) => l.dataset.entryPath).join("|") === t.slice(7)
       : null;
