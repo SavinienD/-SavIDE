@@ -223,6 +223,8 @@ pub(super) fn anthropic_provider_status_from_auth(
     AnthropicProviderStatus {
         connected: auth.connected,
         connection_state: connection_state.to_string(),
+        email: auth.email,
+        plan_type: auth.plan,
         expires_at_ms: auth.expires_at_ms,
         last_refresh_ms: auth.last_refresh_ms,
         login_id,
@@ -975,8 +977,17 @@ pub(super) async fn get_anthropic_provider_status(
             None,
         ));
     }
+    drop(active_login);
 
-    let auth = load_default_anthropic_auth_status().map_err(error_to_string)?;
+    let mut auth = load_default_anthropic_auth_status().map_err(error_to_string)?;
+    // Login made before the e-mail was kept: read the Claude profile once.
+    if auth.connected && auth.email.is_none() {
+        if let Ok(http) = reqwest::Client::builder().user_agent("axecode/0.1").build() {
+            if let Ok(filled) = axecode_anthropic::ensure_default_account(&http).await {
+                auth = filled;
+            }
+        }
+    }
     let state = if auth.connected {
         "connected"
     } else {

@@ -26,6 +26,9 @@ pub(super) struct StartOpenAiLoginOutput {
 pub(super) struct AnthropicProviderStatus {
     pub(super) connected: bool,
     pub(super) connection_state: String,
+    // Account of the Claude subscription.
+    pub(super) email: Option<String>,
+    pub(super) plan_type: Option<String>,
     pub(super) expires_at_ms: Option<i64>,
     pub(super) last_refresh_ms: Option<i64>,
     pub(super) login_id: Option<String>,

@@ -12,6 +12,8 @@ pub use auth::{
     load_default_auth_status, load_default_oauth_access_token, oauth_authorize_url,
     AnthropicAuthStatus, Credential, PkceCodes,
 };
+// E-mail and plan of the connected Claude account.
+pub use auth::{account_from_profile, ensure_account, ensure_default_account, fetch_account, AnthropicAccount};
 pub use client::{AnthropicConfig, AnthropicProvider};
 // providers
 pub use compat::{discover_models, fetch_oauth_usage};

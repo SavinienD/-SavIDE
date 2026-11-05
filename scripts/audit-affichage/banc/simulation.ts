@@ -250,9 +250,11 @@ export function installerSimulation(scene: Scene): void {
       if (!local) return 128000;
       return a.kind === "ollama" && a.model === "gemma2:2b" ? 8192 : 32768;
     },
-    get_openai_provider_status: () => statut(fournisseur),
-    get_anthropic_provider_status: () => statut(fournisseur),
-    get_google_provider_status: () => statut(false),
+    // Scène « fournisseurs-comptes » : e-mail et offre de chaque compte connecté
+    // (formes réelles : Claude = profil OAuth, OpenAI = jeton ChatGPT, Google = userinfo + niveau).
+    get_openai_provider_status: () => scene.comptes ? { ...statut(true), email: "chatgpt@example.com", planType: "plus" } : statut(fournisseur),
+    get_anthropic_provider_status: () => scene.comptes ? { ...statut(true), email: "claude@example.com", planType: "Max" } : statut(fournisseur),
+    get_google_provider_status: () => scene.comptes ? { ...statut(true), email: "gemini@example.com", userTier: "Google AI Pro", projectId: "projet-gemini" } : statut(false),
     get_kimi_provider_status: () => statut(false),
     get_openrouter_provider_status: () => ({ ...statut(false), hasApiKey: false }),
     daemon_sessions: () => sessions(scene),

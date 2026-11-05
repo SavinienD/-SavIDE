@@ -10897,6 +10897,16 @@ textarea {
   .settings-pane__body--providers > * { max-width: 100%; box-sizing: border-box; }
 }
 .settings-pane__subtitle { text-wrap: balance; }
+
+/* Cartes des fournisseurs dans un volet de réglages très étroit (IDE à plusieurs colonnes) :
+   le texte suit la largeur de la carte (e-mail du compte en « … », complet au survol), le logo cède la place. */
+.settings-pane__provider-copy { grid-template-columns: minmax(0, 1fr); }
+.settings-pane__provider-meta span { max-width: min(280px, 100%); }
+@container reglages-main (max-width: 360px) {
+  .settings-pane__provider-card { padding: 12px; }
+  .settings-pane__provider-mark { display: none; }
+  .settings-pane__provider-main { gap: 0; }
+}
 .axe-journal__head { min-width: 0; flex-wrap: nowrap; }
 .axe-journal__head > strong { min-width: 4ch; flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .axe-journal__head > button { flex: 0 0 auto; }

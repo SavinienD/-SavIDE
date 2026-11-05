@@ -18,6 +18,7 @@ import {
 } from "../axe/zoom"; // zoom
 import { CustomProvidersPanel } from "../axe/CustomProvidersPanel"; // providers
 import { GeminiWebCard } from "../axe/GeminiWebCard"; // gemini-web
+import { compteConnecte, type CompteFournisseur } from "../lib/comptesFournisseurs"; // comptes
 import { HarnessBackupSection } from "../axe/HarnessBackupSection"; // cleanup
 import { customModelEntries, providerApi } from "../axe/providers"; // providers
 import { HarnessPane } from "./settings/HarnessPane"; // harness
@@ -1678,11 +1679,13 @@ function ProvidersSection({
 
       <div className="settings-pane__body settings-pane__body--providers">
         <ProviderCard
+          id="anthropic"
           name="Anthropic"
           icon="simple-icons:anthropic"
           description="Connexion OAuth à votre compte Claude pour les modèles Anthropic."
           status={anthropicStatus}
-          connectedMeta={["Claude OAuth"]}
+          account={compteConnecte(anthropicStatus)}
+          connectedMeta={[anthropicStatus?.email ? null : "Claude OAuth"]}
           loading={loading}
           busy={busy}
           onConnect={onConnectAnthropic}
@@ -1690,14 +1693,13 @@ function ProvidersSection({
           onDisconnect={onDisconnectAnthropic}
         />
         <ProviderCard
+          id="openai"
           name="OpenAI"
           icon="simple-icons:openai"
           description="Connexion OAuth à votre compte ChatGPT pour les modèles OpenAI."
           status={openAiStatus}
-          connectedMeta={[
-            openAiStatus?.email || "Connecté",
-            openAiStatus?.planType ?? null,
-          ]}
+          account={compteConnecte(openAiStatus)}
+          connectedMeta={[openAiStatus?.email ? null : "Connecté"]}
           loading={loading}
           busy={busy}
           onConnect={onConnect}
@@ -1705,13 +1707,14 @@ function ProvidersSection({
           onDisconnect={onDisconnect}
         />
         <ProviderCard
+          id="google"
           name="Google"
           icon="simple-icons:google"
           description="Connexion OAuth à votre compte Google pour les modèles Gemini."
           status={googleStatus}
+          account={compteConnecte(googleStatus)}
           connectedMeta={[
-            googleStatus?.email || "Connecté",
-            googleStatus?.userTier ?? null,
+            googleStatus?.email ? null : "Connecté",
             googleStatus?.projectId
               ? `Projet ${googleStatus.projectId}`
               : null,
@@ -1724,6 +1727,7 @@ function ProvidersSection({
         />
         <GeminiWebCard /> {/* gemini-web */}
         <ProviderCard
+          id="kimi"
           name="Kimi"
           icon="local:kimi"
           description="Connexion OAuth à votre compte Kimi pour Kimi K2.7 Code."
@@ -1759,11 +1763,15 @@ type ProviderCardStatus =
   | null;
 
 type ProviderCardProps = {
+  /** Data-fournisseur de la carte. */
+  id: string;
   name: string;
   icon: string;
   description: string;
   status: ProviderCardStatus;
   connectedMeta: (string | null | undefined)[];
+  /** E-mail et offre du compte connecté (avant les autres mentions). */
+  account?: CompteFournisseur;
   loading: boolean;
   busy: boolean;
   onConnect: () => void;
@@ -1772,11 +1780,13 @@ type ProviderCardProps = {
 };
 
 function ProviderCard({
+  id,
   name,
   icon,
   description,
   status,
   connectedMeta,
+  account,
   loading,
   busy,
   onConnect,
@@ -1802,9 +1812,11 @@ function ProviderCard({
         ? "error"
         : "off";
   const meta = connectedMeta.filter((item): item is string => Boolean(item));
+  const email = account?.email ?? null;
+  const offre = account?.offre ?? null;
 
   return (
-    <section className="settings-pane__provider-card">
+    <section className="settings-pane__provider-card" data-fournisseur={id}>
       <div className="settings-pane__provider-main">
         <div className="settings-pane__provider-mark" aria-hidden>
           <Icon icon={icon} width={24} height={24} />
@@ -1818,8 +1830,10 @@ function ProviderCard({
             </span>
           </div>
           <p>{description}</p>
-          {connected && meta.length > 0 && (
+          {connected && (meta.length > 0 || email || offre) && (
             <div className="settings-pane__provider-meta">
+              {email && <span data-compte="email" title={email}>{email}</span>}
+              {offre && <span data-compte="offre">{offre}</span>}
               {meta.map((item) => (
                 <span key={item}>{item}</span>
               ))}
