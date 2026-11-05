@@ -331,6 +331,25 @@ export const SCENES = [
   // Raccourcis : Ctrl/Alt sous Windows, ⌘/⌥/⇧ sous macOS (navigator.platform simulé).
   { id: "raccourcis-windows", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, clics: [".settings-pane__nav-item[data-section='shortcuts']"],
     temoins: ["sel:.axe-raccourcis[data-mac='false'] kbd"] },
+  // Ctrl+1…9 (⌘1…9 sur Mac) : n-ième dossier récent dans l'ordre affiché sur l'accueil,
+  // depuis l'accueil ou depuis un dossier ouvert (même le curseur dans le champ du chat, sans y taper de chiffre),
+  // numéro 1…9 sur les cartes et dans leur info-bulle ; ligne du pense-bête.
+  { id: "accueil-numeros", sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25() }),
+    temoins: ["compte:.welcome__recent-num=9", "sel:.welcome__recent[data-numero='3'][title$='· Ctrl+3']", "absent:.welcome__recent[data-numero='10']"] },
+  { id: "accueil-ctrl-chiffre", sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25() }), touches: ["Control+3"],
+    temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\client-03", "ouvertures:1", "sel:.workspace .composer"] },
+  { id: "accueil-numeros-mac", mac: true, sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25() }),
+    temoins: ["compte:.welcome__recent-num=9", "sel:.welcome__recent[data-numero='9'][title$='· ⌘9']"] },
+  { id: "accueil-cmd-chiffre-mac", mac: true, sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25() }), touches: ["Meta+9"],
+    temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\client-09", "ouvertures:1"] },
+  { id: "ide-ctrl-chiffre", sim: {}, stockage: () => colonnes([ids(3)]), saisir: "bonjour", touches: ["Control+2"],
+    temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\cabinet-martin", "ouvertures:2"] },
+  { id: "ide-ctrl-1-courant", sim: {}, stockage: () => colonnes([ids(3)]), saisir: "bonjour", touches: ["Control+1"],
+    temoins: ["ouvertures:1", "valeur:bonjour"] },
+  { id: "ide-cmd-chiffre-mac", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), saisir: "bonjour", touches: ["Meta+2"],
+    temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\cabinet-martin", "ouvertures:2"] },
+  { id: "raccourcis-dossiers", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, clics: [".settings-pane__nav-item[data-section='shortcuts']"],
+    temoins: ["sel:.axe-raccourcis tr[data-raccourci='dossierRecent'] kbd", "sel:.axe-raccourcis tr[data-raccourci='focusExplorateur'] kbd"] },
   // macOS : ⌘F (hors éditeur) ouvre la recherche dans les fichiers.
   { id: "mac-cmd-f", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), touches: ["Meta+f"], temoins: ["sel:.sidebar__head-btn[data-active='true']"] },
   // Glisser-déposer : Finder/Explorateur vers le champ du chat, écran Retina (×2) ; dépôt sans chemin = message.

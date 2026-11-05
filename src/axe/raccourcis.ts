@@ -8,6 +8,14 @@
 // Choix des touches : pas de Ctrl+Alt (= AltGr sur clavier français : €, @, #...),
 // rien que Monaco ou xterm utilisent déjà de façon courante, Ctrl+Tab laissé au
 // terminal (cycle de ses onglets, TerminalPanel.tsx).
+//
+// Ctrl+1…9 (⌘1…9 sur macOS) ouvre le n-ième dossier récent, dans
+// l'ordre affiché sur l'accueil au moment de l'appui (le plus récent d'abord). Ouvrir un
+// dossier le remet en tête, comme un clic sur sa carte : depuis un dossier ouvert, Ctrl+1
+// est donc le dossier courant (rien à faire) et Ctrl+2 ramène au dossier quitté juste avant.
+// Ctrl+1 / Ctrl+2 servaient à aller à l'explorateur / à la saisie du chat : déplacés sur
+// Ctrl+Maj+E / Ctrl+Maj+T. Pas de Ctrl+Alt+chiffre : sur clavier AZERTY, AltGr+3 = « # »,
+// AltGr+4 = « { »… (indiscernables de Ctrl+Alt sous Windows).
 
 import { estMac, estWindows, formaterRaccourci, modPrincipal } from "../lib/plateforme";
 
@@ -40,7 +48,8 @@ export type RaccourciId =
   | "annulerDictee"
   | "fermerMolette"
   | "deplacerColonne"
-  | "rechercherMac";
+  | "rechercherMac"
+  | "dossierRecent";
 
 type Touche = {
   /** Ctrl (ou Cmd sur macOS). */
@@ -53,7 +62,7 @@ type Touche = {
 
 export type Raccourci = {
   id: RaccourciId;
-  categorie: "Conversations" | "Onglets" | "Panneaux" | "Cloud et appareils" | "Affichage";
+  categorie: "Conversations" | "Onglets" | "Panneaux" | "Dossiers" | "Cloud et appareils" | "Affichage";
   libelle: string;
   /** Texte affiché, ex. « Ctrl + Maj + N ». */
   combinaison: string;
@@ -83,10 +92,13 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "rechercheFichiers", categorie: "Onglets", libelle: "Rechercher dans les fichiers", combinaison: "Ctrl + Maj + F", touche: { ctrl: true, shift: true, touches: ["f"] } },
 
   { id: "terminal", categorie: "Panneaux", libelle: "Afficher / masquer le terminal", combinaison: "Ctrl + J", touche: { ctrl: true, touches: ["j"] } },
-  { id: "focusExplorateur", categorie: "Panneaux", libelle: "Aller à l'explorateur de fichiers", combinaison: "Ctrl + 1", touche: { ctrl: true, touches: ["code:Digit1", "code:Numpad1"] } },
-  { id: "focusChat", categorie: "Panneaux", libelle: "Aller à la zone de saisie du chat", combinaison: "Ctrl + 2", touche: { ctrl: true, touches: ["code:Digit2", "code:Numpad2"] } },
+  { id: "focusExplorateur", categorie: "Panneaux", libelle: "Aller à l'explorateur de fichiers", combinaison: "Ctrl + Maj + E", touche: { ctrl: true, shift: true, touches: ["e", "code:KeyE"] } },
+  { id: "focusChat", categorie: "Panneaux", libelle: "Aller à la zone de saisie du chat", combinaison: "Ctrl + Maj + T", touche: { ctrl: true, shift: true, touches: ["t", "code:KeyT"] } },
   { id: "settings", categorie: "Panneaux", libelle: "Ouvrir les Réglages", combinaison: "Ctrl + ,", touche: { ctrl: true, touches: [",", "code:Comma"] } },
   { id: "accueil", categorie: "Panneaux", libelle: "Revenir à l'accueil", combinaison: "Ctrl + Maj + H", touche: { ctrl: true, shift: true, touches: ["h"] } },
+
+  // touche physique (AZERTY : Ctrl + « & » = Ctrl+1) ; le numéro est lu par numeroTouche.
+  { id: "dossierRecent", categorie: "Dossiers", libelle: "Ouvrir le dossier récent n° 1 à 9 (ordre de l'accueil, le dossier ouvert passe en tête)", combinaison: "Ctrl + 1…9", touche: { ctrl: true, touches: ["code:Digit1", "code:Digit2", "code:Digit3", "code:Digit4", "code:Digit5", "code:Digit6", "code:Digit7", "code:Digit8", "code:Digit9", "code:Numpad1", "code:Numpad2", "code:Numpad3", "code:Numpad4", "code:Numpad5", "code:Numpad6", "code:Numpad7", "code:Numpad8", "code:Numpad9"] } },
 
   { id: "pousserCloud", categorie: "Cloud et appareils", libelle: "Pousser un dossier de ce PC sur le cloud", combinaison: "Ctrl + Maj + U", touche: { ctrl: true, shift: true, touches: ["u"] } },
 
@@ -125,7 +137,14 @@ export function correspond(r: Raccourci, e: KeyboardEvent, mac: boolean = estMac
   });
 }
 
-type Actions = Partial<Record<RaccourciId, () => void>>;
+/** Chiffre 1…9 de la touche (rangée du haut ou pavé numérique), sinon null. */
+export function numeroTouche(e: { code?: string; key?: string }): number | null {
+  const m = /^(?:Digit|Numpad)([1-9])$/.exec(e.code || "") ?? (!e.code ? /^([1-9])$/.exec(e.key || "") : null);
+  return m ? Number(m[1]) : null;
+}
+
+/** L'action reçoit l'événement (ex. dossierRecent y lit le chiffre). */
+type Actions = Partial<Record<RaccourciId, (e: KeyboardEvent) => void>>;
 const fournisseurs: Actions[] = [];
 let installe = false;
 
@@ -147,7 +166,7 @@ function surTouche(e: KeyboardEvent): void {
       if (action) {
         e.preventDefault();
         e.stopPropagation();
-        action();
+        action(e);
         return;
       }
     }
@@ -166,4 +185,24 @@ export function fournirActions(actions: Actions): () => void {
     const i = fournisseurs.indexOf(actions);
     if (i >= 0) fournisseurs.splice(i, 1);
   };
+}
+
+/** Combinaison compacte (« Ctrl+3 » ; « ⌘3 » sur macOS) du raccourci `id`. */
+function combinaisonCourte(id: RaccourciId, mac: boolean): string {
+  const r = RACCOURCIS.find((x) => x.id === id);
+  if (!r) return "";
+  if (r.windowsSeulement && typeof navigator !== "undefined" && !estWindows()) return "";
+  if (mac) return formaterRaccourci(r.combinaison, true);
+  return r.combinaison.split(" + ").join("+");
+}
+
+/** Dossiers récents : « Ctrl+3 » / « ⌘3 », combinaison « … 1…9 » pour un chiffre donné. */
+export function combinaisonNumero(id: RaccourciId, n: number, mac: boolean = estMac()): string {
+  return combinaisonCourte(id, mac).replace("1…9", String(n));
+}
+
+/** Info-bulle d'une carte numérotée : « Ouvrir client · Ctrl+3 ». */
+export function infoBulleNumero(libelle: string, id: RaccourciId, n: number, mac: boolean = estMac()): string {
+  const c = combinaisonNumero(id, n, mac);
+  return c ? `${libelle} · ${c}` : libelle;
 }

@@ -46,7 +46,8 @@ export function formaterRaccourci(combinaison: string, mac: boolean = estMac()):
   const tri = ORDRE_MAC.filter((s) => modifs.includes(s)).join("");
   const touche = m[2].trim();
   if (!touche) return tri;
-  return touche.length > 1 && !/^[−+]$/.test(touche) ? `${tri} ${touche}` : `${tri}${touche}`;
+  // « 1…9 » (dossiers récents) collé comme un chiffre : « ⌘1…9 ».
+  return touche.length > 1 && !/^[−+]$/.test(touche) && !/^\d…\d$/.test(touche) ? `${tri} ${touche}` : `${tri}${touche}`;
 }
 
 /** Remplace dans un texte les combinaisons entre parenthèses ou citées : « Dicter (Ctrl+Maj+D) ». */

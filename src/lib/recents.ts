@@ -46,6 +46,15 @@ export function removeRecent(path: string): RecentWorkspace[] {
   return next;
 }
 
+/**
+ * N-ième dossier récent (1 = le premier), dans l'ordre affiché sur
+ * l'accueil au moment de l'appui (Ctrl+1…9). null s'il n'y en a pas autant.
+ */
+export function dossierRecentNumero(n: number): RecentWorkspace | null {
+  if (!Number.isInteger(n) || n < 1) return null;
+  return loadRecents()[n - 1] ?? null;
+}
+
 export function loadLastWorkspace(): string | null {
   try {
     return localStorage.getItem(LAST_KEY);

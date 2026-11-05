@@ -14,6 +14,7 @@ import type {
   RecentWorkspace,
 } from "../types";
 import { AxeLogo } from "../axe/Logo";
+import { infoBulleNumero } from "../axe/raccourcis";
 import { WindowControls, isWindowsPlatform } from "./WindowControls";
 import {
   conversationTitle,
@@ -236,14 +237,18 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, deriveName }
             <h2 className="welcome__section-heading">Dossiers récents</h2>
             {recents.length > 0 ? (
               <div className="welcome__recents" data-liste="dossiers">
-                {recents.map((recent) => {
+                {recents.map((recent, i) => {
                   const isActive = [...active.workspaces].some((id) => samePath(id, recent.path));
                   const nom = recent.name || deriveName(recent.path);
+                  // les 9 premiers : numéro de Ctrl+1…9 (⌘1…9) sur la carte et dans l'info-bulle.
+                  const numero = i < 9 ? i + 1 : null;
                   return (
                     <div key={recent.path} className="welcome__recent-item">
                     <button
                       className="welcome__recent"
                       data-active={isActive ? "true" : "false"}
+                      data-numero={numero ?? undefined}
+                      title={numero ? infoBulleNumero(`Ouvrir ${nom}`, "dossierRecent", numero) : undefined}
                       onClick={() => onPick(recent.path)}
                     >
                       <span className="welcome__recent-icon">
@@ -259,6 +264,11 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, deriveName }
                         </span>
                         <span className="welcome__recent-path">{displayPath(recent.path)}</span>
                       </span>
+                      {numero && (
+                        <span className="welcome__recent-num" aria-hidden="true">
+                          {numero}
+                        </span>
+                      )}
                     </button>
                     <button
                       type="button"

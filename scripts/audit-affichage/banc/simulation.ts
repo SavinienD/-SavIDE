@@ -24,6 +24,8 @@ declare global {
   interface Window {
     __BANC_SCENE__?: Scene;
     __bancAppels?: Record<string, number>;
+    /** dossiers passés à open_workspace, dans l'ordre. */
+    __bancOuverts?: string[];
     __bancInconnues?: Record<string, unknown>;
     __bancQcm?: string;
     __bancEmettre?: (evenement: string, charge: unknown) => Promise<void>;
@@ -218,7 +220,7 @@ export function installerSimulation(scene: Scene): void {
     connections_list: () => ({ active: "local", connections: [{ id: "local", name: "Ce PC", kind: "local" }] }),
     connections_state: () => ({ local: "connected" }),
     connections_set_active: () => null,
-    open_workspace: () => ({
+    open_workspace: (a) => (((window.__bancOuverts ??= []).push(String(a.workspacePath ?? ""))), {
       workspace: { path: D.WS, name: D.NOM_WS },
       conversations: listeConversations(),
       activeConversation: D.conversationSauvee(active, { compaction: !!scene.compaction, liens: !!scene.liensHistorique }),

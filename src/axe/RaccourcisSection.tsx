@@ -45,7 +45,7 @@ export function RaccourcisSection() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <tbody>
                 {liste.map((r) => (
-                  <tr key={r.id} style={{ borderBottom: "1px solid var(--line-0, rgba(128,128,128,.2))" }}>
+                  <tr key={r.id} data-raccourci={r.id} style={{ borderBottom: "1px solid var(--line-0, rgba(128,128,128,.2))" }}>
                     <td style={{ padding: "6px 0" }}>
                       {r.libelle}
                       {r.windowsSeulement ? " (Windows)" : r.macSeulement ? " (macOS)" : ""}
