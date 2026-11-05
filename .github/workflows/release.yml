@@ -238,6 +238,20 @@ jobs:
     needs: [windows, linux, macos]
     runs-on: ubuntu-latest
     steps:
+      # Notes de mise à jour (fenêtre « Mise à jour disponible » et corps de la release) : NOTES-MAJ.md du dépôt.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: depot
+          sparse-checkout: NOTES-MAJ.md
+          sparse-checkout-cone-mode: false
+
+      - name: Notes de mise à jour
+        run: |
+          set -euo pipefail
+          test -s depot/NOTES-MAJ.md || { echo "NOTES-MAJ.md absent ou vide"; exit 1; }
+          cp depot/NOTES-MAJ.md notes.md
+          cat notes.md
+
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: art
@@ -261,10 +275,12 @@ jobs:
               plats[plat] = {"signature": sig, "url": f"https://github.com/{repo}/releases/download/{tag}/{nom}"}
           attendu = {"windows-x86_64", "linux-x86_64", "darwin-x86_64", "darwin-aarch64"}
           assert set(plats) == attendu, f"plateformes : {sorted(plats)}"
-          doc = {"version": tag.lstrip("v"), "notes": f"SavIDE {tag}",
+          notes = open("notes.md", encoding="utf-8").read().strip()
+          assert notes, "notes vides"
+          doc = {"version": tag.lstrip("v"), "notes": notes,
                  "pub_date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                  "platforms": plats}
-          json.dump(doc, open("pub/latest.json", "w", encoding="utf-8"), indent=2)
+          json.dump(doc, open("pub/latest.json", "w", encoding="utf-8"), indent=2, ensure_ascii=False)
           EOF
           cat pub/latest.json
           ls -la pub
@@ -273,4 +289,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" pub/* --repo "$GITHUB_REPOSITORY" --title "SavIDE $GITHUB_REF_NAME" --generate-notes
+          gh release create "$GITHUB_REF_NAME" pub/* --repo "$GITHUB_REPOSITORY" --title "SavIDE $GITHUB_REF_NAME" --notes-file notes.md
