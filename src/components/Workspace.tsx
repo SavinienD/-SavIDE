@@ -136,6 +136,8 @@ import type {
 import { estMac, formaterTexte, modPrincipal } from "../lib/plateforme";
 import { dansRect, messageDepotVide, pointCss } from "../lib/depot";
 import { loadUiZoom } from "../axe/zoom";
+import { noterConversation } from "../lib/gardienPage";
+import { garderSeulement } from "./chat/vuesConversations"; // mémoire
 
 type Props = {
   bootstrap: WorkspaceBootstrap;
@@ -527,6 +529,17 @@ export function Workspace({
       console.error(err);
     }
   }, [workspacePath]);
+
+  // la conversation active est rouverte si la page est rechargée (écran noir).
+  useEffect(() => {
+    let fenetre = "main";
+    try {
+      fenetre = getCurrentWindow().label;
+    } catch {
+      /* hors Tauri */
+    }
+    noterConversation(window.localStorage, fenetre, activeConv.id);
+  }, [activeConv.id]);
 
   const selectConversation = useCallback(
     async (id: string) => {
@@ -2759,6 +2772,17 @@ export function Workspace({
         });
     }
   }, [colonnesChat, etatColonnesChat.focus, visibleDeColonne, conversationsColonnes, echecsColonnes, workspacePath, chatDetache, activeConv.id]);
+  // seuls les fils encore affichés (conversation active, conversation visible de
+  // chaque colonne, fenêtre détachée) restent en mémoire ; un autre se relit à la demande.
+  useEffect(() => {
+    const garder = new Set<string>([activeConv.id]);
+    colonnesChat.forEach((colonne) => {
+      const id = visibleDeColonne(colonne);
+      if (id) garder.add(id);
+    });
+    if (chatDetache) garder.add(chatDetache);
+    setConversationsColonnes((m) => garderSeulement(m, garder));
+  }, [colonnesChat, visibleDeColonne, chatDetache, activeConv.id]);
   // colonne-echec — ce qu'affiche une colonne (ou la fenêtre détachée) dont le fil n'est pas là.
   const renduFilAbsent = (id: string | null) =>
     !id ? (

@@ -167,7 +167,9 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "url",
+ "webview2-com",
  "whisper-rs",
+ "windows-core 0.61.2",
  "zip 9.0.5",
 ]
 

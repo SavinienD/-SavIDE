@@ -119,6 +119,7 @@ mod voix_local; // micro-local
 mod custom_providers; // providers
 mod daemon_client; // daemon
 mod freechat; // freechat
+mod gardien_page; // écran noir : rattrapage de la page
 mod gemini_web; // gemini-web
 mod connections; // remote
 mod cloud; // cloud
@@ -323,8 +324,11 @@ pub fn run() {
             }
             Ok(())
         })
+        // chaque vue est surveillée (processus WebView2 mort, page figée).
+        .on_page_load(|webview, _| gardien_page::surveiller(webview))
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::Destroyed => {
+                gardien_page::fenetre_detruite(window.label());
                 remove_window_workspace(&window.app_handle(), window.label().to_string());
             }
             tauri::WindowEvent::Focused(true) => {
@@ -365,6 +369,9 @@ pub fn run() {
         .manage(agent_term::AgentTerms::default()) // v2-e12
         .invoke_handler(tauri::generate_handler![
             voice_dictation,
+            gardien_page::page_battement,
+            gardien_page::page_journal,
+            gardien_page::page_reprise_demandee,
             voix::voix_transcrire, // voix
             voix::voix_annuler,
             voix::voix_etat,

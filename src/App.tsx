@@ -17,6 +17,26 @@ import "./components/cloud/cloud.css"; // cloud
 import "./components/cloud/connected-screen.css"; // v2-l1
 import { EDITION_LOCALE } from "./lib/edition";
 import type { WorkspaceBootstrap } from "./types";
+import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import {
+  demarrerBattement,
+  ecranARouvrir,
+  estUnRechargement,
+  journaliserErreurs,
+  mesurer,
+  noterEcran,
+  type Ecran,
+} from "./lib/gardienPage"; // écran noir, reprise après rechargement
+
+/** Nom de la fenêtre (une reprise par fenêtre). */
+function nomFenetre(): string {
+  try {
+    return getCurrentWindow().label;
+  } catch {
+    return "main";
+  }
+}
 
 type AppState =
   | { kind: "boot" }
@@ -108,11 +128,57 @@ export default function App() {
       //    d'arrivee : il reste a un clic (« Revenir au cloud »), et une
       //    session cloud ouverte n'est jamais imposee au demarrage.
       if (cancelled) return;
+      // la page vient d'être rechargée (rendu de WebView2 mort ou figé, F5) :
+      // on rouvre le même écran au lieu de l'accueil. Les colonnes et onglets de
+      // conversations se relisent seuls (stockage local du dossier).
+      const repriseDemandee = await invoke<boolean>("page_reprise_demandee").catch(() => false);
+      const ecran = ecranARouvrir(window.localStorage, nomFenetre(), {
+        repriseDemandee: repriseDemandee === true,
+        rechargement: estUnRechargement(window.performance),
+      });
+      if (cancelled) return;
       setState({ kind: "welcome" });
+      if (ecran?.kind === "dossier") void openWorkspaceRef.current(ecran.chemin, ecran.conversationId);
+      else if (ecran?.kind === "libre") void openFreeChatRef.current(ecran.conversationId ? { conversationId: ecran.conversationId } : {});
+      else if (ecran?.kind === "cloud") void openCloudFolderRef.current(ecran.dossier ?? "");
     })();
 
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  // écran noté à chaque changement, pour la reprise après un rechargement.
+  const dossierCloudRef = useRef<string>("");
+  const openWorkspaceRef = useRef(openWorkspace);
+  const openFreeChatRef = useRef(openFreeChat);
+  const openCloudFolderRef = useRef<(folder: string) => Promise<void>>(async () => undefined);
+  useEffect(() => {
+    let ecran: Ecran | null = null;
+    if (state.kind === "welcome") ecran = { kind: "accueil" };
+    else if (state.kind === "workspace") {
+      const chemin = state.bootstrap.workspace.path;
+      const conversationId = state.bootstrap.activeConversation.id;
+      ecran =
+        state.layout === "chat"
+          ? { kind: "libre", conversationId }
+          : chemin.startsWith("axe-cloud://")
+            ? { kind: "cloud", dossier: dossierCloudRef.current, conversationId }
+            : { kind: "dossier", chemin, conversationId };
+    }
+    if (ecran) noterEcran(window.localStorage, nomFenetre(), ecran);
+  }, [state]);
+  // battement (la page répond ; mémoire JS notée dans page.log) et erreurs JS.
+  useEffect(() => {
+    const arreterBattement = demarrerBattement({
+      envoyer: () => void invoke("page_battement", mesurer(window.performance, document)).catch(() => undefined),
+      document,
+      fenetre: window,
+    });
+    const arreterJournal = journaliserErreurs(window, (texte) => void invoke("page_journal", { texte }).catch(() => undefined));
+    return () => {
+      arreterBattement();
+      arreterJournal();
     };
   }, []);
 
@@ -201,6 +267,7 @@ export default function App() {
   // accueil-3-choix - un seul espace : ouvre l'IDE sur l'espace cloud (pas d'ecran separe).
   const openCloudFolder = async (folder: string) => {
     setBootError(null);
+    dossierCloudRef.current = folder; // rouvert après un rechargement
     try {
       try { await connectionsApi.setActive(CLOUD_CONNECTION); } catch { /* non bloquant */ }
       const bootstrap = await api.openCloudWorkspace(CLOUD_CONNECTION, folder || undefined);
@@ -209,6 +276,10 @@ export default function App() {
       setBootError("Ouverture du dossier cloud : " + String(err));
     }
   };
+
+  openWorkspaceRef.current = openWorkspace;
+  openFreeChatRef.current = openFreeChat;
+  openCloudFolderRef.current = openCloudFolder;
 
   if (state.kind === "cloud_login") {
     return (

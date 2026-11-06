@@ -102,6 +102,7 @@ import {
   type ChatViewState,
   type SubAgentBlock,
 } from "./stream";
+import { bornerVues, toucherVue } from "./vuesConversations"; // mémoire
 import type { AgentEvent } from "../../types";
 import { libelleStop } from "./arretForce"; // stop-force
 import { agentsApi } from "../agents/agentsApi"; // sub-n
@@ -959,6 +960,7 @@ export function ChatPane({
         buildComposerDraft(text, attachments, inlineMentions, editingQueuedPrompt),
       );
       viewConversationIdRef.current = conversationId;
+      toucherVue(conversationViewsRef.current, previousConversationId);
     }
     const composerDraft = composerDraftsRef.current.get(conversationId);
     const cached = conversationViewsRef.current.get(conversationId);
@@ -980,6 +982,18 @@ export function ChatPane({
       viewRef.current = nextView;
       conversationViewsRef.current.set(conversationId, nextView);
       setView(nextView);
+    }
+    // les vues des conversations quittées ne s'empilent plus (voir vuesConversations.ts).
+    toucherVue(conversationViewsRef.current, conversationId);
+    for (const id of bornerVues(
+      conversationViewsRef.current,
+      conversationId,
+      (vue) => vue.status === "streaming",
+    )) {
+      const sousAgents = subAgentViewsByConversationRef.current.get(id);
+      if (!sousAgents || ![...sousAgents.values()].some((r) => r.view.status === "streaming")) {
+        subAgentViewsByConversationRef.current.delete(id);
+      }
     }
     const storedSubAgentViews = subAgentViewsFromHistory(history);
     const cachedSubAgentViews =
