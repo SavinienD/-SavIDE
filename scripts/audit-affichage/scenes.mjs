@@ -18,6 +18,16 @@ const SESSIONS_DOSSIER = (parent, enfants) => {
     s("507297f4-0000-4000-8000-000000000000", "sous-agent-2", enfants, "45127dc0-5b2f-4f50-a166-5a7523cc769e"),
     { ...s("550dc56f-0000-4000-8000-000000000000", "wifis", "inactive"), workspaceId: "\\\\?\\C:\\Users\\utilisateur\\Documents\\compta" }];
 };
+// onglet Agents (capture « 0 · 0 · 13 ») : la conversation c-001 travaille (tour envoyé par la
+// fenêtre, le service la voit « déchargée »), 2 sous-agents tournent, 10 ont fini ; chemins du service en \\?\.
+const SESSIONS_AGENTS = () => {
+  const ws = "\\\\?\\" + WS;
+  const s = (id, name, status, parentId) => ({ id, name, status, parentId, workspaceId: ws, children: [], archived: false, scratch: false,
+    model: { provider: "anthropic", name: "claude-opus-5-5" }, createdAtMs: 1_792_483_646_503, updatedAtMs: 1_793_890_099_980, entryCount: 120 });
+  return [s("c-001", "Conversation du banc", "inactive"), s("c-002", "Autre conversation", "inactive"),
+    s("sa-1", "verif-tests", "running", "c-001"), s("sa-2", "revue-code", "running", "c-001"),
+    ...Array.from({ length: 10 }, (_, i) => s(`fini-${i + 1}`, `t-fini-${i + 1}`, i % 2 ? "idle" : "inactive", "c-001"))];
+};
 const RECENTS_ACTIVITE = () => [
   { path: "C:\\Users\\utilisateur\\Documents\\site-web", name: "site-web", lastOpenedMs: 1_793_890_000_000 },
   { path: "C:\\Users\\utilisateur\\Documents\\mon-projet", name: "mon-projet", lastOpenedMs: 1_793_880_000_000 },
@@ -97,10 +107,22 @@ export const SCENES = [
   { id: "maj-badge-accueil", sim: { majDispo: "0.1.66" }, espace: false, temoins: ["clic:.welcome__maj .titlebar__update-pill"] },
   // 25 dossiers récents : la liste défile, chaque carte a sa croix ; la croix retire l'entrée sans ouvrir le dossier.
   { id: "accueil-recents", sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25() }),
-    temoins: ["defile:.welcome__recents[data-liste='dossiers']", "compte:.welcome__recents[data-liste='dossiers'] .welcome__recent=25", "compte:.welcome__recent-retirer=25"] },
+    temoins: ["defile:.welcome__recents[data-liste='dossiers']", "compte:.welcome__recents[data-liste='dossiers'] .welcome__recent=25", "compte:.welcome__recents[data-liste='dossiers'] .welcome__recent-retirer=25"] },
   { id: "accueil-recents-retrait", sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25() }),
     clics: [".welcome__recents[data-liste='dossiers'] .welcome__recent-retirer"],
     temoins: ["compte:.welcome__recents[data-liste='dossiers'] .welcome__recent=24", "stocke:axecode.recentWorkspaces=24", "absent:.workspace"] },
+  // conversations sans dossier : TOUTES affichées (liste qui défile comme les dossiers), croix « Supprimer »
+  // (1er clic : « Supprimer ? », 2e clic : même action que dans l'appli = archiver, archive_local).
+  { id: "accueil-libres", sim: { cloud: true, libres: 20 }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25() }),
+    temoins: ["defile:.welcome__recents[data-liste='conversations']", "compte:.welcome__recents[data-liste='conversations'] .welcome__recent=20",
+      "compte:.welcome__recents[data-liste='conversations'] .welcome__recent-retirer=20"] },
+  { id: "accueil-libres-confirmer", sim: { cloud: true, libres: 20 }, espace: false,
+    clics: [".welcome__recents[data-liste='conversations'] .welcome__recent-retirer"],
+    temoins: ["sel:.welcome__recents[data-liste='conversations'] .welcome__recent-retirer[data-confirm='true']", "Supprimer\u00a0?",
+      "compte:.welcome__recents[data-liste='conversations'] .welcome__recent=20", "absent:.workspace", "sansappel:archive_local"] },
+  { id: "accueil-libres-supprimer", sim: { cloud: true, libres: 20 }, espace: false,
+    clics: [".welcome__recents[data-liste='conversations'] .welcome__recent-retirer", ".welcome__recent-retirer[data-confirm='true']"],
+    temoins: ["appel:archive_local", "compte:.welcome__recents[data-liste='conversations'] .welcome__recent=19", "absent:.workspace"] },
   { id: "accueil", sim: { cloud: true }, espace: false, temoins: ["sel:button.welcome__cta", "absent:svg linearGradient"] },
   // 0.1.71 — bulle d'info de la dictée (« Transcrit par … en 6,0 s, nettoyé par l'IA. ») : elle débordait du compositeur.
   { id: "dictee-info", sim: {}, stockage: () => colonnes([ids(3)]), cliquer: [".axe-voix__micro", ".axe-voix__valider"], pauseClics: 1500, attendre: ".axe-voix__bulle--info", temoins: ["clic:.axe-voix__bulle--info"] },
@@ -333,6 +355,19 @@ export const SCENES = [
     ],
     attendus: ["finir le lot 3 avec"],
   },
+  // /goal et /heartbeat au milieu de la phrase : reconnus par le service, donc en orange aussi.
+  {
+    id: "couleurs-milieu",
+    sim: {},
+    stockage: () => colonnes([ids(1)]),
+    ecrire: "Relis le module de paiement, puis /goal tous les tests passent",
+    saisir: "puis /heartbeat 5m coucou",
+    temoins: [
+      "couleur:.composer__overlay .jeton-commande[data-jeton='commande']=rgb(252, 97, 11)",
+      "couleur:.msg[data-role='user'] .user-text .jeton-commande=rgb(252, 97, 11)",
+    ],
+    attendus: ["Relis le module de paiement, puis"],
+  },
   // Clic sur « N agent(s) au travail » : ouvre la conversation (journal) de l'agent, comme la vue Agents.
   // Tour en cours : rond animé sur la ligne de la liste et sur l'onglet, même quand
   // le démon rend le chemin sous une autre forme (\\?\ + casse) ou quand le tour est sur une autre conversation.
@@ -360,6 +395,12 @@ export const SCENES = [
   // Bug : après le chat d'un agent, un clic sur une conversation de la liste doit l'afficher (plus le journal de l'agent).
   { id: "agent-puis-conversation", sim: { tour: "en_cours", sousAgents: 2 }, stockage: () => colonnes([ids(3)]), clicBandeau: true, puisConversation: TITRES["c-002"], temoins: ["sel:.colonne-chat[data-focus='true'] .chat-body"] },
   { id: "agents", sim: { sousAgents: 3 }, stockage: () => colonnes([ids(3)]), agents: true, temoins: ["sel:.axe-agents"] },
+  { id: "agents-compteurs", sim: { tour: "en_cours", sessionsDemon: SESSIONS_AGENTS() }, stockage: () => colonnes([ids(3)]), agents: true,
+    temoins: ["sel:.axe-agents__counts[data-running='3'][data-idle='0'][data-inactive='1']", "compte:.axe-agents__row[data-sous-agent='true']=2",
+      "compte:.axe-agents__row[data-status='running']=3"] },
+  { id: "agents-archives", sim: { tour: "en_cours", sessionsDemon: SESSIONS_AGENTS() }, stockage: () => colonnes([ids(3)]), agents: true,
+    clics: [".axe-agents__filters summary", ".axe-agents__filters input[data-filtre='archives']"],
+    temoins: ["compte:.axe-agents__row[data-sous-agent='true']=12", "sel:.axe-agents__counts[data-running='3'][data-idle='5'][data-inactive='6']"] },
   // Bugs SavIDE 0.1.58 : dans une conversation sans dossier, Accueil / Ouvrir un dossier /
   // Réglages étaient rognés (barre d'actions de largeur 0) ; /login ouvrait « À propos » ou rien.
   { id: "libre-barre", sim: {}, libre: true, temoins: ["sel:.axe-freechat", "clic:.axe-freechat .titlebar__actions .titlebar__btn"] },
@@ -530,7 +571,22 @@ export const SCENES = [
   { id: "collegue-compaction", sim: { fournisseur: false, collegue: true, espaceVide: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, creer: "test", ecrire: "Bonjour", evenementsTour: tourFini("s-1"), compacter: true, temoins: ["sel:.conv-row"] },
   { id: "collegue-reecriture", sim: { fournisseur: false, collegue: true, espaceVide: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, creer: "test", ecrire: "Bonjour", evenementsTour: tourFini("s-1"), reecrire: true, temoins: ["sel:.conv-row"] },
   // … puis ouvre l'arbre de la session (/tree) : il doit être lu sur l'espace (D11).
-  { id: "collegue-arbre", sim: { fournisseur: false, collegue: true, espaceVide: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, creer: "test", ecrire: "Bonjour", evenementsTour: tourFini("s-1"), arbre: true, temoins: ["sel:.axe-tree-overlay"] },
+  // Réglages > Harnais : champ de recherche ; « facture » trouve les notes, mémoires, skills et
+  // sous-agents qui le contiennent (titre ou contenu), mot surligné ; clic = l'entrée s'ouvre dans son onglet.
+  { id: "harnais-recherche", sim: { harnais: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='harness']"], taper: [{ sel: ".axe-harness__search", texte: "facture" }],
+    temoins: ["compte:.axe-harness__hit=4", "compte:.axe-harness__hit mark=4", "sel:.axe-harness__hit[data-kind='prompt_note']",
+      "sel:.axe-harness__hit[data-kind='memory']", "sel:.axe-harness__hit[data-kind='skill']", "sel:.axe-harness__hit[data-kind='subagent_spec']",
+      "absent:.axe-harness__hit[data-id='mem_9aa28189']"] },
+  // « Skills 3 » (Harnais) et « Skills 10 » (barre des Réglages) ne comptaient pas la même chose :
+  // l'onglet du harnais dit « Skills du harnais » (paquets Python du poste), la barre « Skills » = tous (Markdown + harnais).
+  { id: "harnais-skills", sim: { harnais: true, skills: ["unslop", "revue-code"] }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='harness']"],
+    temoins: ["sel:.axe-harness__tabs button[data-onglet='skills'][title^='Skills Python du harnais']", "Skills du harnais"] },
+  // onglet Affinages : la règle de purge est dite (ratés effacés au bout de 3 jours).
+  { id: "harnais-affinages", sim: { harnais: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='harness']", ".axe-harness__tabs button[data-onglet='refinements']"],
+    temoins: ["sel:.axe-harness__records-note", "Aucun affinage pour l'instant"] },
   // À la réouverture de l'espace : la liste doit montrer les conversations de l'espace (« test »).
   { id: "collegue-liste", sim: { fournisseur: false, collegue: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, temoins: ["test"] },
   // defil178 — longue conversation défilée au milieu puis tout en bas : un clic sur un lien

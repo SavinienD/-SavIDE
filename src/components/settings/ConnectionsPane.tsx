@@ -212,49 +212,59 @@ export function ConnectionsPane() {
             const state = live[c.id] ?? "disconnected";
             return (
               <li key={c.id} className="axe-repl__card" data-active={c.id === active ? "true" : "false"}>
-                <div className="axe-repl__row">
+                {/* carte rangée : nom et état en haut, adresse dessous ; en bas, les identifiants
+                    enregistrés à gauche et les actions à droite (Retirer en dernier, séparé). */}
+                <div className="axe-connections__head">
                   <span
                     className="axe-connections__dot"
                     data-state={state}
                     title={state === "connected" ? "joignable" : "pas de réponse"}
                   />
-                  <strong className="axe-repl__ellipsis">{c.name}</strong>
+                  <strong className="axe-repl__ellipsis" title={c.name}>{c.name}</strong>
                   <span className="axe-connections__badge">
                     {c.kind === "ssh" ? "par tunnel SSH" : "par adresse directe"}
                   </span>
-                  <span className="axe-repl__muted axe-repl__ellipsis">{describeConnection(c)}</span>
-                  <span style={{ flex: 1 }} />
-                  <span className="axe-repl__muted">
+                  <span className="axe-connections__state" data-state={state}>
                     {state === "connected" ? "joignable" : "sans réponse"}
                   </span>
-                  <button type="button" disabled={t === "pending"} onClick={() => void test(c.id)}>
-                    {t === "pending" ? "Vérification…" : "Vérifier"}
-                  </button>
-                  <button type="button" onClick={() => setDraft(toDraft(c))}>
-                    Modifier
-                  </button>
-                  <button type="button" className="axe-repl__danger" onClick={() => void remove(c)}>
-                    Retirer
-                  </button>
                 </div>
-                <div className="axe-repl__row axe-repl__muted">
-                  {c.hasToken ? (
-                    <span>
-                      jeton enregistré{" "}
-                      <button type="button" onClick={() => void clearSecret(c, "token")}>
-                        oublier
-                      </button>
-                    </span>
-                  ) : null}
-                  {c.hasPassword ? (
-                    <span>
-                      mot de passe enregistré ({c.username}){" "}
-                      <button type="button" onClick={() => void clearSecret(c, "password")}>
-                        oublier
-                      </button>
-                    </span>
-                  ) : null}
-                  {!c.hasToken && !c.hasPassword ? <span>aucun identifiant enregistré</span> : null}
+                <div className="axe-repl__muted axe-repl__ellipsis axe-connections__desc" title={describeConnection(c)}>
+                  {describeConnection(c)}
+                </div>
+                <div className="axe-connections__foot">
+                  <div className="axe-connections__secrets">
+                    {c.hasToken ? (
+                      <span className="axe-connections__secret">
+                        Jeton enregistré
+                        <button type="button" className="axe-connections__lien" data-action="oublier-jeton"
+                          title="Effacer le jeton enregistré pour cet appareil" onClick={() => void clearSecret(c, "token")}>
+                          Oublier
+                        </button>
+                      </span>
+                    ) : null}
+                    {c.hasPassword ? (
+                      <span className="axe-connections__secret">
+                        Mot de passe enregistré ({c.username})
+                        <button type="button" className="axe-connections__lien" data-action="oublier-mot-de-passe"
+                          title="Effacer le mot de passe enregistré pour cet appareil" onClick={() => void clearSecret(c, "password")}>
+                          Oublier
+                        </button>
+                      </span>
+                    ) : null}
+                    {!c.hasToken && !c.hasPassword ? <span className="axe-connections__secret">Aucun identifiant enregistré</span> : null}
+                  </div>
+                  <div className="axe-connections__actions">
+                    <button type="button" className="axe-connections__btn" data-action="verifier" disabled={t === "pending"} onClick={() => void test(c.id)}>
+                      {t === "pending" ? "Vérification…" : "Vérifier"}
+                    </button>
+                    <button type="button" className="axe-connections__btn" data-action="modifier" onClick={() => setDraft(toDraft(c))}>
+                      Modifier
+                    </button>
+                    <button type="button" className="axe-connections__btn axe-connections__btn--danger" data-action="retirer"
+                      title="Ne plus joindre cet appareil (rien n'est supprimé dessus)" onClick={() => void remove(c)}>
+                      Retirer
+                    </button>
+                  </div>
                 </div>
                 {t && t !== "pending" ? (
                   <p className={t.ok ? "axe-repl__status" : "axe-repl__error"}>{t.text}</p>

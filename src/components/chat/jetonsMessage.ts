@@ -1,5 +1,5 @@
 // couleurs — découpe un texte de message en segments colorés : commande slash
-// en tête (/goal, /heartbeat… : couleur d'accent), skills (/nom-du-skill : violet),
+// en tête (/goal, /heartbeat… : couleur d'accent ; /goal et /heartbeat aussi au milieu), skills (/nom-du-skill : violet),
 // fichiers mentionnés (@chemin). Module pur (sans React) : partagé par le
 // compositeur (calque sous la zone de saisie) et la bulle du message envoyé.
 
@@ -7,6 +7,30 @@ export type GenreJeton = "texte" | "commande" | "skill" | "fichier";
 export type SegmentJeton = { genre: GenreJeton; texte: string };
 
 const FIN_JETON = /[\s.,;:!?)\]}'"`]/;
+
+/** commandes reconnues aussi au milieu du message (première occurrence), comme le service. */
+export const COMMANDES_PARTOUT = ["goal", "heartbeat"] as const;
+
+/**
+ * Position [début, fin) de la commande que le service interprète : en tête du message (toute
+ * commande connue), sinon le premier « /goal » ou « /heartbeat » précédé d'un blanc (ou du début)
+ * et suivi d'un blanc (ou de la fin). Null s'il n'y en a pas.
+ */
+export function commandeInterpretee(texte: string, commandes: readonly string[]): [number, number] | null {
+  const tete = /^\s*\/([a-z][a-z0-9_-]*)/i.exec(texte);
+  if (tete) {
+    const nom = tete[1].toLowerCase();
+    const fin = tete[0].length;
+    if (commandes.includes(nom) && (fin === texte.length || /\s/.test(texte[fin]))) return [fin - tete[1].length - 1, fin];
+  }
+  const partout = COMMANDES_PARTOUT.filter((nom) => commandes.includes(nom));
+  if (partout.length === 0) return null;
+  const motif = new RegExp(`(^|\\s)\\/(${partout.join("|")})(?=\\s|$)`, "i");
+  const m = motif.exec(texte);
+  if (!m) return null;
+  const debut = m.index + m[1].length;
+  return [debut, debut + 1 + m[2].length];
+}
 
 function finDeJeton(texte: string, fin: number): boolean {
   const apres = texte[fin] ?? "";
@@ -26,15 +50,9 @@ export function decouperJetons(
   type Zone = { debut: number; fin: number; genre: GenreJeton };
   const zones: Zone[] = [];
 
-  // Commande : seulement en tête du message (c'est ainsi qu'elle est interprétée).
-  const tete = /^\s*\/([a-z][a-z0-9_-]*)/i.exec(texte);
-  if (tete) {
-    const nom = tete[1].toLowerCase();
-    const fin = tete[0].length;
-    if (commandes.includes(nom) && (fin === texte.length || /\s/.test(texte[fin]))) {
-      zones.push({ debut: fin - tete[1].length - 1, fin, genre: "commande" });
-    }
-  }
+  // Commande : celle que le service interprète (en tête, ou /goal et /heartbeat ailleurs).
+  const commande = commandeInterpretee(texte, commandes);
+  if (commande) zones.push({ debut: commande[0], fin: commande[1], genre: "commande" });
 
   for (const nom of skills) {
     if (!nom) continue;

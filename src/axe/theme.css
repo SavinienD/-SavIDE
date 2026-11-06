@@ -230,7 +230,7 @@
 /* providers — model selector group headers */
 .axe-model-group {
   padding: 6px 10px 2px; color: var(--text-3); font-size: calc(10.5px * var(--text-scale, 1));
-  text-transform: uppercase; letter-spacing: 0.04em; pointer-events: none;
+  letter-spacing: 0; pointer-events: none; /* unslop : casse normale */
 }
 .axe-model-group:not(:first-child) { border-top: 1px solid var(--line-soft); margin-top: 4px; }
 

@@ -400,12 +400,12 @@ textarea {
 
 .welcome__section-heading {
   font-family: var(--font-ui);
-  font-size: calc(11px * var(--text-scale, 1));
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-3);
+  /* titre de section en casse normale (plus de petites capitales espacées). */
+  font-size: calc(12px * var(--text-scale, 1));
+  letter-spacing: 0;
+  color: var(--text-2);
   font-weight: 500;
-  margin: 0 0 4px 4px;
+  margin: 0 0 8px 4px;
 }
 
 .welcome__recents {
@@ -417,8 +417,8 @@ textarea {
 .welcome__recent {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
+  gap: 12px;
+  padding: 12px 16px;
   background: var(--bg-2);
   border-radius: 12px;
   text-align: left;
@@ -428,8 +428,10 @@ textarea {
 .welcome__recent:hover {
   background: var(--bg-3);
 }
-/* dossiers récents : liste bornée qui défile, croix de retrait par carte. */
-.welcome__recents[data-liste="dossiers"] {
+/* dossiers récents : liste bornée qui défile, croix de retrait par carte.
+   Conversations sans dossier : toutes, même liste qui défile, croix « Supprimer ». */
+.welcome__recents[data-liste="dossiers"],
+.welcome__recents[data-liste="conversations"] {
   max-height: min(380px, 45vh);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -496,6 +498,37 @@ textarea {
   color: var(--text-0);
   background: var(--bg-5);
 }
+/* 2e clic pour confirmer : « Supprimer ? » en rouge, toujours visible (la carte lui laisse la place). */
+.welcome__recent-item[data-confirm="true"] {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+.welcome__recent-item[data-confirm="true"] > .welcome__recent {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-right: 14px;
+}
+.welcome__recent-retirer[data-confirm="true"] {
+  position: static;
+  transform: none;
+  flex: 0 0 auto;
+  height: 32px;
+  width: auto;
+  padding: 0 9px;
+  opacity: 1;
+  white-space: nowrap;
+  color: var(--danger);
+  background: var(--bg-4);
+  font-family: var(--font-ui);
+  font-size: calc(12px * var(--text-scale, 1));
+  font-weight: 500;
+}
+.welcome__recent-retirer[data-confirm="true"]:hover,
+.welcome__recent-retirer[data-confirm="true"]:focus-visible {
+  color: var(--danger);
+  background: var(--bg-5);
+}
 .welcome__recent:active {
   background: var(--bg-4);
   transform: translateY(1px);
@@ -547,8 +580,12 @@ textarea {
   font-family: var(--font-display);
   font-weight: 500;
   color: var(--text-0);
-  font-size: calc(13.5px * var(--text-scale, 1));
-  letter-spacing: -0.011em;
+  font-size: calc(14px * var(--text-scale, 1));
+  letter-spacing: 0;
+  /* titre long : une ligne, « … » (complet au survol). */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .welcome__recent-path {
   font-family: var(--font-display);
@@ -917,7 +954,7 @@ textarea {
   font-family: var(--font-ui);
   font-size: var(--fs-xs);
   font-weight: 500;
-  letter-spacing: -0.005em;
+  letter-spacing: 0;
   transition: color 150ms ease, background 150ms ease;
 }
 .titlebar__btn:hover {

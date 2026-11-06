@@ -5,6 +5,11 @@ import { ExternalAgents } from "./ExternalAgents"; // agents — agents externes
 import { STATUS_LABEL, agentsApi, type SessionMeta as BaseMeta } from "./agentsApi";
 import { connectionsApi, LOCAL_CONNECTION, useActiveConnection } from "../settings/connectionsApi"; // remote
 import { useModelChoices } from "./useModelChoices"; // sub-m
+import { listen } from "@tauri-apps/api/event";
+import { api } from "../../lib/ipc";
+import type { ActiveTurnsChangedPayload } from "../../types";
+import { majSessionsEnCours, sessionsEnCours } from "../../lib/toursActifs";
+import { archive, compter, dansLeDossier, statutsEffectifs } from "./agentsStatut";
 import "./agents.css";
 
 type Props = {
@@ -64,8 +69,24 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
   const [tasks, setTasks] = useState<Record<string, string>>({});
   const modelChoices = useModelChoices();
 
+  // tours envoyés par la fenêtre (la conversation ouverte travaille alors que le service
+  // la voit « déchargée ») et sessions annoncées « running » par les événements du service local.
+  const [toursFenetre, setToursFenetre] = useState<Set<string>>(() => new Set());
+  const [enCoursService, setEnCoursService] = useState<Map<string, string>>(() => new Map());
+  useEffect(() => {
+    let fini = false;
+    let stop: (() => void) | undefined;
+    void api
+      .listActiveTurns()
+      .then((tours) => { if (!fini) setToursFenetre(new Set(tours.map((t) => t.conversationId))); })
+      .catch(() => undefined);
+    void listen<ActiveTurnsChangedPayload>("active-turns-changed", (e) => {
+      setToursFenetre(new Set(e.payload.activeTurns.map((t) => t.conversationId)));
+    }).then((f) => { if (fini) f(); else stop = f; });
+    return () => { fini = true; stop?.(); };
+  }, []);
+
   const load = useCallback(async () => {
-    const norm = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
     let targets: { id: string; name: string }[] = [{ id: active, name: active === LOCAL_CONNECTION ? "Local" : active }];
     try {
       const registry = await connectionsApi.list();
@@ -82,10 +103,9 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
           const all = await agentsApi.list(t.id);
           // Local sessions are scoped to the open project (+ free conversations,
           // freechat); remote ones live in remote folders.
-          const scoped =
-            t.id === LOCAL_CONNECTION
-              ? all.filter((s) => s.scratch || norm(s.workspaceId) === norm(workspacePath))
-              : all;
+          // même comparaison que le rond d'activité (préfixe \\?\ du service, casse).
+          const scoped = t.id === LOCAL_CONNECTION ? all.filter((s) => dansLeDossier(s, workspacePath)) : all;
+          if (t.id === LOCAL_CONNECTION) setEnCoursService(sessionsEnCours(all));
           return scoped.map((s) => ({ ...s, conn: t.id, connName: t.name }));
         } catch (e) {
           errors.push(`${t.name} : ${String(e)}`);
@@ -103,6 +123,9 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
     let unlisten: (() => void) | undefined;
     void agentsApi
       .onEvent((event) => {
+        // l'événement compte tout de suite, sans attendre la relecture de la liste.
+        if (!event.connectionId && event.event === "daemon") setEnCoursService(new Map());
+        else setEnCoursService((avant) => majSessionsEnCours(avant, event) ?? avant);
         if (event.event === "status" || event.event === "daemon") void load();
       })
       .then((fn) => (unlisten = fn));
@@ -113,10 +136,20 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
     };
   }, [load]);
 
-  const visibleSessions = useMemo(
-    () => sessions.filter((s) => showArchived || !s.archived),
-    [sessions, showArchived],
-  );
+  // statut réel (service + événements + tours de la fenêtre) ; les sous-agents terminés
+  // sont archivés d'office (filtre « archivés » pour les revoir).
+  const sessionsAff = useMemo(() => {
+    const statut = statutsEffectifs(
+      sessions.filter((s) => s.conn === LOCAL_CONNECTION),
+      toursFenetre,
+      enCoursService,
+    );
+    return sessions.map((s) => (s.conn === LOCAL_CONNECTION ? { ...s, status: statut.get(s.id) ?? s.status } : s));
+  }, [sessions, toursFenetre, enCoursService]);
+  const visibleSessions = useMemo(() => {
+    const statut = new Map(sessionsAff.map((s) => [s.id, s.status] as const));
+    return sessionsAff.filter((s) => showArchived || !archive(s, statut));
+  }, [sessionsAff, showArchived]);
   const forest = useMemo(() => buildTree(visibleSessions), [visibleSessions]);
   // remote — roots grouped by machine
   const machines = useMemo(() => {
@@ -128,7 +161,7 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
     }
     return [...groups.entries()];
   }, [forest]);
-  const selected = sessions.find((s) => key(s) === selectedId) ?? null;
+  const selected = sessionsAff.find((s) => key(s) === selectedId) ?? null;
 
   // sub-m — fetch each sub-agent's task once (first user message of its journal).
   useEffect(() => {
@@ -158,11 +191,10 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
       alive = false;
     };
   }, [sessions, tasks]);
-  const counts = useMemo(() => {
-    const c = { running: 0, idle: 0, inactive: 0 };
-    for (const s of visibleSessions) c[s.status] += 1;
-    return c;
-  }, [visibleSessions]);
+  const counts = useMemo(
+    () => compter(visibleSessions, new Map(visibleSessions.map((s) => [s.id, s.status] as const))),
+    [visibleSessions],
+  );
 
   const toggle = (id: string) =>
     setCollapsed((prev) => {
@@ -250,6 +282,8 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
         <div
           className="axe-agents__row"
           data-active={key(meta) === selectedId ? "true" : "false"}
+          data-sous-agent={meta.parentId ? "true" : undefined}
+          data-status={meta.status}
           style={{ paddingLeft: 8 + depth * 14 }}
           onClick={() => {
             setSelectedId(key(meta));
@@ -297,15 +331,16 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
     <div className="axe-agents">
       {/* agents-ui - entete compacte pour la barre laterale etroite */}
       <header className="axe-agents__head axe-agents__head--compact">
-        <span className="axe-agents__counts" title={`${counts.running} en cours, ${counts.idle} inactif(s), ${counts.inactive} déchargé(s)`}>
+        <span className="axe-agents__counts" data-running={counts.running} data-idle={counts.idle} data-inactive={counts.inactive}
+          title={`${counts.running} en cours, ${counts.idle} inactif(s), ${counts.inactive} déchargé(s)${showArchived ? "" : " ; sous-agents terminés archivés (filtre « archivés »)"}`}>
           <span className="axe-agents__dot" data-status="running" /> {counts.running}
           <span className="axe-agents__dot" data-status="idle" /> {counts.idle}
           <span className="axe-agents__dot" data-status="inactive" /> {counts.inactive}
         </span>
         <details className="axe-agents__filters">
           <summary title="Filtres">Filtres</summary>
-          <label><input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> archivées</label>
-          <label><input type="checkbox" checked={allMachines} onChange={(e) => setAllMachines(e.target.checked)} /> toutes les machines</label>
+          <label title="Sessions archivées et sous-agents terminés"><input type="checkbox" data-filtre="archives" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /><span>archivés</span></label>
+          <label title="Toutes les machines"><input type="checkbox" checked={allMachines} onChange={(e) => setAllMachines(e.target.checked)} /><span>toutes les machines</span></label>
         </details>
         <button type="button" className="axe-agents__refresh" title="Rafraîchir" onClick={() => void load()}>↻</button>
       </header>

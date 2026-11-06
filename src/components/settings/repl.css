@@ -48,3 +48,32 @@
 .axe-connections__joindre:hover { filter: brightness(1.08); }
 .axe-connections__list > li { padding: 10px 12px; border: 1px solid var(--border, rgba(127,127,127,.3)); border-radius: 8px; }
 .axe-connections__form { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+/* carte d'un appareil joint : en-tête (point, nom, mode, état), adresse, puis pied avec les
+   identifiants à gauche et les actions à droite ; tout passe à la ligne au lieu de se serrer. */
+.axe-connections__list > li { gap: 6px; }
+.axe-connections__head { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: calc(13px * var(--text-scale, 1)); }
+.axe-connections__head > strong { flex: 0 1 auto; }
+.axe-connections__state { margin-left: auto; flex: none; white-space: nowrap; font-size: calc(12px * var(--text-scale, 1)); color: var(--text-2); }
+.axe-connections__state[data-state="connected"] { color: #30a46c; }
+.axe-connections__desc { min-width: 0; }
+.axe-connections__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 2px; padding-top: 8px; border-top: 1px solid var(--border, rgba(127,127,127,.15)); }
+.axe-connections__secrets { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; min-width: 0; font-size: calc(12px * var(--text-scale, 1)); color: var(--text-2); }
+.axe-connections__secret { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.axe-connections__lien { background: none; border: 0; padding: 4px 2px; min-height: 24px; color: var(--accent, #fc610b); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.axe-connections__lien:hover { filter: brightness(1.15); }
+.axe-connections__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-left: auto; }
+.axe-connections__btn { flex: none; white-space: nowrap; min-height: 28px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--line-strong, rgba(127,127,127,.35)); background: var(--bg-3); color: var(--text-0); font-family: var(--font-ui); font-size: calc(12px * var(--text-scale, 1)); cursor: pointer; }
+.axe-connections__btn:hover:not(:disabled) { background: var(--bg-4); }
+.axe-connections__btn:disabled { opacity: .55; cursor: default; }
+.axe-connections__btn--danger { margin-left: 8px; background: transparent; border-color: var(--danger, #e5484d); color: var(--danger, #e5484d); }
+.axe-connections__btn--danger:hover:not(:disabled) { background: color-mix(in srgb, var(--danger, #e5484d) 12%, transparent); }
+.axe-connections .axe-repl__header { flex-wrap: wrap; }
+.axe-connections .axe-repl__header > div { flex: 1 1 300px; min-width: 0; }
+/* Colonne étroite (réglages dans un volet, gros zoom) : tout passe à la ligne, rien n'est rogné. */
+.axe-connections .axe-repl__header h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.axe-connections__joindre { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.axe-connections__head { flex-wrap: wrap; row-gap: 4px; }
+.axe-connections__head > strong { flex: 1 1 120px; }
+.axe-connections__secret { white-space: normal; flex-wrap: wrap; }
+.axe-connections__head > .axe-connections__badge { flex: 0 1 auto; min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

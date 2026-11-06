@@ -255,6 +255,22 @@ async fn l_ide_arrete_heartbeat_et_goal() {
 /// goal165 — une seule source : l'objectif survit au rechargement (nouveau
 /// démon, nouveau crochet, même dossier de données) ; un arrêt depuis l'IDE est vu
 /// tout de suite par `goal.get`, par le bloc d'état et par l'indicateur.
+// /goal et /heartbeat au milieu de la phrase : même prise en compte qu'en tête.
+#[tokio::test(flavor = "multi_thread")]
+async fn goal_et_heartbeat_au_milieu_de_la_phrase() {
+    let Some(b) = banc() else { return };
+    b.send("Relis le module de paiement, puis /goal tous les tests passent").await;
+    let g = b.hook.state(&b.id).goal.expect("/goal au milieu de la phrase");
+    assert_eq!((g.text.as_str(), g.status.as_str()), ("tous les tests passent", "active"));
+    assert!(b.last_prompt().contains("## Commande `/goal`"));
+    b.send("Merci ! Et /heartbeat dis coucou toutes les 5 minutes").await;
+    assert_eq!(b.hook.state(&b.id).heartbeat.expect("/heartbeat au milieu").message, "coucou");
+    b.send("le chemin src/goal reste un chemin").await;
+    assert_eq!(b.hook.state(&b.id).goal.unwrap().text, "tous les tests passent");
+    b.send("/heartbeat stop").await;
+    assert!(b.hook.state(&b.id).heartbeat.is_none());
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn objectif_source_unique_et_rechargement() {
     let Some(mut b) = banc() else { return };

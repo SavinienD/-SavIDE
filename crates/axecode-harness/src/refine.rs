@@ -9,7 +9,7 @@
 //! Every refinement is appended to `<scope>/refinements.jsonl`.
 
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, HashSet},
     fs,
     io::Write,
     path::{Path, PathBuf},
@@ -673,9 +673,74 @@ fn append_record(store: &HarnessStore, record: &RefinementRecord) -> Result<()> 
     Ok(())
 }
 
+/// un affinage raté (échec, ou « en cours » abandonné) est oublié au bout de 3 jours :
+/// ses lignes du journal et son instantané sont supprimés. Les autres (appliqués, sans changement,
+/// annulés, arrêtés) restent.
+pub const FAILED_RETENTION_MS: i64 = 3 * 24 * 60 * 60 * 1000;
+
 /// Read all records (both scopes), newest first. Later lines for the same id
-/// (rollback markers) override earlier ones.
+/// (rollback markers) override earlier ones. Failed refinements older than
+/// [`FAILED_RETENTION_MS`] are purged on the way (never while one is running).
 pub fn history(store: &HarnessStore) -> Result<Vec<RefinementRecord>> {
+    let out = read_history(store)?;
+    let now = now_ms();
+    let expired: HashSet<String> = out
+        .iter()
+        .filter(|r| r.outcome == RefineOutcome::Failed && now - r.ts > FAILED_RETENTION_MS)
+        .map(|r| r.id.clone())
+        .collect();
+    // Un affinage en cours écrit dans le journal : on ne le réécrit pas en même temps.
+    if expired.is_empty() || out.iter().any(|r| r.outcome == RefineOutcome::Running) {
+        return Ok(out);
+    }
+    if let Err(err) = purge_records(store, &expired) {
+        tracing::warn!(error = %err, "purge of old failed refinements failed");
+        return Ok(out);
+    }
+    Ok(out.into_iter().filter(|r| !expired.contains(&r.id)).collect())
+}
+
+/// Removes every journal line of `ids` (both scopes) and their snapshot folders.
+fn purge_records(store: &HarnessStore, ids: &HashSet<String>) -> Result<()> {
+    for scope in Scope::ALL {
+        let root = store.paths().root(scope);
+        let path = root.join(REFINEMENTS_FILE_NAME);
+        if let Ok(content) = fs::read_to_string(&path) {
+            let total = content.lines().count();
+            let kept: Vec<&str> = content
+                .lines()
+                .filter(|line| {
+                    serde_json::from_str::<Value>(line)
+                        .ok()
+                        .and_then(|v| v.get("id").and_then(Value::as_str).map(|id| !ids.contains(id)))
+                        .unwrap_or(true)
+                })
+                .collect();
+            if kept.len() != total {
+                let mut text = kept.join("\n");
+                if !text.is_empty() {
+                    text.push('\n');
+                }
+                let tmp = path.with_extension("jsonl.purge");
+                fs::write(&tmp, text).with_context(|| format!("unable to write {}", tmp.display()))?;
+                fs::rename(&tmp, &path).with_context(|| format!("unable to replace {}", path.display()))?;
+            }
+        }
+        for id in ids {
+            // Identifiants « ref_xxxx » seulement : jamais de chemin.
+            if id.is_empty() || !id.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-') {
+                continue;
+            }
+            let snapshot = root.join(REFINEMENTS_DIR_NAME).join(id);
+            if snapshot.is_dir() {
+                let _ = fs::remove_dir_all(&snapshot);
+            }
+        }
+    }
+    Ok(())
+}
+
+fn read_history(store: &HarnessStore) -> Result<Vec<RefinementRecord>> {
     let mut by_id: HashMap<String, RefinementRecord> = HashMap::new();
     for scope in Scope::ALL {
         let path = store.paths().root(scope).join(REFINEMENTS_FILE_NAME);
@@ -1224,6 +1289,56 @@ mod tests {
 
     fn store(dir: &TempDir) -> HarnessStore {
         HarnessStore::new(HarnessPaths::with_home(dir.0.join("ws"), Some(dir.0.join("home"))))
+    }
+
+    // affinages ratés supprimés après 3 jours (journal et instantané), les réussis restent.
+    #[test]
+    fn failed_refinements_are_purged_after_three_days() {
+        let dir = TempDir::new();
+        let store = store(&dir);
+        let day = 24 * 60 * 60 * 1000;
+        let now = now_ms();
+        let mk = |id: &str, age: i64, outcome: RefineOutcome| {
+            let mut r = bare_record(id, Scope::Project, "test", None, None);
+            r.ts = now - age;
+            r.outcome = outcome;
+            r
+        };
+        append_record(&store, &mk("ref_vieuxrate", 4 * day, RefineOutcome::Running)).unwrap();
+        append_record(&store, &mk("ref_vieuxrate", 4 * day, RefineOutcome::Failed)).unwrap();
+        append_record(&store, &mk("ref_recentrat", day, RefineOutcome::Failed)).unwrap();
+        append_record(&store, &mk("ref_vieuxbon1", 10 * day, RefineOutcome::Applied)).unwrap();
+        append_record(&store, &mk("ref_vieuxnoop", 10 * day, RefineOutcome::Noop)).unwrap();
+        // « en cours » abandonné depuis 5 jours = raté (interrompu) : purgé aussi.
+        append_record(&store, &mk("ref_abandonne", 5 * day, RefineOutcome::Running)).unwrap();
+        let snap = store.paths().root(Scope::Project).join(REFINEMENTS_DIR_NAME).join("ref_vieuxrate");
+        fs::create_dir_all(&snap).unwrap();
+        fs::write(snap.join("manifest.json"), "{}").unwrap();
+
+        let ids: Vec<String> = history(&store).unwrap().into_iter().map(|r| r.id).collect();
+        assert!(!ids.contains(&"ref_vieuxrate".to_string()), "{ids:?}");
+        assert!(!ids.contains(&"ref_abandonne".to_string()), "{ids:?}");
+        assert!(ids.contains(&"ref_recentrat".to_string()));
+        assert!(ids.contains(&"ref_vieuxbon1".to_string()));
+        assert!(ids.contains(&"ref_vieuxnoop".to_string()));
+        assert!(!snap.exists(), "instantané du raté supprimé");
+        let journal = fs::read_to_string(store.paths().root(Scope::Project).join(REFINEMENTS_FILE_NAME)).unwrap();
+        assert!(!journal.contains("ref_vieuxrate") && !journal.contains("ref_abandonne"));
+        assert!(journal.contains("ref_vieuxbon1"));
+    }
+
+    #[test]
+    fn purge_waits_while_a_refinement_runs() {
+        let dir = TempDir::new();
+        let store = store(&dir);
+        let day = 24 * 60 * 60 * 1000;
+        let mut vieux = bare_record("ref_vieuxrate", Scope::Project, "test", None, None);
+        vieux.ts = now_ms() - 4 * day;
+        vieux.outcome = RefineOutcome::Failed;
+        append_record(&store, &vieux).unwrap();
+        append_record(&store, &bare_record("ref_encours01", Scope::Project, "test", None, None)).unwrap();
+        let ids: Vec<String> = history(&store).unwrap().into_iter().map(|r| r.id).collect();
+        assert!(ids.contains(&"ref_vieuxrate".to_string()), "pas de réécriture du journal pendant un affinage");
     }
 
     // migration

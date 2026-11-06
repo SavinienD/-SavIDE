@@ -132,6 +132,24 @@
       "regle": "chevauchement",
       "selecteur": ".chat-links__panel",
       "raison": "Liste des liens de la conversation, ouverte au clic sur le bouton de l'en-tête du chat : elle flotte au-dessus du fil (comme tout menu déroulant) sans changer sa mise en page ; la dernière ligne peut être coupée par le défilement de la liste."
+    },
+    {
+      "regle": "*",
+      "selecteur": ".axe-backup",
+      "situation": "^(800x600|1024x768)@[^/]*/harnais-",
+      "raison": "Défaut préexistant : la carte « Sauvegarde périodique » sous le harnais ne tient pas dans le volet de réglages de 160 px (fenêtre 800-1024 px) ; pas couverte par le banc jusqu'ici, à reprendre à part."
+    },
+    {
+      "regle": "hors-conteneur",
+      "selecteur": ".axe-harness > header",
+      "situation": "^(800x600|1024x768)@[^/]*/harnais-",
+      "raison": "Défaut préexistant : volet de réglages de 160 px, le harnais (qui défile lui-même) et la sauvegarde périodique défilent l'un dans l'autre ; le haut du harnais est jugé inaccessible. À reprendre à part."
+    },
+    {
+      "regle": "chevauchement",
+      "selecteur": ".chat-body__bas",
+      "situation": "/agents-(compteurs|archives)$",
+      "raison": "Scènes de l'onglet Agents : le tour simulé en cours laisse le fil au-dessus du bas, le bouton flottant « Aller en bas » couvre une carte REPL (défaut connu, voir chat-aller-en-bas à 1920 px) ; sans rapport avec la liste des agents."
     }
   ]
 }

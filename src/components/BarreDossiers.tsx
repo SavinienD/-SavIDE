@@ -1,5 +1,5 @@
 // barre-dossiers — boutons 1 2 3… des dossiers numérotés (Ctrl+1…9), dans la barre du haut,
-// juste avant l'indicateur de quota. Même ordre que Ctrl+1…9 et les cartes de l'accueil
+// à droite des boutons (juste avant Terminal / Volets ; après Réglages sans dossier). Même ordre que Ctrl+1…9 et les cartes de l'accueil
 // (lib/recents.ts : figé tant qu'on ne revient pas à l'accueil). Clic = bascule vers ce
 // dossier ; le dossier ouvert est marqué ; son nom s'affiche au survol.
 import { useSyncExternalStore } from "react";

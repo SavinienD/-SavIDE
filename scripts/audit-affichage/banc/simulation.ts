@@ -158,6 +158,10 @@ export function installerSimulation(scene: Scene): void {
       const fileDe = (p: any) => filesSim.get(p?.sessionId) ?? [];
       switch (a.method) {
         case "queue.state":
+        case "harness.list": // harnais de l'espace cloud (lu en plus de celui du poste)
+          return [];
+        case "harness.refinements":
+          return [];
           return { items: fileDe(a.params), paused: false };
         case "queue.list":
           return fileDe(a.params);
@@ -202,7 +206,7 @@ export function installerSimulation(scene: Scene): void {
           return null;
       }
     },
-    freechat_index: () => ({ scratchRoot: "C:\\Users\\utilisateur\\AppData\\Local\\savide\\data\\libre", conversations: D.conversations(6).map((c) => ({ ...c, workspaceId: "C:\\Users\\utilisateur\\AppData\\Local\\savide\\data\\libre", messageCount: 12 })) }),
+    freechat_index: () => ({ scratchRoot: "C:\\Users\\utilisateur\\AppData\\Local\\savide\\data\\libre", conversations: D.conversations(Number(scene.libres ?? 6)).map((c) => ({ ...c, workspaceId: "C:\\Users\\utilisateur\\AppData\\Local\\savide\\data\\libre", messageCount: 12 })) }),
     // Conversation sans dossier (layout « chat ») : même amorce qu'un espace, racine = dossier « libre ».
     freechat_open: () => ({
       workspace: { path: D.WS, name: "libre" },
@@ -219,7 +223,12 @@ export function installerSimulation(scene: Scene): void {
       const events = evenementsTour(scene);
       return { active: true, workspaceId: D.WS, conversationId: id, startedAtMs: Date.now() - 95_000, latestSequence: events.length, events };
     },
-    connections_list: () => ({ active: "local", connections: [{ id: "local", name: "Ce PC", kind: "local" }] }),
+    connections_list: () => ({ active: "local", connections: [{ id: "local", name: "Ce PC", kind: "local" },
+      // Réglages > Joindre un appareil : une carte par appareil joint (jeton enregistré).
+      ...(scene.appareils ? [
+        { id: "serveur", name: "Serveur du bureau", kind: "remote", url: "https://serveur.exemple.fr/espace/marc", hasToken: true, hasPassword: false },
+        { id: "maison", name: "Machine de la maison", kind: "ssh", username: "marc", ssh: { user: "marc", host: "192.168.1.20", port: 22, remotePort: 9119 }, hasToken: false, hasPassword: true },
+      ] : [])] }),
     connections_state: () => ({ local: "connected" }),
     connections_set_active: () => null,
     open_workspace: (a) => (((window.__bancOuverts ??= []).push(String(a.workspacePath ?? ""))), {
@@ -301,7 +310,24 @@ export function installerSimulation(scene: Scene): void {
         : [],
     }),
     shared_skills_fingerprints: () => ({}),
-    harness_list: () => [],
+    // scènes « harnais-* » : quelques entrées de chaque type (scene.harnais).
+    harness_list: (a: any) => {
+      const e = (id: string, kind: string, scope: string, title: string, body: string) =>
+        ({ id, kind, scope, title, body, created: D.T0, updated: D.T0, source: "agent", evidence: [], tags: [], path: `/banc/.axecode/harness/${id}.md` });
+      const tout = scene.harnais ? [
+        e("note_0be71c83", "prompt_note", "global", "Factures : jamais supprimées", "Ne jamais supprimer une pièce comptable : toujours l'archiver, pour pouvoir la retrouver."),
+        e("note_30b1e287", "prompt_note", "global", "Rapports : concision", "Les rapports doivent être courts pour être lus : une page, des tuiles et des chiffres."),
+        e("mem_7615c6cc", "memory", "global", "Factures : périmètre", "Toujours raisonner sur toutes les pièces du dossier. Filtre par défaut : non payées."),
+        e("mem_9aa28189", "memory", "project", "Messagerie : pont local", "Pont de messagerie dans ~/pont, API locale, jeton dans store."),
+        e("qcm", "skill", "global", "qcm", "Questions à l'utilisateur : fichier .md à cocher, jamais une liste dans le chat ; factures non concernées."),
+        e("sub_tri", "subagent_spec", "project", "tri-pieces", "Trie les factures ouvertes par client et par urgence, sans rien modifier."),
+      ] : [];
+      const kind = a?.input?.kind;
+      return kind ? tout.filter((x) => x.kind === kind) : tout;
+    },
+    harness_brain_detect: () => ({ found: false, brainDir: "", items: [], plans: [], agentsMdObsolete: false }),
+    harness_backup_get: () => ({ enabled: false, dir: "", intervalMinutes: 60, keep: 10, workspaces: [], lastBackupMs: null }),
+    harness_cloud_sync: () => ({ connection: "axe-cloud", fetchedAt: D.T0, entries: [] }),
     harness_paths: () => ({ globalRoot: "C:\\Users\\utilisateur\\.axecode", projectRoot: D.WS + "\\.axecode" }),
     harness_refinements: () => [],
     // Serveurs MCP de la scène (« mcp » : noms) ; enregistrer / supprimer modifient la liste.
@@ -342,6 +368,7 @@ export function installerSimulation(scene: Scene): void {
         name, description: "Skill du banc", source: "workspace", rootLabel: "Espace",
         absolutePath: `/banc/.axecode/skills/${name}/SKILL.md`, content: "", enabled: true,
       })),
+    archive_local: () => [], // « Supprimer » d'une conversation sans dossier depuis l'accueil (compté).
     list_archived_local: () => D.conversations(3).map((c) => ({ ...c, id: "arch-" + c.id, archived: true })),
     watch_workspace_command: () => true,
     unwatch_workspace_command: () => true,

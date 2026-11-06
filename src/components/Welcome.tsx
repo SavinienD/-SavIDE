@@ -39,7 +39,6 @@ type Props = {
   deriveName: (path: string) => string;
 };
 
-const MAX_VISIBLE_RECENTS = 5;
 const IS_WINDOWS = isWindowsPlatform();
 
 /// Workspaces and conversations with an in-flight agent turn (reported
@@ -66,6 +65,11 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, deriveName }
   }, [cloud?.connected, cloud?.connectionId]);
   const [recents, setRecents] = useState<RecentWorkspace[]>([]);
   const [chats, setChats] = useState<FreechatRow[]>([]);
+  // dossier des conversations sans dossier (pour « Supprimer » = archiver, comme dans l'appli),
+  // conversation dont la croix attend la confirmation, message d'échec.
+  const [scratchRoot, setScratchRoot] = useState<string | null>(null);
+  const [aConfirmer, setAConfirmer] = useState<string | null>(null);
+  const [avisChats, setAvisChats] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
   const [active, setActive] = useState(() => activeSets([]));
   // Sessions « running » du service local (sous-agents et tours relancés par le service
@@ -82,6 +86,7 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, deriveName }
       .index()
       .then((index) => {
         if (cancelled) return;
+        setScratchRoot(index.scratchRoot);
         setChats(
           index.conversations.filter(
             (row) => row.messageCount > 0 && samePath(row.workspaceId, index.scratchRoot),
@@ -165,6 +170,22 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, deriveName }
     }
   };
 
+  // « Supprimer » une conversation sans dossier depuis l'accueil : même action que dans
+  // l'appli (archiver dans le dossier des conversations libres) ; refusé pendant une réponse.
+  const supprimerChat = async (id: string, enCours: boolean) => {
+    if (enCours) {
+      setAvisChats("Suppression impossible : la conversation travaille encore. Arrêtez-la puis réessayez.");
+      return;
+    }
+    if (!scratchRoot) return;
+    try {
+      await api.archiveConversation(scratchRoot, id);
+      setChats((liste) => liste.filter((c) => c.id !== id));
+    } catch (err) {
+      setAvisChats(`Suppression impossible : ${String(err)}`);
+    }
+  };
+
   return (
     <div className="welcome">
       {IS_WINDOWS && (
@@ -242,15 +263,19 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, deriveName }
         <div className="axe-home__lists">
           <section className="welcome__section">
             <h2 className="welcome__section-heading">Conversations récentes</h2>
+            {avisChats && <div className="welcome__error" role="status">{avisChats}</div>}
             {chats.length > 0 ? (
-              <div className="welcome__recents">
-                {chats.slice(0, MAX_VISIBLE_RECENTS).map((chat) => {
+              <div className="welcome__recents" data-liste="conversations">
+                {chats.map((chat) => {
                   const isActive = active.conversations.has(chat.id);
+                  const titre = conversationTitle(chat.title);
+                  const confirmer = aConfirmer === chat.id;
                   return (
+                    <div key={chat.id} className="welcome__recent-item" data-confirm={confirmer ? "true" : undefined}>
                     <button
-                      key={chat.id}
                       className="welcome__recent"
                       data-active={isActive ? "true" : "false"}
+                      title={titre}
                       onClick={() => onFreeChat({ conversationId: chat.id })}
                     >
                       <span className="welcome__recent-icon">
@@ -261,10 +286,30 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, deriveName }
                         )}
                       </span>
                       <span className="welcome__recent-body">
-                        <span className="welcome__recent-name">{conversationTitle(chat.title)}</span>
+                        <span className="welcome__recent-name">{titre}</span>
                         <span className="axe-home__meta">{relativeTime(chat.updatedAtMs)}</span>
                       </span>
                     </button>
+                    {/* croix « Supprimer » : 1er clic = « Supprimer ? », 2e clic = même action que
+                        « Supprimer » dans l'appli (la conversation est archivée, restaurable depuis l'archive). */}
+                    <button
+                      type="button"
+                      className="welcome__recent-retirer"
+                      data-confirm={confirmer ? "true" : "false"}
+                      title={confirmer ? "Cliquer encore pour supprimer (la conversation va dans l'archive)" : "Supprimer cette conversation"}
+                      aria-label={confirmer ? `Confirmer la suppression de ${titre}` : `Supprimer ${titre}`}
+                      onBlur={() => setAConfirmer((c) => (c === chat.id ? null : c))}
+                      onKeyDown={(e) => { if (e.key === "Escape") setAConfirmer(null); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!confirmer) { setAConfirmer(chat.id); setAvisChats(null); return; }
+                        setAConfirmer(null);
+                        void supprimerChat(chat.id, isActive);
+                      }}
+                    >
+                      {confirmer ? <span>Supprimer ?</span> : <Icon icon="solar:close-circle-linear" width={16} height={16} />}
+                    </button>
+                    </div>
                   );
                 })}
               </div>
