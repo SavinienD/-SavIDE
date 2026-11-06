@@ -109,6 +109,29 @@ export function sortieParDefaut(fenetre: number): number {
   return Math.min(SORTIE_MAX, Math.max(1, Math.floor(fenetre / 2)));
 }
 
+/** « Découvrir » avec un début d'identifiant tapé : seuls les modèles dont
+ *  l'identifiant commence pareil (sans tenir compte de la casse) ; rien de tapé = tous. */
+export function filtrerDecouverte<T extends { id: string }>(trouves: readonly T[], debut: string): T[] {
+  const d = debut.trim().toLowerCase();
+  if (!d) return [...trouves];
+  return trouves.filter((m) => m.id.trim().toLowerCase().startsWith(d));
+}
+
+/** des modifications non enregistrées (fournisseurs ou contextes imposés) ? */
+export function modificationsEnCours(
+  brouillons: readonly unknown[],
+  enregistres: readonly unknown[],
+  surcharges: unknown,
+  surchargesEnregistrees: unknown,
+): boolean {
+  return JSON.stringify(brouillons) !== JSON.stringify(enregistres) || JSON.stringify(surcharges ?? {}) !== JSON.stringify(surchargesEnregistrees ?? {});
+}
+
+/** modèles restants après « Retirer la sélection » (rangs cochés). */
+export function retirerRangs<T>(modeles: readonly T[], rangs: ReadonlySet<number>): T[] {
+  return modeles.filter((_, i) => !rangs.has(i));
+}
+
 /** « Découvrir » : les identifiants réels rendus par le serveur, dans son ordre ; un modèle
  *  déjà déclaré garde ses réglages ; ceux que le serveur ne liste pas restent en fin de liste. */
 export function fusionnerDecouverte<T extends { id: string }>(existants: readonly T[], trouves: readonly T[]): T[] {

@@ -86,6 +86,11 @@ export function installerSimulation(scene: Scene): void {
   const active = scene.active ?? D.idConv(0);
   const tourActif = scene.tour === "en_cours" || scene.tour === "erreur";
   const filesSim = new Map<string, any[]>(); // file-demon
+  let comptesSim: any[] = [
+    { providerId: "anthropic", base: "anthropic", email: "claude@example.com", plan: "Max", connected: true },
+    { providerId: "anthropic~2", base: "anthropic", email: "deuxieme@example.com", plan: "Pro", connected: true },
+    { providerId: "openai", base: "openai", email: "chatgpt@example.com", plan: "plus", connected: true },
+  ];
   const cloud = scene.cloud !== false;
   if (scene.accelerer) accelerer(900, 16_001, 25);
   let mcp: any[] = ((scene.mcp as string[] | undefined) ?? []).map((nom) => ({ id: `cat_${nom}`, name: nom, command: "npx", args: ["-y", `@exemple/${nom}`], env: [], headers: [], enabled: true }));
@@ -108,7 +113,15 @@ export function installerSimulation(scene: Scene): void {
           typeFournisseur("lm_studio", "LM Studio", "lmstudio", "http://localhost:1234/v1", true),
         ],
       }
-    : { providers: [], modelOverrides: {}, kinds: [] };
+    : scene.modelesNombreux
+      ? {
+          // Ollama avec beaucoup de modèles (choix du modèle plus haut que l'écran).
+          providers: [{ id: "ollama", name: "Ollama", kind: "ollama", baseUrl: "http://localhost:11434", enabled: true, hasApiKey: false, installed: true,
+            models: ["qwen3:4b", "qwen3:8b", "qwen3-coder:30b", "gemma2:2b", "llama3.1:8b",
+              ...Array.from({ length: Math.max(0, Number(scene.modelesNombreux) - 5) }, (_, i) => `mistral-small:${i + 1}b`)].map((id) => modeleLocal(id)) }],
+          modelOverrides: {}, kinds: [typeFournisseur("ollama", "Ollama", "ollama", "http://localhost:11434", true)],
+        }
+      : { providers: [], modelOverrides: {}, kinds: [] };
   const h: Record<string, (a: any, brut: any) => unknown> = {
     // Scène « maj-badge » : une version disponible (badge discret, installation sur clic seulement).
     updater_check: () =>
@@ -235,8 +248,22 @@ export function installerSimulation(scene: Scene): void {
     _charger_conversation: (a) => D.conversationSauvee(a.conversationId ?? D.idConv(0), { compaction: !!scene.compaction && (a.conversationId ?? "") === active, long: (a.conversationId ?? "") === active || !!scene.liensHistorique, liens: !!scene.liensHistorique }),
     estimate_context: () => D.contexte(scene.compaction ? 30_000 : 92_000),
     estimate_sub_agent_context: () => D.contexte(40_000),
-    list_configured_model_providers: () => (fournisseur ? ["anthropic", "openai"] : []),
+    list_configured_model_providers: () => (fournisseur ? ["anthropic", ...(scene.comptesMultiples && comptesSim.some((c) => c.providerId === "anthropic~2") ? ["anthropic~2"] : []), "openai", ...(scene.modelesNombreux ? ["ollama"] : [])] : []),
+    // comptes connectés (plusieurs abonnements) ; déconnecter en retire un.
+    list_provider_accounts: () => (scene.comptesMultiples ? comptesSim : []),
+    disconnect_provider_account: (a: any) => {
+      comptesSim = comptesSim.filter((c) => c.providerId !== a.providerId);
+      return comptesSim;
+    },
     list_openrouter_models: () => [],
+    // catalogue complété par l'API du fournisseur (scène « catalogue »).
+    catalogue_modeles: () => ({
+      fetchedAtMs: Date.now(),
+      fournisseurs: scene.catalogue
+        ? { anthropic: [{ id: "claude-opus-6", label: "Claude Opus 6" }, { id: "claude-opus-6-20261101", label: "Claude Opus 6" }, { id: "claude-opus-5-5", label: "Claude Opus 5.5" }] }
+        : {},
+      erreurs: {},
+    }),
     provider_settings_get: () => fournisseurs,
     provider_settings_save: (a) => {
       const s = a.settings ?? {};

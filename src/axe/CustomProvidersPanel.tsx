@@ -18,8 +18,11 @@ import {
   deplacerSurcharge,
   erreurNouvelIdentifiant,
   erreursIdentifiants,
+  filtrerDecouverte,
   fusionnerDecouverte,
   identifiantsNettoyes,
+  modificationsEnCours,
+  retirerRangs,
   modelesInvalides,
   renommerModele,
   fenetreParDefaut,
@@ -70,6 +73,13 @@ export function CustomProvidersPanel() {
   // fournisseurs-178 — « Saisir » : identifiant tapé dans la carte `cle`.
   const [saisie, setSaisie] = useState<{ cle: string; id: string; erreur: string | null } | null>(null);
   const invalides = modelesInvalides(drafts);
+  // début d'identifiant pour « Découvrir » (par carte), modèles cochés.
+  const [filtres, setFiltres] = useState<Record<string, string>>({});
+  const [coches, setCoches] = useState<{ cle: string; rangs: Set<number> } | null>(null);
+  const modifie = useMemo(
+    () => (view ? modificationsEnCours(drafts, view.providers.map(toDraft), overrides, view.modelOverrides) : false),
+    [drafts, overrides, view],
+  );
 
   const apply = useCallback((next: ProviderSettingsView) => {
     setView(next);
@@ -163,6 +173,45 @@ export function CustomProvidersPanel() {
     }
   };
 
+  // « Annuler les modifications » (ou Échap) : retour à l'état enregistré, sans rien enregistrer.
+  const annuler = useCallback(() => {
+    if (!view) return;
+    apply(view);
+    setSaisie(null);
+    setCoches(null);
+    setError(null);
+    setStatus("Modifications annulées");
+  }, [apply, view]);
+
+  useEffect(() => {
+    if (!modifie) return;
+    const touche = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      // Échap dans « Saisir » ferme seulement la saisie.
+      if ((e.target as HTMLElement | null)?.closest?.(".axe-providers__saisie")) return;
+      e.preventDefault();
+      annuler();
+    };
+    document.addEventListener("keydown", touche);
+    return () => document.removeEventListener("keydown", touche);
+  }, [modifie, annuler]);
+
+  const cocher = (cle: string, rang: number, oui: boolean) =>
+    setCoches((prev) => {
+      const rangs = new Set(prev?.cle === cle ? prev.rangs : []);
+      if (oui) rangs.add(rang);
+      else rangs.delete(rang);
+      return rangs.size ? { cle, rangs } : null;
+    });
+
+  const retirerSelection = (d: Draft) => {
+    const cle = d.id || d.name;
+    if (coches?.cle !== cle) return;
+    update(cle, { models: retirerRangs(d.models, coches.rangs) });
+    setStatus(`${coches.rangs.size} modèle(s) retiré(s) — « Enregistrer » pour garder, « Annuler les modifications » pour revenir`);
+    setCoches(null);
+  };
+
   const remove = (d: Draft) => {
     const next = drafts.filter((x) => x !== d);
     setDrafts(next);
@@ -191,10 +240,19 @@ export function CustomProvidersPanel() {
     setBusy(true);
     setError(null);
     try {
-      const found = await providerApi.discover(d.kind, d.baseUrl, d.apiKey, d.id || undefined);
+      const cle = d.id || d.name;
+      const tous = await providerApi.discover(d.kind, d.baseUrl, d.apiKey, d.id || undefined);
+      // début d'identifiant tapé (filtre, sinon « Saisir ») : seulement ceux-là.
+      const debut = (filtres[cle] ?? "").trim() || (saisie?.cle === cle ? saisie.id.trim() : "");
+      const found = filtrerDecouverte(tous, debut);
       // Identifiants réels du serveur ; les modèles déjà déclarés gardent leurs réglages.
-      update(d.id || d.name, { models: fusionnerDecouverte(d.models, found) });
-      setStatus(`${found.length} modèle(s) découvert(s)`);
+      update(cle, { models: fusionnerDecouverte(d.models, found) });
+      setCoches(null);
+      setStatus(
+        debut
+          ? `${found.length} modèle(s) découvert(s) commençant par « ${debut} » (sur ${tous.length})`
+          : `${found.length} modèle(s) découvert(s)`,
+      );
     } catch (err) {
       setError(`Découverte impossible : ${String(err)}`);
     } finally {
@@ -399,6 +457,23 @@ export function CustomProvidersPanel() {
                     <Icon icon="solar:refresh-linear" width={13} height={13} />
                     <span>Découvrir (GET /models)</span>
                   </button>
+                  <input
+                    className="axe-providers__filtre"
+                    data-champ="filtre-decouverte"
+                    value={filtres[key] ?? ""}
+                    spellCheck={false}
+                    autoComplete="off"
+                    placeholder="Début de l'identifiant (facultatif)"
+                    title="« Découvrir » n'ajoute que les modèles dont l'identifiant commence ainsi"
+                    aria-label="Début de l'identifiant des modèles à découvrir"
+                    onChange={(e) => setFiltres((prev) => ({ ...prev, [key]: e.target.value }))}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void discover(d);
+                      }
+                    }}
+                  />
                   <button
                     type="button"
                     className="settings-pane__btn"
@@ -409,6 +484,18 @@ export function CustomProvidersPanel() {
                     <Icon icon="solar:add-circle-linear" width={13} height={13} />
                     <span>Saisir</span>
                   </button>
+                  {coches?.cle === key && (
+                    <button
+                      type="button"
+                      className="settings-pane__btn"
+                      data-action="retirer-selection"
+                      title="Retirer les modèles cochés"
+                      onClick={() => retirerSelection(d)}
+                    >
+                      <Icon icon="solar:trash-bin-minimalistic-linear" width={13} height={13} />
+                      <span>Retirer la sélection ({coches.rangs.size})</span>
+                    </button>
+                  )}
                 </div>
                 {saisie?.cle === key && (
                   <form
@@ -454,6 +541,16 @@ export function CustomProvidersPanel() {
                   <table className="axe-providers__models">
                     <thead>
                       <tr>
+                        <th className="axe-providers__col-choix">
+                          <label className="axe-providers__case" title="Tout cocher">
+                            <input
+                              type="checkbox"
+                              data-champ="choisir-tout"
+                              checked={coches?.cle === key && coches.rangs.size === d.models.length}
+                              onChange={(e) => setCoches(e.target.checked ? { cle: key, rangs: new Set(d.models.map((_, i) => i)) } : null)}
+                            />
+                          </label>
+                        </th>
                         <th title="Nom exact envoyé au fournisseur (ex. qwen3:8b pour Ollama)">Identifiant</th>
                         <th title="Libellé de la liste des modèles (vide = identifiant)">Nom affiché</th>
                         <th
@@ -477,6 +574,16 @@ export function CustomProvidersPanel() {
                       {d.models.map((m, i) => (
                         // Clé = rang : la clé ne doit pas changer pendant la frappe de l'identifiant.
                         <tr key={i} data-erreur={erreurs[i] ? "true" : undefined}>
+                          <td data-label="" className="axe-providers__col-choix">
+                            <label className="axe-providers__case" title="Cocher pour retirer plusieurs modèles">
+                              <input
+                                type="checkbox"
+                                data-champ="choisir"
+                                checked={coches?.cle === key && coches.rangs.has(i)}
+                                onChange={(e) => cocher(key, i, e.target.checked)}
+                              />
+                            </label>
+                          </td>
                           <td data-label="Identifiant">
                             <input
                               className="axe-providers__model-id"
@@ -538,7 +645,10 @@ export function CustomProvidersPanel() {
                             </label>
                           </td>
                           <td data-label="">
-                            <button type="button" className="axe-providers__icon-btn" title="Retirer" onClick={() => update(key, { models: d.models.filter((_, j) => j !== i) })}>
+                            <button type="button" className="axe-providers__icon-btn" title="Retirer" onClick={() => {
+                              update(key, { models: d.models.filter((_, j) => j !== i) });
+                              setCoches(null);
+                            }}>
                               <Icon icon="solar:trash-bin-minimalistic-linear" width={13} height={13} />
                             </button>
                           </td>
@@ -564,6 +674,18 @@ export function CustomProvidersPanel() {
                       <span>Oublier la clé</span>
                     </button>
                   )}
+                  <button
+                    type="button"
+                    className="settings-pane__btn"
+                    data-action="annuler-modifications"
+                    disabled={busy || !modifie}
+                    title="Annuler les modifications : revenir à l'état enregistré, sans enregistrer (Échap)"
+                    aria-label="Annuler les modifications"
+                    onClick={annuler}
+                  >
+                    <Icon icon="solar:undo-left-round-linear" width={13} height={13} />
+                    <span>Annuler</span>
+                  </button>
                   <button
                     type="button"
                     className="settings-pane__btn settings-pane__btn--primary"

@@ -708,6 +708,29 @@ mod model_switch_tests {
     use super::*;
     use axecode_core::ModelRef;
 
+    /// same model, other Claude account (`anthropic~2`): the signed
+    /// reasoning of the first account is not sent to the second one (its signature
+    /// would be refused), the answers stay; back on the first account it is kept.
+    #[test]
+    fn switching_account_drops_reasoning_signed_by_the_other_account() {
+        let first = origin_of(&ModelRef::new("anthropic", "claude-opus-5-5"));
+        let second = origin_of(&ModelRef::new("anthropic~2", "claude-opus-5-5"));
+        assert_ne!(first, second);
+        let mut answer = ChatMessage {
+            role: Role::Assistant,
+            parts: vec![
+                Part::Thinking { text: "why".into(), meta: Some(json!({"provider": "anthropic", "signature": "s"})) },
+                Part::Text { text: "answer".into(), meta: None },
+            ],
+        };
+        tag_signed_parts(&mut answer, &first);
+        let history = vec![ChatMessage::user_text("q1"), answer, ChatMessage::user_text("q2")];
+        let other = without_foreign_signed_parts(history.clone(), &second);
+        assert_eq!(other[1].parts.len(), 1);
+        assert!(matches!(&other[1].parts[0], Part::Text { text, .. } if text == "answer"));
+        assert_eq!(without_foreign_signed_parts(history, &first)[1].parts.len(), 2);
+    }
+
     #[test]
     fn switching_model_drops_reasoning_of_the_previous_one() {
         let opus = origin_of(&ModelRef::new("anthropic", "claude-opus-5-5"));

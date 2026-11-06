@@ -806,8 +806,11 @@ async function auditer(page, si, sc, journal, preparation) {
     const defile = (sel) => { const e = visibles(sel)[0]; return !!e && e.scrollHeight > e.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(e).overflowY); };
     const compte = (spec) => { const i = spec.lastIndexOf("="); return visibles(spec.slice(0, i)).length === Number(spec.slice(i + 1)); };
     const stocke = (spec) => { const i = spec.lastIndexOf("="); try { return JSON.parse(localStorage.getItem(spec.slice(0, i)) ?? "[]").length === Number(spec.slice(i + 1)); } catch { return false; } };
+    // « dedans:<sél> » : le premier élément visible tient entier dans la fenêtre.
+    const dedans = (sel) => { const r = visibles(sel)[0]?.getBoundingClientRect(); return !!r && r.top >= 0 && r.left >= 0 && r.bottom <= window.innerHeight + 0.5 && r.right <= window.innerWidth + 0.5; };
     const special = (t) =>
       t.startsWith("defile:") ? defile(t.slice(7))
+      : t.startsWith("dedans:") ? dedans(t.slice(7))
       : t.startsWith("compte:") ? compte(t.slice(7))
       : t.startsWith("stocke:") ? stocke(t.slice(7))
       : t.startsWith("champ:") ? champ(t.slice(6))

@@ -307,6 +307,7 @@ pub(super) async fn run_openai_oauth_server(
     expected_state: String,
     pkce: PkceCodes,
     cancel: Arc<Notify>,
+    cible: PathBuf, // fichier du compte (principal ou ajouté)
 ) -> Result<()> {
     let http = reqwest::Client::builder()
         .user_agent("axecode/0.1")
@@ -326,6 +327,7 @@ pub(super) async fn run_openai_oauth_server(
                     &redirect_uri,
                     &expected_state,
                     &pkce,
+                    &cible,
                 ).await? {
                     return result;
                 }
@@ -340,6 +342,7 @@ pub(super) async fn handle_openai_oauth_request(
     redirect_uri: &str,
     expected_state: &str,
     pkce: &PkceCodes,
+    cible: &Path,
 ) -> Result<Option<Result<()>>> {
     let mut buffer = [0u8; 8192];
     let read = stream
@@ -393,7 +396,7 @@ pub(super) async fn handle_openai_oauth_request(
                 return Ok(Some(Err(anyhow::anyhow!("Code d'autorisation manquant"))));
             };
 
-            match exchange_oauth_code(http, code, redirect_uri, pkce).await {
+            match axecode_openai::exchange_oauth_code_into(http, cible, code, redirect_uri, pkce).await {
                 Ok(_) => {
                     write_html_response(stream, 200, openai_login_success_html()).await?;
                     Ok(Some(Ok(())))
@@ -429,6 +432,7 @@ pub(super) async fn run_anthropic_oauth_server(
     expected_state: String,
     pkce: AnthropicPkceCodes,
     cancel: Arc<Notify>,
+    cible: PathBuf, // fichier du compte (principal ou ajouté)
 ) -> Result<()> {
     let http = reqwest::Client::builder()
         .user_agent("axecode/0.1")
@@ -448,6 +452,7 @@ pub(super) async fn run_anthropic_oauth_server(
                     &redirect_uri,
                     &expected_state,
                     &pkce,
+                    &cible,
                 ).await? {
                     return result;
                 }
@@ -462,6 +467,7 @@ pub(super) async fn handle_anthropic_oauth_request(
     redirect_uri: &str,
     expected_state: &str,
     pkce: &AnthropicPkceCodes,
+    cible: &Path,
 ) -> Result<Option<Result<()>>> {
     let mut buffer = [0u8; 8192];
     let read = stream
@@ -515,7 +521,7 @@ pub(super) async fn handle_anthropic_oauth_request(
                 return Ok(Some(Err(anyhow::anyhow!("Code d'autorisation manquant"))));
             };
 
-            match exchange_anthropic_oauth_code(http, code, expected_state, redirect_uri, pkce)
+            match axecode_anthropic::exchange_oauth_code_into(http, None, cible, code, expected_state, redirect_uri, pkce)
                 .await
             {
                 Ok(_) => {
@@ -842,7 +848,9 @@ pub(super) async fn get_openai_provider_status(
 #[tauri::command]
 pub(super) async fn start_openai_oauth_login(
     state: State<'_, DesktopState>,
+    nouveau_compte: Option<bool>, // « Ajouter un compte »
 ) -> std::result::Result<StartOpenAiLoginOutput, String> {
+    let (cible, rang) = cible_connexion("openai", nouveau_compte.unwrap_or(false))?;
     if let Some(existing) = state.openai_login.lock().await.take() {
         existing.cancel.notify_one();
     }
@@ -871,9 +879,9 @@ pub(super) async fn start_openai_oauth_login(
     let providers = state.providers.clone();
     tauri::async_runtime::spawn(async move {
         let result =
-            run_openai_oauth_server(listener, redirect_uri, oauth_state, pkce, cancel).await;
+            run_openai_oauth_server(listener, redirect_uri, oauth_state, pkce, cancel, cible).await;
         let login_outcome = match result {
-            Ok(()) => match install_openai_provider(&providers) {
+            Ok(()) => match installer_apres_connexion("openai", rang.as_deref(), &providers, install_openai_provider) {
                 Ok(()) => OpenAiLoginOutcome {
                     success: true,
                     error: None,
@@ -999,7 +1007,9 @@ pub(super) async fn get_anthropic_provider_status(
 #[tauri::command]
 pub(super) async fn start_anthropic_oauth_login(
     state: State<'_, DesktopState>,
+    nouveau_compte: Option<bool>, // « Ajouter un compte »
 ) -> std::result::Result<StartAnthropicLoginOutput, String> {
+    let (cible, rang) = cible_connexion("anthropic", nouveau_compte.unwrap_or(false))?;
     if let Some(existing) = state.anthropic_login.lock().await.take() {
         existing.cancel.notify_one();
     }
@@ -1028,9 +1038,9 @@ pub(super) async fn start_anthropic_oauth_login(
     let providers = state.providers.clone();
     tauri::async_runtime::spawn(async move {
         let result =
-            run_anthropic_oauth_server(listener, redirect_uri, oauth_state, pkce, cancel).await;
+            run_anthropic_oauth_server(listener, redirect_uri, oauth_state, pkce, cancel, cible).await;
         let login_outcome = match result {
-            Ok(()) => match install_anthropic_provider(&providers) {
+            Ok(()) => match installer_apres_connexion("anthropic", rang.as_deref(), &providers, install_anthropic_provider) {
                 Ok(()) => AnthropicLoginOutcome {
                     success: true,
                     error: None,
@@ -1585,6 +1595,40 @@ pub(super) fn refresh_openrouter_provider_if_present(
     if present {
         install_openrouter_provider(&state.providers, models)?;
     }
+    Ok(())
+}
+
+/// fichier où la connexion écrit les jetons : celui du compte principal, ou
+/// celui d'un nouveau compte (premier rang libre) pour « Ajouter un compte ».
+pub(super) fn cible_connexion(base: &str, nouveau_compte: bool) -> std::result::Result<(PathBuf, Option<String>), String> {
+    let dossier = crate::comptes::dossier().ok_or_else(|| "dossier de données local introuvable".to_string())?;
+    if nouveau_compte {
+        let rang = crate::comptes::rang_libre_dans(&dossier, base);
+        Ok((crate::comptes::fichier_dans(&dossier, base, &rang), Some(rang)))
+    } else {
+        Ok((crate::comptes::fichier_dans(&dossier, base, ""), None))
+    }
+}
+
+/// après une connexion réussie : compte principal installé comme avant ;
+/// compte ajouté rangé (même e-mail qu'un compte existant = ce compte, renouvelé) puis installé.
+pub(super) fn installer_apres_connexion(
+    base: &str,
+    rang: Option<&str>,
+    providers: &Arc<StdMutex<HashMap<String, Arc<dyn Provider>>>>,
+    principal: fn(&Arc<StdMutex<HashMap<String, Arc<dyn Provider>>>>) -> std::result::Result<(), String>,
+) -> std::result::Result<(), String> {
+    let Some(rang) = rang else { return principal(providers) };
+    let dossier = crate::comptes::dossier().ok_or_else(|| "dossier de données local introuvable".to_string())?;
+    let id = crate::comptes::ranger_nouveau_compte(&dossier, base, rang);
+    if id == base {
+        return principal(providers);
+    }
+    let provider = crate::comptes::construire(&id).ok_or_else(|| format!("compte {id} illisible après la connexion"))?;
+    providers
+        .lock()
+        .map_err(|_| "registre des fournisseurs indisponible".to_string())?
+        .insert(id, provider);
     Ok(())
 }
 

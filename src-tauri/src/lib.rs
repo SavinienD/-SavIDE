@@ -27,7 +27,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use axecode_anthropic::{
     delete_default_auth as delete_default_anthropic_auth,
-    exchange_oauth_code as exchange_anthropic_oauth_code, generate_pkce as generate_anthropic_pkce,
+    generate_pkce as generate_anthropic_pkce,
     generate_state as generate_anthropic_state,
     load_default_auth_status as load_default_anthropic_auth_status,
     oauth_authorize_url as anthropic_oauth_authorize_url, AnthropicAuthStatus, AnthropicProvider,
@@ -78,7 +78,7 @@ use axecode_kimi::{
     MODEL_ID as KIMI_MODEL_ID,
 };
 use axecode_openai::{
-    delete_default_auth, exchange_oauth_code, generate_pkce, generate_state,
+    delete_default_auth, generate_pkce, generate_state,
     load_default_auth_status, oauth_authorize_url, OpenAiAuthStatus, OpenAiProvider, PkceCodes,
     MODEL_ID as OPENAI_MODEL_ID,
 };
@@ -117,6 +117,8 @@ mod conversations;
 mod voix; // voix
 mod voix_local; // micro-local
 mod custom_providers; // providers
+mod catalogue;
+mod comptes;
 mod daemon_client; // daemon
 mod freechat; // freechat
 mod gemini_web; // gemini-web
@@ -222,6 +224,9 @@ pub fn run() {
             Arc::new(provider) as Arc<dyn Provider>,
         );
     }
+
+    // comptes Claude / ChatGPT ajoutés (anthropic~2, openai~2…).
+    comptes::installer_comptes_ajoutes(&mut providers);
 
     let default_model = if providers.contains_key("anthropic") {
         ModelRef::new("anthropic", ANTHROPIC_MODEL_ID).with_effort(Effort::Max)
@@ -368,6 +373,9 @@ pub fn run() {
             voix::voix_transcrire, // voix
             voix::voix_annuler,
             voix::voix_etat,
+            catalogue::catalogue_modeles,
+            comptes::list_provider_accounts,
+            comptes::disconnect_provider_account,
             voix::voix_ouvrir_reglages_micro,
             voix::voix_modele_local, // micro-local
             import_dossier::push_folder_cloud,

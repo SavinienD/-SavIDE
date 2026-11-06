@@ -542,8 +542,23 @@ pub async fn exchange_oauth_code(
     redirect_uri: &str,
     pkce: &PkceCodes,
 ) -> Result<AnthropicAuthStatus> {
+    exchange_oauth_code_into(http, None, &default_auth_path()?, code, state, redirect_uri, pkce)
+        .await
+}
+
+/// [`exchange_oauth_code`] against `token_url` (None = Anthropic's; a test server
+/// otherwise), the tokens saved at `path` (0600): an added account keeps its own file.
+pub async fn exchange_oauth_code_into(
+    http: &reqwest::Client,
+    token_url: Option<&str>,
+    path: &Path,
+    code: &str,
+    state: &str,
+    redirect_uri: &str,
+    pkce: &PkceCodes,
+) -> Result<AnthropicAuthStatus> {
     let response = http
-        .post(ANTHROPIC_OAUTH_TOKEN_URL)
+        .post(token_url.unwrap_or(ANTHROPIC_OAUTH_TOKEN_URL))
         .header("content-type", "application/json")
         .header("accept", "application/json")
         .json(&serde_json::json!({
@@ -573,12 +588,12 @@ pub async fn exchange_oauth_code(
     // E-mail of the token response, then the profile (plan, e-mail);
     // a failed profile call does not fail the login.
     let mut account = account_from_token(&body);
-    match fetch_account(http, ANTHROPIC_OAUTH_PROFILE_URL, &body.access_token).await {
+    match fetch_account(http, &profile_url_for(token_url), &body.access_token).await {
         Ok(profile) => account = account.merged(profile),
         Err(err) => tracing::warn!(error = %err, "anthropic profile unavailable after login"),
     }
     save_oauth_tokens(
-        &default_auth_path()?,
+        path,
         &body.access_token,
         &body.refresh_token,
         body.expires_in,

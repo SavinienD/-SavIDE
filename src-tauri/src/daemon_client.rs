@@ -39,6 +39,8 @@ fn daemon_registry() -> Registry {
     {
         providers.insert(OPENROUTER_PROVIDER_ID.into(), Arc::new(provider));
     }
+    // comptes Claude / ChatGPT ajoutés (anthropic~2, openai~2…).
+    crate::comptes::installer_comptes_ajoutes(&mut providers);
     let registry = Arc::new(StdMutex::new(providers));
     if let Err(err) = custom_providers::install_custom_providers(&registry) {
         tracing::warn!(error = %err, "unable to install configurable providers");
