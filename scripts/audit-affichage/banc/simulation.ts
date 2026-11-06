@@ -7,6 +7,8 @@ import * as D from "./donnees";
 import { simulationCollegue } from "./collegue";
 
 export type Scene = {
+  /** ordre-dossiers — open_workspace ouvre le dossier demandé (et non l'espace du banc). */
+  ouvrirChemin?: boolean;
   /** Un fournisseur de modeles est connecte (sinon « Connect a provider »). */
   fournisseur?: boolean;
   /** Tour en cours sur la conversation active. */
@@ -221,7 +223,10 @@ export function installerSimulation(scene: Scene): void {
     connections_state: () => ({ local: "connected" }),
     connections_set_active: () => null,
     open_workspace: (a) => (((window.__bancOuverts ??= []).push(String(a.workspacePath ?? ""))), {
-      workspace: { path: D.WS, name: D.NOM_WS },
+      // ordre-dossiers — « ouvrirChemin » : le dossier ouvert est celui demandé (sinon toujours l'espace du banc).
+      workspace: scene.ouvrirChemin && a.workspacePath
+        ? { path: String(a.workspacePath), name: String(a.workspacePath).split(/[\\/]/).pop() ?? D.NOM_WS }
+        : { path: D.WS, name: D.NOM_WS },
       conversations: listeConversations(),
       activeConversation: D.conversationSauvee(active, { compaction: !!scene.compaction, liens: !!scene.liensHistorique }),
       modeModelSettings: D.MODES,

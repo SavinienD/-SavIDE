@@ -11,7 +11,7 @@ import { formaterTexte } from "../../lib/plateforme";
  * voix — bouton micro du compositeur, « comme le message vocal de ChatGPT » :
  * clic -> enregistrement (onde, minuteur, ✕ annuler, ✓ terminer) -> transcription
  * Whisper sur la VM -> texte inséré dans la zone de saisie, modifiable, JAMAIS envoyé.
- * Le ✓ garde aria-label « Dicter » : le raccourci Ctrl+Maj+D (Workspace.tsx) démarre
+ * Le ✓ garde aria-label « Dicter » : le raccourci de dictée (Ctrl+D, Workspace.tsx) démarre
  * puis termine la dictée.
  */
 type Props = {

@@ -817,11 +817,17 @@ async function auditer(page, si, sc, journal, preparation) {
       // « ouvert:<chemin> » : dernier dossier passé à open_workspace ;
       // « ouvertures:<n> » : nombre d'appels à open_workspace.
       : t.startsWith("ouvert:") ? (window.__bancOuverts ?? []).at(-1) === t.slice(7)
+      // « uneligne:<sél> » : dans chaque élément visible, les enfants (pastilles) tiennent sur une seule ligne
+      // (sauf dans une colonne de moins de 200 px, où ils passent à la ligne entiers).
+      : t.startsWith("uneligne:") ? visibles(t.slice(9)).filter((e) => (e.closest(".axe-raccourcis")?.clientWidth ?? 999) - 48 >= 200).every((e) => { const k = [...e.children]; return k.every((c) => Math.abs(c.getBoundingClientRect().top - k[0].getBoundingClientRect().top) < 2); })
+      : t.startsWith("sansappel:") ? !((window.__bancAppels?.[t.slice(10)] ?? 0) > 0)
       : t.startsWith("ouvertures:") ? (window.__bancOuverts ?? []).length === Number(t.slice(11))
       : t.startsWith("premier:") ? lignes()[0]?.dataset.entryPath === t.slice(8)
       : t.startsWith("choisi:") ? lignes().filter((l) => l.dataset.selected === "true").map((l) => l.dataset.entryPath).join("|") === t.slice(7)
       : null;
-    const ok = (t) => special(t) ?? (t.startsWith("valeur:") ? [...document.querySelectorAll(".composer textarea")].some((x) => x.value === t.slice(7)) : null) ?? (t.startsWith("couleur:") ? couleur(t.slice(8)) : t.startsWith("sel:") ? vu(t.slice(4)) : t.startsWith("clic:") ? cliquable(t.slice(5)) : t.startsWith("absent:") ? !vu(t.slice(7)) : t.startsWith("appel:") ? t.slice(6).split("|").some((c) => (window.__bancAppels?.[c] ?? 0) > 0) : t.startsWith("gras:") ? gras(t.slice(5)) : t.startsWith("surligne:") ? surligne(t.slice(9)) : texte.includes(t));
+    // « si>N:<témoin> » / « si<N:<témoin> » : témoin vérifié seulement si la fenêtre (px CSS) est plus large / plus étroite que N.
+    const conditionnel = (t) => { const m = /^si([<>])(\d+):(.*)$/.exec(t); if (!m) return null; const l = window.innerWidth; return (m[1] === ">" ? l > Number(m[2]) : l < Number(m[2])) ? ok(m[3]) : true; };
+    const ok = (t) => conditionnel(t) ?? special(t) ?? (t.startsWith("valeur:") ? [...document.querySelectorAll(".composer textarea")].some((x) => x.value === t.slice(7)) : null) ?? (t.startsWith("couleur:") ? couleur(t.slice(8)) : t.startsWith("sel:") ? vu(t.slice(4)) : t.startsWith("clic:") ? cliquable(t.slice(5)) : t.startsWith("absent:") ? !vu(t.slice(7)) : t.startsWith("appel:") ? t.slice(6).split("|").some((c) => (window.__bancAppels?.[c] ?? 0) > 0) : t.startsWith("gras:") ? gras(t.slice(5)) : t.startsWith("surligne:") ? surligne(t.slice(9)) : texte.includes(t));
     const manquants = temoins.filter((t) => !ok(t));
     const disparus = attendus.filter((t) => !window.__texteVisible(t));
     const fil = document.querySelector(".colonne-chat[data-focus='true'] .chat-body")?.getBoundingClientRect();

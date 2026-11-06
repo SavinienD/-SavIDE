@@ -23,6 +23,12 @@ const RECENTS_ACTIVITE = () => [
   { path: "C:\\Users\\utilisateur\\Documents\\mon-projet", name: "mon-projet", lastOpenedMs: 1_793_880_000_000 },
   { path: "C:\\Users\\utilisateur\\Documents\\compta", name: "compta", lastOpenedMs: 1_793_870_000_000 },
 ];
+// ordre-dossiers — trois dossiers récents : l'espace du banc (1), cabinet-martin (2), atelier-durand (3).
+const RECENTS_TROIS = () => [
+  { path: WS, name: "savide", lastOpenedMs: 1_790_000_000_000 },
+  { path: "C:\\Users\\utilisateur\\Documents\\Clients\\cabinet-martin", name: "cabinet-martin", lastOpenedMs: 1_789_990_000_000 },
+  { path: "C:\\Users\\utilisateur\\Documents\\Clients\\atelier-durand", name: "atelier-durand", lastOpenedMs: 1_789_980_000_000 },
+];
 const TITRES = {
   "c-001": "Corriger tous les défauts d'affichage de la barre de titre, du compositeur et des colonnes à 800 px avec la mise à l'échelle Windows à 150 %",
   "c-002": "Facture OVH d'octobre : rapprochement des lignes et export comptable",
@@ -364,7 +370,26 @@ export const SCENES = [
   { id: "reglages", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, temoins: ["sel:.settings-pane"] },
   // Raccourcis : Ctrl/Alt sous Windows, ⌘/⌥/⇧ sous macOS (navigator.platform simulé).
   { id: "raccourcis-windows", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, clics: [".settings-pane__nav-item[data-section='shortcuts']"],
-    temoins: ["sel:.axe-raccourcis[data-mac='false'] kbd"] },
+    temoins: ["sel:.axe-raccourcis[data-mac='false'] kbd", "uneligne:.axe-raccourcis__touches",
+      "sel:.axe-raccourcis__ligne[data-raccourci='archiver'][data-combinaison='Ctrl+Maj+A'] button.axe-raccourcis__combo"] },
+  // Raccourcis modifiables — clic sur la combinaison, on tape la nouvelle : enregistrée (« Par défaut » apparaît) ;
+  // déjà prise : refusée avec un message ; enregistrée : lue partout.
+  { id: "raccourcis-modifier", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='shortcuts']", ".axe-raccourcis__ligne[data-raccourci='nouvelleConversation'] .axe-raccourcis__combo"],
+    touches: ["Control+k"],
+    temoins: ["sel:.axe-raccourcis__ligne[data-raccourci='nouvelleConversation'][data-combinaison='Ctrl+K'][data-modifie='true']",
+      "clic:.axe-raccourcis__ligne[data-raccourci='nouvelleConversation'] .axe-raccourcis__defaut", "clic:.axe-raccourcis__tout-defaut", "uneligne:.axe-raccourcis__touches"] },
+  { id: "raccourcis-conflit", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='shortcuts']", ".axe-raccourcis__ligne[data-raccourci='nouvelleConversation'] .axe-raccourcis__combo"],
+    touches: ["Control+j"],
+    temoins: ["sel:.axe-raccourcis__ligne[data-raccourci='nouvelleConversation'] .axe-raccourcis__alerte",
+      "sel:.axe-raccourcis__ligne[data-raccourci='nouvelleConversation'][data-combinaison='Ctrl+T']"] },
+  { id: "raccourcis-ecoute", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='shortcuts']", ".axe-raccourcis__ligne[data-raccourci='archiver'] .axe-raccourcis__combo"],
+    temoins: ["sel:.axe-raccourcis__combo[data-ecoute='true'] .axe-raccourcis__ecoute", "sel:.axe-raccourcis__aide"] },
+  { id: "raccourcis-perso-utilise", sim: {}, stockage: () => ({ ...colonnes([ids(3)]),
+      "axecode.raccourcis": { nouvelleConversation: { touche: { ctrl: true, touches: ["k"] }, combinaison: "Ctrl + K" } } }),
+    touches: ["Control+k"], temoins: ["sel:.conv-create__input"] },
   // Ctrl+1…9 (⌘1…9 sur Mac) : n-ième dossier récent dans l'ordre affiché sur l'accueil,
   // depuis l'accueil ou depuis un dossier ouvert (même le curseur dans le champ du chat, sans y taper de chiffre),
   // numéro 1…9 sur les cartes et dans leur info-bulle ; ligne du pense-bête.
@@ -383,7 +408,40 @@ export const SCENES = [
   { id: "ide-cmd-chiffre-mac", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), saisir: "bonjour", touches: ["Meta+2"],
     temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\cabinet-martin", "ouvertures:2"] },
   { id: "raccourcis-dossiers", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, clics: [".settings-pane__nav-item[data-section='shortcuts']"],
-    temoins: ["sel:.axe-raccourcis tr[data-raccourci='dossierRecent'] kbd", "sel:.axe-raccourcis tr[data-raccourci='focusExplorateur'] kbd"] },
+    temoins: ["sel:.axe-raccourcis li[data-raccourci='dossierRecent'] [data-fixe] kbd", "sel:.axe-raccourcis li[data-raccourci='focusExplorateur'] kbd"] },
+  // raccourcis-simples (06/11) — Ctrl+T nouvelle conversation, Ctrl+Tab / Ctrl+Maj+Tab onglet du chat
+  // suivant / précédent (⌃Tab sur Mac), Échap arrête la réponse (pas quand un menu est ouvert).
+  { id: "ide-ctrl-t", sim: {}, stockage: () => colonnes([ids(3)]), touches: ["Control+t"], temoins: ["sel:.conv-create__input"] },
+  { id: "ide-ctrl-tab", sim: {}, stockage: () => colonnes([ids(3)]), touches: ["Control+Tab"],
+    temoins: ["sel:.onglets-chat__tab[data-active='true'][data-onglet='c-002']"] },
+  { id: "ide-ctrl-maj-tab", sim: {}, stockage: () => colonnes([ids(3)]), touches: ["Control+Shift+Tab"],
+    temoins: ["sel:.onglets-chat__tab[data-active='true'][data-onglet='c-003']"] },
+  { id: "ide-ctrl-tab-mac", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), touches: ["Control+Tab"],
+    temoins: ["sel:.onglets-chat__tab[data-active='true'][data-onglet='c-002']"] },
+  { id: "ide-echap-stop", sim: { tour: "en_cours" }, stockage: () => colonnes([ids(3)]), touchesCompositeur: ["Escape"], temoins: ["appel:cancel_turn"] },
+  { id: "ide-echap-menu", sim: { tour: "en_cours" }, stockage: () => colonnes([ids(3)]), touchesCompositeur: ["/", "Escape"],
+    temoins: ["sansappel:cancel_turn", "sel:.composer__send[data-variant='stop']"] },
+  // ordre-dossiers (06/11) — dossier 1, 2, 3 = Ctrl+1, 2, 3 ; l'ordre ne bouge pas tant qu'on ne revient
+  // pas à l'accueil (depuis le dossier 2, Ctrl+1 ramène au 1) ; au retour à l'accueil, le plus récent d'abord.
+  { id: "ide-ordre-stable", sim: { ouvrirChemin: true }, stockage: () => ({ ...colonnes([ids(3)]), "axecode.recentWorkspaces": RECENTS_TROIS() }), touches: ["Control+3", "Control+1"],
+    temoins: [`ouvert:${WS}`, "ouvertures:3"] },
+  { id: "ide-ordre-2-puis-1", sim: { ouvrirChemin: true }, stockage: () => ({ ...colonnes([ids(3)]), "axecode.recentWorkspaces": RECENTS_TROIS() }), touches: ["Control+2", "Control+1"],
+    temoins: [`ouvert:${WS}`, "ouvertures:3"] },
+  { id: "accueil-ordre-maj", sim: { ouvrirChemin: true }, stockage: () => ({ ...colonnes([ids(3)]), "axecode.recentWorkspaces": RECENTS_TROIS() }), touches: ["Control+3", "Control+Shift+h"],
+    temoins: ["sel:.welcome__recent[data-numero='1'][title^='Ouvrir atelier-durand']", "sel:.welcome__recent[data-numero='2'][title^='Ouvrir savide']"] },
+  // barre-dossiers (06/11) — boutons 1 2 3… juste avant l'indicateur de quota ; clic = bascule, l'ordre
+  // ne bouge pas, le dossier ouvert est marqué ; nom au survol ; 9 au plus (moins si la barre est étroite).
+  { id: "ide-barre-dossiers", sim: { ouvrirChemin: true }, stockage: () => ({ ...colonnes([ids(3)]), "axecode.recentWorkspaces": RECENTS_TROIS() }),
+    temoins: ["si>1100:compte:.barre-dossiers__btn=3", "si>860:sel:.barre-dossiers__btn[data-numero='1'][aria-current='true']",
+      "si>920:sel:.barre-dossiers__btn[data-numero='2'][title='cabinet-martin · Ctrl+2']", "si>860:avant:.barre-dossiers|.axe-quota",
+      "si>920:clic:.barre-dossiers__btn[data-numero='3']", "si<861:absent:.barre-dossiers"] },
+  { id: "ide-barre-dossiers-clic", sim: { ouvrirChemin: true }, stockage: () => ({ ...colonnes([ids(3)]), "axecode.recentWorkspaces": RECENTS_TROIS() }),
+    clics: [".barre-dossiers__btn[data-numero='3']"],
+    temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\atelier-durand", "si>860:sel:.barre-dossiers__btn[data-numero='3'][aria-current='true']",
+      "si>1100:sel:.barre-dossiers__btn[data-numero='1'][title^='savide']"] },
+  { id: "ide-barre-dossiers-9", sim: {}, stockage: () => ({ ...colonnes([ids(3)]), "axecode.recentWorkspaces": [{ path: WS, name: "savide", lastOpenedMs: 1_800_000_000_000 }, ...recents25()] }),
+    temoins: ["si>1100:compte:.barre-dossiers__btn=9", "si>860:sel:.barre-dossiers__btn[data-numero='1'][aria-current='true']", "absent:.barre-dossiers__btn[data-numero='10']", "si>860:avant:.barre-dossiers|.axe-quota"] },
+  { id: "libre-barre-dossiers", sim: {}, libre: true, temoins: ["si>920:sel:.axe-freechat .barre-dossiers__btn[data-numero='1']", "absent:.axe-freechat .barre-dossiers__btn[aria-current]"] },
   // macOS : ⌘F (hors éditeur) ouvre la recherche dans les fichiers.
   { id: "mac-cmd-f", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), touches: ["Meta+f"], temoins: ["sel:.sidebar__head-btn[data-active='true']"] },
   // Glisser-déposer : Finder/Explorateur vers le champ du chat, écran Retina (×2) ; dépôt sans chemin = message.
@@ -391,7 +449,8 @@ export const SCENES = [
   { id: "depot-chat-windows", sim: {}, stockage: () => colonnes([ids(3)]), depot: { cible: ".composer", chemins: ["C:\\Users\\a\\rapport.pdf"] }, temoins: ["sel:.composer .chips .chip"] },
   { id: "depot-vide-mac", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), depot: { echelle: 2, cible: ".composer", chemins: [] }, temoins: ["sel:.sidebar__import-error"] },
   { id: "raccourcis-mac", mac: true, sim: {}, stockage: () => colonnes([ids(3)]), reglages: true, clics: [".settings-pane__nav-item[data-section='shortcuts']"],
-    temoins: ["sel:.axe-raccourcis[data-mac='true'] kbd", "sel:.titlebar__btn[data-action='reglages'][title*='⌘']"] },
+    temoins: ["sel:.axe-raccourcis[data-mac='true'] kbd", "sel:.titlebar__btn[data-action='reglages'][title*='⌘']", "uneligne:.axe-raccourcis__touches",
+      "sel:.axe-raccourcis__ligne[data-raccourci='conversationSuivante'][data-combinaison='⌃Tab']"] },
   // fournisseurs-178 — Réglages > Fournisseurs configurables, Ollama local avec qwen3:4b (capture d'un utilisateur) :
   // l'IDENTIFIANT (nom exact envoyé à Ollama) est une colonne visible et modifiable ; « qwen3:8b » tapé dans la ligne
   // de qwen3:4b est bien l'identifiant enregistré (avant : seul le libellé changeait, qwen3:4b restait appelé).

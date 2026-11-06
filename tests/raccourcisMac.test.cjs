@@ -64,7 +64,7 @@ test("aucun « Ctrl » écrit en dur dans les infobulles et le pense-bête", () 
     assert.doesNotMatch(s, /title=\{?"[^"]*Ctrl/, f);
   }
   const sec = lire("../src/axe/RaccourcisSection.tsx");
-  assert.match(sec, /formaterRaccourci\(r\.combinaison\)/);
+  assert.match(sec, /partiesCombinaison\(r, mac\)/); // formaterRaccourci via combinaisonAffichee
   assert.doesNotMatch(sec, /Sur macOS, Ctrl = Cmd/);
 });
 
@@ -87,9 +87,9 @@ const R = charger("../src/axe/raccourcis.ts");
 const ev = (o) => ({ key: "", code: "", ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, ...o });
 const r = (id) => R.RACCOURCIS.find((x) => x.id === id);
 
-test("macOS : ⌘F, ⇧⌘N, ⌘J, ⌘, lus avec Cmd ; Ctrl seul ne déclenche rien", () => {
+test("macOS : ⌘F, ⌘T, ⌘J, ⌘, lus avec Cmd ; Ctrl seul ne déclenche rien", () => {
   assert.equal(R.correspond(r("rechercherMac"), ev({ key: "f", code: "KeyF", metaKey: true }), true), true);
-  assert.equal(R.correspond(r("nouvelleConversation"), ev({ key: "N", code: "KeyN", metaKey: true, shiftKey: true }), true), true);
+  assert.equal(R.correspond(r("nouvelleConversation"), ev({ key: "t", code: "KeyT", metaKey: true }), true), true);
   assert.equal(R.correspond(r("terminal"), ev({ key: "j", code: "KeyJ", metaKey: true }), true), true);
   assert.equal(R.correspond(r("settings"), ev({ key: ",", code: "Comma", metaKey: true }), true), true);
   assert.equal(R.correspond(r("terminal"), ev({ key: "j", code: "KeyJ", ctrlKey: true }), true), false);

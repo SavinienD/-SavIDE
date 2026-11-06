@@ -10,9 +10,9 @@ import {
 } from "./reglages";
 import { dicteeDisponible, MESSAGE_DICTEE_INDISPONIBLE_LOCAL } from "./disponibilite"; // 0.1.71
 import { lireEtatVoix } from "./useDicteeDisponible";
+import { combinaisonCourte } from "../raccourcis";
 import "./voix.css";
 import { listen } from "@tauri-apps/api/event";
-import { formaterRaccourci } from "../../lib/plateforme";
 
 const MODELES_LOCAUX = [
   { nom: "base" as const, libelle: "Petit (base)", taille: "148 Mo", aide: "Rapide, bon pour des phrases courtes." },
@@ -114,7 +114,7 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
       <header>
         <h2>Dictée vocale</h2>
         <p className="axe-appearance__hint">
-          Micro du compositeur ({formaterRaccourci("Ctrl+Maj+D")}) : enregistrement, puis transcription par Whisper sur ce poste (français, vocabulaire technique), nettoyée ensuite par le modèle de la conversation. Le texte est inséré dans la
+          Micro du compositeur ({combinaisonCourte("dictee")}) : enregistrement, puis transcription par Whisper sur ce poste (français, vocabulaire technique), nettoyée ensuite par le modèle de la conversation. Le texte est inséré dans la
           zone de saisie, modifiable, et n'est jamais envoyé automatiquement. Échap annule.
         </p>
       </header>
