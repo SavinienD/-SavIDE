@@ -604,6 +604,19 @@ async function preparerScene(page, si, sc) {
     await pause(600);
   }
   // « touches » : raccourcis clavier envoyés à l'élément qui a le focus (ex. Control+z).
+  // mcp-guide — « saisies » : [sélecteur, texte] tapés au clavier dans des champs, puis
+  // « apresSaisies » : clics successifs (ex. remplir un formulaire puis « Tester »).
+  for (const [sel, texte] of sc.saisies ?? []) {
+    await page.waitForSelector(sel, { visible: true, timeout: 5000 }).catch(() => undefined);
+    await page.focus(sel).catch(() => undefined);
+    await page.keyboard.type(texte);
+    await pause(150);
+  }
+  for (const sel of sc.apresSaisies ?? []) {
+    await page.waitForSelector(sel, { visible: true, timeout: 5000 }).catch(() => undefined);
+    await page.evaluate((s) => document.querySelector(s)?.click(), sel);
+    await pause(400);
+  }
   await taperTouches(page, sc.touches);
   // fournisseurs-178 — « taper » : texte tapé au clavier dans un champ (son contenu remplacé,
   // ou complété avec « ajouter »), puis Entrée si « entree ».

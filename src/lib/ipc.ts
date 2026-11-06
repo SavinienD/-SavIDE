@@ -25,6 +25,7 @@ import type {
   KimiProviderStatus,
   MessageVisibility,
   McpOAuthStatus,
+  McpServerConfig,
   McpServerProbe,
   McpSettings,
   ModeModelSettings,
@@ -1344,6 +1345,10 @@ export const api = {
   },
   probeMcpTools() {
     return invoke<McpServerProbe[]>("probe_mcp_tools");
+  },
+  // mcp-guide — sonde un seul serveur : configuration du formulaire, ou serveur enregistré.
+  testMcpServer(input: { server?: McpServerConfig; serverId?: string; serverName?: string }) {
+    return invoke<McpServerProbe>("test_mcp_server", { input });
   },
   getMcpOAuthStatus(serverId: string) {
     return invoke<McpOAuthStatus>("get_mcp_oauth_status", {
