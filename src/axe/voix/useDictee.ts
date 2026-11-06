@@ -10,6 +10,7 @@ import {
 } from "./enregistreur";
 import { lireReglagesVoix } from "./reglages";
 import { blobEnPcm16k, MIME_PCM, pcmEnBase64 } from "./pcm"; // micro-local
+import { chargerVocabulaire, vocabulaireEffectif } from "./vocabulaireAuto"; // voix-vocabulaire
 import {
   apercuTropLent,
   assemblerProvisoire,
@@ -155,7 +156,7 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
           modeleLocal: modeleDe(tailleSession.current),
           durationMs: Math.round(audioMs),
           workspacePath: espace ?? null,
-          vocabulaire: reglages.vocabulaire || null,
+          vocabulaire: vocabulaireEffectif(reglages.vocabulaire, chargerVocabulaire()) || null,
           nettoyer: false,
           taille: tailleSession.current,
           morceau: true,
@@ -364,7 +365,7 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
           modeleLocal: modeleDe(taille),
           durationMs: Math.round(duree),
           workspacePath: espace ?? null,
-          vocabulaire: reglages.vocabulaire || null,
+          vocabulaire: vocabulaireEffectif(reglages.vocabulaire, chargerVocabulaire()) || null,
           nettoyer: reglages.nettoyer,
           provider: chat?.provider ?? null,
           model: chat?.name ?? null,
