@@ -7,7 +7,7 @@ use std::{
     hash::{Hash, Hasher},
     path::{Path, PathBuf},
     process::Stdio,
-    sync::OnceLock,
+    sync::{Arc, Mutex as StdMutex, OnceLock},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -38,6 +38,9 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(45);
 const CALL_TIMEOUT: Duration = Duration::from_secs(120);
 const TOOL_OUTPUT_LIMIT: usize = 128 * 1024;
 const TOOL_NAME_LIMIT: usize = 64;
+/// mcp-guide — fin de la sortie d'erreur d'un serveur stdio gardée pour le journal.
+const STDERR_KEEP: usize = 8 * 1024;
+const STDERR_TAIL_LINES: usize = 30;
 const LOAD_MCP_TOOL_NAME: &str = tool_names::LOAD_MCP_TOOL;
 const MCP_HTTP_ACCEPT: &str = "application/json, text/event-stream";
 const MCP_SESSION_ID_HEADER: &str = "mcp-session-id";
@@ -585,7 +588,7 @@ pub async fn probe_mcp_servers(settings: &McpSettings) -> Vec<McpServerProbe> {
                     transport,
                     auth_required,
                     authenticated,
-                    error: Some(err.to_string()),
+                    error: Some(format!("{err:#}")),
                 });
                 continue;
             }
@@ -639,13 +642,25 @@ pub async fn probe_mcp_servers(settings: &McpSettings) -> Vec<McpServerProbe> {
                     transport,
                     auth_required,
                     authenticated: mcp_server_has_auth(server),
-                    error: Some(err.to_string()),
+                    error: Some(format!("{err:#}")),
                 })
             }
         }
     }
 
     probes
+}
+
+/// mcp-guide — sonde un seul serveur (bouton « Tester »), même désactivé ou pas encore enregistré.
+pub async fn probe_mcp_server(server: &McpServerConfig) -> McpServerProbe {
+    let mut server = server.clone();
+    server.enabled = true;
+    let settings = McpSettings { servers: vec![server] };
+    probe_mcp_servers(&settings)
+        .await
+        .into_iter()
+        .next()
+        .expect("une sonde par serveur")
 }
 
 fn enabled_servers(settings: &McpSettings) -> impl Iterator<Item = &McpServerConfig> {
@@ -2179,10 +2194,27 @@ impl McpStdioClient {
             .take()
             .ok_or_else(|| anyhow!("MCP server stdout unavailable"))?;
 
+        // mcp-guide — la sortie d'erreur du programme est gardée (fin seulement) : elle
+        // explique presque toujours un échec au démarrage (clé manquante, option inconnue…).
+        let journal: Arc<StdMutex<Vec<u8>>> = Arc::new(StdMutex::new(Vec::new()));
         if let Some(mut stderr) = child.stderr.take() {
+            let journal = journal.clone();
             tokio::spawn(async move {
-                let mut sink = Vec::new();
-                let _ = stderr.read_to_end(&mut sink).await;
+                let mut buf = [0u8; 4096];
+                loop {
+                    match stderr.read(&mut buf).await {
+                        Ok(0) | Err(_) => break,
+                        Ok(n) => {
+                            if let Ok(mut kept) = journal.lock() {
+                                kept.extend_from_slice(&buf[..n]);
+                                let len = kept.len();
+                                if len > STDERR_KEEP {
+                                    kept.drain(..len - STDERR_KEEP);
+                                }
+                            }
+                        }
+                    }
+                }
             });
         }
 
@@ -2193,7 +2225,16 @@ impl McpStdioClient {
             next_id: 1,
             request_timeout,
         };
-        client.initialize().await?;
+        if let Err(err) = client.initialize().await {
+            // Laisse au programme le temps de finir d'écrire son erreur.
+            let _ = timeout(Duration::from_millis(800), client.child.wait()).await;
+            tokio::time::sleep(Duration::from_millis(50)).await;
+            let tail = stderr_tail(&journal);
+            if tail.is_empty() {
+                return Err(err);
+            }
+            return Err(anyhow!("{err:#}\nJournal du serveur :\n{tail}"));
+        }
         Ok(client)
     }
 
@@ -2319,6 +2360,15 @@ impl McpStdioClient {
         self.stdin.flush().await?;
         Ok(())
     }
+}
+
+/// Dernières lignes non vides de la sortie d'erreur gardée.
+fn stderr_tail(journal: &Arc<StdMutex<Vec<u8>>>) -> String {
+    let bytes = journal.lock().map(|kept| kept.clone()).unwrap_or_default();
+    let text = String::from_utf8_lossy(&bytes);
+    let lines: Vec<&str> = text.lines().map(str::trim_end).filter(|line| !line.trim().is_empty()).collect();
+    let start = lines.len().saturating_sub(STDERR_TAIL_LINES);
+    lines[start..].join("\n")
 }
 
 static DEFAULT_MCP_SEARCH_PATHS: OnceLock<Vec<PathBuf>> = OnceLock::new();
@@ -2669,5 +2719,45 @@ mod suppression_tests {
         // L'identifiant l'emporte sur le nom.
         let (_, removed) = remove_mcp_server(&settings, "a", Some("PostgreSQL")).unwrap();
         assert_eq!(removed.id, "a");
+    }
+}
+
+// mcp-guide — « Tester » un serveur (même désactivé ou pas encore enregistré) et
+// journal d'erreur lisible : sortie d'erreur du programme et cause complète.
+#[cfg(all(test, unix))]
+mod journal_tests {
+    use super::*;
+
+    fn local(command: &str, args: &[&str]) -> McpServerConfig {
+        McpServerConfig {
+            id: "essai".into(),
+            name: "Essai".into(),
+            command: command.into(),
+            url: None,
+            args: args.iter().map(|a| a.to_string()).collect(),
+            env: Vec::new(),
+            headers: Vec::new(),
+            auth: None,
+            cwd: None,
+            enabled: false,
+        }
+    }
+
+    #[tokio::test]
+    async fn arret_au_demarrage_montre_le_journal_du_serveur() {
+        let server = local("sh", &["-c", "echo 'Erreur : GITHUB_TOKEN manquant' >&2; exit 3"]);
+        let probe = probe_mcp_server(&server).await;
+        assert!(probe.enabled, "le test force l'activation");
+        assert!(!probe.ok);
+        let err = probe.error.unwrap_or_default();
+        assert!(err.contains("GITHUB_TOKEN manquant"), "{err}");
+    }
+
+    #[tokio::test]
+    async fn commande_introuvable_garde_la_cause() {
+        let server = local("axecode-commande-inexistante-185d", &[]);
+        let err = probe_mcp_server(&server).await.error.unwrap_or_default();
+        assert!(err.contains("unable to spawn"), "{err}");
+        assert!(err.contains("os error 2") || err.contains("No such file"), "{err}");
     }
 }

@@ -564,6 +564,7 @@ pub fn run() {
             providers::add_openrouter_model,
             providers::remove_openrouter_model,
             conversations::probe_mcp_tools,
+            conversations::test_mcp_server,
             conversations::get_mcp_oauth_status,
             conversations::start_mcp_oauth_login_command,
             conversations::cancel_mcp_oauth_login,

@@ -401,6 +401,18 @@ pub(super) struct McpOAuthInput {
     pub(super) server_id: String,
 }
 
+/// mcp-guide — « Tester » : configuration du formulaire d'ajout, ou identifiant d'un serveur enregistré.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct McpTestInput {
+    #[serde(default)]
+    pub(super) server: Option<axecode_app::McpServerConfig>,
+    #[serde(default)]
+    pub(super) server_id: Option<String>,
+    #[serde(default)]
+    pub(super) server_name: Option<String>,
+}
+
 /// mcp-supprimer — identifiant affiché par l'interface + nom (repli).
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]

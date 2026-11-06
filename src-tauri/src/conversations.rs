@@ -377,6 +377,34 @@ pub(super) async fn probe_mcp_tools(
     Ok(probe_mcp_servers(&settings).await)
 }
 
+/// mcp-guide — sonde un seul serveur MCP (même désactivé) : bouton « Tester ».
+/// Un serveur enregistré est relu ici : ses secrets ne repassent pas par la page.
+#[tauri::command]
+pub(super) async fn test_mcp_server(
+    state: State<'_, DesktopState>,
+    input: McpTestInput,
+) -> std::result::Result<axecode_app::McpServerProbe, String> {
+    let server = match (input.server, input.server_id) {
+        (Some(server), _) => server,
+        (None, Some(id)) => {
+            // Comme la suppression : par identifiant, sinon par nom (l'interface recalcule
+            // parfois l'identifiant depuis le nom).
+            let settings = state.store.load_mcp_settings().map_err(error_to_string)?;
+            let by_id = settings.servers.iter().position(|server| server.id == id);
+            let by_name = input
+                .server_name
+                .as_deref()
+                .and_then(|name| settings.servers.iter().position(|server| server.name == name));
+            by_id
+                .or(by_name)
+                .map(|index| settings.servers[index].clone())
+                .ok_or_else(|| format!("serveur MCP introuvable : {id}"))?
+        }
+        (None, None) => return Err("aucun serveur à tester".into()),
+    };
+    Ok(axecode_app::probe_mcp_server(&server).await)
+}
+
 #[tauri::command]
 pub(super) async fn get_mcp_oauth_status(
     state: State<'_, DesktopState>,
