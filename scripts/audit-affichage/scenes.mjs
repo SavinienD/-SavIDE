@@ -663,6 +663,25 @@ export const SCENES = [
   // À la réouverture de l'espace : la liste doit montrer les conversations de l'espace (« test »).
   { id: "collegue-liste", sim: { fournisseur: false, collegue: true, accelerer: true }, stockage: () => ({}), espaceCloud: true, temoins: ["test"] },
   // defil178 — longue conversation défilée au milieu puis tout en bas : un clic sur un lien
+  // voix-vocabulaire — Réglages > Dictée vocale : mots appris des messages tapés (pastilles), « × » retire « Grafana ».
+  { id: "voix-vocabulaire", sim: {}, stockage: () => ({ ...colonnes([ids(3)]), "axe.voix.vocabulaireAuto": { version: 1, actif: true, retires: [], suivis: { grafana: { forme: "Grafana", n: 3, vu: 3 }, pfsense: { forme: "pfSense", n: 2, vu: 2 }, oxycloud: { forme: "OxyCloud", n: 4, vu: 1 }, ivryseine: { forme: "Ivry-sur-Seine-Technopole", n: 2, vu: 1 }, zabbix: { forme: "Zabbix", n: 1, vu: 5 } } } }), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='voice']"], cliquer: ".axe-voix-appris__mot[data-mot='grafana'] .axe-voix-appris__retirer", defilerAvantClic: true,
+    temoins: ["sel:.axe-voix-appris__mot[data-mot='pfsense']", "sel:.axe-voix-appris__mot[data-mot='oxycloud']", "absent:.axe-voix-appris__mot[data-mot='grafana']", "absent:.axe-voix-appris__mot[data-mot='zabbix']", "sel:.axe-voix-appris__effacer", "sel:.axe-voix-appris__mot[data-mot='pfsense'] .axe-voix-appris__retirer"] },
+  // mcp-guide — Réglages > MCP : « github » s'arrête au démarrage : la liste le signale (« Erreur »),
+  // le détail explique (« s'est arrêté au démarrage ») avec le journal dépliable, et « Tester la connexion » relance la sonde.
+  { id: "mcp-erreur", sim: { mcp: ["github", "postgres"], mcpErreur: "github" }, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__nav-list-item[data-server='github'] .settings-pane__nav-list-item-main", ".settings-pane__detail .settings-pane__mcp-tester", ".settings-pane__mcp-journal > summary"],
+    temoins: ["sel:.settings-pane__nav-list-item[data-server='github'] .settings-pane__nav-list-item-main[data-etat='error']", "sel:.settings-pane__mcp-erreur", "sel:.settings-pane__mcp-journal[open] > pre", "appel:test_mcp_server", "clic:.settings-pane__detail .settings-pane__mcp-tester", "absent:.settings-pane__nav-list-item[data-server='postgres'] .settings-pane__nav-list-item-main[data-etat='error']"] },
+  // … ajout guidé : « Serveur personnalisé » (par défaut), « Serveur distant », adresse, « Tester » -> connexion requise (OAuth).
+  { id: "mcp-ajout-perso", sim: { mcp: ["postgres"] }, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__header .settings-pane__btn[data-primary='true']", ".settings-pane__mcp-mode-btn[data-mode='http']"],
+    saisies: [["input[data-champ='nom']", "Interne"], ["input[data-champ='url']", "https://mcp.exemple.fr/mcp"]],
+    apresSaisies: [".settings-pane__mcp-catalog-actions .settings-pane__mcp-tester"],
+    temoins: ["sel:.settings-pane__mcp-test[data-tone='auth']", "appel:test_mcp_server", "sel:.settings-pane__mcp-catalog-actions .settings-pane__mcp-ajouter", "sel:.settings-pane__mcp-catalog-item[data-entry='perso'][data-active='true']"] },
+  // … modèle distant à connexion par navigateur (Linear) : « Ajouter et se connecter » enregistre puis lance la connexion OAuth.
+  { id: "mcp-oauth", sim: { mcp: ["postgres"] }, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__header .settings-pane__btn[data-primary='true']", ".settings-pane__mcp-catalog-item[data-entry='linear']", ".settings-pane__mcp-catalog-actions .settings-pane__mcp-ajouter"],
+    temoins: ["appel:save_mcp_settings", "appel:start_mcp_oauth_login_command", "sel:.settings-pane__nav-list-item[data-server='Linear']", "sel:.settings-pane__mcp-auth"] },
   // de fichier, une URL nue ou un lien Markdown ne fait plus bouger la conversation (en bas, elle
   // reste en bas) et le lien s'ouvre.
   { id: "defil-liens", sim: { liensHistorique: true }, stockage: () => colonnes([ids(1)]),

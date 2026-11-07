@@ -99,6 +99,18 @@ export function installerSimulation(scene: Scene): void {
   const statut = (connecte: boolean) => ({ connected: connecte, connectionState: connecte ? "connected" : "disconnected", email: connecte ? "utilisateur@exemple.invalid" : null, error: null });
   // fournisseurs-178 — scènes « fournisseurs-* » : Ollama local avec qwen3:4b (capture d'un utilisateur) ;
   // « Enregistrer » garde ce qui est envoyé (window.__bancFournisseurs), « Découvrir » rend les identifiants réels.
+  // mcp-guide — « mcpErreur » : nom du serveur qui s'arrête au démarrage (journal d'erreur) ;
+  // un serveur à adresse (url) demande une connexion (OAuth).
+  const sonderMcp = (s: any, force: boolean) => {
+    const actif = force || s.enabled !== false;
+    const base = { serverId: s.id, serverName: s.name, enabled: actif, transport: s.url ? "http" : "stdio", authenticated: false };
+    if (!actif) return { ...base, ok: true, tools: [], authRequired: false, error: null };
+    if (s.name === scene.mcpErreur) {
+      return { ...base, ok: false, tools: [], authRequired: false, error: "MCP server closed stdout (Some(ExitStatus(unix_wait_status(256))))\nJournal du serveur :\nError: GITHUB_PERSONAL_ACCESS_TOKEN environment variable is required\n    at main (/tmp/npx/server-github/index.js:12:11)" };
+    }
+    if (s.url) return { ...base, ok: false, tools: [], authRequired: true, error: "authentication required" };
+    return { ...base, ok: true, tools: [{ serverId: s.id, serverName: s.name, name: "lire", toolName: "lire", title: "Lire", description: "Lire" }, { serverId: s.id, serverName: s.name, name: "ecrire", toolName: "ecrire", title: "Écrire", description: "Écrire" }], authRequired: false, error: null };
+  };
   const typeFournisseur = (kind: string, label: string, builtinId: string | null, defaultBaseUrl: string, local: boolean) =>
     ({ kind, label, builtinId, defaultBaseUrl, requiresApiKey: !local && !!builtinId, local, defaultModels: [] });
   const modeleLocal = (id: string, contextWindow = 32768) =>
@@ -370,8 +382,13 @@ export function installerSimulation(scene: Scene): void {
       mcp = mcp.filter((s) => s !== cible);
       return { servers: mcp.map((s) => ({ ...s })) };
     },
-    probe_mcp_tools: () =>
-      mcp.map((s) => ({ serverId: s.id, serverName: s.name, enabled: s.enabled, ok: s.enabled, tools: s.enabled ? [{ toolName: "lire", description: "Lire" }] : [], transport: "stdio", authRequired: false, authenticated: false, error: null })),
+    probe_mcp_tools: () => mcp.map((s) => sonderMcp(s, false)),
+    // mcp-guide — « Tester » (formulaire ou serveur enregistré) et connexion OAuth simulée.
+    test_mcp_server: (a) => sonderMcp(a.server ?? mcp.find((s) => s.id === a.serverId) ?? mcp.find((s) => s.name === a.serverName) ?? { id: a.serverId, name: a.serverName ?? a.serverId }, true),
+    start_mcp_oauth_login_command: () => ({ loginId: "connexion-1", authUrl: "https://mcp.exemple.fr/authorize" }),
+    get_mcp_oauth_status: () => ({ connected: false, connectionState: "connecting", loginId: "connexion-1" }),
+    cancel_mcp_oauth_login: () => ({ connected: false, connectionState: "idle" }),
+    disconnect_mcp_oauth: () => ({ connected: false, connectionState: "idle" }),
     agent_term_open: () => "agent-1",
     agent_term_resize: () => null,
     agent_term_write: () => null,

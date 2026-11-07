@@ -137,6 +137,7 @@ import type {
 import { estMac, formaterTexte, modPrincipal } from "../lib/plateforme";
 import { dansRect, messageDepotVide, pointCss } from "../lib/depot";
 import { loadUiZoom } from "../axe/zoom";
+import { apprendreDuMessage } from "../axe/voix/vocabulaireAuto"; // voix-vocabulaire
 
 type Props = {
   bootstrap: WorkspaceBootstrap;
@@ -2035,6 +2036,8 @@ export function Workspace({
     ) => {
       const conversationId = conversation.id;
       const workspaceAtRequest = workspacePath;
+      // voix-vocabulaire — les mots tapés alimentent le vocabulaire de la dictée (local, sans secret).
+      if (messageVisibility !== "systemReminder" && rewriteFromHistoryIndex === undefined) apprendreDuMessage(text);
       const optimisticTitle = titleFromOutgoingUserText(text);
       const shouldUpdateTitleFromUserMessage =
         messageVisibility !== "systemReminder" &&

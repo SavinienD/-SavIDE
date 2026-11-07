@@ -13,8 +13,9 @@ export type McpCatalogVar = {
   secret?: boolean;
   required?: boolean;
   // "env" (défaut) place la valeur dans l'environnement ; "arg" la passe au
-  // serveur comme argument de la commande.
-  kind?: "env" | "arg";
+  // serveur comme argument de la commande ; "bearer" (serveur distant) l'envoie
+  // dans l'en-tête Authorization.
+  kind?: "env" | "arg" | "bearer";
   placeholder?: string;
   help?: string;
 };
@@ -30,6 +31,12 @@ export type McpCatalogEntry = {
   args: string[];
   vars: McpCatalogVar[];
   note?: string;
+  // mcp-guide — serveur distant (HTTP) : adresse ; la commande reste vide.
+  url?: string;
+  // Le serveur gère l'autorisation MCP (OAuth) : connexion dans le navigateur, sans jeton collé.
+  oauth?: boolean;
+  // Rangement dans le catalogue : programme local (défaut), serveur distant, autre IA exposée en MCP.
+  categorie?: "local" | "distant" | "ia";
 };
 
 export type McpCatalogValues = Record<string, string>;
@@ -185,11 +192,6 @@ export const MCP_CATALOG: McpCatalogEntry[] = [
     vars: [{ key: "NOTION_TOKEN", label: "Jeton d'intégration Notion", secret: true, required: true }],
   },
   {
-    id: "linear", name: "Linear", description: "Tickets et cycles Linear.",
-    install: "npx -y mcp-remote https://mcp.linear.app/sse", command: "npx", args: ["-y", "mcp-remote", "https://mcp.linear.app/sse"],
-    vars: [], note: "Connexion OAuth au premier lancement.",
-  },
-  {
     id: "sentry", name: "Sentry", description: "Erreurs et incidents Sentry.",
     install: "npx -y @sentry/mcp-server", command: "npx", args: ["-y", "@sentry/mcp-server"],
     vars: [{ key: "SENTRY_ACCESS_TOKEN", label: "Jeton Sentry", secret: true, required: true }],
@@ -259,6 +261,60 @@ export const MCP_CATALOG: McpCatalogEntry[] = [
     install: "npx -y mcp-obsidian CHEMIN_DU_COFFRE", command: "npx", args: ["-y", "mcp-obsidian", "CHEMIN_DU_COFFRE"],
     vars: [], note: "Remplacer CHEMIN_DU_COFFRE.",
   },
+  // mcp-guide — serveurs distants (HTTP). « oauth » : le serveur gère l'autorisation MCP,
+  // « Se connecter » ouvre le navigateur (compte Google, GitHub… selon le service) au lieu d'un jeton collé.
+  {
+    id: "linear", name: "Linear", description: "Tickets et cycles Linear.", categorie: "distant",
+    install: "https://mcp.linear.app/mcp", command: "", args: [], url: "https://mcp.linear.app/mcp", oauth: true,
+    vars: [], note: "Connexion dans le navigateur avec votre compte Linear.",
+  },
+  {
+    id: "notion-distant", name: "Notion (connexion)", description: "Pages et bases Notion, sans clé à créer.", categorie: "distant",
+    install: "https://mcp.notion.com/mcp", command: "", args: [], url: "https://mcp.notion.com/mcp", oauth: true,
+    vars: [], note: "Connexion dans le navigateur avec votre compte Notion.",
+  },
+  {
+    id: "sentry-distant", name: "Sentry (connexion)", description: "Erreurs et incidents Sentry, sans jeton.", categorie: "distant",
+    install: "https://mcp.sentry.dev/mcp", command: "", args: [], url: "https://mcp.sentry.dev/mcp", oauth: true,
+    vars: [], note: "Connexion dans le navigateur avec votre compte Sentry.",
+  },
+  {
+    id: "github-distant", name: "GitHub (distant)", description: "Serveur MCP officiel de GitHub, sans rien installer.", categorie: "distant",
+    install: "https://api.githubcopilot.com/mcp/", command: "", args: [], url: "https://api.githubcopilot.com/mcp/",
+    vars: [
+      {
+        key: "GITHUB_TOKEN",
+        label: "Jeton d'accès personnel GitHub",
+        kind: "bearer",
+        secret: true,
+        required: true,
+        placeholder: "ghp_… ou github_pat_…",
+        help: "GitHub n'ouvre pas sa connexion par navigateur aux applications tierces : un jeton est nécessaire.",
+      },
+    ],
+  },
+  {
+    id: "exa", name: "Exa (recherche web)", description: "Recherche web et lecture de pages, sans clé.", categorie: "distant",
+    install: "https://mcp.exa.ai/mcp", command: "", args: [], url: "https://mcp.exa.ai/mcp",
+    vars: [],
+  },
+  {
+    id: "cloudflare-docs", name: "Documentation Cloudflare", description: "Recherche dans la documentation Cloudflare.", categorie: "distant",
+    install: "https://docs.mcp.cloudflare.com/mcp", command: "", args: [], url: "https://docs.mcp.cloudflare.com/mcp",
+    vars: [],
+  },
+  // mcp-guide — d'autres IA exposées comme outils MCP : l'agent peut leur confier une
+  // question ou une tâche avec le compte déjà connecté sur ce poste (pas de clé API).
+  {
+    id: "codex", name: "Codex (OpenAI)", description: "Confier une tâche à Codex, avec votre compte ChatGPT.", categorie: "ia",
+    install: "npm i -g @openai/codex", command: "codex", args: ["mcp-server"],
+    vars: [], note: "Nécessite Codex CLI installé et connecté une fois avec votre compte ChatGPT (lancez « codex » dans un terminal).",
+  },
+  {
+    id: "gemini-cli", name: "Gemini (Google)", description: "Poser une question à Gemini, avec votre compte Google.", categorie: "ia",
+    install: "npm i -g @google/gemini-cli", command: "npx", args: ["-y", "gemini-mcp-tool"],
+    vars: [], note: "Nécessite Gemini CLI installé et connecté une fois avec un compte Google (lancer « gemini »).",
+  },
 ];
 
 export function findMcpCatalogEntry(id: string): McpCatalogEntry | undefined {
@@ -279,12 +335,15 @@ export function buildMcpServerFromCatalog(
   values: McpCatalogValues,
 ): McpServerConfig {
   const env: McpEnvVar[] = [];
-  const args = [...entry.args];
+  const args = entry.url ? [] : [...entry.args];
+  let token = "";
 
   for (const variable of entry.vars) {
     const raw = (values[variable.key] ?? "").trim();
     if (!raw) continue;
-    if (variable.kind === "arg") {
+    if (variable.kind === "bearer") {
+      token = raw;
+    } else if (variable.kind === "arg") {
       args.push(raw);
     } else {
       env.push({ key: variable.key, value: raw });
@@ -294,12 +353,12 @@ export function buildMcpServerFromCatalog(
   return {
     id: `mcp_${catalogSlug(entry.id)}`,
     name: entry.name,
-    command: entry.command,
-    url: null,
+    command: entry.url ? "" : entry.command,
+    url: entry.url ?? null,
     args,
     env,
     headers: [],
-    auth: null,
+    auth: token ? { type: "bearer", token, scopes: [] } : null,
     cwd: null,
     enabled: true,
   };

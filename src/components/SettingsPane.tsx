@@ -27,6 +27,8 @@ import { RegistrePane } from "./settings/RegistrePane"; // e4
 import { ServicePane } from "./settings/ServicePane"; // daemon
 import { ConnectionsPane } from "./settings/ConnectionsPane"; // remote
 import { McpCatalogPanel } from "./settings/McpCatalogPanel"; // e7
+import { ErreurMcp } from "./settings/McpErreur"; // mcp-guide
+import { etatServeurMcp, expliquerErreurMcp } from "../axe/mcpGuide"; // mcp-guide
 import {
   collectMcpSecrets,
   redactCommand,
@@ -88,6 +90,9 @@ export function SettingsPane({ workspacePath }: Props) {
     () => (sectionReglagesDemandee() as Section | null) ?? "about",
   );
   const [settings, setSettings] = useState<McpSettings>(EMPTY_SETTINGS);
+  // mcp-guide — dernière liste connue, lue par « Tester » sans recréer ses rappels.
+  const settingsRef = useRef<McpSettings>(EMPTY_SETTINGS);
+  settingsRef.current = settings;
   const [savedJson, setSavedJson] = useState("");
   const [jsonText, setJsonText] = useState("");
   const [selectedServerId, setSelectedServerId] = useState<string | null>(null);
@@ -742,8 +747,10 @@ export function SettingsPane({ workspacePath }: Props) {
 
   // e7 — ajout depuis le catalogue : nom + cle, la configuration reelle
   // est ecrite (secrets compris) puis l'etat du serveur est verifie.
+  // mcp-guide — « Ajouter et se connecter » : connexion OAuth lancée juste après l'ajout.
+  const connectMcpOAuthRef = useRef<(id: string) => Promise<void>>(async () => {});
   const addServerFromCatalog = useCallback(
-    async (server: McpServerConfig): Promise<boolean> => {
+    async (server: McpServerConfig, connecter = false): Promise<boolean> => {
       setSaving(true);
       setStatus(null);
       try {
@@ -756,8 +763,15 @@ export function SettingsPane({ workspacePath }: Props) {
         setSettings(saved);
         setSavedJson(nextJson);
         setJsonText(nextJson);
-        setSelectedServerId(server.id);
+        // mcp-guide — identifiant enregistré (il peut différer de celui proposé),
+        // catalogue refermé pour montrer le détail du serveur ajouté.
+        const savedId = saved.servers.find((item) => item.id === server.id)?.id
+          ?? saved.servers.find((item) => item.name === server.name)?.id
+          ?? server.id;
+        setSelectedServerId(savedId);
+        setAdding(false);
         setParseError(null);
+        if (connecter) void connectMcpOAuthRef.current(savedId);
         const nextProbes = await api.probeMcpTools();
         setProbes(nextProbes);
         const failures = nextProbes.filter(
@@ -780,6 +794,33 @@ export function SettingsPane({ workspacePath }: Props) {
     },
     [settings.servers],
   );
+
+  // mcp-guide — « Tester » : un serveur du formulaire (pas encore enregistré) ou un
+  // serveur enregistré (relu par le moteur, ses secrets ne repassent pas par la page).
+  const testCandidateServer = useCallback(
+    (server: McpServerConfig) => api.testMcpServer({ server }),
+    [],
+  );
+  const [testingServerId, setTestingServerId] = useState<string | null>(null);
+  const testSavedServer = useCallback(async (id: string) => {
+    setTestingServerId(id);
+    try {
+      const probe = await api.testMcpServer({
+        serverId: id,
+        serverName: settingsRef.current.servers.find((server) => server.id === id)?.name,
+      });
+      setProbes((prev) => {
+        const fixed = { ...probe, serverId: id };
+        return prev.some((item) => item.serverId === id)
+          ? prev.map((item) => (item.serverId === id ? fixed : item))
+          : [...prev, fixed];
+      });
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : String(err));
+    } finally {
+      setTestingServerId((current) => (current === id ? null : current));
+    }
+  }, []);
 
   const toggleEnabled = useCallback(
     async (id: string) => {
@@ -903,6 +944,8 @@ export function SettingsPane({ workspacePath }: Props) {
       setOauthBusyId((current) => (current === serverId ? null : current));
     }
   }, []);
+
+  connectMcpOAuthRef.current = connectMcpOAuth;
 
   const cancelMcpOAuth = useCallback(async (serverId: string) => {
     try {
@@ -1464,6 +1507,9 @@ export function SettingsPane({ workspacePath }: Props) {
             }}
             onCloseCatalog={() => setAdding(false)}
             onAddServer={addServerFromCatalog}
+            onTestCandidate={testCandidateServer}
+            testingServerId={testingServerId}
+            onTestServer={(id) => void testSavedServer(id)}
           />
         ) : section === "harness" ? (
           <>
@@ -2240,7 +2286,11 @@ type McpSectionProps = {
   catalogOpen: boolean;
   onOpenCatalog: () => void;
   onCloseCatalog: () => void;
-  onAddServer: (server: McpServerConfig) => Promise<boolean>;
+  onAddServer: (server: McpServerConfig, connecter: boolean) => Promise<boolean>;
+  // mcp-guide — « Tester » (formulaire d'ajout et détail d'un serveur).
+  onTestCandidate: (server: McpServerConfig) => Promise<McpServerProbe>;
+  testingServerId: string | null;
+  onTestServer: (id: string) => void;
 };
 
 function McpSection({
@@ -2274,6 +2324,9 @@ function McpSection({
   onOpenCatalog,
   onCloseCatalog,
   onAddServer,
+  onTestCandidate,
+  testingServerId,
+  onTestServer,
 }: McpSectionProps) {
   // zoom — the JSON editor follows the text size (only chars grow).
   const [textScale, setTextScale] = useState<number>(() => loadTextScale());
@@ -2286,8 +2339,12 @@ function McpSection({
     <>
       <header className="settings-pane__header">
         <div className="settings-pane__header-text">
-          <h1 className="settings-pane__title">Serveurs MCP</h1>
-          <p className="settings-pane__subtitle">
+          <h1 className="settings-pane__title" title="Serveurs MCP">Serveurs MCP</h1>
+          <p
+            className="settings-pane__subtitle"
+            data-court={!loading && servers.length > 0 ? "true" : "false"}
+            title={!loading && servers.length > 0 ? `${enabledCount}/${servers.length} actif${enabledCount > 1 ? "s" : ""}${failedCount ? ` · ${failedCount} sans réponse` : ""}` : undefined}
+          >
             {loading
               ? "Chargement des serveurs…"
               : servers.length === 0
@@ -2344,6 +2401,8 @@ function McpSection({
         <McpCatalogPanel
           busy={saving}
           error={parseError}
+          existingIds={servers.map((server) => server.id)}
+          onTest={onTestCandidate}
           onAdd={onAddServer}
           onCancel={onCloseCatalog}
         />
@@ -2372,6 +2431,8 @@ function McpSection({
               const toolCount = probe?.ok
                 ? probe.tools.length
                 : knownCount ?? null;
+              // mcp-guide — état en clair (survol) et signalé dans la liste s'il faut agir.
+              const etat = etatServeurMcp(server, probe, probing);
               const toggleDisabled =
                 loading || saving || Boolean(parseError);
               const displayName = server.name || "Sans nom";
@@ -2386,6 +2447,8 @@ function McpSection({
                   <button
                     type="button"
                     className="settings-pane__nav-list-item-main"
+                    title={etat.libelle}
+                    data-etat={etat.ton}
                     onClick={() => onSelectServer(server.id)}
                   >
                     <span
@@ -2396,7 +2459,12 @@ function McpSection({
                     <span className="settings-pane__nav-list-item-name">
                       {displayName}
                     </span>
-                    {toolCount !== null && (
+                    {(etat.ton === "error" || etat.ton === "auth") && (
+                      <span className="settings-pane__nav-list-item-etat" data-tone={etat.ton}>
+                        {etat.ton === "auth" ? "À connecter" : "Erreur"}
+                      </span>
+                    )}
+                    {toolCount !== null && etat.ton !== "error" && etat.ton !== "auth" && (
                       <span
                         className="settings-pane__nav-list-item-count"
                         data-on={server.enabled ? "true" : "false"}
@@ -2505,6 +2573,8 @@ function McpSection({
               onCancelOAuth={onCancelOAuth}
               onDisconnectOAuth={onDisconnectOAuth}
               deleting={deletingServerId === selectedServer.id}
+              testing={testingServerId === selectedServer.id}
+              onTest={onTestServer}
               deleteDisabled={saving || loading || deletingServerId !== null}
               onDelete={onDeleteServer}
             />
@@ -2539,6 +2609,8 @@ type ServerDetailProps = {
   deleting: boolean;
   deleteDisabled: boolean;
   onDelete: (id: string) => void;
+  testing: boolean;
+  onTest: (id: string) => void;
 };
 
 function ServerDetail({
@@ -2554,6 +2626,8 @@ function ServerDetail({
   deleting,
   deleteDisabled,
   onDelete,
+  testing,
+  onTest,
 }: ServerDetailProps) {
   // mcp-supprimer — un premier clic arme, le second (dans les 3 s) supprime.
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -2592,7 +2666,9 @@ function ServerDetail({
         ? "vérification…"
         : "en attente"
       : !probe.ok
-        ? "en erreur"
+        ? probe.authRequired
+          ? "à connecter"
+          : "en erreur"
         : `${probe.tools.length} outil${probe.tools.length === 1 ? "" : "s"}`;
   // e7 — une chaine de connexion (PostgreSQL) contient le mot de passe :
   // elle est masquee a l'affichage, comme dans le JSON.
@@ -2625,8 +2701,18 @@ function ServerDetail({
         <span className="settings-pane__detail-head-actions">
           <span className="settings-pane__chip" data-tone={tone}>
             <span className="settings-pane__chip-dot" />
-            {statusLabel}
+            <span className="settings-pane__chip-texte" title={statusLabel}>{statusLabel}</span>
           </span>
+          <button
+            type="button"
+            className="settings-pane__btn settings-pane__mcp-tester"
+            onClick={() => onTest(server.id)}
+            disabled={testing}
+            title="Tester la connexion : lancer le serveur et lister ses outils"
+          >
+            <Icon icon={testing ? "solar:refresh-linear" : "solar:plug-circle-linear"} width={13} height={13} />
+            <span>{testing ? "Test…" : "Tester"}</span>
+          </button>
           <button
             type="button"
             className="settings-pane__skill-doc-action settings-pane__mcp-delete"
@@ -2698,12 +2784,12 @@ function ServerDetail({
         {canAuthenticate && (
           <div className="settings-pane__mcp-auth">
             <div className="settings-pane__mcp-auth-head">
-              <span className="settings-pane__detail-section">
+              <span className="settings-pane__detail-section" title="Authentification">
                 Authentification
               </span>
               <span className="settings-pane__chip" data-tone={authTone}>
                 <span className="settings-pane__chip-dot" />
-                {authLabel}
+                <span className="settings-pane__chip-texte" title={authLabel}>{authLabel}</span>
               </span>
             </div>
             <div className="settings-pane__mcp-auth-row">
@@ -2762,9 +2848,14 @@ function ServerDetail({
           </div>
         )}
 
-        {probe?.error && (
-          <div className="settings-pane__tools-error">{probe.error}</div>
-        )}
+        {probe && !probe.ok && (() => {
+          // mcp-guide — erreur expliquée, journal brut (secrets masqués) dépliable.
+          const erreur = expliquerErreurMcp(probe.error, {
+            transport: probe.transport,
+            authRequired: probe.authRequired,
+          });
+          return erreur ? <ErreurMcp erreur={erreur} /> : null;
+        })()}
 
         <div className="settings-pane__detail-section">Outils</div>
         <div className="settings-pane__tool-list">

@@ -11,6 +11,18 @@ import {
 import { dicteeDisponible, MESSAGE_DICTEE_INDISPONIBLE_LOCAL } from "./disponibilite"; // 0.1.71
 import { lireEtatVoix } from "./useDicteeDisponible";
 import { combinaisonCourte } from "../raccourcis";
+import {
+  avecActif,
+  chargerVocabulaire,
+  enregistrerVocabulaire,
+  EVENEMENT_VOCABULAIRE,
+  LIMITE_VOCABULAIRE,
+  motsAppris,
+  retirer,
+  toutEffacer,
+  vocabulaireEffectif,
+  type EtatVocabulaire,
+} from "./vocabulaireAuto"; // voix-vocabulaire
 import "./voix.css";
 import { listen } from "@tauri-apps/api/event";
 
@@ -47,6 +59,21 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
     window.addEventListener(EVENEMENT_REGLAGES_VOIX, relire);
     return () => window.removeEventListener(EVENEMENT_REGLAGES_VOIX, relire);
   }, []);
+
+  // voix-vocabulaire — mots appris des messages tapés (voir vocabulaireAuto.ts).
+  const [vocab, setVocab] = useState<EtatVocabulaire>(() => chargerVocabulaire());
+  useEffect(() => {
+    const relire = () => setVocab(chargerVocabulaire());
+    window.addEventListener(EVENEMENT_VOCABULAIRE, relire);
+    return () => window.removeEventListener(EVENEMENT_VOCABULAIRE, relire);
+  }, []);
+  const changerVocab = (suivant: EtatVocabulaire) => {
+    setVocab(suivant);
+    enregistrerVocabulaire(suivant);
+  };
+  const appris = motsAppris(vocab);
+  const envoye = vocabulaireEffectif(reglages.vocabulaire, vocab);
+  const envoyes = new Set(envoye.split(", ").map((t) => t.toLowerCase()));
 
   const changer = (patch: Partial<ReglagesVoix>) => {
     const suivant = { ...reglages, ...patch };
@@ -102,7 +129,7 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
           <h2>Dictée vocale</h2>
         </header>
         <p className="axe-voix-reglages__ko" role="status">{MESSAGE_DICTEE_INDISPONIBLE_LOCAL}</p>
-        <button type="button" className="axe-appearance__button" onClick={() => void tester()} disabled={test === "en-cours"}>
+        <button type="button" className="axe-appearance__button" title="Revérifier" onClick={() => void tester()} disabled={test === "en-cours"}>
           {test === "en-cours" ? "Test…" : "Revérifier"}
         </button>
       </div>
@@ -112,7 +139,7 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
   return (
     <div className="axe-appearance axe-voix-reglages">
       <header>
-        <h2>Dictée vocale</h2>
+        <h2 title="Dictée vocale">Dictée vocale</h2>
         <p className="axe-appearance__hint">
           Micro du compositeur ({combinaisonCourte("dictee")}) : enregistrement, puis transcription par Whisper sur ce poste (français, vocabulaire technique), nettoyée ensuite par le modèle de la conversation. Le texte est inséré dans la
           zone de saisie, modifiable, et n'est jamais envoyé automatiquement. Échap annule.
@@ -221,6 +248,60 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
           placeholder="ex. Grafana, Kubernetes, Dupont SA"
           onChange={(e) => changer({ vocabulaire: e.target.value.slice(0, 400) })}
         />
+      </section>
+
+      <section className="axe-appearance__block axe-voix-appris">
+        <h3 title="Mots appris de vos messages">Mots appris</h3>
+        <label className="axe-voix-reglages__ligne">
+          <input
+            type="checkbox"
+            checked={vocab.actif}
+            onChange={(e) => changerVocab(avecActif(vocab, e.target.checked))}
+          />
+          <span>
+            Apprendre les mots que je tape
+            <br />
+            <span className="axe-appearance__hint">
+              Noms propres, sigles et termes techniques vus dans au moins deux de vos messages,
+              ajoutés au vocabulaire de la dictée. Gardés sur ce poste. Jamais de mot de passe, de
+              clé, de jeton ni de lien.
+            </span>
+          </span>
+        </label>
+        {vocab.actif && (
+          <>
+            <div className="axe-voix-appris__tete">
+              <p className="axe-appearance__hint axe-voix-appris__compte">
+                {appris.length === 0
+                  ? "Aucun mot appris pour l'instant."
+                  : `${appris.length} mot${appris.length > 1 ? "s" : ""} appris · vocabulaire envoyé : ${envoye.length}/${LIMITE_VOCABULAIRE} caractères`}
+              </p>
+              {appris.length > 0 && (
+                <button type="button" className="axe-appearance__button axe-voix-appris__effacer" title="Oublier tous les mots appris" onClick={() => changerVocab(toutEffacer(vocab))}>
+                  Tout effacer
+                </button>
+              )}
+            </div>
+            {appris.length > 0 && (
+              <ul className="axe-voix-appris__liste" aria-label="Mots appris">
+                {appris.map((mot) => (
+                  <li key={mot.cle} className="axe-voix-appris__mot" data-mot={mot.cle} data-envoye={envoyes.has(mot.cle) ? "true" : "false"}>
+                    <span title={`Vu dans ${mot.n} messages`}>{mot.forme}</span>
+                    <button
+                      type="button"
+                      className="axe-voix-appris__retirer"
+                      aria-label={`Retirer ${mot.forme}`}
+                      title="Retirer (ne sera plus appris)"
+                      onClick={() => changerVocab(retirer(vocab, mot.cle))}
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
       </section>
 
     </div>

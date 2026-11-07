@@ -311,3 +311,111 @@
   pointer-events: none;
 }
 .axe-voix__provisoire-texte { display: block; }
+
+/* voix-vocabulaire — mots appris des messages tapés : pastilles retirables. */
+.axe-voix-appris__liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 8px;
+  padding: 0;
+  list-style: none;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.axe-voix-appris__mot {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  padding: 1px 2px 1px 8px;
+  border: 1px solid var(--border-1, rgba(127, 127, 127, 0.3));
+  border-radius: 999px;
+  font-size: var(--fs-xs, 11px);
+  color: var(--text-1, inherit);
+}
+
+.axe-voix-appris__mot > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Au-delà de la limite de l'amorce : appris mais pas envoyé cette fois. */
+.axe-voix-appris__mot[data-envoye="false"] {
+  opacity: 0.55;
+}
+
+.axe-voix-appris__retirer {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-2, inherit);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.axe-voix-appris__retirer:hover,
+.axe-voix-appris__retirer:focus-visible {
+  background: var(--bg-hover, rgba(127, 127, 127, 0.18));
+  color: var(--text-1, inherit);
+}
+
+.axe-voix-appris__tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+}
+
+.axe-voix-appris__tete > .axe-voix-appris__compte {
+  flex: 1 1 160px;
+  min-width: 0;
+  margin: 0;
+}
+
+/* Volet de réglages très étroit (plusieurs colonnes à 800 px) : marges réduites, titre sur une ligne
+   (« … » si besoin, complet au survol). */
+@container reglages-main (max-width: 360px) {
+  .axe-voix-reglages { padding: 14px 10px; }
+}
+.axe-voix-reglages > header > h2 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Boutons du volet Dictée : une ligne, « … » si le volet est très étroit (libellé complet au survol). */
+.axe-voix-reglages .axe-appearance__button {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Volet très étroit et libellés agrandis : les mots longs passent à la ligne au lieu de déborder. */
+.axe-voix-reglages__ligne > span,
+.axe-voix-reglages .axe-appearance__hint {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.axe-voix-reglages select {
+  min-height: 24px;
+  max-width: 100%;
+}
+
+.axe-voix-appris > h3 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

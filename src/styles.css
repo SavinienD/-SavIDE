@@ -11135,3 +11135,110 @@ textarea {
 .settings-pane__compte-offre { color: var(--text-3); }
 .settings-pane__compte-attente { color: var(--text-3); min-width: 0; }
 
+
+
+/* mcp-guide — Réglages > MCP : état en clair dans la liste, erreurs expliquées avec journal,
+   résultat de « Tester », catalogue rangé par groupes, ajout personnalisé (stdio / HTTP). */
+.settings-pane__nav-list-item-etat {
+  flex: 0 0 auto;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  line-height: 18px;
+  white-space: nowrap;
+  color: var(--danger);
+  background: rgba(245, 115, 127, 0.1);
+}
+.settings-pane__nav-list-item-etat[data-tone="auth"] { color: var(--warning, #d29922); background: rgba(210, 153, 34, 0.12); }
+.settings-pane__mcp-erreur {
+  display: flex; flex-direction: column; gap: 4px; min-width: 0;
+  padding: 9px 11px; margin-bottom: 10px; border-radius: var(--r-med);
+  background: rgba(245, 115, 127, 0.08); font-family: var(--font-ui); font-size: var(--fs-xs); line-height: 1.45;
+}
+.settings-pane__mcp-erreur-resume { display: flex; align-items: flex-start; gap: 6px; color: var(--danger); min-width: 0; }
+.settings-pane__mcp-erreur-resume > svg { flex: 0 0 auto; margin-top: 2px; }
+.settings-pane__mcp-erreur-resume > strong { min-width: 0; overflow-wrap: anywhere; }
+.settings-pane__mcp-erreur-conseil { margin: 0; color: var(--text-2); overflow-wrap: anywhere; }
+.settings-pane__mcp-journal > summary { cursor: pointer; color: var(--text-3); min-height: 20px; line-height: 20px; }
+.settings-pane__mcp-journal > pre {
+  margin: 6px 0; max-height: 220px; overflow: auto; padding: 8px; border-radius: var(--r-small, 4px);
+  background: rgba(0, 0, 0, 0.25); font-family: var(--font-mono); font-size: var(--fs-xs);
+  white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-1);
+}
+.settings-pane__mcp-test {
+  display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 8px 10px; border-radius: var(--r-med);
+  font-family: var(--font-ui); font-size: var(--fs-xs); line-height: 1.45; overflow-wrap: anywhere;
+}
+.settings-pane__mcp-test[data-tone="ok"] { background: rgba(63, 185, 80, 0.1); }
+.settings-pane__mcp-test[data-tone="ok"] > strong { color: var(--ok, #3fb950); }
+.settings-pane__mcp-test[data-tone="auth"] { background: rgba(210, 153, 34, 0.1); }
+.settings-pane__mcp-test-outils { color: var(--text-2); }
+.settings-pane__mcp-catalog-group { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; min-width: 0; }
+.settings-pane__mcp-catalog-group-title { font-size: 11px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; opacity: 0.7; }
+.settings-pane__mcp-catalog-item-name { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; }
+.settings-pane__mcp-badge {
+  padding: 0 6px; border-radius: 999px; font-size: 10.5px; line-height: 16px; white-space: nowrap;
+  color: var(--accent, #6ea8fe); background: rgba(110, 168, 254, 0.12);
+}
+.settings-pane__mcp-mode { display: flex; flex-wrap: wrap; gap: 4px; }
+.settings-pane__mcp-mode-btn {
+  flex: 1 1 auto; min-height: 26px; padding: 0 10px; border-radius: 7px; font: inherit; font-size: 12px;
+  color: inherit; background: transparent; border: 1px solid rgba(255, 255, 255, 0.12); cursor: pointer; white-space: nowrap;
+}
+.settings-pane__mcp-mode-btn[data-on="true"] { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.3); }
+.settings-pane__mcp-catalog-field textarea {
+  min-height: 44px; padding: 6px 8px; font: inherit; font-family: var(--font-mono); font-size: 12px; border-radius: 7px;
+  color: inherit; background: rgba(0, 0, 0, 0.22); border: 1px solid rgba(255, 255, 255, 0.12); resize: vertical;
+}
+.settings-pane__mcp-catalog-note[data-tone="error"] { color: var(--danger); opacity: 1; }
+.settings-pane__mcp-catalog-actions { flex-wrap: wrap; }
+.settings-pane__mcp-catalog-form, .settings-pane__mcp-catalog-field { min-width: 0; }
+.settings-pane__mcp-catalog-field input { min-width: 0; }
+@container reglages-main (max-width: 700px) {
+  .settings-pane__mcp-catalog-body { grid-template-columns: minmax(0, 1fr); }
+}
+.settings-pane__mcp-catalog-item-desc { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-pane__mcp-journal-copier { max-width: 100%; min-width: 0; }
+.settings-pane__mcp-journal-copier > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-pane__mcp-erreur, .settings-pane__mcp-journal { min-width: 0; max-width: 100%; }
+@container reglages-main (max-width: 360px) {
+  /* Volet très étroit : l'état reste porté par la pastille de couleur (et le survol). */
+  .settings-pane__nav-list-item-etat { display: none; }
+}
+/* Catalogue : liste des modèles bornée (elle défile), formulaire d'abord quand la zone est étroite. */
+.settings-pane__mcp-catalog-body .settings-pane__server-grid { max-height: 380px; overflow-y: auto; min-width: 0; padding-right: 2px; }
+@container reglages-main (max-width: 700px) {
+  .settings-pane__mcp-catalog-form { order: -1; }
+  .settings-pane__mcp-catalog-body .settings-pane__server-grid { max-height: 240px; }
+}
+.settings-pane__subtitle[data-court="true"] { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-pane__mcp-mode-btn { min-width: 0; max-width: 100%; }
+.settings-pane__mcp-mode-btn > span { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@container reglages-main (max-width: 360px) {
+  /* Le nombre d'outils reste dans le détail du serveur : le nom passe d'abord. */
+  .settings-pane__nav-list-item-count { display: none; }
+}
+.settings-pane__mcp-auth-head, .settings-pane__mcp-auth-row { flex-wrap: wrap; min-width: 0; }
+.settings-pane__mcp-auth-hint { min-width: 0; overflow-wrap: anywhere; }
+.settings-pane__mcp-auth-row > .settings-pane__btn { max-width: 100%; min-width: 0; }
+.settings-pane__mcp-auth-row > .settings-pane__btn > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-pane__mcp-auth, .settings-pane__detail-body > * { min-width: 0; max-width: 100%; }
+.settings-pane__mcp-auth-head .settings-pane__detail-section { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-pane__detail-meta { flex-wrap: wrap; min-width: 0; }
+.settings-pane__detail-meta code { min-width: 0; overflow-wrap: anywhere; }
+@container reglages-main (max-width: 360px) {
+  .settings-pane__mcp-auth { padding: 8px; }
+}
+.settings-pane__detail .settings-pane__chip { max-width: 100%; min-width: 0; }
+.settings-pane__chip-texte { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-pane__mcp-catalog-head { flex-wrap: wrap; min-width: 0; }
+.settings-pane__mcp-catalog-head > div { flex: 1 1 160px; min-width: 0; }
+.settings-pane__mcp-catalog-head > .settings-pane__btn { max-width: 100%; }
+@container reglages-main (max-width: 360px) {
+  .settings-pane__mcp-catalog { padding: 10px; }
+  .settings-pane__mcp-catalog-sub { display: none; }
+}
+.settings-pane__mcp-catalog-title { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-pane__header-text { min-width: 0; max-width: 100%; }
+.settings-pane__header-text > .settings-pane__title { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
