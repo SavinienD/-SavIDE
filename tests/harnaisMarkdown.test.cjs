@@ -128,10 +128,10 @@ test("secrets : clés connues, mot de passe = valeur, clé privée, URL avec mot
 
 test("secrets : pas de fausse alerte sur un texte ordinaire (identifiants, hash git, UUID, chemins, dates)", () => {
   const texte = [
-    "Commit 2c3749d0a1b2c3d4e5f60718293a4b5c6d7e8f90 sur night184.",
-    "Session c83f6c7e-c806-4d72-94ad-d34a5ee352df, mem_6254ef0c.",
-    "Chemin /home/agent/projets/axe-sinew/src/components/settings/HarnessPane.tsx",
-    "Le mot de passe est dans KeePass (entrée « Dev/Git »).",
+    "Commit 2c3749d0a1b2c3d4e5f60718293a4b5c6d7e8f90 sur main.",
+    "Session 1b2c3d4e-0a1b-4c2d-8e3f-a4b5c6d7e8f9, mem_0a1b2c3d.",
+    "Chemin /home/utilisateur/projets/appli/src/components/settings/HarnessPane.tsx",
+    "Le mot de passe est dans KeePass (entrée « Dev/Forge »).",
     "harness_cloud_publish et ProtocolError setTouchEmulationEnabled.",
     "date: 2026-11-07T01:30:00.000Z",
   ].join("\n");

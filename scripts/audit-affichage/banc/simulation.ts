@@ -197,7 +197,7 @@ export function installerSimulation(scene: Scene): void {
           return { running: true, version: "0.1.57", sessions: { total: 12, running: 2, idle: 10, inactive: 0 } };
         case "agents.list":
           return { agents: [] };
-        // harnais de l'espace Axe Cloud lu depuis le poste (Réglages > Harnais).
+        // harnais d'un espace distant lu depuis le poste (Réglages > Harnais).
         case "harness.list":
           return [];
         case "sessions.history":
