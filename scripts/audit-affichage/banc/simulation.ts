@@ -256,15 +256,25 @@ export function installerSimulation(scene: Scene): void {
       ] : [])] }),
     connections_state: () => ({ local: "connected" }),
     connections_set_active: () => null,
-    open_workspace: (a) => (((window.__bancOuverts ??= []).push(String(a.workspacePath ?? ""))), {
-      // ordre-dossiers — « ouvrirChemin » : le dossier ouvert est celui demandé (sinon toujours l'espace du banc).
-      workspace: scene.ouvrirChemin && a.workspacePath
-        ? { path: String(a.workspacePath), name: String(a.workspacePath).split(/[\\/]/).pop() ?? D.NOM_WS }
-        : { path: D.WS, name: D.NOM_WS },
-      conversations: listeConversations(),
-      activeConversation: D.conversationSauvee(active, { compaction: !!scene.compaction, liens: !!scene.liensHistorique }),
-      modeModelSettings: D.MODES,
-    }),
+    open_workspace: (a) => {
+      const chemin = String(a.workspacePath ?? "");
+      (window.__bancOuverts ??= []).push(chemin);
+      // « introuvables » : dossiers renommés ou déplacés (l'ancien chemin n'existe plus).
+      if (((scene.introuvables as string[] | undefined) ?? []).includes(chemin)) throw new Error(`unable to open workspace ${chemin}`);
+      return {
+        // ordre-dossiers — « ouvrirChemin » : le dossier ouvert est celui demandé (sinon toujours l'espace du banc).
+        workspace: scene.ouvrirChemin && a.workspacePath
+          ? { path: chemin, name: chemin.split(/[\\/]/).pop() ?? D.NOM_WS }
+          : { path: D.WS, name: D.NOM_WS },
+        conversations: listeConversations(),
+        activeConversation: D.conversationSauvee(active, { compaction: !!scene.compaction, liens: !!scene.liensHistorique }),
+        modeModelSettings: D.MODES,
+      };
+    },
+    // « retrouve » : nouveau chemin rendu par la recherche (sinon introuvable).
+    dossier_retrouver: () => (scene.retrouve ? { statut: "retrouve", chemin: String(scene.retrouve) } : { statut: "introuvable" }),
+    dossier_deplacer: (a) => ({ path: String(a.nouveau ?? ""), name: String(a.nouveau ?? "").split(/[\\/]/).pop() }),
+    dossiers_noter: () => 0,
     list_conversations: () => listeConversations(),
     load_conversation: (a) => {
       // Conversation supprimee ailleurs (autre poste, archive) : le chargement echoue.

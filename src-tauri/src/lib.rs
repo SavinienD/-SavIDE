@@ -165,6 +165,7 @@ pub(crate) const MAJ_AUTO: bool = true;
 mod viewers; // viewers
 mod workflow;
 mod workspace;
+mod dossiers; // dossiers renommés ou déplacés
 
 use context::*;
 use models::*;
@@ -502,6 +503,9 @@ pub fn run() {
             remote_workspace::remote_share_unpublish,
             remote_workspace::remote_share_log,
             workspace::open_workspace,
+            dossiers::dossier_retrouver,
+            dossiers::dossier_deplacer,
+            dossiers::dossiers_noter,
             workspace::open_cloud_workspace, // v2-l2.3
             workspace::open_new_window,
             workspace::reset_window_title,

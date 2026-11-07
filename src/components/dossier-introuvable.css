@@ -1,0 +1,55 @@
+/* Carte « Dossier introuvable » (accueil), au centre de la fenêtre, sous la barre de titre. */
+.dossier-introuvable__fond {
+  position: fixed;
+  top: 32px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+}
+.dossier-introuvable {
+  width: 100%;
+  max-width: 520px;
+  max-height: 100%;
+  overflow: auto;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--bg-1, var(--bg-2));
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  border-radius: 12px;
+  min-width: 0;
+}
+.dossier-introuvable__tete { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.dossier-introuvable__icone { flex: none; display: inline-flex; color: var(--danger); padding-top: 2px; }
+.dossier-introuvable__texte { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.dossier-introuvable__titre { font-weight: 600; font-size: calc(14px * var(--text-scale, 1)); }
+.dossier-introuvable__chemin {
+  font-size: calc(12px * var(--text-scale, 1));
+  color: var(--text-2, inherit);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dossier-introuvable__aide { font-size: calc(12.5px * var(--text-scale, 1)); color: var(--text-2, inherit); }
+.dossier-introuvable__erreur { font-size: calc(12.5px * var(--text-scale, 1)); color: var(--danger); }
+.dossier-introuvable__fermer {
+  flex: none;
+  display: inline-flex;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.dossier-introuvable__fermer:hover { opacity: 1; }
+.dossier-introuvable__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.dossier-introuvable__actions .axc-btn { white-space: nowrap; }

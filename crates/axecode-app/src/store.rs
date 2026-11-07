@@ -568,6 +568,48 @@ impl AppStore {
         &self.path
     }
 
+    /// Magasin à un emplacement donné (tests, outils).
+    pub fn open_at(path: PathBuf) -> Result<Self> {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).context("unable to create local data directory")?;
+        }
+        let store = Self { path };
+        store.migrate()?;
+        Ok(store)
+    }
+
+    /// Le dossier `ancien` a changé de chemin : ses conversations (avec tout leur
+    /// historique, qui est rattaché à l'identifiant de conversation) passent sous `nouveau`.
+    /// Les conversations vides créées entre-temps au nouveau chemin (dossier rouvert à la
+    /// main) sont retirées pour ne pas doubler la liste. Rend les identifiants déplacés.
+    pub fn deplacer_espace(&self, ancien: &str, nouveau: &str) -> Result<Vec<String>> {
+        if ancien == nouveau {
+            return Ok(Vec::new());
+        }
+        let mut conn = self.connection()?;
+        let tx = conn.transaction().context("unable to open sqlite transaction")?;
+        let ids: Vec<String> = {
+            let mut st = tx.prepare("select id from conversations where workspace_id = ?1")?;
+            let rows = st.query_map(params![ancien], |row| row.get::<_, String>(0))?;
+            rows.collect::<std::result::Result<_, _>>()?
+        };
+        if !ids.is_empty() {
+            tx.execute(
+                "delete from conversations where workspace_id = ?1
+                 and not exists (select 1 from messages m where m.conversation_id = conversations.id)",
+                params![nouveau],
+            )
+            .context("unable to drop empty conversations")?;
+            tx.execute(
+                "update conversations set workspace_id = ?2 where workspace_id = ?1",
+                params![ancien, nouveau],
+            )
+            .context("unable to move conversations")?;
+        }
+        tx.commit().context("unable to commit sqlite transaction")?;
+        Ok(ids)
+    }
+
     pub fn bootstrap_workspace(
         &self,
         workspace_root: &Path,
