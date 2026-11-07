@@ -147,8 +147,8 @@
     {
       "regle": "hors-conteneur",
       "selecteur": ".axe-harness > header",
-      "situation": "^(800x600|1024x768)@[^/]*/harnais-",
-      "raison": "Défaut préexistant : volet de réglages de 160 px, le harnais (qui défile lui-même) et la sauvegarde périodique défilent l'un dans l'autre ; le haut du harnais est jugé inaccessible. À reprendre à part."
+      "situation": "^((800x600|1024x768)@[^/]*/harnais-|1366x768@[^/]*/harnais-(menu|copier)$)",
+      "raison": "Défaut préexistant : volet de réglages de 160 px, le harnais (qui défile lui-même) et la sauvegarde périodique défilent l'un dans l'autre ; le haut du harnais est jugé inaccessible. À reprendre à part. Depuis la réunion recherche + partage .md (0.1.85), aussi en 1366x768 quand le menu du clic droit s'ouvre."
     },
     {
       "regle": "chevauchement",
