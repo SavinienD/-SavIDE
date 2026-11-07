@@ -17,9 +17,11 @@ test("composant : ordre des numéros, courant marqué, info-bulle « nom · Ctrl
   assert.match(s, /NB_NUMEROTES/);
 });
 
-test("branché avant l'indicateur de quota (IDE et conversation sans dossier)", () => {
+test("à droite des boutons de la barre : avant Terminal / Volets (IDE), après Réglages (sans dossier)", () => {
   const w = lire("../src/components/Workspace.tsx");
-  assert.match(w, /<BarreDossiers[\s\S]{0,120}?\/>\s*<QuotaIndicator \/>/);
+  assert.match(w, /<BarreDossiers[^\n]*\/>\s*<button\s+className="titlebar__btn"\s+data-barre="terminal"/);
+  assert.doesNotMatch(w, /<BarreDossiers[\s\S]{0,120}?\/>\s*<QuotaIndicator \/>/);
   const f = lire("../src/components/freechat/FreechatView.tsx");
-  assert.match(f, /<BarreDossiers[\s\S]{0,120}?\/>\s*<QuotaIndicator \/>/);
+  assert.match(f, /Réglages<\/span>\s*<\/button>\s*\{\/\*[^*]*\*\/\}\s*<BarreDossiers[^\n]*\/>\s*<\/div>/);
+  assert.doesNotMatch(f, /<BarreDossiers[\s\S]{0,120}?\/>\s*<QuotaIndicator \/>/);
 });

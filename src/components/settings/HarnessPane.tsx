@@ -11,6 +11,7 @@ import {
 } from "./harnessApi";
 import { CLOUD_CONNECTION, cloudApi } from "../cloud/cloudApi"; // e13
 import { cloudConnectionFromPath } from "../../lib/ipc"; // e13
+import { chercher, extrait, occurrences } from "./rechercheHarnais";
 import "./harness.css";
 
 type Props = { workspacePath: string };
@@ -24,6 +25,19 @@ const OUTCOME_LABEL: Record<string, string> = {
   running: "en cours",
   cancelled: "arrêté",
 };
+
+/** texte avec chaque occurrence du mot cherché dans un <mark>. */
+function Surligne({ texte, mot }: { texte: string; mot: string }) {
+  const parts: React.ReactNode[] = [];
+  let pos = 0;
+  occurrences(texte, mot).forEach(([d, f], i) => {
+    if (d > pos) parts.push(texte.slice(pos, d));
+    parts.push(<mark key={i}>{texte.slice(d, f)}</mark>);
+    pos = f;
+  });
+  if (pos < texte.length) parts.push(texte.slice(pos));
+  return <>{parts}</>;
+}
 
 function modelTag(tags: string[]): string {
   return tags.find((t) => t.startsWith("model:"))?.slice(6) ?? "";
@@ -62,6 +76,8 @@ export function HarnessPane({ workspacePath }: Props) {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // recherche dans tout le harnais (titres et contenus, tous les types).
+  const [recherche, setRecherche] = useState("");
 
   const reload = useCallback(async () => {
     try {
@@ -118,6 +134,9 @@ export function HarnessPane({ workspacePath }: Props) {
     for (const entry of serviceEntries) map[entry.kind] = (map[entry.kind] ?? 0) + 1;
     return map;
   }, [entries, serviceEntries]);
+
+  // même nombre que la part « harnais » de Réglages > Skills (skills Python du poste).
+  const skillsHarnais = entries.filter((entry) => entry.kind === "skill").length;
 
   const visible = useMemo(
     () =>
@@ -236,6 +255,22 @@ export function HarnessPane({ workspacePath }: Props) {
     );
   };
 
+  // résultats de la recherche (poste puis espace cloud, sans doublon d'identifiant).
+  const resultats = useMemo(() => {
+    const vus = new Set(entries.map((entry) => entry.id));
+    return chercher([...entries, ...serviceEntries.filter((entry) => !vus.has(entry.id))], recherche);
+  }, [entries, serviceEntries, recherche]);
+  const ouvrirResultat = (entry: HarnessEntry) => {
+    if (entry.kind === "skill") {
+      // Les skills du harnais se gèrent dans Réglages > Skills.
+      window.dispatchEvent(new CustomEvent("axecode:open-settings-section", { detail: { section: "skills" } }));
+      return;
+    }
+    setTab(entry.kind);
+    setSelectedId(entry.id);
+    setRecherche("");
+  };
+
   // refine-run — un affinage en cours se suit ici et peut être arrêté.
   const hasRunning = records.some((record) => record.outcome === "running");
   useEffect(() => {
@@ -274,6 +309,17 @@ export function HarnessPane({ workspacePath }: Props) {
 
       <BrainImportWizard workspacePath={workspacePath} onImported={() => void reload()} />
 
+      <input
+        type="search"
+        className="axe-harness__search"
+        value={recherche}
+        onChange={(e) => setRecherche(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Escape") setRecherche(""); }}
+        placeholder="Rechercher dans le harnais"
+        aria-label="Rechercher dans les notes, mémoires, skills et sous-agents"
+        spellCheck={false}
+      />
+
       <nav className="axe-harness__tabs">
         {kinds.map((kind) => (
           <button
@@ -285,27 +331,29 @@ export function HarnessPane({ workspacePath }: Props) {
               setSelectedId(null);
             }}
           >
-            {kind.label} <span className="axe-harness__muted">{counts[kind.id] ?? 0}</span>
+            <span className="axe-harness__tab-label">{kind.label}</span> <span className="axe-harness__muted">{counts[kind.id] ?? 0}</span>
           </button>
         ))}
         <button
           type="button"
+          data-onglet="refinements"
           data-active={tab === "refinements" ? "true" : "false"}
           onClick={() => setTab("refinements")}
         >
-          Affinages <span className="axe-harness__muted">{records.length}</span>
+          <span className="axe-harness__tab-label">Affinages</span> <span className="axe-harness__muted">{records.length}</span>
         </button>
         <button
           type="button"
           data-active="false"
-          title="Les skills Python du harnais sont gérés dans l'onglet Skills"
+          data-onglet="skills"
+          title={`Skills Python du harnais de ce poste (paquets importables) : ${skillsHarnais}. Tous les skills, Markdown compris, se gèrent dans Réglages > Skills.`}
           onClick={() =>
             window.dispatchEvent(
               new CustomEvent("axecode:open-settings-section", { detail: { section: "skills" } }),
             )
           }
         >
-          Skills → <span className="axe-harness__muted">{counts.skill ?? 0}</span>
+          <span className="axe-harness__tab-label">Skills du harnais →</span> <span className="axe-harness__muted">{skillsHarnais}</span>
         </button>
       </nav>
 
@@ -331,8 +379,52 @@ export function HarnessPane({ workspacePath }: Props) {
         </p>
       ) : null}
 
-      {tab === "refinements" ? (
+      {recherche.trim() ? (
+        <ul className="axe-harness__hits" aria-label="Résultats de la recherche">
+          {resultats.length === 0 ? (
+            <li className="axe-harness__muted">Aucune entrée ne contient « {recherche.trim()} ».</li>
+          ) : null}
+          {HARNESS_KINDS.map((kind) => {
+            const liste = resultats.filter((entry) => entry.kind === kind.id);
+            if (liste.length === 0) return null;
+            return (
+              <li key={kind.id} className="axe-harness__hits-group">
+                <div className="axe-harness__group">
+                  {kind.label} <span className="axe-harness__muted">{liste.length}</span>
+                </div>
+                {liste.map((entry) => {
+                  const ex = extrait(entry.body, recherche);
+                  const cloud = !entries.some((e) => e.id === entry.id);
+                  return (
+                    <button
+                      key={entry.id}
+                      type="button"
+                      className="axe-harness__hit"
+                      data-kind={entry.kind}
+                      data-id={entry.id}
+                      title={entry.kind === "skill" ? "Ouvrir dans Réglages > Skills" : "Ouvrir cette entrée"}
+                      onClick={() => ouvrirResultat(entry)}
+                    >
+                      <span className="axe-harness__hit-head">
+                        <span className="axe-harness__pill" data-scope={entry.scope} data-origin={cloud ? "cloud" : undefined}>
+                          {cloud ? "cloud" : entry.scope === "global" ? "global" : "projet"}
+                        </span>
+                        <span className="axe-harness__hit-title"><Surligne texte={entry.title} mot={recherche} /></span>
+                      </span>
+                      {ex ? <span className="axe-harness__hit-extrait"><Surligne texte={ex} mot={recherche} /></span> : null}
+                    </button>
+                  );
+                })}
+              </li>
+            );
+          })}
+        </ul>
+      ) : tab === "refinements" ? (
         <ul className="axe-harness__records">
+          {/* purge faite par le service (refine::history). */}
+          <li className="axe-harness__muted axe-harness__records-note">
+            Les affinages ratés sont effacés au bout de 3 jours ; les autres restent.
+          </li>
           {records.length === 0 ? (
             <li className="axe-harness__muted">Aucun affinage pour l'instant. Lancez /refine.</li>
           ) : null}

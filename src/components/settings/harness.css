@@ -27,7 +27,8 @@
 .axe-harness__body { flex: 1; min-height: 240px; padding: 8px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-1); color: var(--text-0); font-family: var(--font-mono, monospace); font-size: calc(12px * var(--text-scale, 1)); resize: vertical; }
 .axe-harness__actions { display: flex; gap: 6px; flex-wrap: wrap; }
 .axe-harness__records { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.axe-harness__records > li { padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-1); font-size: calc(12px * var(--text-scale, 1)); color: var(--text-1); }
+.axe-harness__records > li.axe-harness__records-note { padding: 0; border: 0; background: none; }
+.axe-harness__records > li:not(.axe-harness__records-note) { padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-1); font-size: calc(12px * var(--text-scale, 1)); color: var(--text-1); }
 .axe-harness__records > li[data-outcome="rolled_back"] { opacity: 0.6; }
 .axe-harness__records p { margin: 6px 0; color: var(--text-0); }
 .axe-harness__record-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -64,3 +65,37 @@
 .axe-harness__origin { margin: 0; padding: 6px 8px; color: var(--text-1);
   background: var(--bg-2); border-radius: var(--r-small); line-height: 1.45;
   font-size: calc(11.5px * var(--text-scale, 1)); }
+
+/* recherche dans le harnais : champ pleine largeur, résultats groupés par type, mot surligné. */
+.axe-harness__search { width: 100%; max-width: 520px; box-sizing: border-box; min-height: 32px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line-strong, rgba(127,127,127,.35)); background: var(--bg-2); color: var(--text-0); font: inherit; font-size: calc(13px * var(--text-scale, 1)); }
+.axe-harness__search:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+.axe-harness__hits { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.axe-harness__hits-group { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.axe-harness__hit { display: flex; flex-direction: column; align-items: stretch; gap: 4px; width: 100%; min-width: 0; padding: 8px 12px; border: 0; border-radius: 6px; background: var(--bg-2); color: var(--text-1); text-align: left; font: inherit; cursor: pointer; }
+.axe-harness__hit:hover, .axe-harness__hit:focus-visible { background: var(--bg-3); }
+.axe-harness__hit-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.axe-harness__hit-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-0); font-size: calc(13px * var(--text-scale, 1)); }
+.axe-harness__hit-extrait { min-width: 0; color: var(--text-2); font-size: calc(12px * var(--text-scale, 1)); line-height: 1.45; overflow-wrap: anywhere; }
+.axe-harness__hit mark { background: color-mix(in srgb, var(--accent, #fc610b) 30%, transparent); color: var(--text-0); border-radius: 2px; padding: 0 1px; }
+
+/* volet de réglages étroit (fenêtre 800-1024 px, gros zoom) : rien ne dépasse. */
+.axe-harness { min-width: 0; }
+.axe-harness__tabs button { display: inline-flex; align-items: baseline; gap: 4px; white-space: nowrap; max-width: 100%; min-width: 0; }
+.axe-harness__tab-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.axe-harness__tabs button > .axe-harness__muted { flex: none; }
+.axe-harness__hit-head { flex-wrap: wrap; row-gap: 2px; }
+.axe-harness__hit-title { flex: 1 1 80px; }
+@container reglages-main (max-width: 520px) {
+  .axe-harness { padding: 12px; }
+  .axe-harness__split { grid-template-columns: minmax(0, 1fr); }
+  .axe-harness__list-actions { flex-wrap: wrap; }
+}
+@container reglages-main (max-width: 520px) {
+  .axe-backup { margin: 12px; padding: 8px; }
+  .axe-backup h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .axe-backup__row { flex-direction: column; align-items: flex-start; }
+  .axe-backup__row .settings-pane__btn { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .axe-backup__row input[type="number"] { width: 48px; }
+  .axe-backup__dir { max-width: 100%; }
+}
+.axe-backup__check input { width: 16px; height: 16px; }

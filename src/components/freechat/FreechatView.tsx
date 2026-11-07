@@ -164,6 +164,8 @@ export function FreechatView(props: Props) {
             <Icon icon="solar:settings-linear" width={12} height={12} />
             <span className="titlebar__btn-label">Réglages</span>
           </button>
+          {/* barre-dossiers — à droite des boutons de la barre. */}
+          <BarreDossiers onOuvrir={(p) => props.onOpenFolder(p)} />
         </div>
         <div className="titlebar__brand" data-tauri-drag-region>
           <span className="titlebar__brand-mark">
@@ -171,7 +173,6 @@ export function FreechatView(props: Props) {
           </span>
           <span className="titlebar__brand-name">SavIDE</span>
         </div>
-        <BarreDossiers onOuvrir={(p) => props.onOpenFolder(p)} />
         <QuotaIndicator />
         <UpdateBadge />
         <WindowControls />

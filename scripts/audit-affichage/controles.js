@@ -187,8 +187,9 @@
     // 1. Textes : coupes, debordants, sur deux lignes.
     for (const [T, noeuds] of textesParParent(document.body)) {
       if (ignore(T) || !visible(T)) continue;
-      const { rect: tr, lignes } = mesureTexte(noeuds);
-      if (!tr) continue;
+      const { rect: tr0, lignes } = mesureTexte(noeuds);
+      if (!tr0) continue;
+      let tr = tr0;
       const { chaine } = rogneurs(T, true);
       let entierementCache = false;
       let horsH = false;
@@ -202,6 +203,9 @@
           if (b.r - b.l < Math.min(tr.r - tr.l, 2.5 * fs) - 1) illisible = { largeur: Math.max(0, b.r - b.l) };
           if (b.r - b.l < 2) continue;
         }
+        // texte rogné par un « … » voulu (même un chemin en direction rtl, qui déborde à gauche) :
+        // les conteneurs suivants ne voient que la partie affichée.
+        const ellipseVoulue = c.cx && c.s.textOverflow === "ellipsis" && (c.el === T || c.el.contains(T));
         if (b.r - b.l < 2 || b.b - b.t < 2) { entierementCache = true; break; }
         const depD = tr.r - b.r, depG = b.l - tr.l, depB = tr.b - b.b, depH = b.t - tr.t;
         const coupeH = c.cx && (depD > TOL || depG > TOL);
@@ -222,6 +226,7 @@
           else if (css(c.el).textOverflow === "ellipsis" && (c.el === T || c.el.contains(T))) { /* « … » voulu */ }
           else noter("texte-coupe", T, `rogne de ${Math.round(Math.max(depD, depG))} px par ${decrire(c.el)}`, tr, 3);
         }
+        if (ellipseVoulue) tr = { ...tr, l: Math.max(tr.l, b.l), r: Math.min(tr.r, b.r) };
         if (coupeV && !horsV) {
           horsV = true;
           const s = css(c.el);

@@ -331,6 +331,42 @@ pub fn parse_slash(text: &str) -> Option<SlashCommand> {
     })
 }
 
+/// commandes reconnues aussi au milieu du message (première occurrence) : « fais X puis
+/// /heartbeat dis coucou toutes les 5 minutes ». Une commande en tête garde la priorité.
+pub const COMMANDES_PARTOUT: [&str; 2] = ["goal", "heartbeat"];
+
+/// La commande que le service interprète : celle du début du message (comme avant), sinon le
+/// premier `/goal` ou `/heartbeat` précédé d'un blanc et suivi d'un blanc ou de la fin ; sa phrase
+/// va jusqu'à la fin de la ligne. Même règle que l'interface (jetonsMessage.commandeInterpretee).
+pub fn parse_slash_partout(text: &str) -> Option<SlashCommand> {
+    if let Some(cmd) = parse_slash(text) {
+        return Some(cmd);
+    }
+    let lower = text.to_ascii_lowercase();
+    let mut best: Option<(usize, &str)> = None;
+    for name in COMMANDES_PARTOUT {
+        let needle = format!("/{name}");
+        let mut from = 0;
+        while let Some(rel) = lower[from..].find(&needle) {
+            let at = from + rel;
+            let end = at + needle.len();
+            let before_ok = at == 0 || lower[..at].chars().next_back().is_some_and(char::is_whitespace);
+            let after_ok = lower[end..].chars().next().is_none_or(char::is_whitespace);
+            if before_ok && after_ok {
+                if best.is_none_or(|(b, _)| at < b) {
+                    best = Some((at, name));
+                }
+                break;
+            }
+            from = end;
+        }
+    }
+    let (at, name) = best?;
+    let after = &text[at + 1 + name.len()..];
+    let rest = after.split('\n').next().unwrap_or("").trim();
+    Some(SlashCommand { name: name.to_string(), args: split_args(rest), rest: rest.to_string() })
+}
+
 /// `--flag value` lookup; returns remaining positional words.
 fn take_flags(args: &[String], flags: &[&str]) -> (HashMap<String, String>, Vec<String>) {
     let mut map = HashMap::new();
@@ -1385,7 +1421,8 @@ impl TurnHook for SessionCommandsHook {
     async fn reminder(&self, session: &SessionMeta, request: &TurnRequest) -> Option<String> {
         let id = session.id.as_str();
         let mut blocks = Vec::new();
-        if let Some(cmd) = user_text(request).as_deref().and_then(parse_slash) {
+        // /goal et /heartbeat aussi au milieu du message.
+        if let Some(cmd) = user_text(request).as_deref().and_then(parse_slash_partout) {
             if let Some(notice) = self.run_slash(session, &cmd).await {
                 blocks.push(format!("## Commande `/{}`\n{notice}", cmd.name));
             }
@@ -1556,6 +1593,19 @@ mod tests {
         assert_eq!(flags["gate"], "npm test");
         assert_eq!(rest, vec!["fix", "it"]);
         assert!(parse_slash("not a command").is_none());
+        // au milieu de la phrase : /goal et /heartbeat seulement, première occurrence, jusqu'à la fin de la ligne.
+        let c = parse_slash_partout("corrige le bug puis /heartbeat dis coucou toutes les 5 minutes").unwrap();
+        assert_eq!((c.name.as_str(), c.rest.as_str()), ("heartbeat", "dis coucou toutes les 5 minutes"));
+        let c = parse_slash_partout("Pour ce lot : /Goal tous les tests passent\nmerci").unwrap();
+        assert_eq!((c.name.as_str(), c.rest.as_str()), ("goal", "tous les tests passent"));
+        let c = parse_slash_partout("a /heartbeat 5m x puis /goal y").unwrap();
+        assert_eq!(c.name, "heartbeat");
+        let c = parse_slash_partout("/compact puis /goal x").unwrap();
+        assert_eq!(c.name, "compact");
+        assert!(parse_slash_partout("voir /compact").is_none());
+        assert!(parse_slash_partout("src/goal x").is_none());
+        assert!(parse_slash_partout("voir /goal/x et /goals").is_none());
+        assert!(parse_slash_partout("é /goal").is_some_and(|c| c.rest.is_empty()));
         assert!(parse_slash("/path/to/file").is_none());
     }
 

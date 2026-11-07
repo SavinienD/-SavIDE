@@ -3700,8 +3700,11 @@ export function Workspace({
           </button>
           {/* e18 — le menu « Volets » est retire : chaque volet a son bouton,
               et un volet detache se replie en liseré. */}
+          {/* barre-dossiers — à droite des boutons de la barre, juste avant Terminal / Volets. */}
+          <BarreDossiers courant={workspacePath} onOuvrir={(p) => onOpenFolder?.(p)} />
           <button
             className="titlebar__btn"
+            data-barre="terminal"
             data-on={settingsActive ? "true" : "false"}
             data-action="reglages"
             onClick={() => openSettings()}
@@ -3770,7 +3773,6 @@ export function Workspace({
             </>
           ) : null}
         </div>
-        <BarreDossiers courant={workspacePath} onOuvrir={(p) => onOpenFolder?.(p)} />
         <QuotaIndicator /> {/* providers */}
         {cloudConnection ? (
           // import — copier un dossier du PC dans l'espace, puis l'ouvrir.

@@ -1268,6 +1268,7 @@ export function SettingsPane({ workspacePath }: Props) {
           className="settings-pane__nav-item"
           data-section="skills"
           data-active={section === "skills" ? "true" : "false"}
+          title={skills ? `${skills.length + pySkills.length} skills : ${skills.length} Markdown + ${pySkills.length} du harnais (Python)` : "Skills"}
           onClick={() => setSection("skills")}
         >
           <Icon

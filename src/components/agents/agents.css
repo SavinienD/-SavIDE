@@ -199,3 +199,9 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+/* filtres ouverts dans une barre latérale étroite : libellés à la ligne plutôt que rognés. */
+.axe-agents__head--compact .axe-agents__filters[open] { flex: 1 1 100%; min-width: 0; }
+.axe-agents__head--compact .axe-agents__filters[open] > label { white-space: nowrap; display: flex; align-items: center; gap: 6px; min-width: 0; min-height: 24px; }
+.axe-agents__head--compact .axe-agents__filters[open] > label > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.axe-agents__head--compact .axe-agents__filters[open] > label > input { flex: none; width: 16px; height: 16px; margin: 0; }

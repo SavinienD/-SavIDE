@@ -15,7 +15,8 @@
 }
 .axe-home__lists {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, …) : un titre long (sur une ligne, « … ») n'élargit pas la colonne. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
@@ -27,7 +28,7 @@
 @media (max-width: 720px) {
   .axe-home__ctas,
   .axe-home__lists {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -114,9 +115,8 @@
   font-family: var(--font-ui);
   font-size: calc(11px * var(--text-scale, 1));
   font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-3);
+  letter-spacing: 0;
+  color: var(--text-2);
   text-align: left;
 }
 .axe-freechat__group-head span {
