@@ -74,8 +74,8 @@ test("V.estSecret : formes connues et chaînes à forte entropie", () => {
 
 test("code, chemins, adresses et commandes ne sont pas lus", () => {
   const e = apprendre([
-    "lance `MonScript.Run` puis ```\nconst MaClasse = FooBar();\n``` dans C:\\Users\\Savinien\\Projet et /home/agent/Truc, écris à jean.Dupuis@axe.fr /Goal",
-    "lance `MonScript.Run` puis ```\nconst MaClasse = FooBar();\n``` dans C:\\Users\\Savinien\\Projet et /home/agent/Truc, écris à jean.Dupuis@axe.fr /Goal",
+    "lance `MonScript.Run` puis ```\nconst MaClasse = FooBar();\n``` dans C:\\Users\\Dupont\\Projet et /home/moi/Truc, écris à jean.Dupuis@exemple.fr /Goal",
+    "lance `MonScript.Run` puis ```\nconst MaClasse = FooBar();\n``` dans C:\\Users\\Dupont\\Projet et /home/moi/Truc, écris à jean.Dupuis@exemple.fr /Goal",
   ]);
   assert.deepEqual(formes(e), []);
 });
