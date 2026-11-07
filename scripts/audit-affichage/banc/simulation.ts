@@ -433,6 +433,25 @@ export function installerSimulation(scene: Scene): void {
     return liste;
   }
   function chargerConversation(a: any) {
+    // Banc mémoire : chaque conversation est longue, porte des images en base64
+    // et arrive comme du vrai IPC (objets neufs à chaque lecture, pas partagés).
+    if (scene.memoire) {
+      const id = String(a.conversationId ?? D.idConv(0));
+      const conv: any = D.conversationSauvee(id, { long: true });
+      const img = "iVBORw0KGgo" + id + "B".repeat(200_000);
+      for (let i = 0; i < 3; i += 1) {
+        conv.history.push({ role: "assistant", parts: [{ type: "tool_call", id: `toolu_img${i}`, name: "bash", input: { command: "capture" } }] });
+        conv.history.push({ role: "user", parts: [{ type: "tool_result", tool_call_id: `toolu_img${i}`, content: "capture.png\n".repeat(400), is_error: false, images: [{ media_type: "image/png", data: img + i }] }] });
+      }
+      // « memoireTours » : très longue conversation (N échanges : texte, outil, Markdown, une image sur 10).
+      for (let k = 0; k < Number(scene.memoireTours ?? 0); k += 1) {
+        conv.history.push({ role: "user", parts: [{ type: "text", text: `Question ${k} : regarde le journal du banc et corrige la colonne.` }] });
+        conv.history.push({ role: "assistant", parts: [{ type: "text", text: `Je regarde (${k}).` }, { type: "tool_call", id: `toolu_l${k}`, name: "bash", input: { command: `rg -n colonne src | head -${k}` } }] });
+        conv.history.push({ role: "user", parts: [{ type: "tool_result", tool_call_id: `toolu_l${k}`, content: `src/a.ts:${k}: colonne\n`.repeat(60), is_error: false, images: k % 10 === 9 ? [{ media_type: "image/png", data: img + "L" + k }] : undefined }] });
+        conv.history.push({ role: "assistant", parts: [{ type: "text", text: `Résultat ${k} :\n\n| Largeur | Avant | Après |\n|---|---|---|\n| 800 px | coupé | OK |\n\n\`\`\`ts\nconst largeur = ${k};\n\`\`\`\n\nJe passe à la suite.` }] });
+      }
+      return JSON.parse(JSON.stringify(conv));
+    }
     return h._charger_conversation(a, a);
   }
   // Scène « fichiers » : un fichier de chaque type servi depuis /fixtures/ (preuve des visionneuses).
