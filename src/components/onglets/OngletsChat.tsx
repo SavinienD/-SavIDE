@@ -81,6 +81,7 @@ export function OngletsChat({
               aria-selected={estActif}
               className="onglets-chat__tab"
               data-active={estActif ? "true" : "false"}
+              data-onglet={onglet.id}
               data-detached={estDetache ? "true" : "false"}
               data-streaming={enCours?.has(onglet.id) ? "true" : "false"}
               title={estDetache ? `${onglet.titre} — détachée, devant` : onglet.titre}

@@ -9,6 +9,7 @@ import { ConversationList } from "../ConversationList";
 import { NouvelleConversation } from "../NouvelleConversation"; // e13
 import { AxeLogo } from "../../axe/Logo";
 import { QuotaIndicator } from "../../axe/QuotaIndicator";
+import { BarreDossiers } from "../BarreDossiers";
 import { UpdateBadge } from "../UpdateBadge";
 import { WindowControls, isWindowsPlatform } from "../WindowControls";
 import {
@@ -170,6 +171,7 @@ export function FreechatView(props: Props) {
           </span>
           <span className="titlebar__brand-name">SavIDE</span>
         </div>
+        <BarreDossiers onOuvrir={(p) => props.onOpenFolder(p)} />
         <QuotaIndicator />
         <UpdateBadge />
         <WindowControls />

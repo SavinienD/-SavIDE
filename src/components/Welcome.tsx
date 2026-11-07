@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { Icon } from "@iconify/react";
-import { loadRecents, removeRecent } from "../lib/recents";
+import { dossiersNumerotes, libererOrdre, removeRecent } from "../lib/recents";
 import { api, cloudRpc } from "../lib/ipc";
 import { CloudLoginButton, useCloudState } from "./cloud/CloudLoginButton";
 import { CLOUD_CONNECTION } from "./cloud/cloudApi";
@@ -73,7 +73,10 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, deriveName }
   const [service, setService] = useState<Map<string, string>>(() => new Map());
 
   useEffect(() => {
-    setRecents(loadRecents());
+    // Retour à l'accueil : l'ordre des numéros suit de nouveau l'historique (le plus récent d'abord) ;
+    // même ordre que Ctrl+1…9 et la barre du haut.
+    libererOrdre();
+    setRecents(dossiersNumerotes());
     let cancelled = false;
     freechatApi
       .index()

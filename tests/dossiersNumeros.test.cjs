@@ -67,7 +67,7 @@ test("aucun autre raccourci sur Ctrl+1…9 : explorateur et saisie du chat dépl
   assert.ok(R.correspond(reg("focusChat"), ev({ ctrlKey: true, shiftKey: true, key: "T", code: "KeyT" }), false));
 });
 
-test("ordre : celui de l'accueil au moment de l'appui ; ouvrir un dossier le remet en tête", () => {
+test("historique : le plus récent d'abord (accueil) ; numéros figés pendant le travail : voir ordreDossiers.test.cjs", () => {
   memoire.clear();
   for (const n of ["a", "b", "c", "d"]) Rec.recordRecent(`/p/${n}`, n);
   // Accueil : d, c, b, a.
@@ -75,7 +75,8 @@ test("ordre : celui de l'accueil au moment de l'appui ; ouvrir un dossier le rem
   assert.equal(Rec.dossierRecentNumero(3).path, "/p/b");
   assert.equal(Rec.dossierRecentNumero(5), null);
   assert.equal(Rec.dossierRecentNumero(0), null);
-  // Ctrl+3 ouvre b, qui passe en tête : b, d, c, a (Ctrl+2 ramène alors au dossier quitté).
+  // L'historique remet b en tête (b, d, c, a) ; les numéros, eux, ne changent qu'au retour à l'accueil.
+  Rec.libererOrdre();
   Rec.recordRecent("/p/b", "b");
   assert.deepEqual(Rec.loadRecents().map((r) => r.path), ["/p/b", "/p/d", "/p/c", "/p/a"]);
   assert.equal(Rec.dossierRecentNumero(2).path, "/p/d");

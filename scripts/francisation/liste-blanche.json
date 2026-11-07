@@ -261,5 +261,10 @@
   "fichier": "src/lib/arbreFichiers.ts",
   "motif": "^Home$",
   "raison": "nom de touche du clavier (KeyboardEvent.key), pas un texte affiché"
+ },
+ {
+  "fichier": "src/",
+  "motif": "(^|\\+ )Tab$",
+  "raison": "nom de la touche Tab, imprimé ainsi sur les claviers français"
  }
 ]

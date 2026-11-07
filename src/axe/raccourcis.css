@@ -1,0 +1,61 @@
+/* Réglages > Raccourcis : une ligne par action, libellé à gauche, touches à droite
+ * en pastilles sur une seule ligne (le libellé passe à la ligne, jamais les touches). */
+.axe-raccourcis { max-width: 820px; container-type: inline-size; }
+.axe-raccourcis__outils { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.axe-raccourcis__recherche {
+  flex: 1 1 220px; min-width: 0; height: 32px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: var(--r-small);
+  background: var(--bg-2); color: var(--text-0); font: inherit; font-size: var(--fs-sm);
+}
+.axe-raccourcis__recherche:focus { outline: none; border-color: var(--line-bold); }
+.axe-raccourcis__tout-defaut, .axe-raccourcis__defaut {
+  flex: 0 1 auto; max-width: 100%; padding: 0 10px; height: 28px; border: 1px solid transparent; border-radius: var(--r-small);
+  background: none; color: var(--text-2); font: inherit; font-size: var(--fs-xs); cursor: pointer; white-space: nowrap;
+}
+.axe-raccourcis__tout-defaut { height: auto; min-height: 32px; border-color: var(--line); font-size: var(--fs-sm); }
+.axe-raccourcis__tout-defaut:hover, .axe-raccourcis__defaut:hover { background: var(--bg-3); color: var(--text-0); }
+.axe-raccourcis__groupe { display: flex; flex-direction: column; gap: 4px; }
+.axe-raccourcis__groupe h3 { margin: 0 0 2px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-1); }
+.axe-raccourcis__liste { margin: 0; padding: 0; list-style: none; }
+.axe-raccourcis__ligne {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 16px; row-gap: 4px;
+  min-height: 40px; padding: 4px 0; border-bottom: 1px solid var(--line);
+}
+.axe-raccourcis__ligne:last-child { border-bottom: none; }
+.axe-raccourcis__libelle { min-width: 0; color: var(--text-1); font-size: var(--fs-sm); line-height: 1.4; }
+.axe-raccourcis__droite { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 4px 6px; justify-self: end; min-width: 0; }
+.axe-raccourcis__combo {
+  display: inline-flex; align-items: center; min-height: 30px; padding: 2px 4px;
+  border: 1px solid transparent; border-radius: var(--r-small); background: none; color: inherit; font: inherit;
+}
+button.axe-raccourcis__combo { cursor: pointer; }
+button.axe-raccourcis__combo:hover { border-color: var(--line-strong); background: var(--bg-2); }
+button.axe-raccourcis__combo:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.axe-raccourcis__combo[data-ecoute] { border-color: var(--accent); background: var(--accent-soft); }
+.axe-raccourcis__touches { display: inline-flex; align-items: center; gap: 4px; flex-wrap: nowrap; white-space: nowrap; }
+.axe-raccourcis__touches kbd {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 7px;
+  border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 5px;
+  background: var(--bg-2); color: var(--text-0);
+  font-family: var(--font-ui); font-size: var(--fs-xs); font-weight: 500; line-height: 1; white-space: nowrap;
+}
+.axe-raccourcis[data-mac="true"] .axe-raccourcis__touches kbd { min-width: 26px; font-size: var(--fs-sm); }
+.axe-raccourcis__geste { color: var(--text-2); font-size: var(--fs-xs); white-space: normal; text-align: right; }
+.axe-raccourcis__combo[data-fixe] .axe-raccourcis__geste { max-width: 240px; }
+.axe-raccourcis__ecoute { padding: 0 4px; color: var(--text-0); font-size: var(--fs-xs); }
+.axe-raccourcis__aide, .axe-raccourcis__alerte { grid-column: 1 / -1; justify-self: end; font-size: var(--fs-xs); text-align: right; }
+.axe-raccourcis__aide { color: var(--text-3); }
+.axe-raccourcis__alerte { color: var(--warn, var(--danger)); }
+
+/* Colonne étroite (petite fenêtre, gros zoom) : le libellé au-dessus, les touches dessous. */
+@container (max-width: 460px) {
+  .axe-raccourcis__ligne { grid-template-columns: minmax(0, 1fr); padding: 6px 0; }
+  .axe-raccourcis__droite { justify-self: start; justify-content: flex-start; }
+  .axe-raccourcis__aide, .axe-raccourcis__alerte, .axe-raccourcis__geste { justify-self: start; text-align: left; }
+  .axe-raccourcis__combo { margin-left: -4px; max-width: 100%; }
+}
+/* Colonne minuscule (fenêtre de 800 px, chat très large) : les pastilles passent à la ligne,
+ * entières, plutôt que de sortir du cadre. */
+@container (max-width: 200px) {
+  .axe-raccourcis__touches { flex-wrap: wrap; row-gap: 4px; }
+}

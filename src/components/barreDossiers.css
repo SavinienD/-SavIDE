@@ -1,0 +1,27 @@
+/* barre-dossiers — petits boutons 1 2 3… dans la barre du haut : discrets (texte gris,
+ * sans cadre), le dossier ouvert seul a un fond. Moins de boutons quand la barre est étroite. */
+.barre-dossiers {
+  display: flex; align-items: center; gap: 2px; flex: 0 0 auto;
+  margin: 0 4px 0 6px; -webkit-app-region: no-drag;
+}
+.barre-dossiers__btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 4px;
+  border: 1px solid transparent; border-radius: 4px; background: none;
+  color: var(--text-3); font-family: var(--font-mono); font-size: var(--fs-xs); line-height: 1;
+  font-variant-numeric: tabular-nums; cursor: pointer;
+}
+.barre-dossiers__btn:hover { background: var(--bg-3); color: var(--text-0); }
+.barre-dossiers__btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+.barre-dossiers__btn[aria-current="true"] { background: var(--bg-4); border-color: var(--line-strong); color: var(--text-0); cursor: default; }
+@media (max-width: 1100px) {
+  .barre-dossiers__btn:nth-child(n + 4):not([aria-current="true"]) { display: none; }
+}
+/* Petite fenêtre ou gros zoom : seul le dossier ouvert reste, puis plus rien (la barre
+ * garde sa place pour ses boutons ; Ctrl+1…9 marche toujours). */
+@media (max-width: 920px) {
+  .barre-dossiers__btn:not([aria-current="true"]) { display: none; }
+}
+@media (max-width: 860px) {
+  .barre-dossiers { display: none; }
+}

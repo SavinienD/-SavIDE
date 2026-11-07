@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Welcome } from "./components/Welcome";
 import { Workspace } from "./components/Workspace";
 import { UpdateBadge } from "./components/UpdateBadge";
-import { recordRecent, deriveName, dossierRecentNumero } from "./lib/recents";
-import { fournirActions, numeroTouche } from "./axe/raccourcis";
+import { noterOuverture, libererOrdre, deriveName, dossierRecentNumero } from "./lib/recents";
+import { ecouterRaccourcis, fournirActions, numeroTouche, versionRaccourcis } from "./axe/raccourcis";
 import { samePath } from "./components/freechat/freechatApi";
 import { api } from "./lib/ipc";
 import { freechatApi } from "./components/freechat/freechatApi"; // freechat
@@ -31,6 +31,8 @@ type AppState =
 export default function App() {
   const [state, setState] = useState<AppState>({ kind: "boot" });
   const [bootError, setBootError] = useState<string | null>(null);
+  // Raccourci changé dans les Réglages : toute l'interface se redessine (info-bulles à jour).
+  useSyncExternalStore(ecouterRaccourcis, versionRaccourcis);
 
   const openWorkspace = useCallback(async (path: string, conversationId?: string) => {
     setBootError(null);
@@ -49,7 +51,7 @@ export default function App() {
           // keep the default conversation
         }
       }
-      recordRecent(bootstrap.workspace.path, bootstrap.workspace.name);
+      noterOuverture(bootstrap.workspace.path, bootstrap.workspace.name); // ordre des numéros figé jusqu'à l'accueil
       setState({ kind: "workspace", bootstrap, layout: "ide" });
     } catch (err) {
       setBootError(String(err));
@@ -79,6 +81,12 @@ export default function App() {
       }),
     [openWorkspace],
   );
+
+  // Ordre des dossiers numérotés : il se met à jour à chaque retour à l'accueil (l'accueil
+  // le relit aussi en s'affichant : ses effets passent avant celui-ci).
+  useEffect(() => {
+    if (state.kind === "welcome") libererOrdre();
+  }, [state.kind]);
 
   // freechat — free conversation view.
   const openFreeChat = useCallback(

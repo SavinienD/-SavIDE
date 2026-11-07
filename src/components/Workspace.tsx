@@ -110,6 +110,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { SkillsBadge } from "../axe/E4Vues"; // e4
 import { SkillSync, type Empreintes } from "../axe/SkillSync"; // e4
 import { QuotaIndicator } from "../axe/QuotaIndicator"; // providers
+import { BarreDossiers } from "./BarreDossiers";
 import { WindowControls, isWindowsPlatform } from "./WindowControls";
 import { chatPathToRelative, cleanChatFilePath, stripVerbatimPath } from "../lib/cheminsChat";
 import type {
@@ -2831,6 +2832,32 @@ export function Workspace({
 
   // raccourcis — les actions de l'IDE pour le registre unique (axe/raccourcis.ts).
   // Une ref garde la version courante : on s'inscrit une seule fois.
+  const ongletVoisin = (e: KeyboardEvent, sens: 1 | -1): boolean | void => {
+    const cible = e.target as HTMLElement | null;
+    const zone = typeof cible?.closest === "function" ? cible : null;
+    if (zone?.closest(".terminal-shell")) return false; // cycle des terminaux (TerminalPanel)
+    if (zone?.closest(".editor-col") && tabs.length && !settingsActive && !remoteActive) {
+      activateFileTab((Math.max(activeTabIndex, sens > 0 ? -1 : 0) + sens + tabs.length) % tabs.length);
+      return;
+    }
+    const ids = ongletsChat.map((t) => t.id);
+    if (ids.length < 2) return;
+    void selectConversation(ids[(Math.max(ids.indexOf(activeConv.id), sens > 0 ? -1 : 0) + sens + ids.length) % ids.length]);
+  };
+  // Échap arrête la réponse seulement depuis la conversation (zone de saisie, fil) et
+  // si rien d'autre n'attend Échap : menu, liste, fenêtre, dictée, aperçu.
+  const echapArrete = (e: KeyboardEvent): boolean => {
+    if (!streamingConversationIds.has(activeConv.id)) return false;
+    const cible = e.target as HTMLElement | null;
+    const surPage = !cible || cible === document.body || cible === document.documentElement;
+    const dansChat = typeof cible?.closest === "function" && Boolean(cible.closest(".colonne-chat, .chat-pane, .composer"));
+    if (!surPage && !dansChat) return false;
+    if (typeof cible?.closest === "function" && cible.closest("input, select, [contenteditable=true]")) return false;
+    const ouvert = document.querySelector(
+      "[role='listbox'], [role='menu'], [role='dialog'], .composer__popover, .composer__compacting, .axe-slash-menu, .axe-voix__annuler, .chat-path-menu",
+    );
+    return !ouvert;
+  };
   const actionsRaccourcisRef = useRef<Parameters<typeof fournirActions>[0]>({});
   actionsRaccourcisRef.current = {
     fermerOnglet: () => closeActiveEditorTab(),
@@ -2848,16 +2875,9 @@ export function Workspace({
     ongletPrecedent: () => {
       if (tabs.length) activateFileTab((Math.max(activeTabIndex, 0) - 1 + tabs.length) % tabs.length);
     },
-    conversationSuivante: () => {
-      const ids = ongletsChat.map((t) => t.id);
-      if (ids.length < 2) return;
-      void selectConversation(ids[(ids.indexOf(activeConv.id) + 1) % ids.length]);
-    },
-    conversationPrecedente: () => {
-      const ids = ongletsChat.map((t) => t.id);
-      if (ids.length < 2) return;
-      void selectConversation(ids[(Math.max(ids.indexOf(activeConv.id), 0) - 1 + ids.length) % ids.length]);
-    },
+    // Ctrl+Tab / Ctrl+Maj+Tab : onglets de la zone qui a le focus (terminaux : TerminalPanel).
+    conversationSuivante: (e) => ongletVoisin(e, 1),
+    conversationPrecedente: (e) => ongletVoisin(e, -1),
     settings: () => openSettings(),
     accueil: () => onSwitchWorkspace(),
     pousserCloud: () => void pousserDossierCloud(),
@@ -2868,7 +2888,10 @@ export function Workspace({
     dictee: () => (document.querySelector('.composer button[aria-label="Dicter"]') as HTMLButtonElement | null)?.click(),
     colonneChat: () => ajouterColonneChat(),
     archiver: () => void archiverConversationColonne(activeConv.id),
-    stop: () => void stopTurnForConversation(activeConv),
+    stop: (e) => {
+      if (!echapArrete(e)) return false;
+      void stopTurnForConversation(activeConv);
+    },
     focusChat: () => (document.querySelector(".composer textarea") as HTMLTextAreaElement | null)?.focus(),
     focusExplorateur: () => (document.querySelector(".sidebar__body") as HTMLElement | null)?.focus(),
   };
@@ -3747,6 +3770,7 @@ export function Workspace({
             </>
           ) : null}
         </div>
+        <BarreDossiers courant={workspacePath} onOuvrir={(p) => onOpenFolder?.(p)} />
         <QuotaIndicator /> {/* providers */}
         {cloudConnection ? (
           // import — copier un dossier du PC dans l'espace, puis l'ouvrir.
