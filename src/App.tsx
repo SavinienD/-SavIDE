@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Welcome } from "./components/Welcome";
 import { Workspace } from "./components/Workspace";
 import { UpdateBadge } from "./components/UpdateBadge";
-import { recordRecent, deriveName, dossierRecentNumero } from "./lib/recents";
+import { recordRecent, deriveName, dossierRecentNumero, loadRecents, removeRecent } from "./lib/recents";
+import { open as choisirDossier } from "@tauri-apps/plugin-dialog";
+import { dependancesTauri, deplacerEtOuvrir, nomDe, noterDossiersRecents, ouvrirDossier, parentDe, type Dependances, type Ouverture } from "./lib/dossierDeplace";
+import { DossierIntrouvable } from "./components/DossierIntrouvable";
 import { fournirActions, numeroTouche } from "./axe/raccourcis";
 import { samePath } from "./components/freechat/freechatApi";
 import { api } from "./lib/ipc";
@@ -28,33 +31,96 @@ type AppState =
   | { kind: "workspace"; bootstrap: WorkspaceBootstrap; layout: "ide" | "chat" };
 
 
+type CarteIntrouvable = { chemin: string; nom: string; conversationId?: string; recherche: boolean; erreur?: string | null };
+
+/** Nom affiché d'un dossier : celui des récents, sinon le dernier segment du chemin. */
+function nomDossier(chemin: string): string {
+  return loadRecents().find((r) => r.path === chemin)?.name || nomDe(chemin);
+}
+
 export default function App() {
   const [state, setState] = useState<AppState>({ kind: "boot" });
   const [bootError, setBootError] = useState<string | null>(null);
+  // Dossier qui n'est plus à son chemin : recherche en cours, puis carte « Dossier introuvable ».
+  const [introuvable, setIntrouvable] = useState<CarteIntrouvable | null>(null);
+  const [versionAccueil, setVersionAccueil] = useState(0);
+
+  // Résultat d'une ouverture (dossier retrouvé ou choisi à la main compris).
+  const appliquerOuverture = useCallback(async (r: Ouverture, chemin: string, conversationId?: string) => {
+    if (r.kind === "introuvable") {
+      void api.resetWindowTitle().catch(() => undefined);
+      setIntrouvable({ chemin, nom: nomDossier(chemin), conversationId, recherche: false });
+      setState({ kind: "welcome" });
+      return;
+    }
+    if (r.kind === "erreur") {
+      setIntrouvable((c) => (c && c.chemin === chemin ? { ...c, recherche: false, erreur: r.message } : c));
+      setBootError(r.message);
+      return;
+    }
+    let bootstrap = r.bootstrap;
+    // freechat — land on a given conversation (free conversation
+    // opened in a folder, project conversation picked in the sidebar).
+    if (conversationId && bootstrap.activeConversation.id !== conversationId) {
+      try {
+        const conversation = await api.loadConversation(bootstrap.workspace.path, conversationId);
+        bootstrap = { ...bootstrap, activeConversation: conversation };
+      } catch {
+        // keep the default conversation
+      }
+    }
+    recordRecent(bootstrap.workspace.path, bootstrap.workspace.name);
+    setIntrouvable(null);
+    setState({ kind: "workspace", bootstrap, layout: "ide" });
+  }, []);
+
+  // Dépendances réelles ; la recherche affiche la carte « Recherche… » sur l'accueil.
+  const dependances = useCallback(
+    (conversationId?: string): Dependances => ({
+      ouvrir: (chemin) => api.openWorkspace(chemin),
+      deplacer: dependancesTauri.deplacer,
+      retrouver: (chemin, racines) => {
+        void api.resetWindowTitle().catch(() => undefined);
+        setIntrouvable({ chemin, nom: nomDossier(chemin), conversationId, recherche: true });
+        setState({ kind: "welcome" });
+        return dependancesTauri.retrouver(chemin, racines);
+      },
+    }),
+    [],
+  );
 
   const openWorkspace = useCallback(async (path: string, conversationId?: string) => {
     setBootError(null);
     // v2-e12d — un dossier du poste se travaille dans l'espace local :
     // une connexion cloud restee active ne doit pas s'inviter dans l'interface.
     await connectionsApi.setActive(LOCAL_CONNECTION).catch(() => undefined);
+    // Dossier renommé ou déplacé : retrouvé, chemin mis à jour partout, puis rouvert.
+    const r = await ouvrirDossier(path, dependances(conversationId));
+    await appliquerOuverture(r, path, conversationId);
+  }, [appliquerOuverture, dependances]);
+
+  // Actions de la carte « Dossier introuvable ».
+  const choisirNouvelEmplacement = useCallback(async () => {
+    const carte = introuvable;
+    if (!carte) return;
+    let choisi: string | string[] | null = null;
     try {
-      let bootstrap = await api.openWorkspace(path);
-      // freechat — land on a given conversation (free conversation
-      // opened in a folder, project conversation picked in the sidebar).
-      if (conversationId && bootstrap.activeConversation.id !== conversationId) {
-        try {
-          const conversation = await api.loadConversation(bootstrap.workspace.path, conversationId);
-          bootstrap = { ...bootstrap, activeConversation: conversation };
-        } catch {
-          // keep the default conversation
-        }
-      }
-      recordRecent(bootstrap.workspace.path, bootstrap.workspace.name);
-      setState({ kind: "workspace", bootstrap, layout: "ide" });
-    } catch (err) {
-      setBootError(String(err));
+      choisi = await choisirDossier({ directory: true, multiple: false, defaultPath: parentDe(carte.chemin) ?? undefined });
+    } catch {
+      return; // sélecteur fermé ou indisponible
     }
-  }, []);
+    if (typeof choisi !== "string") return;
+    setIntrouvable({ ...carte, recherche: true, erreur: null });
+    const r = await deplacerEtOuvrir(carte.chemin, choisi, dependances(carte.conversationId));
+    await appliquerOuverture(r, carte.chemin, carte.conversationId);
+  }, [introuvable, dependances, appliquerOuverture]);
+
+  const retirerIntrouvable = useCallback(() => {
+    if (introuvable) removeRecent(introuvable.chemin);
+    setIntrouvable(null);
+    setBootError(null);
+    setVersionAccueil((v) => v + 1); // l'accueil relit ses dossiers récents
+  }, [introuvable]);
 
   // Ctrl+1…9 (⌘1…9) : n-ième dossier récent de l'accueil, lu au moment
   // de l'appui, ouvert comme un clic sur sa carte (accueil, dossier ouvert, vue libre).
@@ -100,6 +166,7 @@ export default function App() {
   // disponible » en haut à droite et n'installe que sur clic.
   useEffect(() => {
     let cancelled = false;
+    noterDossiersRecents();
 
     (async () => {
       // 2. Accueil. v2-e12d — l'application s'ouvre toujours sur
@@ -241,10 +308,25 @@ export default function App() {
     return (
       <>
         <Welcome
+          key={versionAccueil}
+          avis={
+            introuvable && (
+              <DossierIntrouvable
+                chemin={introuvable.chemin}
+                nom={introuvable.nom}
+                recherche={introuvable.recherche}
+                erreur={introuvable.erreur}
+                onRechercher={() => void openWorkspace(introuvable.chemin, introuvable.conversationId)}
+                onChoisir={() => void choisirNouvelEmplacement()}
+                onRetirer={retirerIntrouvable}
+                onFermer={() => setIntrouvable(null)}
+              />
+            )
+          }
           onPick={openWorkspace}
           onFreeChat={(options) => void openFreeChat(options)}
           onCloudFolder={EDITION_LOCALE ? undefined : (folder) => void openCloudFolder(folder)}
-          error={bootError}
+          error={introuvable ? null : bootError}
           deriveName={deriveName}
         />
         {/* cloud — way back to the cloud mode from the local home screen. */}

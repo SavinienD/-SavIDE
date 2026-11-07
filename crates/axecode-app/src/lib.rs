@@ -1,6 +1,7 @@
 pub mod agent;
 pub mod bash;
 pub mod compact;
+pub mod dossiers; // dossiers renommés ou déplacés
 pub mod edit;
 pub mod glob;
 pub mod grep;

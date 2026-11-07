@@ -229,3 +229,47 @@ async fn file_en_pause_apres_stop() {
     assert!(!qd.join(format!("{}.paused", a.id)).exists());
 }
 
+
+
+// Dossier de projet renommé sur le poste : la session du service suit le nouveau
+// chemin sans rien perdre de son historique (y compris après un redémarrage du service).
+#[tokio::test(flavor = "multi_thread")]
+async fn dossier_renomme_la_session_suit_avec_son_historique() {
+    let data_dir = tmp();
+    let mut config = DaemonConfig::new(data_dir.clone());
+    config.auto_shutdown = false;
+    let daemon = Daemon::new(config.clone(), Arc::new(EchoFactory));
+    let parent = tmp();
+    let ancien = parent.join("projet");
+    std::fs::create_dir_all(&ancien).unwrap();
+    let historique: Vec<axecode_core::ChatMessage> = vec![
+        axecode_core::ChatMessage::user_text("premier"),
+        axecode_core::ChatMessage::user_text("deuxième"),
+        axecode_core::ChatMessage::user_text("troisième"),
+    ];
+    let requete = |ws: &std::path::Path| -> axecode_core::CreateSessionRequest {
+        serde_json::from_value(json!({
+            "name": "projet", "workspaceId": ws.display().to_string(), "model": {"provider": "anthropic", "name": "m"}
+        }))
+        .unwrap()
+    };
+    let meta = daemon.ensure("conv-deplace", requete(&ancien), historique).unwrap();
+    assert_eq!(meta.workspace_id, ancien.display().to_string());
+    let nouveau = parent.join("projet-renomme");
+    std::fs::rename(&ancien, &nouveau).unwrap();
+
+    let moved = daemon.relocate("conv-deplace", nouveau.display().to_string(), None).await.unwrap();
+    assert_eq!(moved.workspace_id, nouveau.display().to_string());
+    let journal = Journal::open(&data_dir, "conv-deplace").unwrap();
+    assert_eq!(journal.history().len(), 3, "historique intact");
+    // L'appli renvoie ensuite `sessions.ensure` avec le nouveau chemin : même session.
+    let encore = daemon.ensure("conv-deplace", requete(&nouveau), Vec::new()).unwrap();
+    assert_eq!(encore.workspace_id, nouveau.display().to_string());
+
+    let daemon = Daemon::new(config, Arc::new(EchoFactory));
+    let metas = daemon.list_metas();
+    assert_eq!(metas.len(), 1);
+    assert_eq!(metas[0].workspace_id, nouveau.display().to_string());
+    assert_eq!(Journal::open(&data_dir, "conv-deplace").unwrap().history().len(), 3);
+}
+

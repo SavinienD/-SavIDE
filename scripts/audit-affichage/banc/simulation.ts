@@ -220,12 +220,22 @@ export function installerSimulation(scene: Scene): void {
     connections_list: () => ({ active: "local", connections: [{ id: "local", name: "Ce PC", kind: "local" }] }),
     connections_state: () => ({ local: "connected" }),
     connections_set_active: () => null,
-    open_workspace: (a) => (((window.__bancOuverts ??= []).push(String(a.workspacePath ?? ""))), {
-      workspace: { path: D.WS, name: D.NOM_WS },
-      conversations: listeConversations(),
-      activeConversation: D.conversationSauvee(active, { compaction: !!scene.compaction, liens: !!scene.liensHistorique }),
-      modeModelSettings: D.MODES,
-    }),
+    open_workspace: (a) => {
+      const chemin = String(a.workspacePath ?? "");
+      (window.__bancOuverts ??= []).push(chemin);
+      // « introuvables » : dossiers renommés ou déplacés (l'ancien chemin n'existe plus).
+      if (((scene.introuvables as string[] | undefined) ?? []).includes(chemin)) throw new Error(`unable to open workspace ${chemin}`);
+      return {
+        workspace: { path: D.WS, name: D.NOM_WS },
+        conversations: listeConversations(),
+        activeConversation: D.conversationSauvee(active, { compaction: !!scene.compaction, liens: !!scene.liensHistorique }),
+        modeModelSettings: D.MODES,
+      };
+    },
+    // « retrouve » : nouveau chemin rendu par la recherche (sinon introuvable).
+    dossier_retrouver: () => (scene.retrouve ? { statut: "retrouve", chemin: String(scene.retrouve) } : { statut: "introuvable" }),
+    dossier_deplacer: (a) => ({ path: String(a.nouveau ?? ""), name: String(a.nouveau ?? "").split(/[\\/]/).pop() }),
+    dossiers_noter: () => 0,
     list_conversations: () => listeConversations(),
     load_conversation: (a) => {
       // Conversation supprimee ailleurs (autre poste, archive) : le chargement echoue.

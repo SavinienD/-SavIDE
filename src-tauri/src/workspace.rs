@@ -8,6 +8,10 @@ pub(super) async fn open_workspace(
 ) -> std::result::Result<WorkspaceBootstrap, String> {
     let workspace_root =
         normalize_workspace_root(&input.workspace_path).map_err(error_to_string)?;
+    // identité stable du dossier (pour le retrouver s'il est renommé ou déplacé).
+    if let Some(registre) = crate::dossiers::registre(&state) {
+        registre.enregistrer(&workspace_root);
+    }
     let mut bootstrap = state
         .store
         .bootstrap_workspace(&workspace_root, &state.default_model, &state.system_prompt)
