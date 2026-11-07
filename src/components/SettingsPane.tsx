@@ -1469,7 +1469,7 @@ export function SettingsPane({ workspacePath }: Props) {
             <HarnessBackupSection workspacePath={workspacePath} /> {/* cleanup */}
           </>
         ) : section === "repl" ? (
-          <><ReplToolsPane workspacePath={workspacePath} /><RegistrePane /></> /* repl + e4 */
+          <><ReplToolsPane workspacePath={workspacePath} />{EDITION_LOCALE ? null : <RegistrePane />}</> /* repl + e4 (le registre demande le serveur : absent de l'édition locale) */
         ) : section === "service" ? (
           <ServicePane /> /* daemon */
         ) : section === "shortcuts" ? (

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { ReplServicesSection } from "./ReplServicesSection"; // cleanup
 import "./repl.css";
+import "./repl-champs.css"; // champs bordés, libellés au-dessus, cases de 20 px
 import { useModelChoices } from "../agents/useModelChoices"; // sub-m
 
 // repl — Settings > Outils (REPL): modules and functions exposed in the
@@ -120,37 +121,41 @@ export function ReplToolsPane({ workspacePath }: { workspacePath: string }) {
           />
           <span>Faire tourner le chat avec l'agent REPL (service d'arrière-plan)</span>
         </label>
-        <label className="axe-repl__row">
-          <span>Compactage automatique à</span>
-          <input
-            type="range"
-            min={50}
-            max={100}
-            step={5}
-            value={settings.compactionThreshold}
-            onChange={(e) => update((d) => { d.compactionThreshold = Number(e.target.value); })}
-          />
-          <strong>{settings.compactionThreshold >= 100 ? "désactivée" : `${settings.compactionThreshold} %`}</strong>
-          <span className="axe-repl__muted">de la fenêtre de contexte</span>
+        <label className="axe-repl__field">
+          <span className="axe-repl__field-label">Compactage automatique</span>
+          <span className="axe-repl__field-row">
+            <input
+              type="range"
+              min={50}
+              max={100}
+              step={5}
+              value={settings.compactionThreshold}
+              onChange={(e) => update((d) => { d.compactionThreshold = Number(e.target.value); })}
+            />
+            <strong>{settings.compactionThreshold >= 100 ? "désactivée" : `${settings.compactionThreshold} %`}</strong>
+            <span className="axe-repl__muted">de la fenêtre</span>
+          </span>
         </label>
-        <label className="axe-repl__row">
-          <span>Sortie renvoyée au modèle par exécution</span>
-          <input
-            type="number"
-            min={1000}
-            step={1000}
-            value={settings.outputCapChars}
-            onChange={(e) => update((d) => { d.outputCapChars = Number(e.target.value) || 20000; })}
-          />
-          <span className="axe-repl__muted">caractères</span>
+        <label className="axe-repl__field">
+          <span className="axe-repl__field-label">Sortie renvoyée au modèle par exécution</span>
+          <span className="axe-repl__field-row">
+            <input
+              type="number"
+              min={1000}
+              step={1000}
+              value={settings.outputCapChars}
+              onChange={(e) => update((d) => { d.outputCapChars = Number(e.target.value) || 20000; })}
+            />
+            <span className="axe-repl__muted">caractères</span>
+          </span>
         </label>
       </section>
 
       {/* sub-m — modèle par défaut des sous-agents */}
       <section className="axe-repl__card">
-        <h3>Sous-agents</h3>
-        <label className="axe-repl__row">
-          <span>Modèle par défaut des sous-agents</span>
+        <h3 title="Sous-agents">Sous-agents</h3>
+        <label className="axe-repl__field">
+          <span className="axe-repl__field-label">Modèle par défaut</span>
           <select
             value={settings.subagentDefaultModel ?? ""}
             onChange={(e) => update((d) => { d.subagentDefaultModel = e.target.value || null; })}
@@ -170,13 +175,13 @@ export function ReplToolsPane({ workspacePath }: { workspacePath: string }) {
       </section>
 
       <section className="axe-repl__card">
-        <h3>Plafond de sortie par modèle (max_tokens)</h3>
+        <h3 title="Plafond de sortie par modèle (max_tokens)">Plafond de sortie par modèle (max_tokens)</h3>
         <p className="axe-repl__muted">
           Clé <code>fournisseur/modèle</code>. Sans valeur, le maximum annoncé par le modèle est utilisé.
         </p>
         {Object.entries(settings.maxOutputTokens).map(([key, value]) => (
           <div className="axe-repl__row" key={key}>
-            <code className="axe-repl__key">{key}</code>
+            <code className="axe-repl__key" title={key}>{key}</code>
             <input
               type="number"
               min={256}
@@ -184,19 +189,22 @@ export function ReplToolsPane({ workspacePath }: { workspacePath: string }) {
               value={value}
               onChange={(e) => update((d) => { d.maxOutputTokens[key] = Number(e.target.value) || 0; })}
             />
-            <button type="button" onClick={() => update((d) => { delete d.maxOutputTokens[key]; })}>
+            <button type="button" className="settings-pane__btn" onClick={() => update((d) => { delete d.maxOutputTokens[key]; })}>
               Retirer
             </button>
           </div>
         ))}
         <div className="axe-repl__row">
           <input
+            className="axe-repl__key"
+            aria-label="Nouveau modèle (fournisseur/modèle)"
             placeholder="anthropic/claude-opus-4-1"
             value={newModelKey}
             onChange={(e) => setNewModelKey(e.target.value)}
           />
           <button
             type="button"
+            className="settings-pane__btn"
             disabled={!newModelKey.includes("/")}
             onClick={() => {
               update((d) => { d.maxOutputTokens[newModelKey.trim()] = 64000; });
@@ -211,7 +219,7 @@ export function ReplToolsPane({ workspacePath }: { workspacePath: string }) {
       <ReplServicesSection workspacePath={workspacePath} /> {/* cleanup */}
 
       <section className="axe-repl__card">
-        <h3>
+        <h3 title="Modules">
           Modules <span className="axe-repl__muted">{catalog ? `${enabledCount}/${catalog.length} actifs` : ""}</span>
         </h3>
         {catalogError ? <p className="axe-repl__error">Catalogue indisponible : {catalogError}</p> : null}
@@ -224,12 +232,14 @@ export function ReplToolsPane({ workspacePath }: { workspacePath: string }) {
             return (
               <li key={module.name} className="axe-repl__module" data-disabled={conf.enabled ? "false" : "true"}>
                 <div className="axe-repl__row">
-                  <input
-                    type="checkbox"
-                    checked={conf.enabled}
-                    onChange={(e) => editModule(module.name, (m) => { m.enabled = e.target.checked; })}
-                    aria-label={`Activer ${module.name}`}
-                  />
+                  <label className="axe-repl__case">
+                    <input
+                      type="checkbox"
+                      checked={conf.enabled}
+                      onChange={(e) => editModule(module.name, (m) => { m.enabled = e.target.checked; })}
+                      aria-label={`Activer ${module.name}`}
+                    />
+                  </label>
                   <button type="button" className="axe-repl__module-name" onClick={() => setOpen(expanded ? null : module.name)}>
                     {expanded ? "▾" : "▸"} <code>{module.name}</code>
                   </button>
@@ -250,16 +260,19 @@ export function ReplToolsPane({ workspacePath }: { workspacePath: string }) {
                         return (
                           <li key={fn.name}>
                             <div className="axe-repl__row">
-                              <input
-                                type="checkbox"
-                                checked={fconf.enabled !== false}
-                                disabled={!conf.enabled}
-                                onChange={(e) =>
-                                  editModule(module.name, (m) => {
-                                    m.functions[fn.name] = { ...(m.functions[fn.name] ?? { enabled: true }), enabled: e.target.checked };
-                                  })
-                                }
-                              />
+                              <label className="axe-repl__case">
+                                <input
+                                  type="checkbox"
+                                  checked={fconf.enabled !== false}
+                                  disabled={!conf.enabled}
+                                  aria-label={`Activer ${module.name}.${fn.name}`}
+                                  onChange={(e) =>
+                                    editModule(module.name, (m) => {
+                                      m.functions[fn.name] = { ...(m.functions[fn.name] ?? { enabled: true }), enabled: e.target.checked };
+                                    })
+                                  }
+                                />
+                              </label>
                               <code className="axe-repl__ellipsis">{`${module.name}.${fn.signature}`}</code>
                             </div>
                             <input

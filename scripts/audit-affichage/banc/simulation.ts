@@ -132,6 +132,17 @@ export function installerSimulation(scene: Scene): void {
       cloud
         ? { connected: true, base: "https://cloud.exemple.invalid", email: "utilisateur@exemple.invalid", role: "admin", expireLe: "2026-11-21T08:00:00Z", poste: "PC-POSTE", connectionId: "cloud" }
         : { connected: false, base: "https://cloud.exemple.invalid", email: "", role: "", expireLe: "", poste: "", connectionId: "cloud" },
+    // Réglages > Outils : réglages et catalogue du REPL (avant : « Chargement… » sans fin dans le banc).
+    repl_settings_get: () => ({ agentEnabled: true, modules: {}, compactionThreshold: 80, maxOutputTokens: { "anthropic/claude-opus-5-5": 32000 },
+      outputCapChars: 20000, maxRounds: 200, subagentDefaultModel: null }),
+    repl_catalog: () => ({ modules: [
+      { name: "files", doc: "files — lire, écrire, modifier et chercher des fichiers dans le dossier de travail.", functions: [
+        { name: "read", signature: "(path: str, offset: int = 0, limit: int | None = None) -> str", doc: "Renvoie le texte d'un fichier." },
+        { name: "edit", signature: "(path: str, edits: list) -> str", doc: "Applique des remplacements exacts, dans l'ordre." }] },
+      { name: "shell", doc: "shell — lancer des commandes et garder des sessions shell persistantes.", functions: [
+        { name: "run", signature: "(cmd: str, timeout: float = 120) -> dict", doc: "Exécute une commande shell." }] },
+      { name: "web", doc: "web — chercher sur le web et récupérer des pages.", functions: [] },
+    ] }),
     // file-demon — file d'attente tenue par le service (copie simulée, par conversation).
     queue_push: (a) => {
       const i = a?.input ?? a ?? {};
