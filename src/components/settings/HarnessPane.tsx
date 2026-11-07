@@ -12,6 +12,8 @@ import {
 import { CLOUD_CONNECTION, cloudApi } from "../cloud/cloudApi"; // e13
 import { cloudConnectionFromPath } from "../../lib/ipc"; // e13
 import { chercher, extrait, occurrences } from "./rechercheHarnais";
+import { MenuHarnais, usePartageHarnais } from "./HarnaisPartage";
+import { selectionApresClic, selectionPourMenu } from "../../lib/harnaisMarkdown";
 import "./harness.css";
 
 type Props = { workspacePath: string };
@@ -78,6 +80,10 @@ export function HarnessPane({ workspacePath }: Props) {
   const [busy, setBusy] = useState(false);
   // recherche dans tout le harnais (titres et contenus, tous les types).
   const [recherche, setRecherche] = useState("");
+  // sélection multiple (Ctrl/Maj + clic) et menu de partage (clic droit / « ⋯ »).
+  const [selection, setSelection] = useState<string[]>([]);
+  const [ancre, setAncre] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ x: number; y: number; ids: string[] } | null>(null);
 
   const reload = useCallback(async () => {
     try {
@@ -160,6 +166,77 @@ export function HarnessPane({ workspacePath }: Props) {
         .sort((a, b) => b.updated - a.updated),
     [serviceEntries, tab],
   );
+
+  // partage en .md : menu, sélection multiple, import (bouton ou dépôt d'un .md).
+  const ordre = useMemo(() => [...visible, ...visibleService].map((e) => e.id), [visible, visibleService]);
+  useEffect(() => {
+    setSelection((avant) => (selectedId && avant.includes(selectedId) ? avant : selectedId ? [selectedId] : []));
+  }, [selectedId]);
+  const partage = usePartageHarnais({
+    workspacePath,
+    onStatus: (message) => {
+      setError(null);
+      setStatus(message);
+    },
+    onError: (message) => setError(message),
+    onImported: (kind) => {
+      if (kind !== "skill") setTab(kind);
+      void reload();
+    },
+  });
+  const { importerChemins, importerTexte } = partage;
+  useEffect(() => {
+    const surDepot = (event: Event) => {
+      const chemins = (event as CustomEvent<{ paths?: string[] }>).detail?.paths ?? [];
+      importerChemins(chemins);
+    };
+    window.addEventListener("axecode:depot-harnais", surDepot);
+    return () => window.removeEventListener("axecode:depot-harnais", surDepot);
+  }, [importerChemins]);
+  const cliquerLigne = (event: React.MouseEvent, id: string) => {
+    const r = selectionApresClic(selection, ordre, id, { ctrl: event.ctrlKey || event.metaKey, shift: event.shiftKey }, ancre);
+    setSelection(r.selection);
+    setAncre(r.ancre);
+    setSelectedId(r.selection.includes(id) ? id : (r.selection[r.selection.length - 1] ?? null));
+  };
+  const ouvrirMenu = (id: string, x: number, y: number) => {
+    const ids = selectionPourMenu(selection, id);
+    setSelection(ids);
+    if (ids.length === 1) setSelectedId(id);
+    setMenu({ x, y, ids });
+  };
+  const menuClicDroit = (event: React.MouseEvent, id: string) => {
+    event.preventDefault();
+    let { clientX: x, clientY: y } = event;
+    if (!x && !y) {
+      // Touche « Menu » du clavier : le menu s'ouvre sous la ligne.
+      const r = (event.currentTarget as HTMLElement).getBoundingClientRect();
+      x = r.left + 16;
+      y = r.bottom;
+    }
+    ouvrirMenu(id, x, y);
+  };
+  const menuBouton = (event: React.MouseEvent, id: string) => {
+    event.stopPropagation();
+    const r = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    ouvrirMenu(id, r.right - 230, r.bottom + 2);
+  };
+  const entreesDe = (ids: string[]) =>
+    ids
+      .map((id) => entries.find((e) => e.id === id) ?? serviceEntries.find((e) => e.id === id))
+      .filter((e): e is HarnessEntry => !!e);
+  const deposer = (event: React.DragEvent) => {
+    // Navigateur (version web) : le fichier arrive ici ; dans l'appli de bureau, le dépôt
+    // passe par l'événement Tauri (Workspace → « axecode:depot-harnais »).
+    const fichier = event.dataTransfer?.files?.[0];
+    if (!fichier) return;
+    event.preventDefault();
+    if (!/\.(md|markdown)$/i.test(fichier.name)) {
+      importerChemins([fichier.name]);
+      return;
+    }
+    void fichier.text().then((texte) => importerTexte(fichier.name, texte));
+  };
 
   useEffect(() => {
     setDraftTitle(selected?.title ?? "");
@@ -325,6 +402,7 @@ export function HarnessPane({ workspacePath }: Props) {
           <button
             key={kind.id}
             type="button"
+            data-kind={kind.id}
             data-active={tab === kind.id ? "true" : "false"}
             onClick={() => {
               setTab(kind.id);
@@ -491,13 +569,30 @@ export function HarnessPane({ workspacePath }: Props) {
         </ul>
       ) : (
         <div className="axe-harness__split">
-          <div className="axe-harness__list">
+          <div
+            className="axe-harness__list"
+            data-depot-harnais="true"
+            onDragOver={(event) => {
+              if (event.dataTransfer?.types?.includes("Files")) event.preventDefault();
+            }}
+            onDrop={deposer}
+          >
             <div className="axe-harness__list-actions">
               <button type="button" className="axe-harness__btn" disabled={busy} onClick={() => createEntry("project")}>
                 + Projet
               </button>
               <button type="button" className="axe-harness__btn" disabled={busy} onClick={() => createEntry("global")}>
                 + Global
+              </button>
+              <button
+                type="button"
+                className="axe-harness__btn"
+                data-action="importer-md"
+                disabled={busy}
+                title="Importer une entrée partagée en .md (ou déposer le fichier sur cette liste)"
+                onClick={partage.importerFichier}
+              >
+                Importer un .md…
               </button>
             </div>
             {visible.length === 0 && visibleService.length === 0 ? (
@@ -507,19 +602,34 @@ export function HarnessPane({ workspacePath }: Props) {
               <div className="axe-harness__group">Ce poste</div>
             ) : null}
             {visible.map((entry) => (
-              <button
-                key={entry.id}
-                type="button"
-                className="axe-harness__row"
-                data-active={entry.id === selectedId ? "true" : "false"}
-                onClick={() => setSelectedId(entry.id)}
-              >
-                <span className="axe-harness__pill" data-scope={entry.scope}>
-                  {entry.scope === "global" ? "global" : "projet"}
-                </span>
-                <span className="axe-harness__row-title">{entry.title}</span>
-                <code className="axe-harness__muted">{entry.id}</code>
-              </button>
+              <div key={entry.id} className="axe-harness__row-wrap">
+                <button
+                  type="button"
+                  className="axe-harness__row"
+                  data-id={entry.id}
+                  data-active={entry.id === selectedId ? "true" : "false"}
+                  data-selected={selection.includes(entry.id) ? "true" : "false"}
+                  title="Clic droit : exporter ou copier en Markdown · Ctrl/Maj + clic : plusieurs entrées"
+                  onClick={(event) => cliquerLigne(event, entry.id)}
+                  onContextMenu={(event) => menuClicDroit(event, entry.id)}
+                >
+                  <span className="axe-harness__pill" data-scope={entry.scope}>
+                    {entry.scope === "global" ? "global" : "projet"}
+                  </span>
+                  <span className="axe-harness__row-title">{entry.title}</span>
+                  <code className="axe-harness__muted">{entry.id}</code>
+                </button>
+                <button
+                  type="button"
+                  className="axe-harness__row-plus"
+                  data-id={entry.id}
+                  aria-label={`Partager « ${entry.title} »`}
+                  title="Exporter ou copier en Markdown"
+                  onClick={(event) => menuBouton(event, entry.id)}
+                >
+                  ⋯
+                </button>
+              </div>
             ))}
             {visibleService.length > 0 ? (
               <>
@@ -528,13 +638,17 @@ export function HarnessPane({ workspacePath }: Props) {
                   <span className="axe-harness__muted">{visibleService.length}</span>
                 </div>
                 {visibleService.map((entry) => (
+                  <div key={entry.id} className="axe-harness__row-wrap">
                   <button
-                    key={entry.id}
                     type="button"
                     className="axe-harness__row"
                     data-cloud="true"
+                    data-id={entry.id}
                     data-active={entry.id === selectedId ? "true" : "false"}
-                    onClick={() => setSelectedId(entry.id)}
+                    data-selected={selection.includes(entry.id) ? "true" : "false"}
+                    title="Clic droit : exporter ou copier en Markdown"
+                    onClick={(event) => cliquerLigne(event, entry.id)}
+                    onContextMenu={(event) => menuClicDroit(event, entry.id)}
                   >
                     <span
                       className="axe-harness__pill"
@@ -546,6 +660,17 @@ export function HarnessPane({ workspacePath }: Props) {
                     <span className="axe-harness__row-title">{entry.title}</span>
                     <code className="axe-harness__muted">{entry.id}</code>
                   </button>
+                  <button
+                    type="button"
+                    className="axe-harness__row-plus"
+                    data-id={entry.id}
+                    aria-label={`Partager « ${entry.title} »`}
+                    title="Exporter ou copier en Markdown"
+                    onClick={(event) => menuBouton(event, entry.id)}
+                  >
+                    ⋯
+                  </button>
+                  </div>
                 ))}
               </>
             ) : null}
@@ -639,6 +764,17 @@ export function HarnessPane({ workspacePath }: Props) {
           </div>
         </div>
       )}
+      {menu ? (
+        <MenuHarnais
+          x={menu.x}
+          y={menu.y}
+          nombre={menu.ids.length}
+          onExporter={() => partage.exporter(entreesDe(menu.ids))}
+          onCopier={() => partage.copier(entreesDe(menu.ids))}
+          onClose={() => setMenu(null)}
+        />
+      ) : null}
+      {partage.dialogues}
     </div>
   );
 }

@@ -160,6 +160,14 @@ export const harnessApi = {
   brainImport: (workspacePath: string, options: BrainImportOptions) =>
     cloudUnsupported(workspacePath, "L'import du cerveau") ??
     invoke<BrainImportReport>("harness_brain_import", { input: { workspacePath, options } }),
+  /// partager une entrée en .md : écrire le fichier choisi, relire un .md à importer,
+  /// code Python d'un skill (null en cloud ou si ce n'est pas un skill).
+  mdWrite: (path: string, content: string) => invoke<void>("harness_md_write", { input: { path, content } }),
+  mdRead: (path: string) => invoke<string>("harness_md_read", { input: { path } }),
+  skillCode: (workspacePath: string, id: string): Promise<string | null> =>
+    cloudConnectionFromPath(workspacePath)
+      ? Promise.resolve(null)
+      : invoke<string | null>("harness_skill_code", { input: { workspacePath, id } }),
   cloudSync: (connection: string) =>
     invoke<CloudMirror>("harness_cloud_sync", { input: { connection } }),
   cloudStatus: () => invoke<CloudMirror>("harness_cloud_status"),

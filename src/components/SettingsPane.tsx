@@ -43,6 +43,7 @@ import { CLOUD_CONNECTION, cloudApi } from "./cloud/cloudApi"; // e16
 import { oublierSectionReglages, sectionReglagesDemandee } from "../lib/sectionReglages"; // parcours-collegue
 import { PythonSkillPreview, isPySkillEnabled } from "./settings/PythonSkillPreview";
 import { ComptesSupplementaires } from "./settings/ComptesSupplementaires";
+import { MenuHarnais, usePartageHarnais } from "./settings/HarnaisPartage";
 type SkillKindFilter = "all" | "recipe" | "python";
 import { sanitizeOpenRouterName, type ModelEntry } from "../lib/models";
 import type {
@@ -213,6 +214,15 @@ export function SettingsPane({ workspacePath }: Props) {
       ),
     [runPySkill, workspacePath],
   );
+  // clic droit sur un skill Python du harnais (ou bouton « Partager… » de son aperçu) :
+  // exporter / copier en Markdown (SKILL.md + code Python).
+  const [menuPySkill, setMenuPySkill] = useState<{ x: number; y: number; entry: HarnessEntry } | null>(null);
+  const partagePySkill = usePartageHarnais({
+    workspacePath,
+    onStatus: (message) => setSkillsStatus(message),
+    onError: (message) => setSkillsStatus(message),
+    onImported: () => void loadPySkills(),
+  });
   // cleanup end
 
   const [openAiStatus, setOpenAiStatus] = useState<OpenAiProviderStatus | null>(null);
@@ -1527,7 +1537,9 @@ export function SettingsPane({ workspacePath }: Props) {
         ) : section === "connections" ? (
           <ConnectionsPane /> /* e5 */
         ) : section === "skills" ? (
+          <>
           <SkillsSection
+            onMenuPySkill={(entry, x, y) => setMenuPySkill({ x, y, entry })}
             skills={skillKind === "python" ? [] : filteredSkills}
             allSkills={skills}
             pySkills={skillKind === "recipe" ? [] : filteredPySkills}
@@ -1568,6 +1580,18 @@ export function SettingsPane({ workspacePath }: Props) {
             serviceSkills={serviceSkills}
             serviceNote={serviceSkillsNote}
           />
+          {menuPySkill ? (
+            <MenuHarnais
+              x={menuPySkill.x}
+              y={menuPySkill.y}
+              nombre={1}
+              onExporter={() => partagePySkill.exporter([menuPySkill.entry])}
+              onCopier={() => partagePySkill.copier([menuPySkill.entry])}
+              onClose={() => setMenuPySkill(null)}
+            />
+          ) : null}
+          {partagePySkill.dialogues}
+          </>
         ) : null}
       </section>
     </div>
@@ -2952,6 +2976,7 @@ type SkillsSectionProps = {
   onSelectPySkill: (id: string) => void;
   onTogglePySkill: (entry: HarnessEntry) => void;
   onMovePySkill: (entry: HarnessEntry) => void;
+  onMenuPySkill: (entry: HarnessEntry, x: number, y: number) => void;
 };
 
 function SkillsSection({
@@ -2985,6 +3010,7 @@ function SkillsSection({
   onSelectPySkill,
   onTogglePySkill,
   onMovePySkill,
+  onMenuPySkill,
 }: SkillsSectionProps) {
   const total = (allSkills?.length ?? 0) + pyTotal;
   const visible = skills.length + pySkills.length;
@@ -3182,7 +3208,15 @@ function SkillsSection({
                 data-active={selectedPySkill?.id === entry.id ? "true" : "false"}
                 role="button"
                 tabIndex={0}
+                data-id={entry.id}
                 onClick={() => onSelectPySkill(entry.id)}
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  onSelectPySkill(entry.id);
+                  const r = event.currentTarget.getBoundingClientRect();
+                  const auClavier = !event.clientX && !event.clientY;
+                  onMenuPySkill(entry, auClavier ? r.left + 16 : event.clientX, auClavier ? r.bottom : event.clientY);
+                }}
                 onKeyDown={(event) => {
                   if (event.key !== "Enter" && event.key !== " ") return;
                   event.preventDefault();
@@ -3241,6 +3275,7 @@ function SkillsSection({
               busy={pyBusy}
               onToggle={() => onTogglePySkill(selectedPySkill)}
               onMove={() => onMovePySkill(selectedPySkill)}
+              onPartager={(x, y) => onMenuPySkill(selectedPySkill, x, y)}
             />
           ) : selectedSkill ? (
             <SkillPreview

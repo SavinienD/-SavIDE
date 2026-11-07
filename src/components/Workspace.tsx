@@ -1966,8 +1966,14 @@ export function Workspace({
           const chatRect = chatDropZoneRef.current?.getBoundingClientRect();
           const sidebarRect =
             fileTreeDropZoneRef.current?.getBoundingClientRect();
-          const overChat = dansRect(position, chatRect);
-          const overSidebar = !overChat && dansRect(position, sidebarRect);
+          // un .md déposé sur la liste de Réglages > Harnais s'importe dans le harnais
+          // (pas dans le chat ni dans l'explorateur, même s'ils sont dessous).
+          const surHarnais = dansRect(
+            position,
+            document.querySelector("[data-depot-harnais]")?.getBoundingClientRect(),
+          );
+          const overChat = !surHarnais && dansRect(position, chatRect);
+          const overSidebar = !surHarnais && !overChat && dansRect(position, sidebarRect);
 
           if (type === "enter" || type === "over") {
             for (const handler of dragSubsRef.current) handler(overChat);
@@ -1990,6 +1996,10 @@ export function Workspace({
             for (const handler of dragSubsRef.current) handler(false);
             setFileTreeDropState({ active: false, targetRelative: null });
             const paths = event.payload.paths ?? [];
+            if (surHarnais) {
+              window.dispatchEvent(new CustomEvent("axecode:depot-harnais", { detail: { paths } }));
+              return;
+            }
             if (!paths.length) {
               if (overChat || overSidebar) setImportError(messageDepotVide(estMac()));
               return;

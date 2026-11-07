@@ -15,11 +15,14 @@ export function PythonSkillPreview({
   busy,
   onToggle,
   onMove,
+  onPartager,
 }: {
   entry: HarnessEntry;
   busy: boolean;
   onToggle: () => void;
   onMove: () => void;
+  /** ouvre le menu « Exporter en .md… / Copier en Markdown » (clavier, tactile). */
+  onPartager?: (x: number, y: number) => void;
 }) {
   const dir = entry.packageDir ?? entry.path;
   const sep = dir.includes("\\") ? "\\" : "/";
@@ -58,6 +61,21 @@ export function PythonSkillPreview({
             <Icon icon="solar:folder-open-linear" width={13} height={13} />
             <span>Dossier</span>
           </button>
+          {onPartager ? (
+            <button
+              type="button"
+              className="settings-pane__btn"
+              data-action="partager-skill"
+              title="Exporter ou copier en Markdown (SKILL.md + code Python)"
+              onClick={(event) => {
+                const r = event.currentTarget.getBoundingClientRect();
+                onPartager(r.left, r.bottom + 2);
+              }}
+            >
+              <Icon icon="solar:share-linear" width={13} height={13} />
+              <span>Partager…</span>
+            </button>
+          ) : null}
         </div>
       </header>
       <p className="settings-pane__muted">
