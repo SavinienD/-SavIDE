@@ -3,11 +3,13 @@ import { useEffect, useState } from "react";
 import { api } from "../../lib/ipc";
 import { availableModelsForProviders, modelRefFromId } from "../../lib/models";
 import { customModelEntries, providerApi } from "../../axe/providers";
+import { useCatalogueModeles } from "../../lib/useCatalogueModeles";
 
 export type ModelChoice = { value: string; label: string; provider: string; name: string };
 
 export function useModelChoices(): ModelChoice[] {
   const [choices, setChoices] = useState<ModelChoice[]>([]);
+  const catalogue = useCatalogueModeles();
   useEffect(() => {
     let alive = true;
     void (async () => {
@@ -17,7 +19,7 @@ export function useModelChoices(): ModelChoice[] {
           api.listOpenRouterModels().catch(() => []),
           providerApi.get().catch(() => null),
         ]);
-        const entries = availableModelsForProviders(providers, openRouter, customModelEntries(custom));
+        const entries = availableModelsForProviders(providers, openRouter, customModelEntries(custom), catalogue);
         const seen = new Set<string>();
         const list: ModelChoice[] = [];
         for (const entry of entries) {
@@ -35,6 +37,6 @@ export function useModelChoices(): ModelChoice[] {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [catalogue]);
   return choices;
 }

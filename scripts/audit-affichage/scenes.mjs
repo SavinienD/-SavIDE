@@ -464,6 +464,55 @@ export const SCENES = [
       "sel:.settings-pane__provider-card[data-fournisseur='openai'] [data-compte='offre']",
       "sel:.settings-pane__provider-card[data-fournisseur='google'] [data-compte='email']",
       "claude@example.com", "Plus", "Google AI Pro"] },
+  // choix du modèle avec beaucoup de modèles (capture : ANTHROPIC Fable 5.1… invisibles,
+  // liste plus haute que l'écran sans défilement) : liste bornée à la fenêtre, qui défile, champ de recherche
+  // au-delà de 12 modèles ; le modèle choisi est visible à l'ouverture.
+  { id: "modeles-nombreux", sim: { modelesNombreux: 40 }, stockage: () => colonnes([ids(1)]),
+    clics: [".composer__picker[data-kind=model] .composer__picker-btn"],
+    temoins: ["defile:.composer__picker[data-kind=model] .composer__popover-liste", "dedans:.composer__picker[data-kind=model] .composer__popover",
+      "sel:.composer__picker[data-kind=model] input[data-champ='recherche-modele']",
+      "clic:.composer__picker[data-kind=model] .composer__popover-row[data-selected='true']"] },
+  // Recherche : « qwen3 » ne garde que les 3 modèles qwen3 ; Entrée choisit le premier et referme la liste.
+  { id: "modeles-recherche", sim: { modelesNombreux: 40 }, stockage: () => colonnes([ids(1)]),
+    clics: [".composer__picker[data-kind=model] .composer__picker-btn"],
+    taper: [{ sel: ".composer__picker[data-kind=model] input[data-champ='recherche-modele']", texte: "qwen3" }],
+    temoins: ["compte:.composer__picker[data-kind=model] .composer__popover-row=3", "dedans:.composer__picker[data-kind=model] .composer__popover"] },
+  { id: "modeles-recherche-entree", sim: { modelesNombreux: 40 }, stockage: () => colonnes([ids(1)]),
+    clics: [".composer__picker[data-kind=model] .composer__picker-btn"],
+    taper: [{ sel: ".composer__picker[data-kind=model] input[data-champ='recherche-modele']", texte: "coder", entree: true }],
+    temoins: ["absent:.composer__picker[data-kind=model] .composer__popover", "qwen3-coder:30b"] },
+  // catalogue des fournisseurs intégrés complété par l'API (GET /v1/models) : Opus 6,
+  // annoncé par Anthropic mais absent de la liste en dur, apparaît une fois (pas sa version datée,
+  // pas de doublon d'Opus 5.5) ; 6 Anthropic + 1 nouveau + 3 OpenAI = 10.
+  { id: "modeles-catalogue", sim: { catalogue: true }, stockage: () => colonnes([ids(1)]),
+    clics: [".composer__picker[data-kind=model] .composer__picker-btn"],
+    temoins: ["compte:.composer__picker[data-kind=model] .composer__popover-row=10", "Opus 6", "appel:catalogue_modeles"] },
+  // deux comptes Claude connectés (claude@… = connexion d'avant, deuxieme@… ajouté) :
+  // un groupe Anthropic par compte, e-mail en sous-titre ; un modèle du 2e compte se choisit.
+  { id: "modeles-comptes", sim: { comptesMultiples: true }, stockage: () => colonnes([ids(1)]),
+    clics: [".composer__picker[data-kind=model] .composer__picker-btn"],
+    temoins: ["compte:.composer__picker[data-kind=model] .axe-model-group__compte=2", "deuxieme@example.com",
+      "sel:.composer__popover-row[data-valeur='anthropic~2:claude-opus-5-5']"] },
+  { id: "modeles-comptes-choix", sim: { comptesMultiples: true }, stockage: () => colonnes([ids(1)]),
+    clics: [".composer__picker[data-kind=model] .composer__picker-btn", ".composer__popover-row[data-valeur='anthropic~2:claude-opus-5-5']"],
+    temoins: ["sel:.composer__picker[data-kind=model] .composer__picker-btn[data-fournisseur='anthropic~2']"] },
+  // Réglages > Fournisseurs : le compte ajouté sous la carte Claude (e-mail, offre, « Déconnecter »),
+  // « Ajouter un compte » ; déconnecter le 2e compte ne touche pas au premier.
+  { id: "fournisseurs-plusieurs-comptes", sim: { comptesMultiples: true, comptes: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='providers']"],
+    temoins: ["compte:.settings-pane__provider-card[data-fournisseur='anthropic'] [data-compte-ajoute]=1", "deuxieme@example.com",
+      "sel:.settings-pane__provider-card[data-fournisseur='anthropic'] [data-action='ajouter-compte']",
+      "sel:.settings-pane__provider-card[data-fournisseur='openai'] [data-action='ajouter-compte']",
+      "sel:[data-action='deconnecter-compte'][data-compte='anthropic~2']"] },
+  { id: "fournisseurs-deconnecter-compte", sim: { comptesMultiples: true, comptes: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='providers']", "[data-action='deconnecter-compte'][data-compte='anthropic~2']"],
+    temoins: ["absent:[data-compte-ajoute='anthropic~2']", "appel:disconnect_provider_account",
+      "sel:.settings-pane__provider-card[data-fournisseur='anthropic'] [data-compte='email']"] },
+  // Peu de modèles (Anthropic + OpenAI) : pas de champ de recherche, liste entière dans la fenêtre.
+  { id: "modeles-peu", sim: {}, stockage: () => colonnes([ids(1)]),
+    clics: [".composer__picker[data-kind=model] .composer__picker-btn"],
+    temoins: ["absent:.composer__picker[data-kind=model] input[data-champ='recherche-modele']", "dedans:.composer__picker[data-kind=model] .composer__popover",
+      "clic:.composer__picker[data-kind=model] .composer__popover-row"] },
   { id: "fournisseurs-identifiant", sim: { fournisseursLocaux: true }, stockage: () => colonnes([ids(1)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row"],
     taper: [{ sel: ".axe-providers__models input[data-champ='id']", texte: "qwen3:8b" }],
@@ -497,6 +546,30 @@ export const SCENES = [
     clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row", "[data-action='decouvrir-modeles']"],
     temoins: ["champ:.axe-providers__models input[data-champ='id']=gemma2:2b", "champ:.axe-providers__models input[data-champ='id']=qwen3:8b",
       "champ:.axe-providers__models input[data-champ='id']=qwen3:4b"] },
+  // « Découvrir » avec un début d'identifiant tapé (champ filtre) : seuls les modèles
+  // dont l'identifiant commence pareil sont ajoutés (qwen3:8b ; pas gemma2:2b ni llama3.1:8b).
+  { id: "fournisseurs-decouvrir-filtre", sim: { fournisseursLocaux: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row"],
+    taper: [{ sel: ".axe-providers__card input[data-champ='filtre-decouverte']", texte: "qwen3" }],
+    cliquer: "[data-action='decouvrir-modeles']",
+    temoins: ["compte:.axe-providers__models tbody tr=2", "champ:.axe-providers__models input[data-champ='id']=qwen3:8b"] },
+  // 100 modèles ajoutés par erreur : « Annuler les modifications » revient à l'état enregistré, sans enregistrer.
+  { id: "fournisseurs-annuler", sim: { fournisseursLocaux: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row", "[data-action='decouvrir-modeles']", "[data-action='annuler-modifications']"],
+    temoins: ["compte:.axe-providers__models tbody tr=1", "champ:.axe-providers__models input[data-champ='id']=qwen3:4b",
+      "sel:[data-action='annuler-modifications']:disabled"] },
+  // … ou Échap (hors d'un champ de saisie).
+  { id: "fournisseurs-annuler-echap", sim: { fournisseursLocaux: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row", "[data-action='decouvrir-modeles']"],
+    touches: ["Escape"],
+    temoins: ["compte:.axe-providers__models tbody tr=1", "champ:.axe-providers__models input[data-champ='id']=qwen3:4b"] },
+  // Suppression de plusieurs modèles cochés.
+  { id: "fournisseurs-retirer-selection", sim: { fournisseursLocaux: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='providers']", ".axe-providers__card .axe-providers__row", "[data-action='decouvrir-modeles']",
+      ".axe-providers__models tbody tr:nth-child(1) input[data-champ='choisir']", ".axe-providers__models tbody tr:nth-child(2) input[data-champ='choisir']",
+      "[data-action='retirer-selection']"],
+    temoins: ["compte:.axe-providers__models tbody tr=2", "champ:.axe-providers__models input[data-champ='id']=qwen3:4b",
+      "champ:.axe-providers__models input[data-champ='id']=qwen3:8b", "absent:[data-action='retirer-selection']"] },
   // Réglages > À propos : version lue à l'exécution (getVersion, simulée 0.1.65) sous le titre ; la
   // version lancée avant était la 0.1.64, donc la date de mise à jour est connue et affichée.
   // Lien du site : https://www.axe-international.com (sans « www. » le site ne répond pas).

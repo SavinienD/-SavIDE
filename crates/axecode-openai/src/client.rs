@@ -24,6 +24,11 @@ pub(crate) const USER_AGENT: &str = "axecode/0.1";
 // invisibles pour l'utilisateur ; à ne changer qu'après un essai de connexion réel.
 pub(crate) const OAUTH_ORIGINATOR: &str = "savide"; // compat (rebrand:keep)
 pub(crate) const OAUTH_AUTHORIZE_ORIGINATOR: &str = "savide_desktop"; // compat (rebrand:keep)
+/// `openai`, or an added ChatGPT account (`openai~2`).
+pub(crate) fn is_openai_provider(provider: &str) -> bool {
+    provider == "openai" || provider.strip_prefix("openai~").is_some_and(|rank| !rank.is_empty())
+}
+
 const FALLBACK_INSTRUCTIONS: &str = "You are SavIDE, a concise coding assistant.";
 
 #[derive(Clone)]
@@ -111,14 +116,14 @@ impl Provider for OpenAiProvider {
     }
 
     fn capabilities(&self, model: &ModelRef) -> Option<ModelCapabilities> {
-        if model.provider != "openai" {
+        if !is_openai_provider(&model.provider) {
             return None;
         }
         Some(model_info::capabilities(model))
     }
 
     async fn estimate_tokens(&self, request: ProviderRequest) -> Result<TokenEstimate> {
-        if request.model.provider != "openai" {
+        if !is_openai_provider(&request.model.provider) {
             return Err(AppError::Unsupported(format!(
                 "openai provider cannot count model provider {}",
                 request.model.provider
@@ -175,7 +180,7 @@ impl Provider for OpenAiProvider {
             &mut request.transcript,
             axecode_core::image_fit::MAX_IMAGE_SIDE,
         );
-        if request.model.provider != "openai" {
+        if !is_openai_provider(&request.model.provider) {
             return Err(AppError::Unsupported(format!(
                 "openai provider cannot run model provider {}",
                 request.model.provider

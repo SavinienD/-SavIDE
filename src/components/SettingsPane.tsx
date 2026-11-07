@@ -40,6 +40,7 @@ import { harnessApi, type HarnessEntry } from "./settings/harnessApi";
 import { CLOUD_CONNECTION, cloudApi } from "./cloud/cloudApi"; // e16
 import { oublierSectionReglages, sectionReglagesDemandee } from "../lib/sectionReglages"; // parcours-collegue
 import { PythonSkillPreview, isPySkillEnabled } from "./settings/PythonSkillPreview";
+import { ComptesSupplementaires } from "./settings/ComptesSupplementaires";
 type SkillKindFilter = "all" | "recipe" | "python";
 import { sanitizeOpenRouterName, type ModelEntry } from "../lib/models";
 import type {
@@ -1691,6 +1692,7 @@ function ProvidersSection({
           onConnect={onConnectAnthropic}
           onCancel={onCancelAnthropic}
           onDisconnect={onDisconnectAnthropic}
+          extra={<ComptesSupplementaires base="anthropic" principalConnecte={Boolean(anthropicStatus?.connected)} />}
         />
         <ProviderCard
           id="openai"
@@ -1705,6 +1707,7 @@ function ProvidersSection({
           onConnect={onConnect}
           onCancel={onCancel}
           onDisconnect={onDisconnect}
+          extra={<ComptesSupplementaires base="openai" principalConnecte={Boolean(openAiStatus?.connected)} />}
         />
         <ProviderCard
           id="google"
@@ -1777,6 +1780,8 @@ type ProviderCardProps = {
   onConnect: () => void;
   onCancel: () => void;
   onDisconnect: () => void;
+  /** sous la carte : comptes ajoutés du même fournisseur. */
+  extra?: React.ReactNode;
 };
 
 function ProviderCard({
@@ -1792,6 +1797,7 @@ function ProviderCard({
   onConnect,
   onCancel,
   onDisconnect,
+  extra,
 }: ProviderCardProps) {
   const state = status?.connectionState ?? "disconnected";
   const connected = Boolean(status?.connected);
@@ -1840,6 +1846,7 @@ function ProviderCard({
             </div>
           )}
           {error && <div className="settings-pane__provider-error">{error}</div>}
+          {extra}
         </div>
       </div>
       <div className="settings-pane__provider-actions">

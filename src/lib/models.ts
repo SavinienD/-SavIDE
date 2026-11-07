@@ -28,6 +28,8 @@ export type ModelEntry = {
   // providers
   providerLabel?: string;
   icon?: string;
+  /** e-mail du compte (plusieurs abonnements au même fournisseur). */
+  accountLabel?: string;
 };
 
 export const PROVIDERS: {
@@ -239,26 +241,39 @@ export function sanitizeOpenRouterName(name: string | null | undefined): string 
 export function modelsWithOpenRouter(
   openRouterModels: readonly OpenRouterModel[] = [],
   customModels: readonly ModelEntry[] = [], // providers
+  catalogue: readonly ModelEntry[] = MODELS, // MODELS complété par l'API
 ): ModelEntry[] {
-  return [...MODELS, ...openRouterModelEntries(openRouterModels), ...customModels];
+  return [...catalogue, ...openRouterModelEntries(openRouterModels), ...customModels];
 }
 
 export function availableModelsForProviders(
   configuredProviders: readonly string[],
   openRouterModels: readonly OpenRouterModel[] = [],
   customModels: readonly ModelEntry[] = [], // providers
+  catalogue: readonly ModelEntry[] = MODELS, // MODELS complété par l'API
 ): ModelEntry[] {
   const configured = new Set(configuredProviders);
   return [
-    ...MODELS.filter((model) => configured.has(model.provider)),
+    ...catalogue.filter((model) => configured.has(model.provider)),
     ...(configured.has("openrouter") ? openRouterModelEntries(openRouterModels) : []),
     ...customModels.filter((model) => configured.has(model.provider)),
   ];
 }
 
+/** fournisseur intégré d'un identifiant de compte (« anthropic~2 » → « anthropic »). */
+export function fournisseurDeBase(provider: string): string {
+  const i = provider.indexOf("~");
+  return i < 0 ? provider : provider.slice(0, i);
+}
+
 /** providers — icon for a model entry (native provider icon or entry icon). */
 export function modelEntryIcon(entry: ModelEntry): string | undefined {
-  return PROVIDERS.find((p) => p.value === entry.provider)?.icon ?? entry.icon;
+  return PROVIDERS.find((p) => p.value === fournisseurDeBase(entry.provider))?.icon ?? entry.icon;
+}
+
+/** titre du groupe d'un modèle dans le choix du modèle. */
+export function titreGroupeModele(provider: string, entry?: ModelEntry): string {
+  return PROVIDERS.find((p) => p.value === fournisseurDeBase(provider))?.label ?? entry?.providerLabel ?? provider;
 }
 
 function openRouterModelEntries(
@@ -328,7 +343,8 @@ export function thinkingFromRef(
   if (model?.effort === "none") return "off";
   if (model?.effort === "xhigh") return "xhigh";
   if (
-    model?.provider === "openai" &&
+    !!model &&
+    fournisseurDeBase(model.provider) === "openai" && // openai~2 aussi
     model.effort === "max" &&
     !supportsOpenAiMaxEffort(model.name)
   ) {

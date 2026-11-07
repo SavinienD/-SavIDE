@@ -9229,6 +9229,71 @@ textarea {
   flex: 0 0 auto;
 }
 
+/* choix du modèle : liste bornée à la fenêtre (hauteur posée par MenuModeles),
+   qui défile ; ouverte vers le bas quand la place manque au-dessus ; recherche en tête. */
+.composer__popover--modeles {
+  max-width: min(360px, calc(100vw - 16px));
+  min-height: 0;
+  overflow: hidden;
+}
+.composer__popover--modeles[data-direction="bas"] {
+  bottom: auto;
+  top: calc(100% + 8px);
+}
+.composer__popover-liste {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+}
+.composer__popover-liste .composer__popover-row {
+  flex: 0 0 auto;
+}
+.composer__popover-liste .composer__popover-label > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.composer__popover-recherche {
+  flex: 0 0 auto;
+  margin: 2px 2px 4px;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-small);
+  background: var(--bg-2);
+  color: var(--text-0);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  outline: none;
+}
+.composer__popover-recherche:focus {
+  border-color: var(--text-3);
+}
+.composer__popover-row[data-actif="true"] {
+  background: var(--bg-4);
+  color: var(--text-0);
+}
+.composer__popover-vide {
+  padding: 6px 10px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+.axe-model-group[data-compte="true"] {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.axe-model-group__compte {
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Composer box itself lights up when dragging over */
 .composer__box[data-drop="true"] {
   background: var(--bg-4);
@@ -11000,3 +11065,36 @@ textarea {
 .chat-links__item:hover { background: var(--bg-4); color: var(--text-0); }
 .chat-links__item svg { flex: 0 0 auto; color: var(--text-3); }
 .chat-links__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: ltr; }
+
+/* comptes ajoutés (2e compte Claude, ChatGPT…) sous la carte du fournisseur :
+   ligne pleine largeur sous le compte principal et ses boutons. */
+.settings-pane__comptes {
+  margin-top: 10px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line-soft);
+}
+.settings-pane__compte, .settings-pane__comptes-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  min-width: 0;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+.settings-pane__compte > svg { color: var(--text-3); flex: 0 0 auto; }
+.settings-pane__compte-email {
+  min-width: 0;
+  flex: 0 1 auto;
+  color: var(--text-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-pane__compte-offre { color: var(--text-3); }
+.settings-pane__compte-attente { color: var(--text-3); min-width: 0; }
+

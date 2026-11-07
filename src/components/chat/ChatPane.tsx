@@ -18,7 +18,7 @@ import {
   useSyncExternalStore, // file-attente
 } from "react";
 import { Icon } from "@iconify/react";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import { AIThinkingBlock } from "./AIThinkingBlock";
@@ -57,6 +57,8 @@ import {
   availableModelsForProviders,
   modelRefFromId,
   modelsWithOpenRouter,
+  modelEntryIcon,
+  titreGroupeModele,
   selectionFromRef,
   selectionsFromSettings,
   thinkingFromRef,
@@ -69,6 +71,9 @@ import { customModelEntries, providerApi, type ProviderSettingsView } from "../.
 import { runClientSlashCommand, SLASH_COMMANDS, useSlashCommandMenu } from "./SlashCommands"; // slash
 import { classeJeton, decouperJetons } from "./jetonsMessage"; // couleurs
 import { IndicateursSession } from "./IndicateursSession"; // commandes
+import { MenuModeles } from "./MenuModeles";
+import { useCatalogueModeles } from "../../lib/useCatalogueModeles";
+import { modelesAvecComptes, type CompteModele } from "../../lib/comptesModeles";
 import { estReveilGuet, formatHeure, texteReveil } from "./logiqueIndicateurs"; // commandes
 import type {
   AgentMode,
@@ -741,14 +746,17 @@ export function ChatPane({
     return () => document.removeEventListener("keydown", onKey);
   }, [previewImage]);
 
+  const [comptesModeles, setComptesModeles] = useState<CompteModele[]>([]);
   const loadConfiguredProviders = useCallback(async () => {
     let found = false;
     try {
-      const [providers, models, custom] = await Promise.all([
+      const [providers, models, custom, comptes] = await Promise.all([
         api.listConfiguredModelProviders(),
         api.listOpenRouterModels().catch(() => []),
         providerApi.get().catch(() => null), // providers
+        invoke<CompteModele[]>("list_provider_accounts").catch(() => [] as CompteModele[]),
       ]);
+      setComptesModeles(Array.isArray(comptes) ? comptes : []);
       setConfiguredProviders(providers);
       setOpenRouterModels(models);
       setCustomProviders(custom);
@@ -821,16 +829,22 @@ export function ChatPane({
   // l'espace (VM), donc les modèles proposés sont ceux de l'espace, jamais ceux du PC (un
   // collègue n'en a aucun : avant, « Connect a provider » et Send grisé).
   const espaceCloud = cloudConnectionFromPath(workspacePath) !== null;
+  // MODELS complété par l'API, puis un groupe par compte ajouté (anthropic~2…).
+  const catalogueBrut = useCatalogueModeles();
+  const catalogue = useMemo(
+    () => modelesAvecComptes(catalogueBrut, configuredProviders, comptesModeles),
+    [catalogueBrut, configuredProviders, comptesModeles],
+  );
   const allModels = useMemo(() => {
-    const base = modelsWithOpenRouter(openRouterModels, customModels);
+    const base = modelsWithOpenRouter(openRouterModels, customModels, catalogue);
     return espaceCloud ? [...modelesEspace(activeModel), ...base] : base;
-  }, [espaceCloud, activeModel, openRouterModels, customModels]);
+  }, [espaceCloud, activeModel, openRouterModels, customModels, catalogue]);
   const availableModels = useMemo(
     () =>
       espaceCloud
         ? modelesEspace(activeModel)
-        : availableModelsForProviders(configuredProviders, openRouterModels, customModels),
-    [espaceCloud, activeModel, configuredProviders, openRouterModels, customModels],
+        : availableModelsForProviders(configuredProviders, openRouterModels, customModels, catalogue),
+    [espaceCloud, activeModel, configuredProviders, openRouterModels, customModels, catalogue],
   );
 
   const baseModeSelections = useMemo(
@@ -4147,6 +4161,7 @@ export function ChatPane({
                   className="composer__picker-btn"
                   data-open={modelOpen ? "true" : "false"}
                   data-locked={selectorLocked ? "true" : "false"}
+                  data-fournisseur={model.split(":")[0]}
                   disabled={selectorLocked || availableModels.length === 0}
                   onClick={() => {
                     if (selectorLocked) return;
@@ -4154,7 +4169,13 @@ export function ChatPane({
                     setThinkingOpen(false);
                     setModeOpen(false);
                   }}
-                  title={selectorLocked ? "Modèle verrouillé pendant la réponse" : "Modèle"}
+                  title={
+                    selectorLocked
+                      ? "Modèle verrouillé pendant la réponse"
+                      : displayModelEntry?.accountLabel
+                        ? `Modèle (compte ${displayModelEntry.accountLabel})`
+                        : "Modèle"
+                  }
                 >
                   <span className="composer__picker-label">
                     {displayModelEntry?.label ?? "Aucun modèle"}
@@ -4166,56 +4187,14 @@ export function ChatPane({
                   />
                 </button>
                 {modelOpen && !selectorLocked && (
-                  <div
-                    className="composer__popover"
-                    role="menu"
-                    aria-label="Modèle"
-                  >
-                    {availableModels.map((m, index) => {
-                      const selected = m.value === model;
-                      const providerIcon =
-                        PROVIDERS.find((p) => p.value === m.provider)?.icon ?? m.icon;
-                      // providers — group header whenever the provider changes.
-                      const groupLabel =
-                        index === 0 || availableModels[index - 1].provider !== m.provider
-                          ? (PROVIDERS.find((p) => p.value === m.provider)?.label ??
-                            m.providerLabel ??
-                            m.provider)
-                          : null;
-                      return (
-                        <Fragment key={m.value}>
-                        {groupLabel && (
-                          <div className="axe-model-group" role="presentation">
-                            {groupLabel}
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          className="composer__popover-row"
-                          data-selected={selected ? "true" : "false"}
-                          onClick={() => {
-                            handleModelSelect(m.value);
-                          }}
-                        >
-                          <span className="composer__popover-label">
-                            {providerIcon && (
-                              <Icon icon={providerIcon} width={13} height={13} />
-                            )}
-                            <span>{m.label}</span>
-                          </span>
-                          {selected && (
-                            <Icon
-                              icon="solar:check-read-linear"
-                              width={13}
-                              height={13}
-                              className="composer__popover-check"
-                            />
-                          )}
-                        </button>
-                        </Fragment>
-                      );
-                    })}
-                  </div>
+                  <MenuModeles
+                    modeles={availableModels}
+                    choisi={model}
+                    ancre={modelRef}
+                    titreFournisseur={titreGroupeModele}
+                    iconeFournisseur={modelEntryIcon}
+                    onChoisir={handleModelSelect}
+                  />
                 )}
               </div>
               <div className="composer__picker" data-kind="thinking" ref={thinkingRef}>

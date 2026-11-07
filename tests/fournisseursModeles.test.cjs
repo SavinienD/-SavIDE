@@ -86,3 +86,23 @@ test("le tableau du panneau : colonne Identifiant modifiable, plus de window.pro
   assert.doesNotMatch(src, /window\.prompt/);
   assert.doesNotMatch(src, /<tr key=\{m\.id\}/, "clé de ligne stable pendant la frappe");
 });
+
+// « Découvrir » filtré, « Annuler les modifications », retrait de plusieurs modèles.
+test("Découvrir : seulement les identifiants qui commencent par le début tapé", () => {
+  const trouves = [{ id: "gemma2:2b" }, { id: "Qwen3:4b" }, { id: "qwen3:8b" }, { id: "llama-qwen3" }];
+  assert.deepEqual(M.filtrerDecouverte(trouves, " qwen3 ").map((m) => m.id), ["Qwen3:4b", "qwen3:8b"]);
+  assert.equal(M.filtrerDecouverte(trouves, "").length, 4);
+  assert.equal(M.filtrerDecouverte(trouves, "mistral").length, 0);
+});
+
+test("modifications en cours : brouillon ou contexte imposé différent de l'enregistré", () => {
+  const a = [{ id: "ollama", models: [{ id: "qwen3:4b" }] }];
+  assert.equal(M.modificationsEnCours(a, JSON.parse(JSON.stringify(a)), {}, {}), false);
+  assert.equal(M.modificationsEnCours([{ id: "ollama", models: [] }], a, {}, {}), true);
+  assert.equal(M.modificationsEnCours(a, a, { "ollama:qwen3:4b": { contextWindow: 8192 } }, {}), true);
+});
+
+test("retirer les rangs cochés", () => {
+  assert.deepEqual(M.retirerRangs(["a", "b", "c", "d"], new Set([0, 2])), ["b", "d"]);
+  assert.deepEqual(M.retirerRangs(["a"], new Set()), ["a"]);
+});

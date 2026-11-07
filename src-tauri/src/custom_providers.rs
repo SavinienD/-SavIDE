@@ -75,7 +75,7 @@ fn save_provider_settings(settings: &ProviderSettings) -> std::result::Result<()
 /// or login changed in Settings is used without restarting the service.
 pub(crate) fn settings_stamp() -> Option<std::time::SystemTime> {
     let dir = data_dir().ok()?;
-    [
+    let fixes = [
         SETTINGS_FILE,
         KEYS_FILE,
         "anthropic-auth.json",
@@ -86,7 +86,17 @@ pub(crate) fn settings_stamp() -> Option<std::time::SystemTime> {
     ]
     .iter()
     .filter_map(|name| fs::metadata(dir.join(name)).and_then(|meta| meta.modified()).ok())
-    .max()
+    .max();
+    // comptes ajoutés (anthropic-auth-2.json…) et suppressions (date du dossier).
+    let ajoutes = fs::read_dir(&dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter(|e| e.file_name().to_str().is_some_and(|n| n.contains("-auth-") && n.ends_with(".json")))
+        .filter_map(|e| e.metadata().and_then(|m| m.modified()).ok())
+        .max();
+    let dossier = fs::metadata(&dir).and_then(|m| m.modified()).ok();
+    [fixes, ajoutes, dossier].into_iter().flatten().max()
 }
 
 fn load_keys() -> std::result::Result<HashMap<String, String>, String> {

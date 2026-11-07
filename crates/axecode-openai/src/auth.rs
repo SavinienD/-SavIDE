@@ -397,6 +397,18 @@ pub async fn exchange_oauth_code(
     redirect_uri: &str,
     pkce: &PkceCodes,
 ) -> Result<OpenAiAuthStatus> {
+    exchange_oauth_code_into(http, &default_auth_path()?, code, redirect_uri, pkce).await
+}
+
+/// [`exchange_oauth_code`] with the tokens saved at `path` (an added
+/// ChatGPT account keeps its own file, so its renewals never touch the other account).
+pub async fn exchange_oauth_code_into(
+    http: &reqwest::Client,
+    path: &Path,
+    code: &str,
+    redirect_uri: &str,
+    pkce: &PkceCodes,
+) -> Result<OpenAiAuthStatus> {
     let response = http
         .post(OPENAI_OAUTH_TOKEN_URL)
         .header("content-type", "application/x-www-form-urlencoded")
@@ -425,7 +437,7 @@ pub async fn exchange_oauth_code(
         .await
         .map_err(|err| AppError::Decode(format!("invalid openai oauth body: {err}")))?;
     save_oauth_tokens(
-        &default_auth_path()?,
+        path,
         &body.id_token,
         &body.access_token,
         &body.refresh_token,
