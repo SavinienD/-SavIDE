@@ -155,6 +155,17 @@
       "selecteur": ".chat-body__bas",
       "situation": "/agents-(compteurs|archives)$",
       "raison": "Scènes de l'onglet Agents : le tour simulé en cours laisse le fil au-dessus du bas, le bouton flottant « Aller en bas » couvre une carte REPL (défaut connu, voir chat-aller-en-bas à 1920 px) ; sans rapport avec la liste des agents."
+    },
+    {
+      "regle": "*",
+      "selecteur": ".registre-pane__form, .axe-repl__header, .axe-repl__card > .axe-repl__row",
+      "situation": "/reglages-medias$",
+      "raison": "Scène reglages-medias : elle vérifie la carte « Recherche web et images » ; l'en-tête et les réglages généraux des Outils du REPL et le formulaire du registre (même section, déjà serrés à 800 px) existaient avant et ne font pas partie de cette scène."
+    },
+    {
+      "regle": "chevauchement",
+      "selecteur": ".settings-pane__tool-credential-field",
+      "raison": "Champ de clé API (ApiKeyField) : les boutons Afficher / Copier sont posés dans le champ, à droite, exprès (padding-right de 64 px réservé au texte)."
     }
   ]
 }

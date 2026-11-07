@@ -66,7 +66,7 @@ fn place_generated_images(result: &mut ToolRunResult, workspace: &Path, requeste
             result.file_changes.push(crate::tool_run::FileChange {
                 relative_path: new_rel.clone(),
                 kind: crate::tool_run::FileChangeKind::Added,
-                summary: "Added generated image".into(),
+                summary: "Added generated media".into(),
                 binary: true,
                 added_lines: 0,
                 removed_lines: 0,
@@ -117,6 +117,138 @@ mod place_tests {
         assert!(ws.join("b-1.png").exists() && ws.join("b-2.png").exists());
         let _ = std::fs::remove_dir_all(&ws);
         let _ = std::fs::remove_dir_all(ws.with_extension("donnees"));
+    }
+}
+
+fn take_str(params: &mut Value, key: &str) -> Option<String> {
+    params
+        .as_object_mut()
+        .and_then(|p| p.remove(key))
+        .and_then(|p| p.as_str().map(str::to_string))
+        .map(|p| p.trim().to_string())
+        .filter(|p| !p.is_empty())
+}
+
+/// fournisseur d'images d'un appel (`provider=`) ou des réglages.
+#[derive(Debug)]
+enum ImageChoice {
+    BuiltIn(crate::store::ImageProvider),
+    Custom(crate::media::MediaProviderConfig),
+}
+
+fn custom_names(settings: &crate::store::ToolSettings) -> String {
+    let names: Vec<String> = settings.media_providers.iter().map(|p| format!("« {} »", p.name)).collect();
+    if names.is_empty() {
+        "aucune API personnalisée (Réglages > REPL > Recherche web et images)".into()
+    } else {
+        format!("API personnalisées : {}", names.join(", "))
+    }
+}
+
+fn image_choice(settings: &crate::store::ToolSettings, provider: Option<&str>) -> Result<ImageChoice, String> {
+    use crate::store::ImageProvider;
+    let Some(name) = provider else {
+        if settings.image_provider == ImageProvider::Custom {
+            return settings
+                .default_media_provider(crate::media::MediaKind::Image)
+                .cloned()
+                .map(ImageChoice::Custom)
+                .ok_or_else(|| format!("images : aucune API personnalisée d'images ; {}", custom_names(settings)));
+        }
+        return Ok(ImageChoice::BuiltIn(settings.image_provider));
+    };
+    let key: String = name.to_lowercase().chars().filter(|c| c.is_ascii_alphanumeric()).collect();
+    if let Some(cfg) = settings.media_provider(name) {
+        return Ok(ImageChoice::Custom(cfg.clone()));
+    }
+    match key.as_str() {
+        "openai" | "gptimage2" | "gptimage" | "chatgpt" => Ok(ImageChoice::BuiltIn(ImageProvider::GptImage2)),
+        "nanobanana" | "nanobanana2" | "gemini" => Ok(ImageChoice::BuiltIn(ImageProvider::NanoBanana2)),
+        _ => Err(format!(
+            "fournisseur d'images inconnu « {name} » : « openai », « nano-banana » ou {}",
+            custom_names(settings)
+        )),
+    }
+}
+
+fn video_choice(settings: &crate::store::ToolSettings, provider: Option<&str>) -> Result<crate::media::MediaProviderConfig, String> {
+    match provider {
+        Some(name) => settings
+            .media_provider(name)
+            .cloned()
+            .ok_or_else(|| format!("fournisseur vidéo inconnu « {name} » ; {}", custom_names(settings))),
+        None => settings.default_media_provider(crate::media::MediaKind::Video).cloned().ok_or_else(|| {
+            "aucune API vidéo : ajoutez une API personnalisée de type Vidéo dans Réglages > REPL > Recherche web et images > API personnalisées (URL, clé, modèle), ou passez provider=\"nom\".".to_string()
+        }),
+    }
+}
+
+fn media_providers_view(settings: &crate::store::ToolSettings) -> Vec<Value> {
+    let image_default = (settings.image_provider == crate::store::ImageProvider::Custom)
+        .then(|| settings.default_media_provider(crate::media::MediaKind::Image).map(|p| p.name.clone()))
+        .flatten();
+    let video_default = settings.default_media_provider(crate::media::MediaKind::Video).map(|p| p.name.clone());
+    settings
+        .media_providers
+        .iter()
+        .map(|p| {
+            let mut view = p.public_view();
+            let default = Some(&p.name) == image_default.as_ref() || Some(&p.name) == video_default.as_ref();
+            view["default"] = json!(default);
+            view
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod media_choice_tests {
+    use super::*;
+    use crate::media::{MediaKind, MediaProviderConfig};
+    use crate::store::{ImageProvider, ToolSettings};
+
+    fn reglages() -> ToolSettings {
+        let mut s = ToolSettings::default();
+        s.media_providers = vec![
+            MediaProviderConfig { name: "flux".into(), kind: MediaKind::Image, url: "https://img.example/v1".into(), api_key: "k1".into(), ..Default::default() },
+            MediaProviderConfig { name: "Kling".into(), kind: MediaKind::Video, url: "https://queue.fal.run/kling".into(), ..Default::default() },
+        ];
+        s
+    }
+
+    #[test]
+    fn provider_names_pick_builtin_or_custom_apis() {
+        let s = reglages();
+        assert!(matches!(image_choice(&s, None).unwrap(), ImageChoice::BuiltIn(ImageProvider::GptImage2)));
+        assert!(matches!(image_choice(&s, Some("Nano-Banana")).unwrap(), ImageChoice::BuiltIn(ImageProvider::NanoBanana2)));
+        assert!(matches!(image_choice(&s, Some("FLUX")).unwrap(), ImageChoice::Custom(c) if c.name == "flux"));
+        let err = image_choice(&s, Some("inconnu")).unwrap_err();
+        assert!(err.contains("« flux »") && err.contains("« Kling »"), "{err}");
+        let mut custom = s.clone();
+        custom.image_provider = ImageProvider::Custom;
+        assert!(matches!(image_choice(&custom, None).unwrap(), ImageChoice::Custom(c) if c.name == "flux"));
+    }
+
+    #[test]
+    fn videos_use_the_first_video_api_or_say_what_to_add() {
+        let s = reglages();
+        assert_eq!(video_choice(&s, None).unwrap().name, "Kling");
+        assert_eq!(video_choice(&s, Some("kling")).unwrap().name, "Kling");
+        let err = video_choice(&ToolSettings::default(), None).unwrap_err();
+        assert!(err.contains("API personnalisées"), "{err}");
+        let vue = media_providers_view(&s);
+        assert_eq!(vue[1]["default"], true);
+        assert_eq!(vue[0]["key"], "configurée");
+        assert_eq!(vue[1]["key"], "absente");
+        assert!(!serde_json::to_string(&vue).unwrap().contains("k1"), "clé exposée");
+    }
+
+    #[test]
+    fn saved_settings_get_unique_provider_names() {
+        let mut s = ToolSettings::default();
+        s.media_providers = vec![MediaProviderConfig::default(), MediaProviderConfig { name: " api-1 ".into(), ..Default::default() }];
+        let s = s.normalized();
+        assert_eq!(s.media_providers[0].name, "api-1");
+        assert_eq!(s.media_providers[1].name, "api-1-2");
     }
 }
 
@@ -218,7 +350,7 @@ pub(crate) async fn dispatch(shared: &Arc<Shared>, method: &str, params: Value) 
             let settings = AppStore::open_default()
                 .and_then(|s| s.load_tool_settings())
                 .map_err(|e| e.to_string())?;
-            let tool = WebSearchTool::with_settings(settings.web_search_provider, settings.linkup_api_key());
+            let tool = WebSearchTool::from_settings(&settings);
             tool_json(tool.run(params).await)
         }
         "web.fetch" => tool_json(WebFetchTool::new().run(params).await),
@@ -226,27 +358,45 @@ pub(crate) async fn dispatch(shared: &Arc<Shared>, method: &str, params: Value) 
             let settings = AppStore::open_default()
                 .and_then(|s| s.load_tool_settings())
                 .map_err(|e| e.to_string())?;
-            let tool = CreateImageTool::with_settings(
-                shared.workspace(),
-                settings.image_provider,
-                settings.openai_image_use_subscription,
-                settings.openai_image_api_key(),
-                settings.nano_banana_api_key(),
-            );
-            // `path` is a kernel-side option (images.generate(path=...)): the
-            // tool saves in the app data (never the project), the file is then
-            // MOVED to `path` (no copy left anywhere).
+            // `path` and `provider` are kernel-side options (images.generate(path=...,
+            // provider=...)): the tool saves in the app data (never the project), the
+            // file is then MOVED to `path` (no copy left anywhere).
             let mut params = params;
-            let requested = params
-                .as_object_mut()
-                .and_then(|p| p.remove("path"))
-                .and_then(|p| p.as_str().map(str::to_string))
-                .filter(|p| !p.trim().is_empty());
-            let mut result = tool.run(params).await;
+            let requested = take_str(&mut params, "path");
+            let provider = take_str(&mut params, "provider");
+            let mut result = match image_choice(&settings, provider.as_deref())? {
+                ImageChoice::BuiltIn(kind) => {
+                    let mut settings = settings.clone();
+                    settings.image_provider = kind;
+                    CreateImageTool::from_settings(shared.workspace(), &settings).run(params).await
+                }
+                ImageChoice::Custom(cfg) => crate::media::run_tool(&cfg, &shared.workspace(), params).await,
+            };
             if let Some(requested) = requested.filter(|_| !result.is_error) {
                 place_generated_images(&mut result, &shared.workspace(), &requested)?;
             }
             tool_json(result)
+        }
+        // videos.generate(prompt, path=None, provider=None, **options).
+        "videos.generate" => {
+            let settings = AppStore::open_default()
+                .and_then(|s| s.load_tool_settings())
+                .map_err(|e| e.to_string())?;
+            let mut params = params;
+            let requested = take_str(&mut params, "path");
+            let provider = take_str(&mut params, "provider");
+            let cfg = video_choice(&settings, provider.as_deref())?;
+            let mut result = crate::media::run_tool(&cfg, &shared.workspace(), params).await;
+            if let Some(requested) = requested.filter(|_| !result.is_error) {
+                place_generated_images(&mut result, &shared.workspace(), &requested)?;
+            }
+            tool_json(result)
+        }
+        "media.providers" => {
+            let settings = AppStore::open_default()
+                .and_then(|s| s.load_tool_settings())
+                .map_err(|e| e.to_string())?;
+            Ok(Value::Array(media_providers_view(&settings)))
         }
         "question.ask" => {
             // Questions are asked through the chat: the turn ends with the

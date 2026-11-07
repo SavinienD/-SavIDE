@@ -266,5 +266,15 @@
   "fichier": "src/",
   "motif": "(^|\\+ )Tab$",
   "raison": "nom de la touche Tab, imprimé ainsi sur les claviers français"
+ },
+ {
+  "fichier": "src/lib/apisMedias.ts",
+  "motif": "^\\{\"|^Key$|text-to-video|^Corps par défaut",
+  "raison": "gabarit JSON, préfixe et identifiants d'API (syntaxe technique à recopier)"
+ },
+ {
+  "fichier": "src/components/settings/ReplServicesSection.tsx",
+  "motif": "provider=|^\\{model\\}|^Authorization$|^\\{\"model\"",
+  "raison": "syntaxe d'appel REPL, en-tête HTTP et gabarit JSON (à recopier tels quels)"
  }
 ]

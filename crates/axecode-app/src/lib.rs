@@ -6,6 +6,10 @@ pub mod edit;
 pub mod glob;
 pub mod grep;
 pub mod image;
+pub mod media; // API personnalisées (images et vidéos)
+pub mod openai_compte; // Clé API OpenAI, sinon abonnement ChatGPT
+#[cfg(test)]
+mod faux_http;
 pub mod mcp;
 pub mod migration; // migration
 pub mod orchestre; // ds16

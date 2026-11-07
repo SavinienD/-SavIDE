@@ -511,6 +511,16 @@ export const SCENES = [
   // de qwen3:4b est bien l'identifiant enregistré (avant : seul le libellé changeait, qwen3:4b restait appelé).
   // comptes — Réglages > Fournisseurs : la carte OpenAI montrait l'e-mail et « Plus »,
   // la carte Claude connectée (abonnement OAuth) rien. Chaque compte connecté montre son e-mail et son offre.
+  // Réglages > REPL : compte utilisé par la recherche web et les images (abonnement ChatGPT
+  // sans clé), API personnalisées (images et vidéo), gabarit JSON invalide signalé, boutons d'ajout.
+  { id: "reglages-medias", sim: { comptes: true, medias: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='repl']"],
+    temoins: ["sel:[data-regle='recherche'][data-route='abonnement']",
+      "sel:.settings-pane__tool-provider-switch [data-fournisseur='auto'][data-active='true']",
+      "sel:.settings-pane__tool-provider-switch [data-fournisseur='custom'][data-active='true']",
+      "sel:.axe-medias__api[data-type='video'][data-api='fal']",
+      "sel:.axe-medias__api[data-api='fal'] [data-erreur='gabarit']",
+      "sel:.axe-medias__ajouts [data-prereglage='openai-videos']"] },
   { id: "fournisseurs-comptes", sim: { comptes: true }, stockage: () => colonnes([ids(1)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='providers']"],
     temoins: ["sel:.settings-pane__provider-card[data-fournisseur='anthropic'] [data-compte='email']",

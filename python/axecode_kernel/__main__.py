@@ -51,7 +51,7 @@ SNAPSHOT_TOTAL_SECONDS = 20.0
 
 # Tool modules preloaded in the namespace, in prompt order.
 MODULES = [
-    "files", "shell", "web", "images", "context", "question", "todo", "cua",
+    "files", "shell", "web", "images", "videos", "context", "question", "todo", "cua",
     "skills", "mcp", "compact", "rlm", "messages", "harness", "refine",
     "goal", "heartbeat", "guet",
 ]

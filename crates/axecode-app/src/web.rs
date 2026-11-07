@@ -1,4 +1,4 @@
-use std::{env, time::Duration};
+use std::{env, path::PathBuf, time::Duration};
 
 use anyhow::{bail, Context, Result};
 use futures_util::StreamExt;
@@ -11,6 +11,7 @@ use serde::Deserialize;
 use serde_json::{json, Map, Value};
 use axecode_core::ToolDescriptor;
 
+use crate::openai_compte::{self, OpenAiRoute};
 use crate::store::WebSearchProvider;
 use crate::tool_names;
 use crate::tool_run::ToolRunResult;
@@ -18,6 +19,9 @@ use crate::tool_run::ToolRunResult;
 const LINKUP_SEARCH_URL: &str = "https://api.linkup.so/v1/search";
 const EXA_MCP_URL: &str = "https://mcp.exa.ai/mcp";
 const EXA_DEFAULT_NUM_RESULTS: u8 = 8;
+/// Modèle des recherches OpenAI (clé API ou abonnement ChatGPT), comme les images.
+const OPENAI_WEB_SEARCH_MODEL: &str = "gpt-6-astra";
+const OPENAI_WEB_SEARCH_DEFAULT_RESULTS: u8 = 6;
 const USER_AGENT: &str = "axecode/0.1";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(45);
 const WEBSEARCH_RESPONSE_LIMIT: usize = 256 * 1024;
@@ -29,6 +33,13 @@ pub struct WebSearchTool {
     http: reqwest::Client,
     provider: WebSearchProvider,
     api_key: Option<String>,
+    /// Clé API OpenAI des réglages (sinon `OPENAI_API_KEY`) : mode Automatique.
+    openai_api_key: Option<String>,
+    /// Tests : fichier du compte ChatGPT et adresses des API remplacés.
+    openai_auth_path: Option<PathBuf>,
+    openai_api_url: String,
+    chatgpt_url: String,
+    exa_url: String,
 }
 
 impl Default for WebSearchTool {
@@ -53,7 +64,38 @@ impl WebSearchTool {
             api_key: api_key
                 .map(|key| key.trim().to_string())
                 .filter(|key| !key.is_empty()),
+            openai_api_key: None,
+            openai_auth_path: None,
+            openai_api_url: openai_compte::OPENAI_API_RESPONSES_URL.into(),
+            chatgpt_url: openai_compte::CHATGPT_RESPONSES_URL.into(),
+            exa_url: EXA_MCP_URL.into(),
         }
+    }
+
+    /// Outil configuré d'après les réglages (fournisseur, clés LinkUp et OpenAI).
+    pub fn from_settings(settings: &crate::store::ToolSettings) -> Self {
+        Self::with_settings(settings.web_search_provider, settings.linkup_api_key())
+            .with_openai_api_key(settings.openai_image_api_key())
+    }
+
+    /// Clé API OpenAI des réglages (mode Automatique : clé, sinon abonnement ChatGPT, sinon Exa).
+    pub fn with_openai_api_key(mut self, key: Option<String>) -> Self {
+        self.openai_api_key = key.map(|k| k.trim().to_string()).filter(|k| !k.is_empty());
+        self
+    }
+
+    #[cfg(test)]
+    fn with_test_endpoints(mut self, auth_path: PathBuf, openai_api: String, chatgpt: String, exa: String) -> Self {
+        self.openai_auth_path = Some(auth_path);
+        self.openai_api_url = openai_api;
+        self.chatgpt_url = chatgpt;
+        self.exa_url = exa;
+        self
+    }
+
+    /// Fournisseur réellement utilisé par le mode Automatique, en clair.
+    pub fn auto_route(&self) -> OpenAiRoute {
+        openai_compte::openai_route(self.openai_api_key.as_deref(), self.openai_auth_path.as_deref(), false)
     }
 
     pub fn descriptor(&self) -> ToolDescriptor {
@@ -79,7 +121,7 @@ impl WebSearchTool {
                     "additionalProperties": false
                 }),
             },
-            WebSearchProvider::Classic => ToolDescriptor {
+            WebSearchProvider::Auto | WebSearchProvider::Exa => ToolDescriptor {
                 name: tool_names::WEB_SEARCH.into(),
                 description: "Use this for web search, documentation check or fresh information."
                     .into(),
@@ -116,8 +158,104 @@ impl WebSearchTool {
     async fn search(&self, input: Value) -> Result<String> {
         match self.provider {
             WebSearchProvider::LinkUp => self.search_linkup(input).await,
-            WebSearchProvider::Classic => self.search_classic(input).await,
+            WebSearchProvider::Exa => self.search_classic(input).await,
+            WebSearchProvider::Auto => self.search_auto(input).await,
         }
+    }
+
+    /// Automatique : clé API OpenAI, sinon abonnement ChatGPT (outil `web_search`
+    /// de l'API Responses) ; sans compte OpenAI ou en cas d'échec, Exa (gratuit).
+    async fn search_auto(&self, input: Value) -> Result<String> {
+        let route = self.auto_route();
+        if matches!(route, OpenAiRoute::None) {
+            return self.search_classic(input).await;
+        }
+        match self.search_openai(&route, input.clone()).await {
+            Ok(text) => Ok(text),
+            Err(err) => {
+                let exa = self.search_classic(input).await?;
+                Ok(format!(
+                    "(Recherche OpenAI ({}) indisponible : {} — résultats Exa.)\n\n{exa}",
+                    route.label(),
+                    clip_chars(&err.to_string(), 300).0
+                ))
+            }
+        }
+    }
+
+    async fn search_openai(&self, route: &OpenAiRoute, input: Value) -> Result<String> {
+        let parsed: ExaSearchInput = serde_json::from_value(input)
+            .map_err(|err| anyhow::anyhow!("invalid web_search input: {err}"))?;
+        let query = parsed.query.trim();
+        if query.is_empty() {
+            bail!("query is required");
+        }
+        let count = parsed.num_results.unwrap_or(OPENAI_WEB_SEARCH_DEFAULT_RESULTS).clamp(1, 20);
+        let instructions = format!(
+            "Search the web for the user's query, then answer briefly in the language of the query. \
+             Then list up to {count} sources you actually used, one per line: `- title — URL — one-line summary`. \
+             Always call web_search first; never answer from memory alone."
+        );
+        let subscription = matches!(route, OpenAiRoute::Subscription(_));
+        let body = json!({
+            "model": OPENAI_WEB_SEARCH_MODEL,
+            "instructions": instructions,
+            "input": [{"type": "message", "role": "user", "content": [{"type": "input_text", "text": query}]}],
+            "tools": [{"type": "web_search"}],
+            "tool_choice": "auto",
+            "stream": subscription,
+            "store": false,
+        });
+        let request = match route {
+            OpenAiRoute::ApiKey(key) => self
+                .http
+                .post(&self.openai_api_url)
+                .header(AUTHORIZATION, format!("Bearer {key}"))
+                .header(ACCEPT, "application/json"),
+            OpenAiRoute::Subscription(credential) => {
+                let bearer = credential.bearer(&self.http).await?;
+                let mut request = self
+                    .http
+                    .post(&self.chatgpt_url)
+                    .header(AUTHORIZATION, format!("Bearer {}", bearer.token))
+                    .header("openai-beta", "responses=experimental")
+                    .header(ACCEPT, "text/event-stream");
+                if let Some(account) = bearer.account_id.as_deref() {
+                    request = request.header("chatgpt-account-id", account);
+                }
+                request
+            }
+            OpenAiRoute::None => bail!("{}", openai_compte::AUCUN_COMPTE_OPENAI),
+        };
+        let response = request
+            .header(CONTENT_TYPE, "application/json")
+            .timeout(Duration::from_secs(120))
+            .json(&body)
+            .send()
+            .await
+            .context("OpenAI web_search request failed")?;
+        let status = response.status();
+        if !status.is_success() {
+            if subscription {
+                if let Some(message) = openai_compte::subscription_refused(status.as_u16()) {
+                    bail!("{message}");
+                }
+            }
+            let (text, _) = collect_response_text(response, 8 * 1024).await?;
+            bail!("OpenAI web_search ({status}) : {}", clip_chars(&text, 500).0);
+        }
+        let items = if subscription {
+            openai_compte::responses_stream_output(response).await?
+        } else {
+            let (text, _) = collect_response_text(response, WEBSEARCH_RESPONSE_LIMIT).await?;
+            let value: Value = serde_json::from_str(&text).context("invalid OpenAI response")?;
+            value.get("output").and_then(Value::as_array).cloned().unwrap_or_default()
+        };
+        let output = format_openai_web_search(&items, route.label());
+        if output.trim().is_empty() {
+            bail!("OpenAI n'a renvoyé aucun texte");
+        }
+        Ok(clip_with_notice(output, TOOL_OUTPUT_LIMIT))
     }
 
     async fn search_linkup(&self, input: Value) -> Result<String> {
@@ -177,7 +315,7 @@ impl WebSearchTool {
         let body = exa_web_search_body(&parsed, query);
         let response = self
             .http
-            .post(EXA_MCP_URL)
+            .post(&self.exa_url)
             .header(CONTENT_TYPE, "application/json")
             .header(ACCEPT, "application/json, text/event-stream")
             .json(&body)
@@ -347,12 +485,15 @@ impl WebFetchTool {
 struct WebSearchInput {
     #[serde(alias = "query")]
     q: String,
+    // Le REPL (`web.search(query)`) n'envoie pas de profondeur : standard.
+    #[serde(default)]
     depth: SearchDepth,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Deserialize)]
 #[serde(rename_all = "lowercase")]
 enum SearchDepth {
+    #[default]
     Standard,
     Deep,
 }
@@ -370,7 +511,8 @@ impl SearchDepth {
 struct ExaSearchInput {
     #[serde(alias = "q")]
     query: String,
-    #[serde(default, rename = "numResults", alias = "num_results")]
+    // `max_results` : nom utilisé par `web.search(query, max_results=...)` du REPL.
+    #[serde(default, rename = "numResults", alias = "num_results", alias = "max_results")]
     num_results: Option<u8>,
     #[serde(
         default,
@@ -430,6 +572,44 @@ async fn collect_response_text(
     }
 
     Ok((String::from_utf8_lossy(&bytes).into_owned(), truncated))
+}
+
+/// Texte et sources (annotations `url_citation`) d'une réponse OpenAI `web_search`.
+fn format_openai_web_search(items: &[Value], via: &str) -> String {
+    let mut text = String::new();
+    let mut sources: Vec<(String, String)> = Vec::new();
+    for item in items.iter().filter(|i| i.get("type").and_then(Value::as_str) == Some("message")) {
+        for part in item.get("content").and_then(Value::as_array).into_iter().flatten() {
+            if let Some(t) = part.get("text").and_then(Value::as_str) {
+                if !text.is_empty() {
+                    text.push_str("\n\n");
+                }
+                text.push_str(t.trim());
+            }
+            for note in part.get("annotations").and_then(Value::as_array).into_iter().flatten() {
+                let Some(url) = note.get("url").and_then(Value::as_str) else { continue };
+                if sources.iter().any(|(u, _)| u == url) {
+                    continue;
+                }
+                let title = note.get("title").and_then(Value::as_str).unwrap_or("").trim().to_string();
+                sources.push((url.to_string(), title));
+            }
+        }
+    }
+    if text.trim().is_empty() {
+        return String::new();
+    }
+    let missing: Vec<String> = sources
+        .iter()
+        .filter(|(url, _)| !text.contains(url.as_str()))
+        .map(|(url, title)| if title.is_empty() { format!("- {url}") } else { format!("- {title} — {url}") })
+        .collect();
+    if !missing.is_empty() {
+        text.push_str("\n\nSources :\n");
+        text.push_str(&missing.join("\n"));
+    }
+    text.push_str(&format!("\n\n(Recherche OpenAI web_search, {via}.)"));
+    text
 }
 
 fn format_linkup_response(value: &Value) -> String {
@@ -1052,6 +1232,140 @@ fn escape_table_cell(text: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ---- web.search du REPL et compte OpenAI par défaut ----
+
+    #[test]
+    fn repl_max_results_and_missing_depth_are_accepted() {
+        let exa: ExaSearchInput = serde_json::from_value(json!({"query": "x", "max_results": 3})).unwrap();
+        assert_eq!(exa.num_results, Some(3), "max_results du REPL ignoré");
+        let linkup: Result<WebSearchInput, _> = serde_json::from_value(json!({"query": "x"}));
+        assert!(linkup.is_ok(), "LinkUp exige depth : {linkup:?}");
+    }
+
+    #[test]
+    fn classic_stored_value_becomes_auto() {
+        let p: WebSearchProvider = serde_json::from_value(json!("classic")).unwrap();
+        assert_eq!(p, WebSearchProvider::Auto);
+        assert_eq!(WebSearchProvider::default(), WebSearchProvider::Auto);
+        assert_eq!(serde_json::to_value(WebSearchProvider::Exa).unwrap(), json!("exa"));
+    }
+
+    fn reponse_openai() -> Value {
+        json!({"type": "message", "role": "assistant", "content": [{
+            "type": "output_text",
+            "text": "Rust 1.99 est sortie.",
+            "annotations": [{"type": "url_citation", "url": "https://blog.rust-lang.org/x", "title": "Blog Rust"}]
+        }]})
+    }
+
+    fn exa_sse() -> crate::faux_http::Reponse {
+        crate::faux_http::Reponse::sse(&[json!({"result": {"content": [{"type": "text", "text": "Title: Exa\nURL: https://exa.example"}]}})])
+    }
+
+    fn cle_env_absente() -> bool {
+        env::var("OPENAI_API_KEY").map(|k| k.trim().is_empty()).unwrap_or(true)
+    }
+
+    #[tokio::test]
+    async fn auto_uses_chatgpt_subscription_without_api_key() {
+        if !cle_env_absente() {
+            return;
+        }
+        use crate::faux_http::{compte_chatgpt, lancer, Reponse};
+        let dir = tempfile::tempdir().unwrap();
+        let serveur = lancer(|r, _| match r.path.as_str() {
+            "/codex" => Reponse::sse(&[
+                json!({"type": "response.output_item.done", "item": {"type": "web_search_call", "status": "completed"}}),
+                json!({"type": "response.output_item.done", "item": reponse_openai()}),
+                json!({"type": "response.completed", "response": {"output": []}}),
+            ]),
+            _ => exa_sse(),
+        })
+        .await;
+        let b = &serveur.base;
+        let tool = WebSearchTool::with_settings(WebSearchProvider::Auto, None).with_test_endpoints(
+            compte_chatgpt(dir.path()),
+            format!("{b}/api"),
+            format!("{b}/codex"),
+            format!("{b}/exa"),
+        );
+        let out = tool.run(json!({"query": "rust", "max_results": 2})).await;
+        assert!(!out.is_error, "{}", out.content);
+        assert!(out.content.contains("Rust 1.99 est sortie."), "{}", out.content);
+        assert!(out.content.contains("Blog Rust — https://blog.rust-lang.org/x"), "{}", out.content);
+        assert!(out.content.contains("abonnement ChatGPT"), "{}", out.content);
+        let reqs = serveur.requetes();
+        assert_eq!(reqs.len(), 1, "un seul appel, pas d'Exa : {reqs:?}");
+        assert_eq!(reqs[0].path, "/codex");
+        assert_eq!(reqs[0].header("authorization"), Some("Bearer jeton-test"));
+        assert_eq!(reqs[0].header("chatgpt-account-id"), Some("compte-test"));
+        let body: Value = serde_json::from_str(&reqs[0].body).unwrap();
+        assert_eq!(body["tools"][0]["type"], "web_search");
+        assert_eq!(body["stream"], true);
+        assert!(body["instructions"].as_str().unwrap().contains("up to 2 sources"));
+    }
+
+    #[tokio::test]
+    async fn auto_prefers_the_api_key_then_falls_back_to_exa() {
+        if !cle_env_absente() {
+            return;
+        }
+        use crate::faux_http::{compte_chatgpt, lancer, Reponse};
+        let dir = tempfile::tempdir().unwrap();
+        let serveur = lancer(|r, _| match r.path.as_str() {
+            "/api" => Reponse::json(json!({"output": [reponse_openai()]})),
+            _ => exa_sse(),
+        })
+        .await;
+        let b = serveur.base.clone();
+        let tool = WebSearchTool::with_settings(WebSearchProvider::Auto, None)
+            .with_openai_api_key(Some("sk-test".into()))
+            .with_test_endpoints(compte_chatgpt(dir.path()), format!("{b}/api"), format!("{b}/codex"), format!("{b}/exa"));
+        let out = tool.run(json!({"query": "rust"})).await;
+        assert!(out.content.contains("clé API OpenAI"), "{}", out.content);
+        let reqs = serveur.requetes();
+        assert_eq!(reqs[0].path, "/api");
+        assert_eq!(reqs[0].header("authorization"), Some("Bearer sk-test"));
+        assert_eq!(serde_json::from_str::<Value>(&reqs[0].body).unwrap()["stream"], false);
+
+        // Ni clé ni compte : Exa, gratuit, sans erreur.
+        let sans = WebSearchTool::with_settings(WebSearchProvider::Auto, None).with_test_endpoints(
+            dir.path().join("absent.json"),
+            format!("{b}/api"),
+            format!("{b}/codex"),
+            format!("{b}/exa"),
+        );
+        let out = sans.run(json!({"query": "rust", "max_results": 3})).await;
+        assert!(!out.is_error && out.content.contains("Title: Exa"), "{}", out.content);
+        let exa = serveur.requetes().into_iter().find(|r| r.path == "/exa").expect("Exa appelé");
+        let body: Value = serde_json::from_str(&exa.body).unwrap();
+        assert_eq!(body["params"]["arguments"]["numResults"], 3, "max_results transmis à Exa");
+    }
+
+    #[tokio::test]
+    async fn auto_falls_back_to_exa_when_openai_fails() {
+        if !cle_env_absente() {
+            return;
+        }
+        use crate::faux_http::{compte_chatgpt, lancer, Reponse};
+        let dir = tempfile::tempdir().unwrap();
+        let serveur = lancer(|r, _| match r.path.as_str() {
+            "/codex" => Reponse::status(429, r#"{"error":{"message":"quota"}}"#),
+            _ => exa_sse(),
+        })
+        .await;
+        let b = serveur.base.clone();
+        let tool = WebSearchTool::with_settings(WebSearchProvider::Auto, None).with_test_endpoints(
+            compte_chatgpt(dir.path()),
+            format!("{b}/api"),
+            format!("{b}/codex"),
+            format!("{b}/exa"),
+        );
+        let out = tool.run(json!({"query": "rust"})).await;
+        assert!(!out.is_error, "{}", out.content);
+        assert!(out.content.contains("indisponible") && out.content.contains("Title: Exa"), "{}", out.content);
+    }
 
     #[test]
     fn html_to_markdown_removes_noise_and_formats_blocks() {

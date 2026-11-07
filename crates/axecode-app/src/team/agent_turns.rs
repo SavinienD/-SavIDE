@@ -81,21 +81,12 @@ impl TeamTool {
                     .with_workspace_write_lock(workspace_write_lock.clone()),
             ),
             create_image: Arc::new(
-                CreateImageTool::with_settings(
-                    self.workspace_root.clone(),
-                    self.tool_settings.image_provider,
-                    self.tool_settings.openai_image_use_subscription,
-                    self.tool_settings.openai_image_api_key(),
-                    self.tool_settings.nano_banana_api_key(),
-                )
+                CreateImageTool::from_settings(self.workspace_root.clone(), &self.tool_settings)
                 .with_workspace_write_lock(workspace_write_lock),
             ),
             todo_list_tool: None,
             question: None,
-            web_search: Arc::new(WebSearchTool::with_settings(
-                self.tool_settings.web_search_provider,
-                self.tool_settings.linkup_api_key(),
-            )),
+            web_search: Arc::new(WebSearchTool::from_settings(&self.tool_settings)),
             web_fetch: Arc::new(WebFetchTool::new()),
             skill: Arc::new(SkillTool::with_settings(
                 self.workspace_root.clone(),

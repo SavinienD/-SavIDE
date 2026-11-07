@@ -214,6 +214,15 @@ pub struct ToolSettings {
     pub web_search_provider: WebSearchProvider,
     #[serde(default)]
     pub linkup_api_key: String,
+    /// API personnalisées de génération d'images et de vidéos.
+    #[serde(default)]
+    pub media_providers: Vec<crate::media::MediaProviderConfig>,
+    /// Nom de l'API personnalisée des images quand `image_provider` = Custom.
+    #[serde(default)]
+    pub image_custom_provider: String,
+    /// Nom de l'API des vidéos (vide = la première API de type vidéo).
+    #[serde(default)]
+    pub video_provider: String,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -223,15 +232,24 @@ pub enum ImageProvider {
     GptImage2,
     #[serde(rename = "nanoBanana2")]
     NanoBanana2,
+    /// Une API personnalisée (`image_custom_provider`).
+    #[serde(rename = "custom")]
+    Custom,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum WebSearchProvider {
     #[serde(rename = "linkup")]
     LinkUp,
+    /// clé API OpenAI, sinon abonnement ChatGPT, sinon Exa (gratuit).
+    /// « classic » (ancienne valeur par défaut, enregistrée sans choix
+    /// explicite dès qu'on sauvait un réglage d'outil) devient Automatique.
     #[default]
-    #[serde(rename = "classic")]
-    Classic,
+    #[serde(rename = "auto", alias = "classic")]
+    Auto,
+    /// Exa seul (gratuit, sans compte).
+    #[serde(rename = "exa")]
+    Exa,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -260,6 +278,9 @@ pub struct ToolSettingsView {
     pub nano_banana_api_key: String,
     pub web_search_provider: WebSearchProvider,
     pub linkup_api_key: String,
+    pub media_providers: Vec<crate::media::MediaProviderConfig>,
+    pub image_custom_provider: String,
+    pub video_provider: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -315,6 +336,26 @@ impl ToolSettings {
         self.openai_image_api_key = self.openai_image_api_key.trim().to_string();
         self.nano_banana_api_key = self.nano_banana_api_key.trim().to_string();
         self.linkup_api_key = self.linkup_api_key.trim().to_string();
+        self.image_custom_provider = self.image_custom_provider.trim().to_string();
+        self.video_provider = self.video_provider.trim().to_string();
+        let mut names = HashSet::new();
+        self.media_providers = std::mem::take(&mut self.media_providers)
+            .into_iter()
+            .map(crate::media::MediaProviderConfig::normalized)
+            .enumerate()
+            .map(|(index, mut provider)| {
+                if provider.name.is_empty() {
+                    provider.name = format!("api-{}", index + 1);
+                }
+                let base = provider.name.clone();
+                let mut n = 2;
+                while !names.insert(provider.name.to_lowercase()) {
+                    provider.name = format!("{base}-{n}");
+                    n += 1;
+                }
+                provider
+            })
+            .collect();
         self.tools = self
             .tools
             .into_iter()
@@ -418,6 +459,25 @@ impl ToolSettings {
         }
     }
 
+    /// API personnalisée par son nom (sans tenir compte de la casse).
+    pub fn media_provider(&self, name: &str) -> Option<&crate::media::MediaProviderConfig> {
+        let name = name.trim();
+        self.media_providers.iter().find(|p| p.name.eq_ignore_ascii_case(name))
+    }
+
+    /// API personnalisée par défaut d'un type : celle nommée dans les réglages,
+    /// sinon la première de ce type.
+    pub fn default_media_provider(&self, kind: crate::media::MediaKind) -> Option<&crate::media::MediaProviderConfig> {
+        let named = match kind {
+            crate::media::MediaKind::Image => &self.image_custom_provider,
+            crate::media::MediaKind::Video => &self.video_provider,
+        };
+        (!named.is_empty())
+            .then(|| self.media_provider(named))
+            .flatten()
+            .or_else(|| self.media_providers.iter().find(|p| p.kind == kind))
+    }
+
     pub fn linkup_api_key(&self) -> Option<String> {
         let key = self.linkup_api_key.trim();
         if key.is_empty() {
@@ -454,6 +514,9 @@ pub fn tool_settings_view(settings: &ToolSettings, catalog: &[ToolDescriptor]) -
         nano_banana_api_key: settings.nano_banana_api_key.clone(),
         web_search_provider: settings.web_search_provider,
         linkup_api_key: settings.linkup_api_key.clone(),
+        media_providers: settings.media_providers.clone(),
+        image_custom_provider: settings.image_custom_provider.clone(),
+        video_provider: settings.video_provider.clone(),
         tools: catalog
             .iter()
             .filter_map(|descriptor| {
