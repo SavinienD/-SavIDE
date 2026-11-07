@@ -1,0 +1,115 @@
+/* Réglages > Outils : registre de scripts (passe unslop).
+   Mêmes briques que l'onglet Fournisseurs : cartes var(--line) / bg-1 / r-card, champs bordés sur bg-2,
+   libellé au-dessus de chaque champ, un seul bouton accent par bloc. Grille de 4 px. */
+.axe-registre {
+  display: flex; flex-direction: column; gap: 16px; min-width: 0;
+  margin-top: 8px; padding: 16px 2px 24px; border-top: 1px solid var(--line);
+  container: registre / inline-size;
+}
+.axe-registre p { margin: 0; }
+.axe-registre__tete { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; }
+.axe-registre__tete-texte { flex: 1 1 240px; min-width: 0; display: grid; gap: 4px; }
+.axe-registre__titre { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-0); font-size: calc(16px * var(--text-scale, 1)); font-weight: 600; }
+.axe-registre__revision {
+  flex: none; padding: 2px 8px; border: 1px solid var(--line); border-radius: var(--r-pill);
+  color: var(--text-3); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+
+/* Hors ligne : une carte, une phrase, une action. */
+.axe-registre__carte {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 16px;
+  padding: 16px; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--bg-1);
+}
+.axe-registre__carte-texte { flex: 1 1 220px; min-width: 0; display: grid; gap: 4px; }
+.axe-registre__carte-titre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-0); font-size: var(--fs-base); font-weight: 600; }
+
+.axe-registre__principal {
+  flex: 0 1 auto; min-width: 0; max-width: 100%; min-height: 32px; padding: 0 16px; border-radius: var(--r-med);
+  font-size: var(--fs-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.axe-registre__principal:focus-visible { outline: 2px solid var(--text-0); outline-offset: 2px; }
+
+.axe-registre__bloc { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.axe-registre__soustitre { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-1); font-size: var(--fs-sm); font-weight: 600; }
+.axe-registre__nombre {
+  display: inline-block; margin-left: 8px; padding: 0 6px; border-radius: var(--r-pill); background: var(--bg-3);
+  color: var(--text-2); font-size: var(--fs-xs); font-weight: 500; font-variant-numeric: tabular-nums;
+}
+.axe-registre__vide {
+  padding: 16px; border: 1px solid var(--line); border-radius: var(--r-card);
+  color: var(--text-3); font-size: var(--fs-sm); text-align: center;
+}
+
+/* Listes : une carte, une ligne par élément, séparateurs fins. */
+.axe-registre__liste { list-style: none; margin: 0; padding: 0; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--bg-1); overflow: hidden; }
+.axe-registre__liste > li { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 8px 12px; }
+.axe-registre__liste > li + li { border-top: 1px solid var(--line); }
+/* Une ligne quand la place suffit ; sinon la date, la durée et les actions passent dessous (jamais de nom réduit à « … »). */
+.axe-registre__ligne-tete, .axe-registre__ligne-pied { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; min-width: 0; min-height: 24px; }
+.axe-registre__nom { flex: 1 1 96px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-0); font-size: var(--fs-sm); }
+.axe-registre__meta { flex: none; color: var(--text-3); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.axe-registre__duree { min-width: 8ch; text-align: right; }
+.axe-registre__id { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); font-family: var(--font-mono); font-size: var(--fs-mono-sm); }
+code.axe-registre__nom { color: var(--text-0); }
+.axe-registre__motif { flex: 1 1 96px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-3); font-size: var(--fs-xs); }
+.axe-registre__motif--erreur { color: var(--danger); }
+.axe-registre__actions { flex: 0 1 auto; min-width: 0; display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+.axe-registre__actions .settings-pane__btn { height: 24px; }
+
+/* Pastille d'état : un point de couleur, le texte reste neutre. */
+.axe-registre__pastille {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; height: 20px; padding: 0 8px;
+  border-radius: var(--r-pill); background: var(--bg-3); color: var(--text-1);
+  font-size: var(--fs-xs); font-weight: 500; white-space: nowrap;
+}
+.axe-registre__pastille::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); }
+.axe-registre__pastille[data-ton="ok"]::before { background: var(--ok); }
+.axe-registre__pastille[data-ton="attente"]::before { background: var(--accent); }
+.axe-registre__pastille[data-ton="erreur"]::before { background: var(--danger); }
+
+/* Formulaire : libellé au-dessus, champs bordés de même hauteur, code à hauteur fixe. */
+.axe-registre__form {
+  display: flex; flex-direction: column; gap: 12px; min-width: 0;
+  padding: 16px; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--bg-1);
+}
+.axe-registre__grille { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 96px 128px; gap: 12px; align-items: end; }
+.axe-registre__champ { display: flex; flex-direction: column; gap: 4px; min-width: 0; color: var(--text-2); font-size: var(--fs-xs); font-weight: 500; }
+.axe-registre__champ > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-registre__champ input, .axe-registre__champ select, .axe-registre__champ textarea {
+  box-sizing: border-box; width: 100%; min-width: 0; min-height: 32px; padding: 6px 8px; margin: 0;
+  border: 1px solid var(--line-strong, rgba(232, 233, 236, 0.16)); border-radius: var(--r-small);
+  background: var(--bg-2); color: var(--text-0); outline: none;
+  font-family: var(--font-ui); font-size: var(--fs-sm); font-weight: 400; line-height: 1.4;
+  transition: border-color 140ms ease;
+}
+.axe-registre__champ input::placeholder, .axe-registre__champ textarea::placeholder { color: var(--text-3); }
+.axe-registre__champ input:focus, .axe-registre__champ select:focus, .axe-registre__champ textarea:focus { border-color: var(--accent); }
+.axe-registre__champ select { cursor: pointer; }
+.axe-registre__champ .axe-registre__mono { font-family: var(--font-mono); font-size: var(--fs-mono-sm); }
+.axe-registre__champ .axe-registre__code {
+  height: 200px; resize: none; overflow: auto; padding: 8px;
+  font-family: var(--font-mono); font-size: var(--fs-mono-sm); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; overflow-x: hidden; tab-size: 4;
+}
+.axe-registre__envoi { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; }
+.axe-registre__envoi > span { flex: 1 1 160px; min-width: 0; }
+
+.axe-registre__retrait { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
+.axe-registre__retrait .axe-registre__champ { flex: 1 1 200px; }
+.axe-registre__retrait button { min-height: 32px; }
+
+.axe-registre__erreur {
+  padding: 8px 12px; border-radius: var(--r-med); background: rgba(245, 115, 127, 0.08);
+  color: var(--danger); font-size: var(--fs-xs); line-height: 1.45; overflow-wrap: anywhere;
+}
+.axe-registre__ok { color: var(--text-2); font-size: var(--fs-xs); overflow-wrap: anywhere; }
+
+/* Colonne étroite (fenêtre 800 px, zoom 150 %) : deux champs par ligne, puis un seul. */
+@container registre (max-width: 560px) {
+  .axe-registre__grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container registre (max-width: 320px) {
+  .axe-registre__liste > li { padding: 8px; }
+  .axe-registre__form, .axe-registre__carte { padding: 12px; }
+  .axe-registre__grille { grid-template-columns: minmax(0, 1fr); }
+  .axe-registre__actions { margin-left: 0; }
+}

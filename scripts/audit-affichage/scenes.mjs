@@ -99,6 +99,10 @@ const explorateurFerme = (largeur, hauteur) => ({
   ],
 });
 
+// Réglages > Outils : l'élément « cible » amené au milieu de l'écran, puis les clics suivants.
+const REGISTRE = (cible, ...suite) => ({ stockage: () => colonnes([ids(1)]), reglages: true,
+  clics: [".settings-pane__nav-item[data-section='repl']"], cliquer: [cible, ...suite], defilerAvantClic: true, pauseClics: 500 });
+
 export const SCENES = [
   // Mise à jour disponible (demande utilisateur) : badge discret en haut à droite, jamais d'écran bloquant ;
   // au clic, fenêtre avec les notes et « Installer maintenant » / « Plus tard ».
@@ -755,4 +759,11 @@ export const SCENES = [
     clics: [".editor-preview-toggle", ".editor-md-preview ul:nth-of-type(1) > li:nth-child(2) input[type='checkbox']"],
     touches: ["Control+z"],
     temoins: ["qcm:# QCM\r\n\r\n<!-- id: q1 -->\r\n1. Choix A ?\r\n\r\n- [ ] oui\r\n- [x] non\r\n\r\n```md\r\n- [ ] pas une case\r\n```\r\n\r\n<!-- id: q2 -->\r\n- [X] déjà\r\n- [ ] autre\r\n", "sel:.editor-md-preview ul:nth-of-type(1) > li:nth-child(2) input:checked"] },
+  // Réglages > Outils (capture d'un utilisateur : formulaire sans style ni hiérarchie). Cette édition est
+  // 100 % locale : le registre de scripts (qui demande le serveur) n'est plus affiché ; les champs des outils
+  // du REPL sont bordés, avec le libellé au-dessus et des cases à cocher de 24 px.
+  { id: "outils-repl", ...REGISTRE(".axe-repl__card"),
+    temoins: ["absent:.axe-registre", "sel:.axe-repl__field input[type='number']", "sel:.axe-repl__field select"] },
+  { id: "outils-repl-modules", ...REGISTRE(".axe-repl__modules"),
+    temoins: ["absent:.axe-registre", "sel:.axe-repl__case input[type='checkbox']", "compte:.axe-repl__module=3"] },
 ];

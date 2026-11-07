@@ -1,0 +1,83 @@
+/* Réglages > Outils du REPL : mêmes briques que le registre de scripts (registre.css) et
+   l'onglet Fournisseurs : cartes var(--line) / bg-1, champs bordés de 32 px, libellé au-dessus du champ,
+   cases à cocher dans une cible de 24 px. Les règles restent sous .axe-repl pour ne rien changer ailleurs. */
+.axe-repl { min-width: 0; container: outils-repl / inline-size; }
+.axe-repl__header { flex-wrap: wrap; gap: 8px 16px; }
+.axe-repl__header > div { flex: 1 1 240px; min-width: 0; }
+.axe-repl__header h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-repl__header p { margin: 0; }
+.axe-repl .axe-repl__save { flex: none; min-height: 32px; padding: 0 16px; border-radius: var(--r-med); font-weight: 600; white-space: nowrap; }
+.axe-repl__card { padding: 16px; gap: 12px; border-color: var(--line); border-radius: var(--r-card); background: var(--bg-1); min-width: 0; }
+.axe-repl__card > h3, .axe-repl__services h4 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-repl__card > p { margin: 0; }
+.axe-repl__card > label.axe-repl__row { min-height: 24px; }
+
+/* Champ : libellé au-dessus, puis la commande et son unité. */
+.axe-repl__field { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: var(--fs-xs); }
+.axe-repl__field-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); font-weight: 500; }
+.axe-repl__field-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; min-width: 0; font-size: var(--fs-sm); }
+.axe-repl__field-row input[type="range"] { flex: 1 1 120px; min-width: 0; max-width: 280px; height: 20px; margin: 0; accent-color: var(--accent); }
+.axe-repl__field-row strong { min-width: 5ch; font-variant-numeric: tabular-nums; }
+
+.axe-repl__field input:not([type="range"]),
+.axe-repl__field select,
+.axe-repl__card > .axe-repl__row > input:not([type="checkbox"]),
+.axe-repl__module-body textarea,
+.axe-repl input.axe-repl__fn-doc {
+  box-sizing: border-box; min-width: 0; max-width: 100%; min-height: 32px; margin: 0; padding: 6px 8px;
+  border: 1px solid var(--line-strong, rgba(232, 233, 236, 0.16)); border-radius: var(--r-small);
+  background: var(--bg-2); color: var(--text-0); outline: none;
+  font-family: var(--font-ui); font-size: var(--fs-sm); line-height: 1.4;
+  transition: border-color 140ms ease;
+}
+.axe-repl__field input:focus, .axe-repl__field select:focus, .axe-repl__card > .axe-repl__row > input:focus,
+.axe-repl__module-body textarea:focus, .axe-repl input.axe-repl__fn-doc:focus { border-color: var(--accent); }
+.axe-repl input::placeholder, .axe-repl textarea::placeholder { color: var(--text-3); }
+.axe-repl__field input[type="number"], .axe-repl__card > .axe-repl__row > input[type="number"] { flex: 0 1 112px; width: 112px; font-variant-numeric: tabular-nums; }
+.axe-repl__field select { width: 100%; max-width: 360px; cursor: pointer; }
+.axe-repl input.axe-repl__fn-doc { min-height: 28px; padding: 4px 8px; font-size: var(--fs-xs); }
+.axe-repl__module-body textarea { width: 100%; resize: vertical; }
+
+/* Plafonds par modèle : clé (coupée avec « … », complète au survol), valeur, action. */
+.axe-repl__card > .axe-repl__row { flex-wrap: wrap; row-gap: 4px; }
+.axe-repl .axe-repl__key { flex: 1 1 160px; min-width: 0; width: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+code.axe-repl__key { font-size: var(--fs-mono-sm); color: var(--text-1); }
+.axe-repl__card > .axe-repl__row > .settings-pane__btn { height: 28px; }
+
+/* Cases à cocher : cible de 24 px, couleur de la marque. */
+.axe-repl__case { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 24px; height: 24px; cursor: pointer; }
+.axe-repl input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+/* Description du module : à droite si la place suffit, sinon sur la ligne suivante (jamais réduite à « … »). */
+.axe-repl__module .axe-repl__row { flex-wrap: wrap; row-gap: 0; }
+.axe-repl__module .axe-repl__ellipsis { flex: 1 1 160px; }
+.axe-repl__module-name { min-height: 24px; }
+.axe-repl__module-body { padding-left: 32px; }
+.axe-repl__fn-doc { margin-left: 32px; width: calc(100% - 32px); }
+
+/* Recherche web et images (section voisine) : sélecteurs sur une ligne, texte d'aide qui passe à la ligne. */
+.axe-repl__services-head { flex-wrap: wrap; }
+.axe-repl__services-head h3 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-repl__services .settings-pane__tool-provider-switch { max-width: 100%; }
+.axe-repl__services .settings-pane__tool-provider-switch button { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-repl__check { flex-wrap: wrap; min-height: 24px; }
+.axe-repl__check > span { flex: 1 1 160px; min-width: 0; }
+
+/* Joindre un appareil : même formulaire (libellé à gauche si la place suffit, sinon au-dessus). */
+.axe-connections__form .axe-repl__kv { grid-template-columns: minmax(96px, 200px) minmax(0, 1fr); gap: 8px 12px; align-items: center; font-size: var(--fs-xs); }
+.axe-connections__form .axe-repl__kv > span { min-width: 0; color: var(--text-2); font-weight: 500; overflow-wrap: anywhere; }
+.axe-connections__form .axe-repl__kv > input {
+  box-sizing: border-box; width: 100%; min-width: 0; min-height: 32px; margin: 0; padding: 6px 8px;
+  border: 1px solid var(--line-strong, rgba(232, 233, 236, 0.16)); border-radius: var(--r-small);
+  background: var(--bg-2); color: var(--text-0); outline: none; font-family: var(--font-ui); font-size: var(--fs-sm);
+}
+.axe-connections__form .axe-repl__kv > input:focus { border-color: var(--accent); }
+.axe-connections__form .axe-repl__kv > label { min-height: 24px; flex-wrap: wrap; overflow-wrap: anywhere; }
+.axe-connections__form > .axe-repl__row { flex-wrap: wrap; }
+.axe-connections__form > .axe-repl__row > label { display: block; max-width: 100%; min-height: 24px; line-height: 24px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-connections__form > .axe-repl__row > label > input { margin-right: 6px; vertical-align: -3px; }
+.axe-connections__form input[type="radio"] { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.axe-connections__form > .axe-repl__row > .settings-pane__btn { height: 32px; padding: 0 16px; }
+@container outils-repl (max-width: 480px) {
+  .axe-connections__form .axe-repl__kv { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .axe-connections__form .axe-repl__kv > input + span, .axe-connections__form .axe-repl__kv > label + span { margin-top: 8px; }
+}
