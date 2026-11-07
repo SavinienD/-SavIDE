@@ -141,8 +141,26 @@ export type ToolConfig = {
   enabled: boolean;
 };
 
-export type ImageProvider = "gptImage2" | "nanoBanana2";
-export type WebSearchProvider = "linkup" | "classic";
+export type ImageProvider = "gptImage2" | "nanoBanana2" | "custom";
+// API personnalisée de génération d'images ou de vidéos.
+export type MediaKind = "image" | "video";
+export type MediaProviderConfig = {
+  name: string;
+  kind: MediaKind;
+  url: string;
+  model: string;
+  authHeader: string;
+  authPrefix: string;
+  apiKey: string;
+  body: string;
+  pollUrl: string;
+  resultUrl: string;
+  resultPath: string;
+  timeoutSeconds: number;
+  pollSeconds: number;
+};
+// "auto" = clé API OpenAI, sinon abonnement ChatGPT, sinon Exa.
+export type WebSearchProvider = "auto" | "exa" | "linkup";
 
 export type ToolSettings = {
   tools: ToolConfig[];
@@ -154,6 +172,9 @@ export type ToolSettings = {
   nanoBananaApiKey: string;
   webSearchProvider: WebSearchProvider;
   linkupApiKey: string;
+  mediaProviders?: MediaProviderConfig[];
+  imageCustomProvider?: string;
+  videoProvider?: string;
 };
 
 export type ProviderConnectionState =

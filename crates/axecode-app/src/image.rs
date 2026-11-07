@@ -20,6 +20,7 @@ use axecode_openai::Credential;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
 
 use crate::read::detect_image_media_type;
+use crate::openai_compte::{self, OpenAiRoute};
 use crate::store::ImageProvider;
 use crate::tool_names;
 use crate::tool_run::{FileChange, FileChangeKind, ToolRunImage, ToolRunResult};
@@ -47,6 +48,12 @@ pub struct CreateImageTool {
     openai_api_key: Option<String>,
     nano_banana_api_key: Option<String>,
     write_lock: Option<Arc<Semaphore>>,
+    /// Tests : compte ChatGPT et adresses OpenAI remplacés.
+    openai_auth_path: Option<PathBuf>,
+    openai_images_url: String,
+    chatgpt_url: String,
+    /// API personnalisée quand le fournisseur est `Custom`.
+    custom_provider: Option<crate::media::MediaProviderConfig>,
 }
 
 impl CreateImageTool {
@@ -83,7 +90,37 @@ impl CreateImageTool {
             openai_api_key: normalize_configured_key(openai_api_key),
             nano_banana_api_key: normalize_configured_key(nano_banana_api_key),
             write_lock: None,
+            openai_auth_path: None,
+            openai_images_url: OPENAI_IMAGES_URL.into(),
+            chatgpt_url: OPENAI_CODEX_RESPONSES_URL.into(),
+            custom_provider: None,
         }
+    }
+
+    /// Outil configuré d'après les réglages.
+    pub fn from_settings(workspace_root: impl Into<PathBuf>, settings: &crate::store::ToolSettings) -> Self {
+        Self::with_settings(
+            workspace_root,
+            settings.image_provider,
+            settings.openai_image_use_subscription,
+            settings.openai_image_api_key(),
+            settings.nano_banana_api_key(),
+        )
+        .with_custom_provider(settings.default_media_provider(crate::media::MediaKind::Image).cloned())
+    }
+
+    /// API personnalisée utilisée quand le fournisseur est `Custom`.
+    pub fn with_custom_provider(mut self, provider: Option<crate::media::MediaProviderConfig>) -> Self {
+        self.custom_provider = provider;
+        self
+    }
+
+    #[cfg(test)]
+    fn with_test_endpoints(mut self, auth_path: PathBuf, images_url: String, chatgpt_url: String) -> Self {
+        self.openai_auth_path = Some(auth_path);
+        self.openai_images_url = images_url;
+        self.chatgpt_url = chatgpt_url;
+        self
     }
 
     pub fn with_workspace_write_lock(mut self, write_lock: Arc<Semaphore>) -> Self {
@@ -135,6 +172,20 @@ impl CreateImageTool {
                             "enum": ["auto", "low"],
                             "description": "Content filtering strictness. Defaults to low."
                         }
+                    },
+                    "required": ["prompt"],
+                    "additionalProperties": false
+                }),
+            },
+            ImageProvider::Custom => ToolDescriptor {
+                name: tool_names::CREATE_IMAGE.into(),
+                description: "Use this when the user asks to generate or create a new image. Returns the generated image visually.".into(),
+                input_schema: json!({
+                    "type": "object",
+                    "properties": {
+                        "prompt": {"type": "string", "description": "Detailed description of the image to create.", "maxLength": 32000},
+                        "size": {"type": "string", "description": "Optional size, e.g. 1024x1024."},
+                        "aspect_ratio": {"type": "string", "description": "Optional aspect ratio, e.g. 16:9."}
                     },
                     "required": ["prompt"],
                     "additionalProperties": false
@@ -195,6 +246,10 @@ impl CreateImageTool {
         match self.image_provider {
             ImageProvider::GptImage2 => self.create_gpt_image(input).await,
             ImageProvider::NanoBanana2 => self.create_nano_banana(input).await,
+            ImageProvider::Custom => match &self.custom_provider {
+                Some(cfg) => Ok(crate::media::run_tool(cfg, &self.workspace_root, input).await),
+                None => bail!("Génération d'images : aucune API personnalisée d'images. Ajoutez-en une dans Réglages > REPL > Recherche web et images, ou choisissez GPT Image 2."),
+            },
         }
     }
 
@@ -216,9 +271,18 @@ impl CreateImageTool {
         let background = normalize_background(parsed.background.as_deref())?;
         let moderation = normalize_moderation(parsed.moderation.as_deref())?;
 
-        if self.openai_image_use_subscription {
-            return self
+        // clé API d'abord ; sans clé, l'abonnement ChatGPT connecté (sans
+        // réglage) ; la case « Utiliser l'abonnement » le fait passer devant la clé.
+        let api_key = match openai_compte::openai_route(
+            self.openai_api_key.as_deref(),
+            self.openai_auth_path.as_deref(),
+            self.openai_image_use_subscription,
+        ) {
+            OpenAiRoute::ApiKey(key) => key,
+            OpenAiRoute::None => bail!("Génération d'images impossible : {}", openai_compte::AUCUN_COMPTE_OPENAI),
+            OpenAiRoute::Subscription(credential) => return self
                 .create_gpt_image_with_subscription(
+                    credential,
                     prompt,
                     size,
                     quality,
@@ -227,10 +291,8 @@ impl CreateImageTool {
                     background,
                     moderation,
                 )
-                .await;
-        }
-
-        let api_key = load_openai_api_key(self.openai_api_key.as_deref())?;
+                .await,
+        };
 
         let mut body = Map::new();
         body.insert("model".into(), json!(GPT_IMAGE_MODEL));
@@ -247,7 +309,7 @@ impl CreateImageTool {
         }
         let response = self
             .http
-            .post(OPENAI_IMAGES_URL)
+            .post(&self.openai_images_url)
             .header(AUTHORIZATION, format!("Bearer {api_key}"))
             .header(CONTENT_TYPE, "application/json")
             .header(ACCEPT, "application/json")
@@ -350,6 +412,7 @@ impl CreateImageTool {
 
     async fn create_gpt_image_with_subscription(
         &self,
+        credential: Credential,
         prompt: &str,
         size: &str,
         quality: &str,
@@ -358,11 +421,6 @@ impl CreateImageTool {
         background: Option<&str>,
         moderation: Option<&str>,
     ) -> Result<ToolRunResult> {
-        let credential = Credential::load_default()?.ok_or_else(|| {
-            anyhow::anyhow!(
-                "OpenAI subscription image generation requires OpenAI to be connected in Settings > Providers."
-            )
-        })?;
         let bearer = credential.bearer(&self.http).await?;
         if !bearer.is_oauth {
             bail!(
@@ -508,7 +566,7 @@ impl CreateImageTool {
 
         let mut request = self
             .http
-            .post(OPENAI_CODEX_RESPONSES_URL)
+            .post(&self.chatgpt_url)
             .header(AUTHORIZATION, format!("Bearer {access_token}"))
             .header("openai-beta", "responses=experimental")
             .header(CONTENT_TYPE, "application/json")
@@ -530,6 +588,9 @@ impl CreateImageTool {
             .and_then(|value| value.to_str().ok())
             .map(str::to_string);
         if !status.is_success() {
+            if let Some(message) = openai_compte::subscription_refused(status.as_u16()) {
+                bail!("Génération d'images : {message}");
+            }
             let text = response
                 .text()
                 .await
@@ -813,24 +874,6 @@ struct GeminiError {
 fn normalize_configured_key(key: Option<String>) -> Option<String> {
     key.map(|key| key.trim().to_string())
         .filter(|key| !key.is_empty())
-}
-
-fn load_openai_api_key(configured: Option<&str>) -> Result<String> {
-    configured
-        .map(str::trim)
-        .filter(|key| !key.is_empty())
-        .map(str::to_string)
-        .or_else(|| {
-            env::var("OPENAI_API_KEY")
-                .ok()
-                .map(|key| key.trim().to_string())
-        })
-        .filter(|key| !key.is_empty())
-        .ok_or_else(|| {
-            anyhow::anyhow!(
-                "OpenAI API key is missing. Add it in Settings > Tools before using create_image."
-            )
-        })
 }
 
 fn load_nano_banana_api_key(configured: Option<&str>) -> Result<String> {
@@ -1132,6 +1175,100 @@ fn now_ms() -> u128 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // ---- compte OpenAI par défaut des images ----
+
+    const PNG_B64: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==";
+
+    fn cle_env_absente() -> bool {
+        env::var("OPENAI_API_KEY").map(|k| k.trim().is_empty()).unwrap_or(true)
+    }
+
+    fn espace() -> PathBuf {
+        let ws = std::env::temp_dir().join(format!("axecode-img-{}", uuid::Uuid::new_v4()));
+        fs::create_dir_all(&ws).unwrap();
+        ws
+    }
+
+    fn nettoyer(out: &ToolRunResult, ws: &PathBuf) {
+        for image in &out.images {
+            if let Some(p) = &image.path {
+                let _ = fs::remove_file(p);
+            }
+        }
+        let _ = fs::remove_dir_all(ws);
+    }
+
+    #[tokio::test]
+    async fn images_use_the_chatgpt_subscription_without_api_key() {
+        if !cle_env_absente() {
+            return;
+        }
+        use crate::faux_http::{compte_chatgpt, lancer, Reponse};
+        let dir = tempfile::tempdir().unwrap();
+        let serveur = lancer(|_, _| {
+            Reponse::sse(&[
+                json!({"type": "response.output_item.done", "item": {"type": "image_generation_call", "status": "completed", "result": PNG_B64}}),
+                json!({"type": "response.completed", "response": {"output": []}}),
+            ])
+        })
+        .await;
+        let ws = espace();
+        let tool = CreateImageTool::with_settings(&ws, ImageProvider::GptImage2, false, None, None)
+            .with_test_endpoints(compte_chatgpt(dir.path()), format!("{}/img", serveur.base), format!("{}/codex", serveur.base));
+        let out = tool.run(json!({"prompt": "un carré rouge"})).await;
+        assert!(!out.is_error, "{}", out.content);
+        assert!(out.content.contains("source: OpenAI subscription"), "{}", out.content);
+        let reqs = serveur.requetes();
+        assert_eq!(reqs.len(), 1);
+        assert_eq!(reqs[0].path, "/codex");
+        assert_eq!(reqs[0].header("authorization"), Some("Bearer jeton-test"));
+        nettoyer(&out, &ws);
+    }
+
+    #[tokio::test]
+    async fn a_revoked_chatgpt_login_says_to_reconnect() {
+        if !cle_env_absente() {
+            return;
+        }
+        use crate::faux_http::{compte_chatgpt, lancer, Reponse};
+        let dir = tempfile::tempdir().unwrap();
+        let serveur = lancer(|_, _| Reponse::status(401, r#"{"error":{"code":"token_revoked"}}"#)).await;
+        let ws = espace();
+        let tool = CreateImageTool::with_settings(&ws, ImageProvider::GptImage2, false, None, None)
+            .with_test_endpoints(compte_chatgpt(dir.path()), format!("{}/img", serveur.base), format!("{}/codex", serveur.base));
+        let out = tool.run(json!({"prompt": "x"})).await;
+        assert!(out.is_error && out.content.contains("reconnectez ChatGPT"), "{}", out.content);
+        let _ = fs::remove_dir_all(&ws);
+    }
+
+    #[tokio::test]
+    async fn images_prefer_the_api_key_and_explain_what_to_connect() {
+        if !cle_env_absente() {
+            return;
+        }
+        use crate::faux_http::{compte_chatgpt, lancer, Reponse};
+        let dir = tempfile::tempdir().unwrap();
+        let serveur = lancer(|_, _| Reponse::json(json!({"data": [{"b64_json": PNG_B64}]}))).await;
+        let ws = espace();
+        let tool = CreateImageTool::with_settings(&ws, ImageProvider::GptImage2, false, Some("sk-test".into()), None)
+            .with_test_endpoints(compte_chatgpt(dir.path()), format!("{}/img", serveur.base), format!("{}/codex", serveur.base));
+        let out = tool.run(json!({"prompt": "un carré rouge"})).await;
+        assert!(!out.is_error, "{}", out.content);
+        let reqs = serveur.requetes();
+        assert_eq!(reqs[0].path, "/img");
+        assert_eq!(reqs[0].header("authorization"), Some("Bearer sk-test"));
+        nettoyer(&out, &ws);
+
+        let ws = espace();
+        let sans = CreateImageTool::with_settings(&ws, ImageProvider::GptImage2, false, None, None)
+            .with_test_endpoints(dir.path().join("absent.json"), format!("{}/img", serveur.base), format!("{}/codex", serveur.base));
+        let out = sans.run(json!({"prompt": "un carré rouge"})).await;
+        assert!(out.is_error);
+        assert!(out.content.contains("Réglages > Fournisseurs > OpenAI") && out.content.contains("clé API OpenAI"), "{}", out.content);
+        assert_eq!(serveur.requetes().len(), 1, "aucun appel sans compte");
+        let _ = fs::remove_dir_all(&ws);
+    }
 
     #[test]
     fn saved_image_never_lands_in_the_project() {

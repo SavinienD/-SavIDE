@@ -226,19 +226,10 @@ impl SubAgentTool {
             read: Arc::new(ReadTool::new(self.workspace_root.clone())),
             edit_file: Arc::new(EditFileTool::new(self.workspace_root.clone())),
             write_file: Arc::new(WriteFileTool::new(self.workspace_root.clone())),
-            create_image: Arc::new(CreateImageTool::with_settings(
-                self.workspace_root.clone(),
-                self.tool_settings.image_provider,
-                self.tool_settings.openai_image_use_subscription,
-                self.tool_settings.openai_image_api_key(),
-                self.tool_settings.nano_banana_api_key(),
-            )),
+            create_image: Arc::new(CreateImageTool::from_settings(self.workspace_root.clone(), &self.tool_settings)),
             todo_list_tool: Some(Arc::new(ToDoListTool::new())),
             question: Some(Arc::new(QuestionTool::new())),
-            web_search: Arc::new(WebSearchTool::with_settings(
-                self.tool_settings.web_search_provider,
-                self.tool_settings.linkup_api_key(),
-            )),
+            web_search: Arc::new(WebSearchTool::from_settings(&self.tool_settings)),
             web_fetch: Arc::new(WebFetchTool::new()),
             skill: Arc::new(SkillTool::with_settings(
                 self.workspace_root.clone(),

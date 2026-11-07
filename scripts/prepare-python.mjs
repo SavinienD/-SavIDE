@@ -33,9 +33,12 @@ const PIP_PACKAGES = [
   // certificats — root CAs for ssl/urllib (the embedded Python has none):
   // the kernel sets SSL_CERT_FILE to certifi.where() at startup.
   "certifi>=2024.8.30",
+  // `import requests` est le réflexe pour appeler une API tierce
+  // depuis le REPL ; sans lui, le modèle concluait que l'appel était bloqué.
+  "requests>=2.32",
 ];
 // Import names checked after installation (same order as above).
-const IMPORT_CHECK = "import IPython, dill, openpyxl, docx, pypdf, certifi";
+const IMPORT_CHECK = "import IPython, dill, openpyxl, docx, pypdf, certifi, requests";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDir, "..");

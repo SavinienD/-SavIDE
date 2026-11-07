@@ -2,11 +2,18 @@
 
 ``read(path)`` joint une image au résultat de la cellule en cours pour que
 vous puissiez la voir (réduite à 1600 px au plus, réencodée en JPEG si elle
-est lourde). ``generate(prompt, path=None)`` crée une image avec le
-fournisseur d'images configuré et l'enregistre à ``path`` (relatif au dossier
-de travail, ou absolu ; l'extension est ajoutée si besoin, ``-1``, ``-2``…
-s'il y a plusieurs images, sans aucune copie ailleurs), sinon dans le dossier de
+est lourde). ``generate(prompt, path=None, provider=None, **options)`` crée
+une image et l'enregistre à ``path`` (relatif au dossier de travail, ou
+absolu ; l'extension est ajoutée si besoin, ``-1``, ``-2``… s'il y a
+plusieurs images, sans aucune copie ailleurs), sinon dans le dossier de
 données de l'appli (jamais dans le projet).
+
+Fournisseur (Réglages > REPL > Recherche web et images) : par défaut GPT
+Image 2 avec la clé API OpenAI si elle est saisie, sinon l'abonnement
+ChatGPT du compte connecté ; ou Nano Banana 2 ; ou une API personnalisée.
+``provider="openai"``, ``"nano-banana"`` ou le nom d'une API personnalisée
+le choisit pour un appel ; ``providers()`` liste les API personnalisées.
+Les ``options`` (``n``, ``aspect_ratio``…) partent dans le corps de la requête.
 """
 
 from __future__ import annotations
@@ -19,7 +26,7 @@ from typing import Optional
 
 from axecode_kernel import bridge
 
-__all__ = ["read", "generate", "show"]
+__all__ = ["read", "generate", "show", "providers"]
 
 MAX_SIDE = 1600
 MAX_BYTES = 1_500_000
@@ -62,11 +69,20 @@ def show(data: bytes, media_type: str = "image/png") -> str:
     return f"image jointe ({len(data)} octets)"
 
 
-def generate(prompt: str, path: Optional[str] = None, size: Optional[str] = None) -> dict:
-    """Génère une image d'après ``prompt`` ; renvoie ``{"content", "images"}``."""
-    params = {"prompt": prompt}
+def generate(prompt: str, path: Optional[str] = None, size: Optional[str] = None,
+             provider: Optional[str] = None, **options) -> dict:
+    """Génère une image d'après ``prompt`` ; renvoie ``{"content", "images": [{"path", "mediaType"}]}``."""
+    params = dict(options)
+    params["prompt"] = prompt
     if path:
         params["path"] = path
     if size:
         params["size"] = size
+    if provider:
+        params["provider"] = provider
     return bridge.call("images.generate", params)
+
+
+def providers() -> list:
+    """API personnalisées de génération (images et vidéos) : nom, type, modèle, hôte, clé configurée ou non."""
+    return bridge.call("media.providers", {})

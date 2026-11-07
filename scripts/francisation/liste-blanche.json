@@ -261,5 +261,15 @@
   "fichier": "src/lib/arbreFichiers.ts",
   "motif": "^Home$",
   "raison": "nom de touche du clavier (KeyboardEvent.key), pas un texte affiché"
+ },
+ {
+  "fichier": "src/lib/apisMedias.ts",
+  "motif": "^\\{\"|^Key$|text-to-video|^Corps par défaut",
+  "raison": "gabarit JSON, préfixe et identifiants d'API (syntaxe technique à recopier)"
+ },
+ {
+  "fichier": "src/components/settings/ReplServicesSection.tsx",
+  "motif": "provider=|^\\{model\\}|^Authorization$|^\\{\"model\"",
+  "raison": "syntaxe d'appel REPL, en-tête HTTP et gabarit JSON (à recopier tels quels)"
  }
 ]

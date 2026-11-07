@@ -235,19 +235,10 @@ pub(super) async fn send_message(
         read: Arc::new(ReadTool::new(workspace_root.clone())),
         edit_file: Arc::new(EditFileTool::new(workspace_root.clone())),
         write_file: Arc::new(WriteFileTool::new(workspace_root.clone())),
-        create_image: Arc::new(CreateImageTool::with_settings(
-            workspace_root.clone(),
-            tool_settings.image_provider,
-            tool_settings.openai_image_use_subscription,
-            tool_settings.openai_image_api_key(),
-            tool_settings.nano_banana_api_key(),
-        )),
+        create_image: Arc::new(CreateImageTool::from_settings(workspace_root.clone(), &tool_settings)),
         todo_list_tool: Some(Arc::new(ToDoListTool::new())),
         question: Some(Arc::new(QuestionTool::new())),
-        web_search: Arc::new(WebSearchTool::with_settings(
-            tool_settings.web_search_provider,
-            tool_settings.linkup_api_key(),
-        )),
+        web_search: Arc::new(WebSearchTool::from_settings(&tool_settings)),
         web_fetch: Arc::new(WebFetchTool::new()),
         skill: Arc::new(SkillTool::with_settings(
             workspace_root.clone(),

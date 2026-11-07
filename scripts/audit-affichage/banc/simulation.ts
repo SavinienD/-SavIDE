@@ -326,10 +326,24 @@ export function installerSimulation(scene: Scene): void {
       }
       return true;
     },
+    // Réglages > REPL (Outils du REPL) : réglages et catalogue des modules.
+    repl_settings_get: () => ({ agentEnabled: true, modules: {}, compactionThreshold: 80, maxOutputTokens: {}, outputCapChars: 20000, maxRounds: 200 }),
+    repl_catalog: () => ({ modules: [
+      { name: "web", doc: "web — chercher sur le web et récupérer des pages.", functions: [{ name: "search", signature: "(query, max_results=None)", doc: "Cherche sur le web." }] },
+      { name: "videos", doc: "videos — générer des vidéos avec une API (fournisseur personnalisé).", functions: [{ name: "generate", signature: "(prompt, path=None, provider=None, **options)", doc: "Génère une vidéo." }] },
+    ] }),
     list_tool_settings: () => ({
       tools: [{ name: "agent", description: "Sous-agents", defaultDescription: "Sous-agents", enabled: true }],
       planModePrompt: "", defaultPlanModePrompt: "", imageProvider: "gptImage2", openaiImageUseSubscription: true,
-      openaiImageApiKey: "", nanoBananaApiKey: "", webSearchProvider: "classic", linkupApiKey: "",
+      openaiImageApiKey: "", nanoBananaApiKey: "", webSearchProvider: "auto", linkupApiKey: "",
+      // scène « reglages-medias » : une API d'images et une API vidéo (fal).
+      ...(scene.medias ? {
+        imageProvider: "custom", imageCustomProvider: "flux", videoProvider: "fal",
+        mediaProviders: [
+          { name: "flux", kind: "image", url: "https://img.example/v1/images/generations", model: "flux-pro", authHeader: "", authPrefix: "", apiKey: "cle-banc", body: "", pollUrl: "", resultUrl: "", resultPath: "", timeoutSeconds: 0, pollSeconds: 0 },
+          { name: "fal", kind: "video", url: "https://queue.fal.run/{model}", model: "fal-ai/video-banc", authHeader: "", authPrefix: "Key ", apiKey: "", body: "{\"prompt\": \"{prompt}\"", pollUrl: "", resultUrl: "", resultPath: "", timeoutSeconds: 0, pollSeconds: 0 },
+        ],
+      } : {}),
     }),
     // couleurs — skills activés de l'espace (scène « couleurs »).
     list_installed_skills_command: () =>
