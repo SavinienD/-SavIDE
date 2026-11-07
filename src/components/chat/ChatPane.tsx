@@ -45,6 +45,7 @@ import { avecNote, noteConversation } from "./arrierePlan"; // arriere-plan
 import { fileIcon } from "../../lib/fileIcon";
 import { DicteeBouton } from "../../axe/voix/DicteeBouton"; // voix
 import { insererTexteDicte } from "../../axe/voix/inserer"; // voix
+import { brancherBrouillons, enregistrerComposeur } from "../../axe/voix/dicteeCible";
 import { api, cloudConnectionFromPath } from "../../lib/ipc";
 import { actionsDuPc, modelesEspace, NOTE_COMPACTION_ESPACE } from "../../lib/modelesEspace"; // parcours-collegue
 import { expliquerErreurIA } from "../../lib/erreursIA"; // parcours-collegue
@@ -433,6 +434,15 @@ export type ExternalDropFeed = {
 };
 
 const BROUILLONS_PARTAGES = new Map<string, ComposerDraft>();
+// Texte dicté pour une conversation qui n'est plus affichée : ajouté à SON
+// brouillon (repris quand on la rouvre), jamais à la saisie affichée.
+brancherBrouillons({
+  lire: (id) => BROUILLONS_PARTAGES.get(id)?.text ?? "",
+  ecrire: (id, texte) => {
+    const avant = BROUILLONS_PARTAGES.get(id);
+    BROUILLONS_PARTAGES.set(id, avant ? { ...avant, text: texte } : buildComposerDraft(texte, [], [], null));
+  },
+});
 
 // file-attente — la file d'attente de chaque conversation est partagée par
 // tous les volets et gardée dans le stockage local (voir fileAttente.ts) :
@@ -2907,6 +2917,14 @@ export function ChatPane({
     pendingCaretRef.current = curseur;
     setText(valeur);
   }, [text]);
+  // Ce compositeur reçoit la dictée de SA conversation (commencée ici ou dans
+  // une autre colonne) ; une dictée commencée ailleurs ne vient jamais ici.
+  const insererDicteeRef = useRef(insererDictee);
+  insererDicteeRef.current = insererDictee;
+  useEffect(
+    () => enregistrerComposeur(conversationId, (dicte) => insererDicteeRef.current(dicte)),
+    [conversationId],
+  );
 
   const handleTextChange = (
     event: React.ChangeEvent<HTMLTextAreaElement>,
@@ -4314,6 +4332,7 @@ export function ChatPane({
                   inséré et modifiable, jamais envoyé (Win+H reste en secours dans la bulle d'erreur) */}
               <DicteeBouton
                 workspacePath={workspacePath}
+                conversationId={conversationId}
                 modele={modelRefFromId(model)}
                 onTexte={insererDictee}
               />

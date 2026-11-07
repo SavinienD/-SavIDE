@@ -134,6 +134,7 @@ import type {
   WorkspaceFileChangedPayload,
 } from "../types";
 import { estMac, formaterTexte, modPrincipal } from "../lib/plateforme";
+import { brancherAvis, brancherExistence } from "../axe/voix/dicteeCible";
 import { dansRect, messageDepotVide, pointCss } from "../lib/depot";
 import { loadUiZoom } from "../axe/zoom";
 
@@ -1099,6 +1100,26 @@ export function Workspace({
     );
   }, []);
   avisArchiveRef.current = (texte) => pushNotice("error", texte);
+  // La dictée sait si sa conversation existe encore (archivée = jamais collée
+  // ailleurs : presse-papiers) et prévient par le message habituel.
+  const existenceDicteeRef = useRef({ conversations, archivedConversations, actif: activeConv.id, onglets: ongletsChat });
+  existenceDicteeRef.current = { conversations, archivedConversations, actif: activeConv.id, onglets: ongletsChat };
+  useEffect(() => {
+    const retirerAvis = brancherAvis((genre, texte) => pushNotice(genre, texte));
+    const retirerExistence = brancherExistence((cible) => {
+      if ((cible.workspacePath ?? null) !== (workspacePathRef.current ?? null)) return null;
+      const e = existenceDicteeRef.current;
+      const id = cible.conversationId;
+      if (e.archivedConversations.some((c) => c.id === id)) return false;
+      if (id === e.actif || e.conversations.some((c) => c.id === id) || e.onglets.some((t) => t.id === id)) return true;
+      // Liste pas encore chargée : on ne conclut pas (le texte va au brouillon).
+      return e.conversations.length > 0 ? false : null;
+    });
+    return () => {
+      retirerAvis();
+      retirerExistence();
+    };
+  }, [pushNotice]);
 
   // freechat — no editor in the free conversation view: files produced
   // by the agent (relative to the conversation's private folder) open with
@@ -2865,7 +2886,17 @@ export function Workspace({
       setRemoteOpen(true);
       setRemoteActive(true);
     },
-    dictee: () => (document.querySelector('.composer button[aria-label="Dicter"]') as HTMLButtonElement | null)?.click(),
+    // Ctrl+Maj+D : termine la dictée en cours (où qu'elle soit), sinon la commence
+    // dans la colonne où l'on écrit (avant : le premier micro de la page, autre colonne possible).
+    dictee: () => {
+      const enCours =
+        document.querySelector<HTMLButtonElement>(".colonne-chat[data-focus='true'] .axe-voix__valider") ??
+        document.querySelector<HTMLButtonElement>(".axe-voix__valider");
+      const micro =
+        document.querySelector<HTMLButtonElement>(".colonne-chat[data-focus='true'] .axe-voix__micro") ??
+        document.querySelector<HTMLButtonElement>(".composer .axe-voix__micro");
+      (enCours ?? micro)?.click();
+    },
     colonneChat: () => ajouterColonneChat(),
     archiver: () => void archiverConversationColonne(activeConv.id),
     stop: () => void stopTurnForConversation(activeConv),

@@ -16,6 +16,8 @@ import { formaterTexte } from "../../lib/plateforme";
  */
 type Props = {
   workspacePath?: string;
+  /** Conversation affichée : la dictée commencée ici revient ici. */
+  conversationId?: string;
   modele?: { provider: string; name: string } | null;
   onTexte: (texte: string) => void;
 };
@@ -62,8 +64,11 @@ function Chrono({ depuis }: { depuis: number }) {
   return <span className="axe-voix__temps">{formaterDuree(maintenant - depuis)}</span>;
 }
 
-export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
-  const d = useDictee({ workspacePath, modele, onTexte });
+export function DicteeBouton({ workspacePath, conversationId, modele, onTexte }: Props) {
+  const d = useDictee({ workspacePath, modele, conversationId, onTexte });
+  // Dictée commencée dans une autre conversation (on a changé pendant la
+  // transcription) : son aperçu ne s'affiche pas ici, la barre dit où va le texte.
+  const ailleurs = !!d.cible && !!conversationId && d.cible.conversationId !== conversationId;
   // 0.1.71 — sans moteur qui répond, pas de micro (au lieu de l'erreur « connexion refusée »).
   // SavIDE est 100 % local : seul un moteur Whisper du poste compte (jamais celui de la VM).
   const dispo = useDicteeDisponible(workspacePath, { localSeulement: true });
@@ -131,7 +136,9 @@ export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
       {d.phase === "transcription" && placer(
         <span className="axe-voix__barre axe-voix__barre--attente" role="status" aria-live="polite">
           <span className="axe-voix__roue" aria-hidden="true" />
-          <span className="axe-voix__libelle">Transcription…</span>
+          <span className="axe-voix__libelle" data-ailleurs={ailleurs ? "true" : undefined} title={ailleurs ? "Le texte ira dans la conversation où la dictée a commencé" : undefined}>
+            Transcription…
+          </span>
           <Chrono depuis={d.debutTranscription || performance.now()} />
           <button
             type="button"
@@ -146,7 +153,7 @@ export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
         cibles.rangee,
       )}
 
-      {(enregistre || d.phase === "transcription") && (d.provisoire || (enregistre && (d.direct.actif || d.direct.erreur))) && placer(
+      {!ailleurs && (enregistre || d.phase === "transcription") && (d.provisoire || (enregistre && (d.direct.actif || d.direct.erreur))) && placer(
         // 0.1.75 — texte provisoire de la dictée en direct, grisé ; le texte final le remplace.
         <span className="axe-voix__provisoire" role="status" aria-live="polite" title="Texte provisoire : remplacé par la transcription complète à la fin">
           {/* 0.1.77 — encadré visible dès le début du direct (attente), avec la raison d'un aperçu absent. */}
@@ -166,7 +173,7 @@ export function DicteeBouton({ workspacePath, modele, onTexte }: Props) {
           <span className="axe-voix__bulle-texte">{d.erreur.message}</span>
           <span className="axe-voix__bulle-actions">
             {d.erreur.winH && (
-              <button type="button" onClick={d.dicteeWindows}>
+              <button type="button" onClick={() => d.dicteeWindows(ancre.current?.closest(".composer")?.querySelector("textarea"))}>
                 Dictée Windows (Win+H)
               </button>
             )}

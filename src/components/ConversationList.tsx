@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { titreAffiche } from "../lib/titres";
 import { Icon } from "@iconify/react";
 import type { ConversationSummary } from "../types";
+import { useDicteesHorsEcran } from "../axe/voix/useDicteesHorsEcran";
 
 type Props = {
   conversations: ConversationSummary[];
@@ -39,6 +40,7 @@ export function ConversationList({
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [archivesOpen, setArchivesOpen] = useState(false);
+  const dictees = useDicteesHorsEcran();
   const editRef = useRef<HTMLSpanElement | null>(null);
 
   const commitRename = (id: string) => {
@@ -67,6 +69,8 @@ export function ConversationList({
               className="conv-row"
               data-active={isActive ? "true" : "false"}
               data-streaming={isStreaming ? "true" : "false"}
+              data-conversation-id={conv.id}
+              data-dictee={dictees.has(conv.id) ? "true" : undefined}
               onClick={() => !isEditing && onSelect(conv.id)}
             >
               <span className="conv-row__icon">
@@ -104,6 +108,12 @@ export function ConversationList({
               >
                 {titreAffiche(conv.title)}
               </span>
+              {dictees.has(conv.id) ? (
+                // Du texte dicté a été ajouté à son brouillon pendant qu'elle était fermée.
+                <span className="axe-dictee-repere" role="img" title="Texte dicté ajouté au brouillon" aria-label="Texte dicté ajouté au brouillon">
+                  <Icon icon="solar:microphone-3-linear" width={12} height={12} />
+                </span>
+              ) : null}
               {conv.arrierePlan?.length ? (
                 <button
                   type="button"
