@@ -1,0 +1,7 @@
+# Faux secrets des tests de détection (tests/harnaisMarkdown.test.cjs, tests/vocabulaireAuto.test.cjs) : exemples, pas de vraies clés.
+884db3a689765856f0f9a0671f744ba00db07d47:tests/harnaisMarkdown.test.cjs:github-pat:110
+884db3a689765856f0f9a0671f744ba00db07d47:tests/harnaisMarkdown.test.cjs:aws-access-token:116
+884db3a689765856f0f9a0671f744ba00db07d47:tests/harnaisMarkdown.test.cjs:aws-access-token:121
+6eb88d63e75556d60e9669ce781cd208dab85506:tests/vocabulaireAuto.test.cjs:generic-api-key:50
+6eb88d63e75556d60e9669ce781cd208dab85506:tests/vocabulaireAuto.test.cjs:generic-api-key:51
+6eb88d63e75556d60e9669ce781cd208dab85506:tests/vocabulaireAuto.test.cjs:generic-api-key:52

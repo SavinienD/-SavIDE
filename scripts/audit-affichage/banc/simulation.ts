@@ -92,10 +92,10 @@ function harnaisScene(scene: Scene): any[] {
     e("sk_1", "skill", "global", "qcm", "Questions à cocher dans un .md.", { code: "def ecrire(titre, questions):\n    return titre\n", packageDir: "C:\\Users\\utilisateur\\.axecode\\harness\\skills\\qcm" }),
     e("sa_1", "subagent_spec", "global", "relecteur", "Tu relis le code et tu signales les erreurs.", { tags: ["model:anthropic/claude-sonnet"] }),
   ];
-  // entrées des scènes « harnais-recherche / harnais-skills / harnais-affinages ».
+  // « harnaisC3 » : entrées des scènes « harnais-recherche / harnais-skills / harnais-affinages ».
   const c3 = (id: string, kind: string, scope: string, title: string, body: string) =>
     ({ id, kind, scope, title, body, created: D.T0, updated: D.T0, source: "agent", evidence: [], tags: [], path: `/banc/.axecode/harness/${id}.md` });
-  liste.push(
+  if (scene.harnaisC3) liste.push(
     c3("note_0be71c83", "prompt_note", "global", "Factures : jamais supprimées", "Ne jamais supprimer une pièce comptable : toujours l'archiver, pour pouvoir la retrouver."),
     c3("note_30b1e287", "prompt_note", "global", "Rapports : concision", "Les rapports doivent être courts pour être lus : une page, des tuiles et des chiffres."),
     c3("mem_7615c6cc", "memory", "global", "Factures : périmètre", "Toujours raisonner sur toutes les pièces du dossier. Filtre par défaut : non payées."),

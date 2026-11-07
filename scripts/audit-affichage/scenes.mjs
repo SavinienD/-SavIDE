@@ -730,18 +730,18 @@ export const SCENES = [
   // … puis ouvre l'arbre de la session (/tree) : il doit être lu sur l'espace (D11).
   // Réglages > Harnais : champ de recherche ; « facture » trouve les notes, mémoires, skills et
   // sous-agents qui le contiennent (titre ou contenu), mot surligné ; clic = l'entrée s'ouvre dans son onglet.
-  { id: "harnais-recherche", sim: { harnais: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+  { id: "harnais-recherche", sim: { harnais: true, harnaisC3: true }, stockage: () => colonnes([ids(1)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='harness']"], taper: [{ sel: ".axe-harness__search", texte: "facture" }],
     temoins: ["compte:.axe-harness__hit=4", "compte:.axe-harness__hit mark=4", "sel:.axe-harness__hit[data-kind='prompt_note']",
       "sel:.axe-harness__hit[data-kind='memory']", "sel:.axe-harness__hit[data-kind='skill']", "sel:.axe-harness__hit[data-kind='subagent_spec']",
       "absent:.axe-harness__hit[data-id='mem_9aa28189']"] },
   // « Skills 3 » (Harnais) et « Skills 10 » (barre des Réglages) ne comptaient pas la même chose :
   // l'onglet du harnais dit « Skills du harnais » (paquets Python du poste), la barre « Skills » = tous (Markdown + harnais).
-  { id: "harnais-skills", sim: { harnais: true, skills: ["unslop", "revue-code"] }, stockage: () => colonnes([ids(1)]), reglages: true,
+  { id: "harnais-skills", sim: { harnais: true, harnaisC3: true, skills: ["unslop", "revue-code"] }, stockage: () => colonnes([ids(1)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='harness']"],
     temoins: ["sel:.axe-harness__tabs button[data-onglet='skills'][title^='Skills Python du harnais']", "Skills du harnais"] },
   // onglet Affinages : la règle de purge est dite (ratés effacés au bout de 3 jours).
-  { id: "harnais-affinages", sim: { harnais: true }, stockage: () => colonnes([ids(1)]), reglages: true,
+  { id: "harnais-affinages", sim: { harnais: true, harnaisC3: true }, stockage: () => colonnes([ids(1)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='harness']", ".axe-harness__tabs button[data-onglet='refinements']"],
     temoins: ["sel:.axe-harness__records-note", "Aucun affinage pour l'instant"] },
   // À la réouverture de l'espace : la liste doit montrer les conversations de l'espace (« test »).
