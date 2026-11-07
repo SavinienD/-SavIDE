@@ -447,6 +447,9 @@ pub fn run() {
             harness::harness_cloud_sync,
             harness::harness_cloud_status,
             harness::harness_cloud_publish,
+            harness::harness_md_write, // partager une entrée en .md
+            harness::harness_md_read,
+            harness::harness_skill_code,
             // harness end
             // providers
             custom_providers::provider_settings_get,

@@ -434,3 +434,106 @@ pub(super) async fn harness_cloud_publish(
     }
     Ok(report)
 }
+
+// partager une entrée du harnais en .md : écrire le fichier choisi dans la boîte
+// d'enregistrement, relire un .md à importer, lire le code d'un skill. Seuls les .md
+// (chemin absolu, 4 Mo au plus) sont acceptés : ces commandes ne servent qu'à ça.
+const MD_MAX_OCTETS: u64 = 4 * 1024 * 1024;
+
+fn chemin_md(path: &str) -> IpcResult<PathBuf> {
+    let chemin = PathBuf::from(path.trim());
+    if path.trim().is_empty() || !chemin.is_absolute() {
+        return Err("Chemin du fichier .md invalide.".to_string());
+    }
+    let md = chemin
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("md") || e.eq_ignore_ascii_case("markdown"));
+    if !md {
+        return Err("Seuls les fichiers .md sont acceptés.".to_string());
+    }
+    Ok(chemin)
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct HarnessMdWriteInput {
+    path: String,
+    content: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct HarnessMdReadInput {
+    path: String,
+}
+
+fn ecrire_md(path: &str, content: &str) -> IpcResult<()> {
+    let chemin = chemin_md(path)?;
+    if content.len() as u64 > MD_MAX_OCTETS {
+        return Err("Export trop volumineux (4 Mo au plus).".to_string());
+    }
+    std::fs::write(&chemin, content.as_bytes())
+        .map_err(|e| format!("Écriture impossible ({}) : {e}", chemin.display()))
+}
+
+fn lire_md(path: &str) -> IpcResult<String> {
+    let chemin = chemin_md(path)?;
+    let meta = std::fs::metadata(&chemin)
+        .map_err(|e| format!("Lecture impossible ({}) : {e}", chemin.display()))?;
+    if meta.len() > MD_MAX_OCTETS {
+        return Err("Fichier trop volumineux (4 Mo au plus).".to_string());
+    }
+    let octets = std::fs::read(&chemin)
+        .map_err(|e| format!("Lecture impossible ({}) : {e}", chemin.display()))?;
+    String::from_utf8(octets).map_err(|_| "Le fichier n'est pas du texte UTF-8.".to_string())
+}
+
+#[tauri::command]
+pub(super) async fn harness_md_write(input: HarnessMdWriteInput) -> IpcResult<()> {
+    ecrire_md(&input.path, &input.content)
+}
+
+#[tauri::command]
+pub(super) async fn harness_md_read(input: HarnessMdReadInput) -> IpcResult<String> {
+    lire_md(&input.path)
+}
+
+/// Code Python (`__init__.py`) d'un skill du harnais ; None si ce n'est pas un skill.
+#[tauri::command]
+pub(super) async fn harness_skill_code(input: HarnessIdInput) -> IpcResult<Option<String>> {
+    let Some(entry) = store_for(&input.workspace_path)?.get(&input.id).map_err(err)? else {
+        return Ok(None);
+    };
+    let Some(dir) = entry.package_dir else {
+        return Ok(None);
+    };
+    match std::fs::read_to_string(PathBuf::from(dir).join("__init__.py")) {
+        Ok(code) => Ok(Some(code)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(err(e)),
+    }
+}
+
+#[cfg(test)]
+mod partage_md_tests {
+    use super::*;
+
+    #[test]
+    fn seuls_les_md_absolus_sont_acceptes() {
+        let dossier = std::env::temp_dir().join(format!("savide-md-{}", std::process::id()));
+        std::fs::create_dir_all(&dossier).unwrap();
+        let md = dossier.join("note.md");
+        let md = md.to_str().unwrap();
+        ecrire_md(md, "---\ntype: memory\n---\n\nbonjour\n").unwrap();
+        assert_eq!(lire_md(md).unwrap(), "---\ntype: memory\n---\n\nbonjour\n");
+        let txt = dossier.join("note.txt");
+        assert!(ecrire_md(txt.to_str().unwrap(), "x").unwrap_err().contains(".md"));
+        assert!(lire_md("note.md").unwrap_err().contains("invalide"));
+        assert!(lire_md("").is_err());
+        std::fs::write(dossier.join("binaire.md"), [0xff, 0xfe, 0x00]).unwrap();
+        assert!(lire_md(dossier.join("binaire.md").to_str().unwrap()).unwrap_err().contains("UTF-8"));
+        let _ = std::fs::remove_dir_all(&dossier);
+    }
+}
+

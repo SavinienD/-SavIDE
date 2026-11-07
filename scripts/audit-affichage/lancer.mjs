@@ -603,6 +603,30 @@ async function preparerScene(page, si, sc) {
     await page.evaluate((p) => window.__bancEmettre?.("tauri://drag-drop", { paths: p.paths, position: p.position }), { paths, position });
     await pause(600);
   }
+  // harnais : « clicsTouche » [[touche, sélecteur]] (Ctrl/Maj + clic, vrai pointeur) ;
+  // « clicDroit » : clic droit au centre de l'élément, puis « menu » : entrée cliquée dans le menu
+  // ouvert (.tree-menu) ; le presse-papiers est intercepté (témoins presse: / pressecontient:).
+  for (const [touche, sel] of sc.clicsTouche ?? []) {
+    await page.waitForSelector(sel, { visible: true, timeout: 5000 }).catch(() => undefined);
+    await page.keyboard.down(touche);
+    await page.click(sel).catch(() => undefined);
+    await page.keyboard.up(touche);
+    await pause(300);
+  }
+  if (sc.clicDroit) {
+    await page.evaluate(() => {
+      window.__bancPresse = null;
+      const presse = { writeText: async (t) => { window.__bancPresse = t; }, readText: async () => window.__bancPresse ?? "" };
+      Object.defineProperty(navigator, "clipboard", { value: presse, configurable: true });
+    });
+    await page.waitForSelector(sc.clicDroit, { visible: true, timeout: 5000 }).catch(() => undefined);
+    await page.click(sc.clicDroit, { button: "right" }).catch(() => undefined);
+    await pause(400);
+    if (sc.menu) {
+      await cliquerTexte(page, ".tree-menu .tree-menu__item", sc.menu);
+      await pause(600);
+    }
+  }
   // « touches » : raccourcis clavier envoyés à l'élément qui a le focus (ex. Control+z).
   await taperTouches(page, sc.touches);
   // fournisseurs-178 — « taper » : texte tapé au clavier dans un champ (son contenu remplacé,
@@ -814,6 +838,11 @@ async function auditer(page, si, sc, journal, preparation) {
       : t.startsWith("enregistre:") ? enregistre(t.slice(11))
       : t.startsWith("qcm:") ? window.__bancQcm === t.slice(4) // contenu enregistré
       : t.startsWith("presse:") ? window.__bancPresse === t.slice(7)
+      // « pressecontient:<texte> » : le presse-papiers contient ce texte ; « pressesans:<texte> » : il ne le contient pas ;
+      // « ecritcontient:<texte> » : le dernier fichier écrit par harness_md_write contient ce texte.
+      : t.startsWith("pressecontient:") ? (window.__bancPresse ?? "").includes(t.slice(15))
+      : t.startsWith("pressesans:") ? typeof window.__bancPresse === "string" && !window.__bancPresse.includes(t.slice(11))
+      : t.startsWith("ecritcontient:") ? (window.__bancEcrit ?? "").includes(t.slice(14))
       // « ouvert:<chemin> » : dernier dossier passé à open_workspace ;
       // « ouvertures:<n> » : nombre d'appels à open_workspace.
       : t.startsWith("ouvert:") ? (window.__bancOuverts ?? []).at(-1) === t.slice(7)

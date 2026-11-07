@@ -64,3 +64,57 @@
 .axe-harness__origin { margin: 0; padding: 6px 8px; color: var(--text-1);
   background: var(--bg-2); border-radius: var(--r-small); line-height: 1.45;
   font-size: calc(11.5px * var(--text-scale, 1)); }
+
+/* partage en .md : ligne + bouton « ⋯ », sélection multiple, boîtes secret / import. */
+.axe-harness__row-wrap { display: flex; align-items: center; gap: 2px; min-width: 0; }
+.axe-harness__row-wrap > .axe-harness__row { flex: 1; min-width: 0; }
+.axe-harness__row[data-selected="true"]:not([data-active="true"]) { background: var(--accent-soft); color: var(--text-0); }
+.axe-harness__row-plus { flex: 0 0 auto; width: 22px; height: 22px; padding: 0; border: 1px solid transparent; border-radius: var(--r-small); background: none; color: var(--text-3); cursor: pointer; font-size: calc(13px * var(--text-scale, 1)); line-height: 1; }
+.axe-harness__row-plus:hover, .axe-harness__row-plus:focus-visible { background: var(--bg-2); color: var(--text-0); border-color: var(--line-strong); }
+.axe-harnais-menu__titre { padding: 4px 10px; font-size: calc(11px * var(--text-scale, 1)); color: var(--text-3); white-space: nowrap; }
+.axe-harnais-modal { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, 0.35); }
+.axe-harnais-boite { display: flex; flex-direction: column; gap: 10px; width: min(520px, 100%); max-height: calc(100vh - 32px); overflow: auto; padding: 16px; border: 1px solid var(--line-strong); border-radius: var(--r-medium, 8px); background: var(--bg-1); color: var(--text-0); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); font-size: calc(12px * var(--text-scale, 1)); }
+.axe-harnais-boite h3 { margin: 0; font-size: calc(14px * var(--text-scale, 1)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-harnais-boite p { margin: 0; }
+.axe-harnais-boite ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.axe-harnais-import__liste { list-style: none; padding-left: 0 !important; }
+.axe-harnais-import__liste li { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.axe-harnais-import__liste strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.axe-harnais-import__liste .axe-harness__muted { margin-left: auto; white-space: nowrap; }
+.axe-harnais-import__portee { display: flex; align-items: center; gap: 8px; }
+.axe-harnais-import__portee select { padding: 4px 6px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-1); color: var(--text-0); }
+
+
+/* volet étroit (Réglages à 1366 px avec le chat ouvert) : rien ne déborde à l'horizontale. */
+.axe-harness__split { grid-template-columns: minmax(0, 300px) minmax(0, 1fr); }
+.axe-harness__list, .axe-harness__detail { min-width: 0; }
+.axe-harness__list-actions { flex-wrap: wrap; }
+.axe-harness__btn { white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.axe-harness__title, .axe-harness__body { width: 100%; min-width: 0; box-sizing: border-box; }
+.axe-harness__meta { overflow-wrap: anywhere; }
+.settings-pane__pyskill { min-width: 0; }
+.settings-pane__pyskill-head > div { min-width: 0; }
+.settings-pane__pyskill-head .settings-pane__actions { flex-wrap: wrap; }
+
+/* lignes étroites (Réglages à 800 px) : le titre reste lisible, l'identifiant cède la place. */
+.axe-harness__row { min-width: 0; }
+.axe-harness__row-title { flex: 1 1 4em; min-width: 3em; }
+.axe-harness__row > code { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-harness__row > .axe-harness__pill { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.axe-harness__list { container-type: inline-size; }
+@container (max-width: 240px) { .axe-harness__row > code { display: none; } }
+.settings-pane__pyskill-head .settings-pane__actions > .settings-pane__btn { max-width: 100%; min-width: 0; }
+.settings-pane__pyskill-head .settings-pane__actions > .settings-pane__btn > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-pane__pyskill > p code, .settings-pane__pyskill-head h2 { overflow-wrap: anywhere; }
+/* volet étroit : la liste passe au-dessus du détail (sinon le détail fait 20 px de large). */
+.axe-harness { container-type: inline-size; }
+@container (max-width: 400px) {
+  .axe-harness__split { display: flex; flex-direction: column; flex: none; min-height: 0; }
+  .axe-harness__list { flex: none; max-height: 50vh; }
+  .axe-harness__detail { flex: none; }
+}
+.settings-pane__pyskill-head > div, .settings-pane__pyskill-head > .settings-pane__actions { min-width: 0; max-width: 100%; }
+.settings-pane__pyskill-head > .settings-pane__actions { flex: 1 1 auto; justify-content: flex-start; }
+/* le chemin du fichier de l'entrée (sans espace) ne fait plus défiler le volet. */
+.axe-harness__detail code { overflow-wrap: anywhere; word-break: break-all; }
+.axe-harness__status, .axe-harness__error { overflow-wrap: anywhere; }
