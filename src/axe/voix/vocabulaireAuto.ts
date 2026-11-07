@@ -5,7 +5,7 @@
  *
  * Règles (simples et prudentes) :
  * - un mot est « marqué » s'il porte une majuscule ailleurs qu'en tête (pfSense,
- *   OxyCloud, GDMS) ou une majuscule initiale hors début de phrase (Grafana, Dupont) ;
+ *   GitLab, GDMS) ou une majuscule initiale hors début de phrase (Grafana, Dupont) ;
  * - il est retenu quand il apparaît dans au moins 2 messages différents ;
  * - jamais de secret : un message qui parle de mot de passe, jeton, clé… est ignoré
  *   en entier ; les liens, adresses, chemins, code et les chaînes qui ressemblent à
@@ -107,7 +107,7 @@ export function candidats(message: string): Map<string, string> {
     let bloc = m[0].replace(/^[\s"'«»“”‘’(\[{<.,;:!?…*]+|[\s"'«»“”‘’)\]}>.,;:!?…*]+$/g, "");
     if (!bloc || /[/\\@#$%&|<>=~^]/.test(bloc) || /\.\p{L}/u.test(bloc)) continue;
     if (estSecret(bloc)) continue;
-    // Élision : « d’OxyCloud » -> « OxyCloud » (une majuscule après l'apostrophe n'est pas un début de phrase).
+    // Élision : « d’GitLab » -> « GitLab » (une majuscule après l'apostrophe n'est pas un début de phrase).
     const elision = bloc.split(/['’]/);
     const apresElision = elision.length > 1;
     bloc = elision[elision.length - 1];

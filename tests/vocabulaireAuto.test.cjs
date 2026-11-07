@@ -27,10 +27,10 @@ test("noms propres et termes techniques répétés dans deux messages", () => {
 });
 
 test("un mot vu une seule fois n'est pas encore retenu ; début de phrase ignoré", () => {
-  const e = apprendre(["Kubernetes est en panne. Regarde OxyCloud.", "Regarde encore."]);
+  const e = apprendre(["Kubernetes est en panne. Regarde GitLab.", "Regarde encore."]);
   assert.deepEqual(formes(e), []);
-  const e2 = apprendre(["Bonjour, peux-tu voir OxyCloud ?", "Bonjour, OxyCloud encore."], e);
-  assert.deepEqual(formes(e2), ["OxyCloud"]);
+  const e2 = apprendre(["Bonjour, peux-tu voir GitLab ?", "Bonjour, GitLab encore."], e);
+  assert.deepEqual(formes(e2), ["GitLab"]);
 });
 
 test("pas de doublon : même mot, casse différente, plusieurs fois dans un message", () => {
@@ -67,7 +67,7 @@ test("V.estSecret : formes connues et chaînes à forte entropie", () => {
   for (const s of ["ghp_A1b2C3d4E5f6G7h8", "xoxb-12345-abcdef", "sk-ant-api03-Abc", "AKIAIOSFODNN7EXAMPLE", "Soleil2024", "a1B2c3D4e5", "0123456789abcdef0123", "dGhpcyBpcyBhIHNlY3JldA"]) {
     assert.equal(V.estSecret(s), true, s);
   }
-  for (const s of ["Grafana", "pfSense", "IPv6", "Win11", "OxyCloud", "GDMS", "S3"]) {
+  for (const s of ["Grafana", "pfSense", "IPv6", "Win11", "GitLab", "GDMS", "S3"]) {
     assert.equal(V.estSecret(s), false, s);
   }
 });

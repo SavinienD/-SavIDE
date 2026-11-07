@@ -131,7 +131,7 @@ test("secrets : pas de fausse alerte sur un texte ordinaire (identifiants, hash 
     "Commit 2c3749d0a1b2c3d4e5f60718293a4b5c6d7e8f90 sur main.",
     "Session 1b2c3d4e-0a1b-4c2d-8e3f-a4b5c6d7e8f9, mem_0a1b2c3d.",
     "Chemin /home/utilisateur/projets/appli/src/components/settings/HarnessPane.tsx",
-    "Le mot de passe est dans KeePass (entrée « Dev/Forge »).",
+    "Le mot de passe est dans Bitwarden (entrée « Dev/Forge »).",
     "harness_cloud_publish et ProtocolError setTouchEmulationEnabled.",
     "date: 2026-11-07T01:30:00.000Z",
   ].join("\n");
