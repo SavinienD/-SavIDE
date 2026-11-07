@@ -7,6 +7,7 @@
 import { useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 import { MIME_ONGLET_CHAT } from "../chat/colonnes";
+import { useDicteesHorsEcran } from "../../axe/voix/useDicteesHorsEcran";
 
 export type OngletChat = {
   id: string;
@@ -49,6 +50,7 @@ export function OngletsChat({
   // minimale (plus de croix posées sur l'onglet voisin) et la bande défile, à la
   // molette aussi ; l'onglet actif est toujours ramené dans la vue.
   const bandeRef = useRef<HTMLDivElement | null>(null);
+  const dictees = useDicteesHorsEcran();
   useEffect(() => {
     const bande = bandeRef.current;
     const onglet = bande?.querySelector<HTMLElement>('.onglets-chat__tab[data-active="true"]');
@@ -84,6 +86,7 @@ export function OngletsChat({
               data-onglet={onglet.id}
               data-detached={estDetache ? "true" : "false"}
               data-streaming={enCours?.has(onglet.id) ? "true" : "false"}
+              data-dictee={dictees.has(onglet.id) ? "true" : undefined}
               title={estDetache ? `${onglet.titre} — détachée, devant` : onglet.titre}
               // e17b — glisser l'onglet vers une autre colonne (ou « + »).
               draggable={!estDetache}
@@ -123,6 +126,11 @@ export function OngletsChat({
                 />
               )}
               <span className="onglets-chat__titre">{onglet.titre}</span>
+              {dictees.has(onglet.id) ? (
+                <span className="axe-dictee-repere" role="img" title="Texte dicté ajouté au brouillon" aria-label="Texte dicté ajouté au brouillon">
+                  <Icon icon="solar:microphone-3-linear" width={11} height={11} />
+                </span>
+              ) : null}
               {estActif ? (
                 <button
                   type="button"

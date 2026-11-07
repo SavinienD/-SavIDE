@@ -22,6 +22,7 @@ import {
   reechantillonner,
   type TailleWhisper,
 } from "./direct";
+import { livrerDictee, type CibleDictee } from "./dicteeCible";
 
 /** voix — machine à états de la dictée : repos -> enregistrement ->
  *  transcription -> texte inséré (jamais envoyé), ou erreur avec secours Win+H. */
@@ -50,6 +51,9 @@ export const SEGMENT_MS = 3_000;
 type Options = {
   workspacePath?: string;
   modele?: { provider: string; name: string } | null;
+  /** Conversation affichée : devient la cible au début de l'enregistrement. */
+  conversationId?: string;
+  /** Sans conversationId : le texte va à ce rappel (ancien comportement). */
   onTexte: (texte: string) => void;
 };
 
@@ -71,7 +75,7 @@ function texteErreur(err: unknown): string {
   return String(err);
 }
 
-export function useDictee({ workspacePath, modele, onTexte }: Options) {
+export function useDictee({ workspacePath, modele, conversationId, onTexte }: Options) {
   const [phase, setPhase] = useState<PhaseDictee>("repos");
   const [niveaux, setNiveaux] = useState<number[]>(() => Array(NB_BARRES).fill(0));
   const [dureeMs, setDureeMs] = useState(0);
@@ -85,7 +89,27 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
   onTexteRef.current = onTexte;
   const contexteRef = useRef({ workspacePath, modele });
   contexteRef.current = { workspacePath, modele };
+  // Conversation où la dictée a commencé : le texte y va, même si on a changé
+  // de conversation, de colonne ou de dossier entre-temps (elle peut ne plus être affichée).
+  const conversationRef = useRef(conversationId);
+  conversationRef.current = conversationId;
+  const cibleRef = useRef<CibleDictee | null>(null);
+  const [cible, setCible] = useState<CibleDictee | null>(null);
+  /** Rend vrai si le texte est allé dans la saisie affichée ici (sinon : brouillon de la
+   *  conversation de départ ou presse-papiers, et c'est le message du Workspace qui le dit). */
+  const livrer = useCallback((texte: string): boolean => {
+    const c = cibleRef.current;
+    cibleRef.current = null;
+    setCible(null);
+    if (!c) {
+      onTexteRef.current(texte);
+      return true;
+    }
+    const ou = livrerDictee(c, texte);
+    return ou === "saisie" && c.conversationId === conversationRef.current;
+  }, []);
   const terminerRef = useRef<() => void>(() => undefined);
+  const annulerRef = useRef<() => void>(() => undefined);
   // 0.1.75 — dictée en direct : morceaux de ≈ 3 s transcrits au fil de l'eau.
   const [provisoire, setProvisoire] = useState("");
   const morceauxTexte = useRef<string[]>([]);
@@ -285,6 +309,8 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
   const echouer = useCallback((message: string, winH = true, reglagesMac = false) => {
     const plateforme = plateformeCourante();
     setErreur({ message, winH: winH && plateforme === "windows", reglagesMac: reglagesMac && plateforme === "mac" });
+    cibleRef.current = null;
+    setCible(null);
     setPhase("erreur");
   }, []);
 
@@ -298,6 +324,9 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
     }
     const enr = new EnregistreurVoix();
     enregistreur.current = enr;
+    const id = conversationRef.current;
+    cibleRef.current = id ? { conversationId: id, workspacePath: contexteRef.current.workspacePath ?? null } : null;
+    setCible(cibleRef.current);
     setPhase("demarrage");
     setNiveaux(Array(NB_BARRES).fill(0));
     setDureeMs(0);
@@ -313,6 +342,11 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
       enr.annuler();
       return;
     }
+    // Conversation changée pendant l'ouverture du micro : rien n'a encore été dit.
+    if (cibleRef.current && cibleRef.current.conversationId !== conversationRef.current) {
+      annulerRef.current();
+      return;
+    }
     setPhase("enregistrement");
     animer();
     demarrerDirect(enr);
@@ -323,6 +357,8 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
     arreterDirect();
     session.current += 1;
     viderProvisoire();
+    cibleRef.current = null;
+    setCible(null);
     const enr = enregistreur.current;
     enregistreur.current = null;
     enr?.annuler();
@@ -332,6 +368,7 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
     setPhase("repos");
     setDureeMs(0);
   }, [arreterAnimation, arreterDirect, viderProvisoire]);
+  annulerRef.current = annuler;
 
   const terminer = useCallback(async () => {
     const enr = enregistreur.current;
@@ -348,6 +385,8 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
       const { blob, dureeMs: duree } = await enr.terminer();
       if (blob.size === 0 || duree < 300) {
         demandeCourante.current = null;
+        cibleRef.current = null;
+        setCible(null);
         setPhase("repos");
         viderProvisoire();
         setInfo("Enregistrement trop court.");
@@ -384,8 +423,9 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
         echouer("Rien n'a été compris. Réessayez plus près du micro.", false);
         return;
       }
-      onTexteRef.current(texte);
+      const ici = livrer(texte);
       setPhase("repos");
+      if (!ici) return;
       const secondes = ((resultat.ms ?? 0) / 1000).toFixed(1).replace(".", ",");
       const morceaux = [
         `Transcrit par ${resultat.moteur ?? "le moteur"} en ${secondes} s${resultat.nettoye ? ", nettoyé par l'IA" : ""}.`,
@@ -397,6 +437,8 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
       demandeCourante.current = null;
       const message = texteErreur(err);
       if (message.includes(ANNULE)) {
+        cibleRef.current = null;
+        setCible(null);
         viderProvisoire();
         setPhase("repos");
         return;
@@ -405,15 +447,25 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
       const secours = assemblerProvisoire(morceauxTexte.current);
       viderProvisoire();
       if (secours) {
-        onTexteRef.current(secours);
+        const ici = livrer(secours);
         setPhase("repos");
+        if (!ici) return;
         setInfo(`Texte de l'aperçu en direct inséré (transcription complète impossible : ${message.slice(0, 160)}).`);
         return;
       }
       echouer(message);
     }
-  }, [arreterAnimation, arreterDirect, echouer, viderProvisoire]);
+  }, [arreterAnimation, arreterDirect, echouer, livrer, viderProvisoire]);
   terminerRef.current = () => void terminer();
+
+  // On change de conversation pendant l'enregistrement : l'enregistrement s'arrête
+  // et part en transcription vers la conversation de départ (rien n'est perdu, et l'aperçu
+  // en direct ne s'affiche jamais dans une autre conversation).
+  useEffect(() => {
+    const c = cibleRef.current;
+    if (!c || c.conversationId === conversationId) return;
+    if (enregistreur.current?.actif()) terminerRef.current();
+  }, [conversationId]);
 
   const fermer = useCallback(() => {
     setErreur(null);
@@ -422,9 +474,11 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
   }, [phase]);
 
   /** Secours : dictée Windows (Win+H) dans la zone de saisie. */
-  const dicteeWindows = useCallback(() => {
+  // La zone de saisie de CE compositeur (avant : la première de la page,
+  // celle d'une autre colonne quand il y en a plusieurs).
+  const dicteeWindows = useCallback((zone?: HTMLTextAreaElement | null) => {
     fermer();
-    (document.querySelector(".composer textarea") as HTMLTextAreaElement | null)?.focus();
+    (zone ?? (document.querySelector(".composer textarea") as HTMLTextAreaElement | null))?.focus();
     void invoke("voice_dictation").catch(() =>
       window.alert("Appuyez sur Windows + H pour dicter dans la zone de saisie."),
     );
@@ -451,9 +505,16 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
     return () => window.clearTimeout(minuterie);
   }, [info]);
 
-  // Démontage (changement de conversation) : micro libéré, transcription oubliée.
+  // Démontage (autre colonne, autre dossier, fenêtre détachée…) : l'enregistrement
+  // en cours est terminé et transcrit, la transcription en cours continue ; le texte va
+  // à la conversation de départ (brouillon si elle n'est plus affichée). Sans cible
+  // (ancien appel), comme avant : micro libéré, transcription oubliée.
   useEffect(
     () => () => {
+      if (cibleRef.current) {
+        if (enregistreur.current?.actif()) terminerRef.current();
+        return;
+      }
       arreterAnimation();
       arreterDirect();
       enregistreur.current?.annuler();
@@ -471,6 +532,7 @@ export function useDictee({ workspacePath, modele, onTexte }: Options) {
 
   return {
     ouvrirReglagesMicro,
+    cible,
     provisoire,
     direct,
     phase,

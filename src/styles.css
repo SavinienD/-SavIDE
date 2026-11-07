@@ -10924,6 +10924,8 @@ textarea {
   cursor: pointer;
 }
 .conv-row__bg[data-en-cours="true"] { color: var(--accent, #6aa0ff); }
+/* Repère sur l'onglet / la ligne d'une conversation qui a reçu du texte dicté hors écran. */
+.axe-dictee-repere { flex: 0 0 auto; display: inline-flex; align-items: center; margin-left: 4px; color: var(--accent, #6aa0ff); }
 
 /* file-pause — file d'attente en pause après un Stop */
 .chat-file-pause { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 12px; padding: 6px 10px; border: 1px solid var(--border, #444); border-radius: 6px; font-size: 12px; }

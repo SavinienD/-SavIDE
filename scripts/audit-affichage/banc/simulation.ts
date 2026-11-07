@@ -182,7 +182,11 @@ export function installerSimulation(scene: Scene): void {
     // 0.1.75 — dictée en direct : un morceau de ≈ 3 s rend un bout de phrase (texte provisoire grisé).
     voix_transcrire: (a: any) => (a?.morceau ?? a?.input?.morceau)
       ? { text: "Je relance le banc d'affichage sur les quatre largeurs et je regarde la colonne étroite,", moteur: "whisper small (poste) de secours", taille: "moyen", transcriptionMs: 1400, ms: 1500 }
-      : ({ text: "Relance le banc.", moteur: "whisper large-v3-turbo (poste)", ms: 6000, nettoye: true, avertissements: ["Nettoyage : 1 terme technique corrigé."] }),
+      // « transcriptionLente » (ms) : la transcription finale arrive après un délai
+      // (le temps de changer de conversation pendant que l'IA transcrit).
+      : typeof scene.transcriptionLente === "number"
+        ? new Promise((ok) => window.setTimeout(() => ok({ text: "Relance le banc.", moteur: "whisper large-v3-turbo (poste)", ms: 6000 }), scene.transcriptionLente as number))
+        : ({ text: "Relance le banc.", moteur: "whisper large-v3-turbo (poste)", ms: 6000, nettoye: true, avertissements: ["Nettoyage : 1 terme technique corrigé."] }),
     // API Tauri getVersion (Réglages > À propos).
     "plugin:app|version": () => "0.1.70",
     cloud_state: () =>
