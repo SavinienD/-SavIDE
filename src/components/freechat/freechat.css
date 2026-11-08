@@ -214,7 +214,7 @@
   overflow: auto;
 }
 
-/* axe:sans-dossier — en-tête de la barre latérale : « Nouvelle conversation » + repli (Ctrl+B). */
+/* sans-dossier — en-tête de la barre latérale : « Nouvelle conversation » + repli (Ctrl+B). */
 .axe-freechat__head {
   display: flex;
   align-items: center;
@@ -250,7 +250,7 @@
   background: var(--bg-3);
   color: var(--text-0);
 }
-/* axe:sans-dossier — quatre boutons seulement dans cette barre : les libellés restent
+/* sans-dossier — quatre boutons seulement dans cette barre : les libellés restent
    visibles dès 600 px (à 1366x768 on n'avait que des icônes). */
 @container barre-titre (min-width: 600px) {
   .axe-freechat .titlebar__actions .titlebar__btn .titlebar__btn-label {

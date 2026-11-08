@@ -45,16 +45,16 @@ type Props = {
   settingsView: ReactNode;
   /** The ChatPane of the active conversation. */
   chat: ReactNode;
-  // axe:sans-dossier — le champ « nom » est piloté par l'espace : Ctrl+T l'ouvre aussi ici.
+  // sans-dossier — le champ « nom » est piloté par l'espace : Ctrl+T l'ouvre aussi ici.
   creating: boolean;
   onStartCreate: () => void;
   onCancelCreate: () => void;
-  // axe:sans-dossier — barre latérale repliable (Ctrl+B), comme le volet gauche de l'IDE.
+  // sans-dossier — barre latérale repliable (Ctrl+B), comme le volet gauche de l'IDE.
   sidebarCollapsed: boolean;
   onToggleSidebar: () => void;
 };
 
-// axe:sans-dossier — met le curseur dans le compositeur (comme Orca : on peut écrire dès
+// sans-dossier — met le curseur dans le compositeur (comme Orca : on peut écrire dès
 // l'arrivée). Ne prend jamais le focus d'un autre champ (recherche, nom, réglages).
 function focusComposer(force = false): void {
   const actif = document.activeElement as HTMLElement | null;
@@ -130,7 +130,7 @@ export function FreechatView(props: Props) {
 
   const { creating, settingsOpen, sidebarCollapsed } = props;
 
-  // axe:sans-dossier — à l'arrivée et à chaque changement de conversation.
+  // sans-dossier — à l'arrivée et à chaque changement de conversation.
   useEffect(() => {
     if (creating || settingsOpen) return;
     const id = window.requestAnimationFrame(() => focusComposer());
@@ -211,7 +211,7 @@ export function FreechatView(props: Props) {
 
       <div className="axe-freechat__main">
         {sidebarCollapsed ? (
-          // axe:sans-dossier — barre repliée : une colonne d'icônes garde « afficher » et « nouvelle ».
+          // sans-dossier — barre repliée : une colonne d'icônes garde « afficher » et « nouvelle ».
           <aside className="axe-freechat__rail" data-replie="true">
             <button type="button" className="axe-freechat__rail-btn" data-action="volet" onClick={props.onToggleSidebar}
               title={formaterTexte("Afficher les conversations (Ctrl+B)")} aria-label="Afficher les conversations">

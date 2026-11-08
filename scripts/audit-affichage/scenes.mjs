@@ -478,10 +478,10 @@ export const SCENES = [
   // Bugs SavIDE 0.1.58 : dans une conversation sans dossier, Accueil / Ouvrir un dossier /
   // Réglages étaient rognés (barre d'actions de largeur 0) ; /login ouvrait « À propos » ou rien.
   { id: "libre-barre", sim: {}, libre: true, temoins: ["sel:.axe-freechat", "clic:.axe-freechat .titlebar__actions .titlebar__btn"] },
-  // axe:sans-dossier — barre latérale repliée (Ctrl+B ou bouton) : un rail d'icônes, le chat prend la place.
+  // sans-dossier — barre latérale repliée (Ctrl+B ou bouton) : un rail d'icônes, le chat prend la place.
   { id: "libre-volet", sim: {}, libre: true, clics: [".axe-freechat__head [data-action='volet']"],
     temoins: ["sel:.axe-freechat__rail", "absent:.axe-freechat__sidebar", "clic:.axe-freechat__rail [data-action='volet']"] },
-  // axe:sans-dossier — on peut écrire dès l'arrivée : le compositeur a le focus.
+  // sans-dossier — on peut écrire dès l'arrivée : le compositeur a le focus.
   { id: "libre-focus", sim: {}, libre: true, temoins: ["sel:.axe-freechat__chat .composer :focus"] },
   { id: "libre-login", sim: {}, libre: true, ecrire: "/login", temoins: ["sel:.axe-freechat", "sel:.settings-pane .settings-pane__nav-item[data-section='providers'][data-active='true']"] },
   { id: "ide-login", sim: {}, stockage: () => colonnes([ids(3)]), ecrire: "/login", temoins: ["sel:.settings-pane .settings-pane__nav-item[data-section='providers'][data-active='true']"] },
