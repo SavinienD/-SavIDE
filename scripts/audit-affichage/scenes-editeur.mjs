@@ -26,4 +26,10 @@ export const SCENES_EDITEUR = [
     taper: [{ sel: MONACO, texte: "// pas encore", ajouter: true }],
     cliquer: [".editor-col .tabs__spacer"], pauseClics: 1500,
     temoins: ["sansappel:write_workspace_file_command", "sel:.editor-col .tab[data-active='true'] .tab__dirty", "sel:.editor-monaco-layer[data-minimap='false'][data-retour-ligne='false']"] },
+  // ED1b — marques dans la marge par rapport au dernier commit : app.ts (modifié, ajouté, supprimé) ;
+  // notes.md inchangé : aucune marque.
+  { id: "editeur-marge-git", ...EDITEUR, ouvrirFichier: "app.ts",
+    temoins: ["sel:.editor-monaco-layer .marge-git--modif", "sel:.editor-monaco-layer .marge-git--ajout", "sel:.editor-monaco-layer .marge-git--suppr", "appel:editeur_fichier_head"] },
+  { id: "editeur-marge-inchange", ...EDITEUR, ouvrirFichier: "notes.md",
+    temoins: ["appel:editeur_fichier_head", "absent:.editor-monaco-layer .marge-git", "sel:.editor-monaco-layer .monaco-editor"] },
 ];

@@ -670,7 +670,7 @@ fn command_available(program: &str) -> bool {
     resolve_executable(program).is_some()
 }
 
-fn resolve_executable(program: &str) -> Option<PathBuf> {
+pub(crate) fn resolve_executable(program: &str) -> Option<PathBuf> {
     let direct = PathBuf::from(program);
     if direct.components().count() > 1 {
         if let Some(candidate) = find_working_executable(&direct) {

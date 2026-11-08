@@ -3484,6 +3484,7 @@ export function Workspace({
               <EditorPane
                 tabs={onglets}
                 activeIndex={actifIci}
+                espace={workspacePath}
                 pendingPaths={offlineView.dirtyPaths}
                 onActivate={(i) => { setActifsColonnes((m) => ({ ...m, [col]: onglets[i]?.relativePath })); activateFileTab(indexGlobal(onglets[i])); }}
                 onClose={(i) => closeTab(indexGlobal(onglets[i]))}

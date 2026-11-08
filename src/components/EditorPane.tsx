@@ -29,6 +29,8 @@ import { ZoomableImage } from "./viewers/ImageZoom"; // viewers
 import { OpenWithDefaultApp, ViewerError } from "./viewers/common"; // viewers
 import { ecouterReglagesEditeur, lireReglagesEditeur, optionsMonaco } from "./editeur/reglagesEditeur";
 import { PlanificateurSauvegarde } from "./editeur/sauvegardeAuto";
+import { useMargeGit } from "./editeur/useMargeGit";
+import { cloudConnectionFromPath } from "../lib/ipc";
 
 if (!(globalThis as typeof globalThis & { MonacoEnvironment?: unknown }).MonacoEnvironment) {
   (
@@ -59,6 +61,8 @@ loader.config({ monaco: monacoNs });
 type Props = {
   tabs: EditorTab[];
   activeIndex: number;
+  /** dossier de l'espace (local ou axe-cloud://…). */
+  espace?: string;
   // v2-l6 (tranche 2) — fichiers modifies hors ligne, en attente de synchro.
   pendingPaths?: ReadonlySet<string>;
   onActivate: (index: number) => void;
@@ -86,6 +90,7 @@ type Props = {
 export function EditorPane({
   tabs,
   activeIndex,
+  espace,
   pendingPaths,
   onActivate,
   onClose,
@@ -184,6 +189,14 @@ export function EditorPane({
       (activeTab.doc.editable || isExternalTab) &&
       activeTab.doc.content !== null &&
       !isPreviewableImagePath(activeTab.relativePath),
+  );
+
+  // marques de changements dans la marge (par rapport au dernier commit).
+  useMargeGit(
+    editorRef.current,
+    showTextEditor ? activeTab : undefined,
+    editorReadySeq,
+    !(espace && cloudConnectionFromPath(espace)),
   );
 
   const toggleMarkdownPreview = useCallback(() => {

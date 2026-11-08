@@ -163,6 +163,7 @@ pub(crate) const EDITION_LOCALE: bool = true;
 /// Mise à jour automatique active (endpoint : tauri.conf.json, dépôt GitHub public).
 pub(crate) const MAJ_AUTO: bool = true;
 mod viewers; // viewers
+mod editeur;
 mod workflow;
 mod workspace;
 mod dossiers; // dossiers renommés ou déplacés
@@ -440,6 +441,7 @@ pub fn run() {
             viewers::viewer_zip_read,
             viewers::viewer_sqlite_tables,
             viewers::viewer_sqlite_rows,
+            editeur::editeur_fichier_head,
             // repl
             repl_settings::repl_settings_get,
             repl_settings::repl_settings_save,
