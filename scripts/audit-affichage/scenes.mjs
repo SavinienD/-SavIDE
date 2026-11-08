@@ -477,8 +477,9 @@ export const SCENES = [
   // déjà prise : refusée avec un message ; enregistrée : lue partout.
   { id: "raccourcis-modifier", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='shortcuts']", ".axe-raccourcis__ligne[data-raccourci='nouvelleConversation'] .axe-raccourcis__combo"],
-    touches: ["Control+k"],
-    temoins: ["sel:.axe-raccourcis__ligne[data-raccourci='nouvelleConversation'][data-combinaison='Ctrl+K'][data-modifie='true']",
+    // Ctrl+K est pris par « Aller à » (lot palette) : Ctrl+Alt+K sert d'exemple de combinaison libre.
+    touches: ["Control+Alt+k"],
+    temoins: ["sel:.axe-raccourcis__ligne[data-raccourci='nouvelleConversation'][data-combinaison='Ctrl+Alt+K'][data-modifie='true']",
       "clic:.axe-raccourcis__ligne[data-raccourci='nouvelleConversation'] .axe-raccourcis__defaut", "clic:.axe-raccourcis__tout-defaut", "uneligne:.axe-raccourcis__touches"] },
   { id: "raccourcis-conflit", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='shortcuts']", ".axe-raccourcis__ligne[data-raccourci='nouvelleConversation'] .axe-raccourcis__combo"],
@@ -835,4 +836,17 @@ export const SCENES = [
   { id: "palette-fichiers-colonne", stockage: () => colonnes([ids(1)]), ouvrirFichier: "Cargo.toml", touches: ["Control+p"],
     taper: [{ sel: ".palette__champ input", texte: "stream", ajouter: true }], touchesFin: ["Control+Enter"],
     temoins: ["absent:.palette", "compte:.colonne-fichiers=2", "sel:.colonne-fichiers[data-colonne-index='1'] .tab[data-active='true']"] },
+  // Lot palette (P2) — Ctrl+K « Aller à » : onglets, conversations de tous les dossiers, dossiers
+  // récents, sous-agents, terminaux, Réglages ; dès 2 lettres, extraits du texte des conversations.
+  { id: "palette-aller", sim: { sousAgents: 2 }, stockage: () => ({ ...colonnes([ids(2)]), "axecode.recentWorkspaces": RECENTS_TROIS() }), touches: ["Control+k"],
+    temoins: ["sel:.palette[data-palette='aller'] .palette__champ input", "sel:.palette__groupe", "appel:palette_conversations", "Postes du cabinet Martin : import FIC", "cabinet-martin"] },
+  { id: "palette-aller-contenu", stockage: () => colonnes([ids(1)]), touches: ["Control+k"], taper: [{ sel: ".palette__champ input", texte: "banc", ajouter: true }],
+    temoins: ["sel:.palette__element[data-genre='extrait'] .palette__detail mark", "appel:palette_recherche_conversations"] },
+  { id: "palette-aller-reglage", stockage: () => colonnes([ids(1)]), touches: ["Control+k"], taper: [{ sel: ".palette__champ input", texte: "outils repl", ajouter: true }],
+    touchesFin: ["Enter"], temoins: ["absent:.palette", "sel:.settings-pane__nav-item[data-section='repl'][data-active='true']"] },
+  { id: "palette-aller-accueil", espace: false, stockage: () => ({ "axecode.recentWorkspaces": RECENTS_TROIS() }), touches: ["Control+k"],
+    temoins: ["sel:.palette[data-palette='aller'] .palette__element", "cabinet-martin", "absent:.workspace"] },
+  { id: "palette-aller-accueil-dossier", espace: false, sim: { ouvrirChemin: true }, stockage: () => ({ "axecode.recentWorkspaces": RECENTS_TROIS() }),
+    touches: ["Control+k", "c", "a", "b", "i", "n", "e", "t", "Enter"],
+    temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\cabinet-martin", "absent:.palette"] },
 ];

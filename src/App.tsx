@@ -12,6 +12,7 @@ import { api } from "./lib/ipc";
 import { freechatApi } from "./components/freechat/freechatApi"; // freechat
 import { CloudLogin } from "./components/cloud/CloudLogin"; // cloud
 import { CloudLoginButton } from "./components/cloud/CloudLoginButton"; // connexion-google
+import { PaletteAccueil } from "./components/palette/PaletteAccueil"; // lot palette : Ctrl+K sur l'accueil
 import { isWindowsPlatform } from "./components/WindowControls"; // accueil-compte
 import { ConnectedScreen } from "./components/cloud/ConnectedScreen"; // v2-l1
 import { CLOUD_CONNECTION, cloudApi, saveMode, type CloudState } from "./components/cloud/cloudApi"; // cloud
@@ -408,6 +409,7 @@ export default function App() {
           error={introuvable ? null : bootError}
           deriveName={deriveName}
         />
+        <PaletteAccueil ouvrirDossier={(chemin, conversationId) => void openWorkspace(chemin, conversationId)} ouvrirLibre={(id) => void openFreeChat(id ? { conversationId: id } : { fresh: true })} /> {/* lot palette */}
         {/* cloud — way back to the cloud mode from the local home screen. */}
         {/* un-seul-espace - plus de « Revenir au cloud » : un seul espace, sur la VM. */}
         {/* accueil-compte - sous Windows, à gauche des boutons Réduire/Agrandir/Fermer (138 px) : il était posé dessus. */}

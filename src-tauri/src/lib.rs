@@ -167,6 +167,7 @@ mod workflow;
 mod workspace;
 mod dossiers; // dossiers renommés ou déplacés
 mod palette; // lot palette : Ctrl+P, Ctrl+K, explorateur
+mod recherche_conversations; // lot palette : Ctrl+K, recherche dans l'historique
 
 use context::*;
 use models::*;
@@ -511,6 +512,8 @@ pub fn run() {
             dossiers::dossier_deplacer,
             dossiers::dossiers_noter,
             palette::palette_fichiers, // lot palette
+            recherche_conversations::palette_conversations,
+            recherche_conversations::palette_recherche_conversations,
             workspace::open_cloud_workspace, // v2-l2.3
             workspace::open_new_window,
             workspace::reset_window_title,

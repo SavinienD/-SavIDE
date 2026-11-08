@@ -1,10 +1,11 @@
-// Lot palette — palettes d'un dossier ouvert : Ctrl+P (fichier par son nom). Montée une fois
-// dans Workspace.tsx (une ligne d'accroche) ; tout le reste vit ici.
-import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+// Lot palette — palettes d'un dossier ouvert : Ctrl+P (fichier par son nom) et Ctrl+K (aller à).
+// Montée dans Workspace.tsx (une ligne d'accroche par disposition) ; tout le reste vit ici.
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { fournirActions } from "../../axe/raccourcis";
 import { trouver, type EtatColonnes } from "../chat/colonnes";
 import type { WorkspaceEntry } from "../../types";
 import { entreeFichier, versColonneVoisine } from "./ouvertureFichier";
+import { PaletteAller, type ContexteAller } from "./PaletteAller";
 import { PaletteFichiers } from "./PaletteFichiers";
 import { noterFichierRecent } from "./recents";
 
@@ -16,9 +17,18 @@ type Props = {
   openFile?: (entry: WorkspaceEntry) => Promise<boolean>;
   disposition?: EtatColonnes<string>;
   setDisposition?: Dispatch<SetStateAction<EtatColonnes<string>>>;
+  // Ctrl+K
+  ongletsChat?: { id: string; titre: string }[];
+  ongletsFichiers?: { relativePath: string }[];
+  conversationActive?: string;
+  choisirConversation?: (id: string) => unknown;
+  ouvrirDossier?: (chemin: string, conversationId?: string) => unknown;
+  ouvrirLibre?: (conversationId?: string) => unknown;
+  ouvrirReglages?: () => unknown;
+  afficherTerminal?: () => unknown;
 };
 
-type Ouverte = null | "fichiers";
+type Ouverte = null | "fichiers" | "aller";
 
 export function PaletteEspace(props: Props) {
   const [ouverte, setOuverte] = useState<Ouverte>(null);
@@ -39,6 +49,7 @@ export function PaletteEspace(props: Props) {
         ouvrirFichier: () => {
           if (propsRef.current.layout === "ide" && propsRef.current.openFile) setOuverte("fichiers");
         },
+        allerA: () => setOuverte("aller"),
       }),
     [],
   );
@@ -65,6 +76,25 @@ export function PaletteEspace(props: Props) {
     [deplacerSiRange],
   );
 
+  const contexte = useMemo<ContexteAller>(
+    () => ({
+      dossier: props.workspacePath,
+      disposition: props.layout,
+      ongletsChat: props.ongletsChat,
+      ongletsFichiers: props.ongletsFichiers,
+      conversationActive: props.conversationActive,
+      choisirConversation: props.choisirConversation,
+      ouvrirFichier: props.openFile ? (chemin: string) => void ouvrirFichier(chemin, false) : undefined,
+      ouvrirDossier: props.ouvrirDossier,
+      ouvrirLibre: props.ouvrirLibre,
+      ouvrirReglages: props.ouvrirReglages,
+      afficherTerminal: props.afficherTerminal,
+    }),
+    // Lu à l'ouverture de la palette : pas besoin de suivre chaque rendu de l'espace.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ouverte],
+  );
+
   if (ouverte === "fichiers") {
     return (
       <PaletteFichiers
@@ -74,5 +104,6 @@ export function PaletteEspace(props: Props) {
       />
     );
   }
+  if (ouverte === "aller") return <PaletteAller contexte={contexte} onFermer={() => setOuverte(null)} />;
   return null;
 }

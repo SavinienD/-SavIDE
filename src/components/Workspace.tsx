@@ -3086,6 +3086,7 @@ export function Workspace({
         settingsView={<SettingsPane workspacePath={workspacePath} />}
         chat={chatPane}
       />
+      <PaletteEspace workspacePath={workspacePath} layout={layout} conversationActive={activeConv.id} choisirConversation={selectConversation} ouvrirDossier={onOpenFolder} ouvrirLibre={(id) => id && onOpenFreeChat?.(id)} ouvrirReglages={openSettings} /> {/* lot palette */}
       {/* agents — /tree works in the free conversation view too */}
       {treeSessionId ? (
         <div className="axe-tree-overlay" onClick={() => setTreeSessionId(null)}>
@@ -3656,7 +3657,8 @@ export function Workspace({
   return (
     <div className="workspace">
       {noticeEl}
-      <PaletteEspace workspacePath={workspacePath} layout={layout} fichierActif={activeFilePath} openFile={openFile} disposition={dispositionFichiers} setDisposition={setDispositionFichiers} /> {/* lot palette */}
+      <PaletteEspace workspacePath={workspacePath} layout={layout} fichierActif={activeFilePath} openFile={openFile} disposition={dispositionFichiers} setDisposition={setDispositionFichiers}
+        ongletsChat={ongletsChat} ongletsFichiers={tabs} conversationActive={activeConv.id} choisirConversation={selectConversation} ouvrirDossier={onOpenFolder} ouvrirLibre={(id) => id && onOpenFreeChat?.(id)} ouvrirReglages={openSettings} afficherTerminal={showTerminal} /> {/* lot palette */}
       {/* e6 — les volets detaches vivent ici, dans la fenetre de l'application. */}
       <VoletsFlottants
         volets={volets}

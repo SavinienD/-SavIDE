@@ -90,36 +90,37 @@
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  flex-direction: column;
+  gap: 2px;
+}
+/* Titre sur 2 lignes au plus, détail sur 1 (2 pour un extrait) : rien n'est poussé hors de la
+   ligne dans une fenêtre étroite, même avec des lettres surlignées en fin de titre. */
+.palette__titre,
+.palette__detail {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 .palette__titre {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-line-clamp: 2;
   font-size: var(--fs-sm);
+  line-height: 1.35;
 }
 .palette__detail {
-  flex: 1 1 0;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  -webkit-line-clamp: 1;
   color: var(--text-3);
   font-size: var(--fs-xs);
+  line-height: 1.35;
 }
 .palette mark {
   background: transparent;
   color: var(--accent-hi);
   font-weight: 600;
 }
-/* Extrait d'une conversation : le mot cherché sur fond d'accent, comme dans le harnais. */
-.palette__element[data-genre="extrait"] .palette__textes {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 2px;
+/* Extrait d'une conversation : 2 lignes, le mot cherché sur fond d'accent (comme dans le harnais). */
+.palette__element[data-genre="extrait"] .palette__detail {
+  -webkit-line-clamp: 2;
 }
 .palette__element[data-genre="extrait"] .palette__detail mark {
   background: color-mix(in srgb, var(--accent) 30%, transparent);

@@ -353,6 +353,8 @@ Code map:
 │       ├── models.rs
 │       ├── offline.rs # v2-l6 — mode désynchronisé : miroir local + journal (<data>/offline/<connexion>) et IPC offline_* (prepare, list, read, write, create, delete, rename, journal, sync, resolve, forget)
 │       ├── palette.rs # lot palette — palette_fichiers (Ctrl+P : rg --files, .gitignore respecté, repli sur la liste interne)
+│       ├── recherche_conversations.rs # lot palette — IPC palette_conversations / palette_recherche_conversations (Ctrl+K)
+│       ├── recherche_conversations/moteur.rs # moteur pur : texte des messages en mémoire, relu si la conversation change ; extrait autour du mot
 │       ├── platform.rs
 │       ├── providers.rs
 │       ├── quota.rs # providers — IPC provider_quota (usage OAuth Anthropic + historique d'épuisement)
@@ -420,6 +422,9 @@ Code map:
     │   │   ├── PaletteFichiers.tsx # Ctrl+P : fichier par son nom (récents d'abord)
     │   │   ├── flou.ts # recherche approximative sans casse ni accents (tests/paletteFichiers.test.cjs)
     │   │   ├── recents.ts / ouvertureFichier.ts / paletteApi.ts # fichiers récents par dossier, colonne voisine, IPC
+    │   │   ├── PaletteAller.tsx / sourcesAller.ts # Ctrl+K : onglets, conversations, dossiers, sous-agents, terminaux, Réglages, texte des conversations (tests/paletteAller.test.cjs)
+    │   │   ├── PaletteAccueil.tsx # Ctrl+K sur l'accueil (accroche dans App.tsx)
+    │   │   ├── indexReglages.ts # sections des Réglages (mêmes data-section que SettingsPane ; édition locale : sans Service ni Appareils)
     │   ├── TerminalPanel.tsx # multi-onglets PTY : Ctrl+Tab, renommage, PowerShell/WSL et scrollback texte local
     │   ├── GitPanel.tsx
     │   ├── RemotePanel.tsx

@@ -45,12 +45,9 @@ type Props = {
 
 const PAS_PAGE = 8;
 
+// Parties non surlignées en texte simple (pas de <span>) : le titre reste un seul libellé.
 function Texte({ texte, marques }: { texte: string; marques?: readonly number[] }) {
-  return (
-    <>
-      {morceaux(texte, marques).map((m, i) => (m.marque ? <mark key={i}>{m.texte}</mark> : <span key={i}>{m.texte}</span>))}
-    </>
-  );
+  return <>{morceaux(texte, marques).map((m, i) => (m.marque ? <mark key={i}>{m.texte}</mark> : m.texte))}</>;
 }
 
 export function Palette({ titre, genre, placeholder, requete, onRequete, elements, etat, note, aide, onChoisir, onFermer }: Props) {

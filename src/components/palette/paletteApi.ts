@@ -43,3 +43,33 @@ export async function listerFichiers(dossier: string): Promise<ListeFichiers> {
   return liste;
 }
 
+export type ConversationListee = { id: string; dossier: string; titre: string; majMs: number };
+export type ListeConversations = { racineLibre: string; conversations: ConversationListee[] };
+export type ResultatContenu = {
+  conversationId: string;
+  dossier: string;
+  titre: string;
+  majMs: number;
+  role: "user" | "assistant";
+  /** Texte autour du mot trouvé. */
+  extrait: string;
+  /** Messages de la conversation qui contiennent tous les mots. */
+  messages: number;
+};
+export type RechercheConversations = {
+  resultats: ResultatContenu[];
+  conversations: number;
+  relues: number;
+  dureeMs: number;
+  tronque: boolean;
+};
+
+/** Conversations de tous les dossiers du poste (archivées exclues), la plus récente d'abord. */
+export function listerConversations(): Promise<ListeConversations> {
+  return invoke<ListeConversations>("palette_conversations");
+}
+
+/** Recherche dans le texte des conversations (requête vide : prépare seulement la recherche). */
+export function rechercherConversations(requete: string, limite = 30): Promise<RechercheConversations> {
+  return invoke<RechercheConversations>("palette_recherche_conversations", { input: { requete, limite } });
+}
