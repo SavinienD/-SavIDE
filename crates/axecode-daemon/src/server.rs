@@ -183,6 +183,8 @@ impl Daemon {
             m if m.starts_with("queue.") => crate::queue_rpc::dispatch(self, m, &params),
             // délai d'endormissement des conversations (Réglages > Service)
             m if m.starts_with("sommeil.") => crate::sommeil::dispatch(self, m, &params),
+            // automatisations — prompts planifiés
+            m if m.starts_with("automatisations.") => crate::automatisations::dispatch(self, m, &params),
             // voix — dictée vocale : Whisper de la machine, nettoyage IA optionnel
             m if m.starts_with("voice.") => crate::voice_rpc::dispatch(self, m, &params).await,
             m if m.starts_with("term.") => {
@@ -445,6 +447,7 @@ impl Daemon {
             && !self.any_running()
             && lock(&self.clients).is_empty()
             && lock(&self.last_activity).elapsed() >= self.config.shutdown_grace
+            && !crate::automatisations::retient_le_service(self) // automatisations
     }
 }
 
@@ -556,6 +559,7 @@ pub async fn run(daemon: Arc<Daemon>) -> anyhow::Result<()> {
     }
 
     crate::queue_rpc::dispatch_all(&daemon); // file-demon
+    crate::automatisations::demarrer(&daemon); // automatisations
     {
         let daemon = daemon.clone(); // reveil-demarrage
         tokio::spawn(async move { daemon.rearmer_au_demarrage().await });

@@ -59,6 +59,7 @@ Code map:
 │   │   ├── bridge.py # RPC kernel→Rust bridge.call(method, params), images, file changes
 │   │   ├── files.py / shell.py / web.py / images.py / context.py / question.py / todo.py / skills.py / mcp.py / compact.py # modules préchargés
 │   │   ├── _documents.py # viewers — texte des xlsx/docx/pdf/pptx/odt/epub pour files.read (privé, non préchargé)
+│   │   ├── automatisations.py # automatisations — module automatisations : creer, lister, modifier, supprimer, lancer, historique (RPC automatisations.* du service)
 │   │   ├── rlm.py / messages.py / harness.py / refine.py / goal.py / heartbeat.py # modules E/D/F (brain)
 │   │   └── navigateur.py # ouvrir/lire(delta)/cliquer/remplir/touche/attendre/capture sur l'onglet Navigateur (host calls navigateur.*)
 │   └── tests # pytest files + shell + documents ; test_rlm.py / test_messages.py ; test_sommeil.py : un nouveau noyau reprend les variables de l'instantané
@@ -183,6 +184,10 @@ Code map:
 │   │   ├── build.rs # webui — ré-embarque web/dist quand il change
 │   │   ├── src
 │   │   │   ├── auth.rs # remote — remote-auth.json : mots de passe argon2, jetons SHA-256, CLI set-password/token/auth
+│   │   │   ├── automatisations.rs # automatisations — prompts planifiés : <données>/automatisations.json, RPC automatisations.*, planificateur (tic 10 s, rattrapage, jamais deux exécutions), garde le service en vie
+│   │   │   ├── automatisations_horaire.rs # horaires (tous les jours, jours de la semaine, toutes les N heures, cron) -> prochaine exécution, en clair
+│   │   │   ├── automatisations_execution.rs # une exécution : conversation (nouvelle ou la même), suivi, bilan lu dans le journal
+│   │   │   ├── automatisations_tests.rs # tests avec une horloge simulée
 │   │   │   ├── cli.rs # serve [--listen host:port --allow-host h]/status/shutdown/set-password/token partagés
 │   │   │   ├── client.rs # DaemonClient (pipe + connect_ws distant), ensure_daemon, lancement détaché
 │   │   │   ├── brain_rpc.rs # v2-l2.4 — RPC skills.*/harness.* : cerveau commun (skills + harnais) de l'espace du service, réglages skill-settings.json
@@ -402,6 +407,15 @@ Code map:
     │   ├── theme.css # accent orange + styles des composants
     │   └── theme.ts # tons dérivés de --axe-bg par luminance, persistance
     ├── components
+    │   ├── automatisations # automatisations — écran Automatisations (Ctrl+Maj+L) : prompts planifiés tenus par le service
+    │   │   ├── Automatisations.tsx # montage global (raccourci, événement ide-ouvrir-automatisations, notifications de fin) + bouton de la vue Agents
+    │   │   ├── EcranAutomatisations.tsx # liste de tous les dossiers, historique (date, durée, statut, conversation), Lancer / Pause / Modifier / Supprimer
+    │   │   ├── FormulaireAutomatisation.tsx # création guidée : horaire en clair et prochaines exécutions (aperçu du service)
+    │   │   ├── automatisationsApi.ts # RPC automatisations.* sur la connexion active
+    │   │   ├── horaires.ts # aides pures : formulaire de l'horaire, dates, durées, tri, erreurs en clair
+    │   │   ├── notifications.ts # fin d'exécution -> ide-notification ; au démarrage, un mot sur les exécutions faites appli fermée
+    │   │   ├── useNotificationsAutomatisations.ts # écoute de l'événement « automatisations » du service (monté avec l'écran)
+    │   │   └── automatisations.css
     │   ├── agents # agents
     │   │   ├── AgentsView.tsx # Vue Agents : arbre des sessions running/idle/inactive, connexion active ou toutes les machines groupées, conversations libres (freechat), ouvrir, message, arrêt
     │   │   ├── ExternalAgents.tsx # agents — agents externes du service (agents.*) : liste 2 s, lancement (brief/libellé/modèle/commande), journal en direct, arrêt, résultat ; lecture seule hors ligne, inerte en local

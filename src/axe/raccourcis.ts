@@ -64,7 +64,8 @@ export type RaccourciId =
   | "revueFichierSuivant"
   | "revueFichierPrecedent"
   | "revueNoter"
-  | "navigateur";
+  | "navigateur"
+  | "automatisations"; // automatisations
 
 type Touche = {
   /** Ctrl (ou Cmd sur macOS). */
@@ -127,6 +128,8 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "revueFichierPrecedent", categorie: "Revue", libelle: "Fichier précédent", combinaison: "Alt + ↑", touche: { alt: true, touches: ["arrowup"] } },
   { id: "revueNoter", categorie: "Revue", libelle: "Noter les lignes choisies", combinaison: "Alt + N", touche: { alt: true, touches: ["n", "code:KeyN"] } },
   { id: "navigateur", categorie: "Panneaux", libelle: "Ouvrir le navigateur intégré", combinaison: "Ctrl + Maj + B", touche: { ctrl: true, shift: true, touches: ["b", "code:KeyB"] } },
+  // automatisations — écran des prompts planifiés (laissé à l'éditeur : Ctrl+Maj+L y sélectionne les occurrences).
+  { id: "automatisations", categorie: "Panneaux", libelle: "Ouvrir les automatisations (prompts planifiés)", combinaison: "Ctrl + Maj + L", touche: { ctrl: true, shift: true, touches: ["l", "code:KeyL"] }, horsEditeur: true },
 
   // Ctrl+Maj+W reste à « Fermer tous les fichiers » (famille de Ctrl+W) ; Ctrl+Alt+E est évité (AltGr+E = € au clavier français).
   { id: "nouveauWorktree", categorie: "Dossiers", libelle: "Nouveau worktree (une branche et son dossier pour une tâche)", combinaison: "Ctrl + Alt + W", touche: { ctrl: true, alt: true, touches: ["w", "code:KeyW"] } }, // worktrees

@@ -141,6 +141,7 @@ fn daemon_hooks() -> Vec<Arc<dyn axecode_app::repl::TurnHook>> {
     vec![
         axecode_app::session_commands::SessionCommandsHook::new(providers),
         Arc::new(crate::navigateur::HookNavigateur), // module navigateur du REPL
+        axecode_daemon::automatisations::crochet_repl(), // automatisations — module REPL `automatisations`
     ]
     // goal end
 }

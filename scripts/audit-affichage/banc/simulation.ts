@@ -11,6 +11,7 @@ import { simulationWorktrees } from "./worktrees"; // worktrees
 import { simulationConflits, simulationRevue } from "./revue"; // revue des changements
 import { simulationEditeur } from "./editeur";
 import { simulationNavigateur } from "./navigateur"; // navigateur intégré
+import { simulationAutomatisations } from "./automatisations"; // automatisations
 
 export type Scene = {
   /** ordre-dossiers — open_workspace ouvre le dossier demandé (et non l'espace du banc). */
@@ -123,6 +124,7 @@ export function installerSimulation(scene: Scene): void {
   const active = scene.active ?? D.idConv(0);
   const tourActif = scene.tour === "en_cours" || scene.tour === "erreur";
   const filesSim = new Map<string, any[]>(); // file-demon
+  const simAuto = simulationAutomatisations(scene); // automatisations
   let comptesSim: any[] = [
     { providerId: "anthropic", base: "anthropic", email: "claude@example.com", plan: "Max", connected: true },
     { providerId: "anthropic~2", base: "anthropic", email: "deuxieme@example.com", plan: "Pro", connected: true },
@@ -234,6 +236,8 @@ export function installerSimulation(scene: Scene): void {
     },
     daemon_call: (a) => {
       const fileDe = (p: any) => filesSim.get(p?.sessionId) ?? [];
+      const auto = String(a.method).startsWith("automatisations.") || String(a.params?.sessionId ?? "").startsWith("auto-s-") ? simAuto(a.method, a.params) : undefined; // automatisations
+      if (auto !== undefined) return auto;
       switch (a.method) {
         case "queue.state":
         case "harness.list": // harnais de l'espace cloud (lu en plus de celui du poste)

@@ -22,6 +22,7 @@ axecode-app = { workspace = true } # v2-l2: confined workspace filesystem helper
 axecode-harness = { workspace = true } # v2-l2.4: harness (brain) RPC in the service
 axecode-agents = { workspace = true } # v2-l7c: external agents RPC
 reqwest = { workspace = true } # voix: whisper.cpp server of the machine
+chrono = "0.4" # automatisations: local time of the schedules (already in the lock via axecode-agents)
 
 anyhow = { workspace = true }
 argon2 = { workspace = true } # remote

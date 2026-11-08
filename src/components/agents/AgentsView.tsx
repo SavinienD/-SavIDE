@@ -5,6 +5,7 @@ import { ExternalAgents } from "./ExternalAgents"; // agents — agents externes
 import { STATUS_LABEL, agentsApi, type SessionMeta as BaseMeta } from "./agentsApi";
 import { connectionsApi, LOCAL_CONNECTION, useActiveConnection } from "../settings/connectionsApi"; // remote
 import { useModelChoices } from "./useModelChoices"; // sub-m
+import { BoutonAutomatisations } from "../automatisations/Automatisations"; // automatisations
 import { listen } from "@tauri-apps/api/event";
 import { api } from "../../lib/ipc";
 import type { ActiveTurnsChangedPayload } from "../../types";
@@ -395,6 +396,7 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
         </details>
         <button type="button" className="axe-agents__refresh" title="Rafraîchir" onClick={() => void load()}>↻</button>
       </header>
+      <BoutonAutomatisations /> {/* automatisations — ouvre l'écran des prompts planifiés */}
       {error ? <p className="axe-agents__error">{error}</p> : null}
       {status ? <p className="axe-agents__status">{status}</p> : null}
 
