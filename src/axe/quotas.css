@@ -1,0 +1,43 @@
+/* Quotas des abonnements : vue compacte, détail au clic et réglages (QuotaIndicator.tsx).
+   Les styles de base (pastille, barres) sont dans theme.css. */
+.axe-quota__pill { max-width: 280px; min-width: 0; }
+.axe-quota__compact { display: inline-flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.axe-quota__compte { color: var(--text-1); }
+.axe-quota__heure { color: var(--text-3); }
+@media (max-width: 1000px) {
+  .axe-quota__compte, .axe-quota__heure { display: none; }
+}
+.axe-quota .axe-quota__popover { width: 300px; max-height: calc(100vh - 56px); overflow-y: auto; }
+.axe-quota__popover[data-cote="gauche"] { left: auto; right: 0; }
+.axe-quota__top { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-width: 0; color: var(--text-0); font-size: var(--fs-sm); }
+.axe-quota__top > strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.axe-quota__action {
+  flex: none; min-height: 24px; padding: 0 6px; border: 0; border-radius: var(--r-small);
+  background: none; color: var(--accent); font-size: var(--fs-xs); cursor: pointer;
+}
+.axe-quota__action:hover:not(:disabled) { background: var(--bg-3); }
+.axe-quota__action:disabled { color: var(--text-3); cursor: default; }
+.axe-quota__reglages { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.axe-quota__choix { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-small); overflow: hidden; }
+.axe-quota__choix button {
+  min-height: 24px; padding: 0 8px; border: 0; background: transparent; color: var(--text-2);
+  font-size: var(--fs-xs); white-space: nowrap; cursor: pointer;
+}
+.axe-quota__choix button + button { border-left: 1px solid var(--line); }
+.axe-quota__choix button[aria-pressed="true"] { background: var(--bg-3); color: var(--text-0); }
+.axe-quota__seuil { display: inline-flex; align-items: center; gap: 4px; color: var(--text-2); font-size: var(--fs-xs); white-space: nowrap; }
+.axe-quota__seuil input {
+  width: 52px; min-height: 24px; padding: 0 4px; border: 1px solid var(--line); border-radius: var(--r-small);
+  background: var(--bg-2); color: var(--text-0); font: inherit;
+}
+.axe-quota__provider { display: flex; flex-direction: column; gap: 4px; padding-top: 8px; border-top: 1px solid var(--line-soft); }
+.axe-quota__provider .axe-quota__head { justify-content: flex-start; gap: 8px; min-width: 0; }
+.axe-quota__nom { flex: none; color: var(--text-0); font-size: var(--fs-sm); }
+.axe-quota__account { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-3); font-size: var(--fs-xs); }
+.axe-quota__plan { flex: none; margin-left: auto; color: var(--text-2); font-size: var(--fs-xs); }
+.axe-quota__provider .axe-quota__window { margin-top: 4px; }
+.axe-quota__provider .axe-quota__bar { position: relative; overflow: visible; }
+.axe-quota__provider .axe-quota__bar > span { border-radius: var(--r-pill); }
+.axe-quota__repere { position: absolute; top: -2px; width: 1px; height: 8px; background: var(--text-3); }
+.axe-quota__alerte { color: var(--danger); }
+.axe-quota button:focus-visible, .axe-quota input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
