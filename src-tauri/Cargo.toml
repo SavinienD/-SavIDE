@@ -61,7 +61,8 @@ webview2-com = "0.38"
 windows-core = "0.61"
 # ports en écoute du dossier (iphlpapi, PEB du processus) ; même version que
 # webview2-com-sys, seules des fonctions de plus sont compilées.
-windows = { version = "0.61", features = ["Win32_NetworkManagement_IpHelper", "Win32_System_Threading", "Win32_System_Diagnostics_Debug", "Wdk_System_Threading"] }
+# Toasts de Windows (crate déjà présente via wry, même version ; fonctions en plus).
+windows = { version = "0.61", features = ["Win32_NetworkManagement_IpHelper", "Win32_System_Threading", "Win32_System_Diagnostics_Debug", "Wdk_System_Threading", "Data_Xml_Dom", "Foundation", "UI_Notifications"] }
 
 # vue du navigateur posée au-dessus de la page (gtk::Overlay) et capture
 # (WebKitGTK) ; mêmes versions que wry et tao (déjà dans Cargo.lock).

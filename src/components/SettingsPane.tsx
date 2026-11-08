@@ -8,6 +8,8 @@ import { AxeLogo } from "../axe/Logo";
 import { dateMajLisible, noterLancement, versionAppli } from "../lib/versionAppli"; // apropos
 import { RaccourcisSection } from "../axe/RaccourcisSection"; // raccourcis
 import { VoixSection } from "../axe/voix/VoixSection"; // voix
+import { NotificationsSection } from "./notifications/NotificationsSection";
+import { SommeilSection } from "./notifications/SommeilSection";
 import { AppearanceSection } from "../axe/AppearanceSection"; // theme
 import { ReglagesEditeurSection } from "./editeur/ReglagesEditeurBloc";
 import { monacoThemeData } from "../axe/themeTargets"; // theme
@@ -87,7 +89,8 @@ type Section =
   | "connections" // remote
   | "shortcuts" // raccourcis
   | "voice" // voix
-  | "navigateur";
+  | "navigateur"
+  | "notifications";
 
 export function SettingsPane({ workspacePath }: Props) {
   // parcours-collegue — section demandée avant le montage (« Connect a provider ») : avant, « About ».
@@ -1463,6 +1466,11 @@ export function SettingsPane({ workspacePath }: Props) {
           <span className="settings-pane__nav-label">Navigateur</span>
           <span className="settings-pane__nav-count" />
         </button>
+        <button type="button" className="settings-pane__nav-item" data-section="notifications" data-active={section === "notifications" ? "true" : "false"} onClick={() => setSection("notifications")}>
+          <Icon icon="solar:bell-linear" width={15} height={15} className="settings-pane__nav-icon" />
+          <span className="settings-pane__nav-label">Notifications</span>
+          <span className="settings-pane__nav-count" />
+        </button>
       </nav>
 
       <section className="settings-pane__main">
@@ -1560,6 +1568,8 @@ export function SettingsPane({ workspacePath }: Props) {
           <ServicePane /> /* daemon */
         ) : section === "shortcuts" ? (
           <RaccourcisSection /> /* raccourcis */
+        ) : section === "notifications" ? (
+          <><NotificationsSection /><SommeilSection /></> /* + conversations inactives (la section Service est masquée dans cette édition) */
         ) : section === "voice" ? (
           <VoixSection workspacePath={workspacePath} /> /* voix */
         ) : section === "navigateur" ? (

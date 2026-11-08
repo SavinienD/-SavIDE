@@ -32,6 +32,34 @@ const SESSIONS_AGENTS = () => {
     s("sa-1", "verif-tests", "running", "c-001"), s("sa-2", "revue-code", "running", "c-001"),
     ...Array.from({ length: 10 }, (_, i) => s(`fini-${i + 1}`, `t-fini-${i + 1}`, i % 2 ? "idle" : "inactive", "c-001"))];
 };
+// Vue « Tableau » : c-001 attend une réponse, c-002 a fini (non lu), c-003 a
+// échoué, un sous-agent de c-001 travaille, deux conversations au repos (repliées).
+const SESSIONS_TABLEAU = () => {
+  const ws = "\\\\?\\" + WS;
+  const s = (id, name, status, parentId, updatedAtMs = 1_793_890_099_980) => ({ id, name, status, parentId, workspaceId: ws, children: [], archived: false, scratch: false,
+    model: { provider: "anthropic", name: "claude-opus-5-5" }, createdAtMs: 1_792_483_646_503, updatedAtMs, entryCount: 120 });
+  return [s("c-001", TITRES["c-001"], "idle"), s("c-002", TITRES["c-002"], "inactive"), s("c-003", TITRES["c-003"], "idle"),
+    s("sa-1", "t-lotA", "running", "c-001"), s("c-004", TITRES["c-004"], "inactive", undefined, 1_793_000_000_000), s("c-005", TITRES["c-005"], "idle", undefined, 1_792_900_000_000)];
+};
+const NOTIFS_TABLEAU = () => {
+  const t = 1_793_890_099_980;
+  const ev = (cle, genre, sessionId, titre, texte, lu = false) => ({ cle, genre, sessionId, titre, texte, dossier: "\\\\?\\" + WS, ts: t, lu });
+  return {
+    evenements: [
+      ev("c-001:attente:1", "attente", "c-001", TITRES["c-001"], "Attend votre réponse\u00a0: Je relance le banc sur les quatre largeurs ou je publie tout de suite la 0.1.86 avec ces corrections ?"),
+      ev("c-002:fini:1", "fini", "c-002", TITRES["c-002"], "Fini\u00a0: Les 42 lignes sont rapprochées, l'export comptable est dans exports/ovh-octobre.csv."),
+      ev("c-003:echec:1", "echec", "c-003", TITRES["c-003"], "Échec\u00a0: retryable stream error: HTTP 529 overloaded_error: Overloaded"),
+      { cle: "info:1", genre: "info", titre: "Worktree prêt", texte: "lot-agents : dépendances installées, prêt à travailler.", ts: t - 60_000, lu: true },
+    ],
+    etats: {
+      "c-001": { genre: "attente", depuis: t, texte: "Attend votre réponse\u00a0: Je relance le banc sur les quatre largeurs ou je publie tout de suite la 0.1.86 avec ces corrections ?", lu: false },
+      "c-002": { genre: "fini", depuis: t, texte: "Fini\u00a0: Les 42 lignes sont rapprochées, l'export comptable est dans exports/ovh-octobre.csv.", lu: false },
+      "c-003": { genre: "echec", depuis: t, texte: "Échec\u00a0: retryable stream error: HTTP 529 overloaded_error: Overloaded", lu: false },
+    },
+    reglages: { systeme: true, fini: true, attente: true, echec: true, sousAgents: false, son: true, nePasDeranger: false },
+    nonLus: 3,
+  };
+};
 const RECENTS_ACTIVITE = () => [
   { path: "C:\\Users\\utilisateur\\Documents\\site-web", name: "site-web", lastOpenedMs: 1_793_890_000_000 },
   { path: "C:\\Users\\utilisateur\\Documents\\mon-projet", name: "mon-projet", lastOpenedMs: 1_793_880_000_000 },
@@ -421,6 +449,28 @@ export const SCENES = [
   { id: "agents-compteurs", sim: { tour: "en_cours", sessionsDemon: SESSIONS_AGENTS() }, stockage: () => colonnes([ids(3)]), agents: true,
     temoins: ["sel:.axe-agents__counts[data-running='3'][data-idle='0'][data-inactive='1']", "compte:.axe-agents__row[data-sous-agent='true']=2",
       "compte:.axe-agents__row[data-status='running']=3"] },
+  // Vue « Tableau » de l'onglet Agents (bascule mémorisée) : une carte par colonne,
+  // « Au repos » replié puis déplié ; « tous les dossiers » montre le dossier de chaque carte.
+  { id: "agents-tableau", sim: { sessionsDemon: SESSIONS_TABLEAU(), notifications: NOTIFS_TABLEAU() }, stockage: () => ({ ...colonnes([ids(3)]), "axe:agents:vue": "tableau" }), agents: true,
+    temoins: ["sel:.axe-tableau", "sel:.axe-agents__vues button[data-vue='tableau'][aria-pressed='true']", "compte:.axe-tableau__carte[data-colonne='attente']=1",
+      "compte:.axe-tableau__carte[data-colonne='travaille']=1", "compte:.axe-tableau__carte[data-colonne='fini']=1", "compte:.axe-tableau__carte[data-colonne='echec']=1",
+      "compte:.axe-tableau__carte[data-colonne='repos']=0"] },
+  { id: "agents-tableau-repos", sim: { sessionsDemon: SESSIONS_TABLEAU(), notifications: NOTIFS_TABLEAU() }, stockage: () => ({ ...colonnes([ids(3)]), "axe:agents:vue": "tableau", "axe:agents:tous-dossiers": "1" }), agents: true,
+    clics: [".axe-tableau__plier"], temoins: ["compte:.axe-tableau__carte[data-colonne='repos']=2", "sel:.axe-tableau__plier[aria-expanded='true']"] },
+  // Réglages > Notifications : sept cases, « Écouter », essai (message d'état).
+  { id: "reglages-notifications", sim: { notifications: NOTIFS_TABLEAU() }, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='notifications']", ".axe-notifs-reglages__bouton[data-action='essayer']"],
+    temoins: ["sel:.axe-notifs-reglages", "compte:.axe-notifs-reglages__case=7", "sel:.axe-notifs-reglages [role='status']"] },
+  // Cloche de la barre du haut : 3 non lus (attend, fini, échec) + une information lue ; puis sans rien.
+  { id: "cloche-ouverte", sim: { notifications: NOTIFS_TABLEAU() }, stockage: () => colonnes([ids(3)]), clics: [".axe-cloche__bouton"],
+    temoins: ["sel:.axe-cloche__bouton[data-non-lus='3']", "sel:.axe-cloche__panneau", "compte:.axe-cloche__item=4", "compte:.axe-cloche__item[data-lu='false']=3"] },
+  { id: "cloche-vide", sim: {}, stockage: () => colonnes([ids(3)]), clics: [".axe-cloche__bouton"],
+    temoins: ["sel:.axe-cloche__panneau", "sel:.axe-cloche__vide", "absent:.axe-cloche__compte"] },
+  // Conversations endormies : Réglages > Notifications (délai) et bouton « Endormir » d'une conversation inactive.
+  { id: "reglages-sommeil", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='notifications']"], temoins: ["sel:.axe-sommeil", "sel:select.axe-sommeil__delai"] },
+  { id: "agents-endormir", sim: { sessionsDemon: SESSIONS_TABLEAU() }, stockage: () => colonnes([ids(3)]), agents: true, clics: [".axe-agents__row[data-status='idle']:not([data-sous-agent])"],
+    temoins: ["sel:.axe-agents__actions button[data-action='endormir']"] },
   { id: "agents-archives", sim: { tour: "en_cours", sessionsDemon: SESSIONS_AGENTS() }, stockage: () => colonnes([ids(3)]), agents: true,
     clics: [".axe-agents__filters summary", ".axe-agents__filters input[data-filtre='archives']"],
     temoins: ["compte:.axe-agents__row[data-sous-agent='true']=12", "sel:.axe-agents__counts[data-running='3'][data-idle='5'][data-inactive='6']"] },

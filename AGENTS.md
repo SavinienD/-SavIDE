@@ -61,7 +61,7 @@ Code map:
 │   │   ├── _documents.py # viewers — texte des xlsx/docx/pdf/pptx/odt/epub pour files.read (privé, non préchargé)
 │   │   ├── rlm.py / messages.py / harness.py / refine.py / goal.py / heartbeat.py # modules E/D/F (brain)
 │   │   └── navigateur.py # ouvrir/lire(delta)/cliquer/remplir/touche/attendre/capture sur l'onglet Navigateur (host calls navigateur.*)
-│   └── tests # pytest files + shell + documents ; test_rlm.py / test_messages.py
+│   └── tests # pytest files + shell + documents ; test_rlm.py / test_messages.py ; test_sommeil.py : un nouveau noyau reprend les variables de l'instantané
 ├── web # webui — app web des conversations (Vite + React, npm run build:web -> web/dist, embarquée dans le service)
 │   ├── index.html / vite.config.ts / tsconfig.json
 │   ├── public # manifest.webmanifest, icon.svg, sw.js (PWA)
@@ -198,6 +198,7 @@ Code map:
 │   │   │   ├── migrate.rs # import SQLite -> JSONL
 │   │   │   ├── protocol.rs # JSON-lines, lock daemon.json, méthodes
 │   │   │   ├── scratch.rs # freechat — dossiers privés des conversations libres (<data>/scratch/<id>), détection is_scratch
+│   │   │   ├── sommeil.rs # délai d'endormissement des conversations (sommeil.json, RPC sommeil.get/set ; 0 = jamais)
 │   │   │   ├── server.rs # socket, dispatch, arrêt auto, SessionHost
 │   │   │   ├── sessions.rs # create/ensure/fork/set_model/send/stop, relocate (freechat)
 │   │   │   ├── stub.rs # EchoRuntime
@@ -207,7 +208,7 @@ Code map:
 │   │   │   │   ├── mod.rs # assets embarqués (rust-embed web/dist), login cookie, CSP, CSRF, /api/*, méthodes webui.sessions/revoke
 │   │   │   │   └── session.rs # sessions navigateur (web-sessions.json, SHA-256), limitation des tentatives
 │   │   │   └── worker.rs # workers supervisés, snapshots (le kernel REPL les restaure lui-même), relance
-│   │   └── tests/daemon.rs + tests/remote.rs
+│   │   └── tests/daemon.rs + tests/remote.rs + tests/sommeil.rs (délai réglable, « jamais »)
 │   ├── axecode-repl # repl — process kernel, exec, RPC inverse, KernelSnapshot
 │   │   ├── Cargo.toml
 │   │   ├── src
@@ -363,6 +364,7 @@ Code map:
 │       ├── main.rs
 │       ├── models.rs
 │       ├── navigateur # navigateur intégré : vue.rs (vue wry enfant, sans IPC Tauri ; Linux : gtk::Overlay), mod.rs (commandes navigateur_*), adresse.rs (http/https seulement), page.rs + page/agent.js + page/design.js (scripts évalués dans la page : lecture compacte, actions, Design Mode), ports.rs (ports du dossier : /proc, PEB sous Windows, lsof), pont.rs (pont local appli ↔ service pour le module REPL navigateur), capture.rs (PNG : WebView2 CDP, WebKitGTK), etat.rs, telechargements.rs
+│       ├── notifications.rs # centre des notifications : événements (cloche), états des sessions (vue Tableau), réglages, <données>/notifications.json ; une même fin signalée par plusieurs fenêtres n'est gardée qu'une fois ; notification du système (Windows : toast WinRT, clic = ouvrir ; macOS : osascript ; Linux : notify-send) seulement si aucune fenêtre focalisée n'affiche la conversation
 │       ├── offline.rs # v2-l6 — mode désynchronisé : miroir local + journal (<data>/offline/<connexion>) et IPC offline_* (prepare, list, read, write, create, delete, rename, journal, sync, resolve, forget)
 │       ├── platform.rs
 │       ├── providers.rs
@@ -407,6 +409,7 @@ Code map:
     │   │   ├── RemoteConversations.tsx # remote — sessions d'une connexion distante : liste, création (modèles cloud proposés), fil depuis sessions.tree (erreurs de tour visibles), changement de modèle, envoi, arrêt
     │   │   ├── SessionTree.tsx # /tree : arbre du journal, revenir à un point, fork (par connexion)
     │   │   ├── agents.css
+    │   │   ├── AgentsTableau.tsx / agentsTableau.ts # Vue « Tableau » : colonnes Attend votre réponse / Travaille / Fini, non lu / Échec / Au repos (bascule Arbre / Tableau mémorisée, portée ce dossier / tous les dossiers)
     │   │   ├── agentsApi.ts # wrappers daemon_call / daemon_sessions / axe://daemon, routage par connexion ; serviceAgentsApi (agents.list/spawn/status/stop/result en cloud)
     │   │   └── remoteItems.ts # remote — modèles proposés pour une session distante (axe-cloud d'abord, mémorisés par connexion), fil affichable (messages + erreurs), explications lisibles des erreurs
     │   ├── cloud # cloud — mode cloud (connexion Google, onglets Agent / Atelier / Terminal)
@@ -483,6 +486,19 @@ Code map:
     │   ├── Workspace.tsx # dispositions « ide » et « chat » (freechat : même ChatPane, FreechatView)
     │   ├── worktrees # worktrees — WorktreesRacine.tsx (monté par Workspace : « Nouveau worktree », cartes des tâches, ouverture avec conversation et terminaux), NouveauWorktree.tsx, TachesWorktrees.tsx, TerminalScript.tsx, ListeWorktrees.tsx (onglet « Worktrees » du volet bas), Confirmations.tsx, Menu.tsx, NettoyageWorktrees.tsx (écran de nettoyage), Dialogue.tsx, logique.ts, magasin.ts, terminauxDepart.ts, evenements.ts, worktreesApi.ts, worktrees.css
     │   ├── navigateur # onglet Navigateur : OngletNavigateur.tsx (barre, accueil + ports, volet élément choisi), useOngletNavigateur.tsx (accroche du Workspace), navigateurApi.ts, liens.ts (liens du chat et du terminal), appareils.ts, recouvrement.ts, design.ts, versChat.ts, NavigateurReglages.tsx, navigateur.css
+    │   ├── notifications # notifications des agents
+    │   │   ├── Cloche.tsx # cloche de la barre du haut : événements récents, non-lus, « Tout marquer lu », clic = ouvrir (badge de l'icône : notifications.rs)
+    │   │   ├── contrat.ts # CONTRAT COMMUN « ide-notification » (CustomEvent des autres écrans) : documentation, notifier(), écoute
+    │   │   ├── SommeilSection.tsx # Réglages > Notifications : endormir une conversation inactive après N min (RPC sommeil.*)
+    │   │   ├── NotificationsSection.tsx # Réglages > Notifications : événements, notification du système, son court, ne pas déranger, essai
+    │   │   ├── son.ts # son court synthétisé (WebAudio, aucun fichier), préparé au premier geste
+    │   │   ├── notifications.css
+    │   │   ├── notificationsApi.ts # IPC notifications_* (src-tauri/src/notifications.rs), types, événements de l'état et de l'ouverture
+    │   │   ├── suivi.ts # fins de tour repérées dans les événements du service (fini, attend votre réponse, échec), pur
+    │   │   ├── ouvrir.ts # ouvreurs de conversation (espace affiché, puis secours de l'appli), pur
+    │   │   ├── store.ts # état du centre partagé par les composants d'une fenêtre
+    │   │   ├── useServiceNotifications.ts # monté par App.tsx : suit le service, signale au centre, ouvre la conversation d'une notification
+    │   │   └── useNotificationsEspace.ts # monté par Workspace.tsx : conversation affichée (lue), ouvreur prioritaire
     │   ├── freechat # freechat — mode conversation libre
     │   │   ├── FreechatView.tsx # vue plein écran : barre latérale (libres + par projet, recherche), chat centré, ouvrir un dossier pour la conversation
     │   │   ├── freechatApi.ts # IPC freechat_*, utilitaires (titres, chemins, dates relatives)

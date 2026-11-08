@@ -262,6 +262,12 @@ export function installerSimulation(scene: Scene): void {
           return { running: true, version: "0.1.57", sessions: { total: 12, running: 2, idle: 10, inactive: 0 } };
         case "agents.list":
           return { agents: [] };
+        // délai d'endormissement des conversations (Réglages > Service).
+        case "sommeil.get":
+        case "sommeil.set":
+          return { conversationsMinutes: a.params?.conversationsMinutes ?? null, defautMinutes: 30 };
+        case "sessions.unload":
+          return { ok: true };
         // harnais d'un espace distant lu depuis le poste (Réglages > Harnais).
         case "harness.list":
           return [];
@@ -380,6 +386,14 @@ export function installerSimulation(scene: Scene): void {
     get_openrouter_provider_status: () => ({ ...statut(false), hasApiKey: false }),
     // « sessionsDemon » = liste du service sous sa forme réelle.
     daemon_sessions: () => (Array.isArray(scene.sessionsDemon) ? scene.sessionsDemon : sessions(scene)),
+    // Centre des notifications (« notifications » : état rendu par notifications_lister).
+    notifications_lister: () => scene.notifications ?? null,
+    notifications_signaler: () => ({ nouveau: true, systeme: false, son: false }),
+    notifications_effacer_etat: () => null,
+    notifications_marquer_lu: () => null,
+    notifications_vue: () => null,
+    notifications_reglages: (a: any) => a?.reglages ?? (scene.notifications as any)?.reglages ?? null,
+    notifications_essayer: () => ({ nouveau: true, systeme: true, son: false }),
     list_workspace_entries_command: (a) => {
       const dossier = a.relativePath ?? a.input?.relativePath ?? "";
       const liste = D.entrees(dossier);

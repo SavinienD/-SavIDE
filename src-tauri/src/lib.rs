@@ -173,6 +173,7 @@ mod worktrees; // worktrees : une tâche = un worktree prêt à l'emploi
 mod diff; // revue des changements
 mod conflits; // conflits à 3 volets
 mod navigateur; // navigateur intégré, Design Mode, ports, pilotage par l'agent
+mod notifications; // notifications, cloche, badge
 
 use context::*;
 use models::*;
@@ -681,6 +682,14 @@ pub fn run() {
             updater::updater_download_and_install,
             updater::updater_restart,
             updater::updater_current_version,
+            // Centre des notifications
+            notifications::notifications_lister,
+            notifications::notifications_signaler,
+            notifications::notifications_effacer_etat,
+            notifications::notifications_marquer_lu,
+            notifications::notifications_vue,
+            notifications::notifications_reglages,
+            notifications::notifications_essayer,
         ])
         .build(tauri::generate_context!())
         .expect("error while building SavIDE desktop")

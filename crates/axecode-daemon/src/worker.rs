@@ -410,18 +410,22 @@ impl Daemon {
     /// for sub-agents (sessions with a parent, menage), `idle_unload`
     /// for the others.
     pub(crate) fn stale_sessions(&self) -> Vec<String> {
-        let (window, subagent_window) = (self.config.idle_unload, self.config.subagent_idle_unload);
+        // Délai des conversations réglable (Réglages > Service, sommeil.rs) ; None : jamais.
+        let window = crate::sommeil::delai(&self.config.data_dir, self.config.idle_unload);
+        let subagent_window = self.config.subagent_idle_unload;
         lock(&self.sessions)
             .iter()
             .filter(|(_, s)| {
                 let window = if s.meta.parent_id.is_some() {
-                    subagent_window
+                    Some(subagent_window)
                 } else {
                     window
                 };
-                s.cancel.is_none()
-                    && s.meta.status == SessionStatus::Idle
-                    && s.last_active.elapsed() >= window
+                window.is_some_and(|window| {
+                    s.cancel.is_none()
+                        && s.meta.status == SessionStatus::Idle
+                        && s.last_active.elapsed() >= window
+                })
             })
             .map(|(id, _)| id.clone())
             .collect()

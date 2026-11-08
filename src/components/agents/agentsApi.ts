@@ -107,6 +107,9 @@ export const agentsApi = {
   message: (sessionId: string, text: string, connection?: string) =>
     call<{ entryId: string }>("sessions.message", { sessionId, text, from: "user" }, connection),
   stop: (sessionId: string, connection?: string) => call<{ ok: boolean }>("sessions.stop", { sessionId }, connection),
+  // « Endormir » : instantané du noyau puis arrêt de son processus Python ;
+  // la conversation repart au message suivant (variables reprises, sauf ressources vivantes).
+  unload: (sessionId: string, connection?: string) => call<{ ok: boolean }>("sessions.unload", { sessionId }, connection),
   moveLeaf: (sessionId: string, entryId: string, label?: string, connection?: string) =>
     call<{ entryId: string }>("sessions.move_leaf", { sessionId, entryId, label }, connection),
   // sub-m — change the model of an idle session.
@@ -174,7 +177,7 @@ export function agentErrorText(err: unknown): string {
 export const STATUS_LABEL: Record<SessionStatus, string> = {
   running: "en cours",
   idle: "inactif",
-  inactive: "déchargé",
+  inactive: "endormi", // Noyau arrêté, réveillé au message suivant
 };
 
 /** One-line human summary of a journal entry. */
