@@ -387,3 +387,42 @@ async fn lister_historique_supprimer() {
     assert!(dispatch(&b.d, "automatisations.supprimer", &json!({"id": a.id})).is_err());
 }
 
+
+async fn attendre_statut(b: &Banc, id: &str, fini: impl Fn(Statut) -> bool) -> Execution {
+    for _ in 0..400 {
+        if let Some(x) = auto(b, id).historique.first() {
+            if fini(x.statut) {
+                return x.clone();
+            }
+        }
+        tokio::time::sleep(Duration::from_millis(25)).await;
+    }
+    panic!("statut attendu jamais atteint : {:?}", auto(b, id).historique.first());
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn la_verification_avant_lancement_saute_ou_lance() {
+    let b = banc(Arc::new(crate::stub::EchoFactory));
+    let mut p = params(&b, json!({"type": "quotidien", "heure": "08:00"}));
+    p["verification"] = json!("echo rien de neuf; exit 3");
+    let a = creer(&b.d, &p, heure(9, 7, 0, 0)).unwrap();
+    tic(&b.d, heure(9, 8, 0, 1));
+    let x = attendre_statut(&b, &a.id, |s| !s.en_cours()).await;
+    assert_eq!(x.statut, Statut::Sautee);
+    assert_eq!(x.resume.as_deref(), Some("Vérification en échec (code 3) — rien de neuf"));
+    assert_eq!(sessions(&b), 0);
+    // La commande réussit (lancée dans le dossier) : la conversation part.
+    modifier(&b.d, &a.id, &json!({"verification": "test -d ../projet"}), heure(9, 9, 0, 0)).unwrap();
+    tic(&b.d, heure(10, 8, 0, 1));
+    let x = attendre_statut(&b, &a.id, |s| s != Statut::Verification).await;
+    assert_eq!(x.statut, Statut::EnCours);
+    attendre_fin(&b.d, x.session_id.as_deref().expect("conversation créée")).await;
+    tic(&b.d, heure(10, 8, 0, 20));
+    assert_eq!(auto(&b, &a.id).historique[0].statut, Statut::Reussie);
+    // « Lancer maintenant » ne vérifie pas.
+    modifier(&b.d, &a.id, &json!({"verification": "exit 1"}), heure(10, 9, 0, 0)).unwrap();
+    let x = execution::lancer(&b.d, &a.id, Declencheur::Manuel, None, 0, heure(10, 9, 1, 0)).unwrap();
+    assert_eq!(x.statut, Statut::EnCours);
+    assert!(x.session_id.is_some());
+}
+

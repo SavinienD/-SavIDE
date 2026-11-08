@@ -6,13 +6,16 @@
 //! bilan est lu dans le journal (erreur, arrêt, ou dernière réponse = résumé) et
 //! l'événement `automatisations` `{type: "fin"}` part vers les écrans.
 
-use std::sync::Arc;
+use std::{path::Path, sync::Arc, time::Duration};
 
 use axecode_core::{ChatMessage, CreateSessionRequest, JournalEntryKind, Part, Role, SessionError, SessionResult, SessionStatus};
 use serde_json::Value;
 
 use super::{etat, maintenant_local, message, signaler, Automatisation, Declencheur, Execution, Statut};
 use crate::daemon::{lock, Daemon};
+
+/// Durée maximale de la vérification avant lancement.
+pub(crate) const VERIFICATION_MAX: Duration = Duration::from_secs(120);
 
 /// Longueur du résumé gardé dans l'historique.
 const RESUME_MAX: usize = 280;
@@ -35,7 +38,7 @@ pub(crate) fn lancer(
         if a.en_cours() {
             return Err(SessionError::Protocol(format!("Une exécution de « {} » est déjà en cours.", a.nom)));
         }
-        let verifier = false; // automatisations — vérification : point A3
+        let verifier = declencheur != Declencheur::Manuel && a.verification.is_some();
         let x = Execution {
             id: crate::util::new_id(),
             declencheur,
@@ -55,7 +58,12 @@ pub(crate) fn lancer(
         (auto, x, verifier)
     };
     signaler(d);
-    let _ = verifier;
+    if verifier {
+        let d = d.clone();
+        let exec_id = x.id.clone();
+        tokio::spawn(async move { verifier_puis_ouvrir(d, auto, exec_id).await });
+        return Ok(x);
+    }
     ouvrir(d, &auto, &x.id, maintenant_ms);
     Ok(lire(d, &auto.id, &x.id).unwrap_or(x))
 }
@@ -64,6 +72,39 @@ fn lire(d: &Daemon, auto_id: &str, exec_id: &str) -> Option<Execution> {
     let etat = etat(d);
     let e = lock(&etat);
     e.liste.iter().find(|a| a.id == auto_id)?.historique.iter().find(|x| x.id == exec_id).cloned()
+}
+
+/// Vérification avant lancement : code 0 = on lance, sinon l'exécution est sautée.
+async fn verifier_puis_ouvrir(d: Arc<Daemon>, auto: Automatisation, exec_id: String) {
+    let commande = auto.verification.clone().unwrap_or_default();
+    let (ok, code, sortie) = axecode_app::guet::essai(Path::new(&auto.dossier), &commande, VERIFICATION_MAX).await;
+    let maintenant = crate::util::now_ms();
+    // Arrêtée, supprimée ou modifiée pendant la vérification : relue ici.
+    let actuelle = {
+        let etat = etat(&d);
+        let e = lock(&etat);
+        e.liste
+            .iter()
+            .find(|a| a.id == auto.id)
+            .filter(|a| a.historique.iter().any(|x| x.id == exec_id && x.statut == Statut::Verification && !x.arret_demande))
+            .cloned()
+    };
+    let Some(actuelle) = actuelle else { return };
+    if !ok {
+        let detail = derniere_ligne(&sortie).map(|l| format!(" — {l}")).unwrap_or_default();
+        let resume = match code {
+            Some(c) => format!("Vérification en échec (code {c}){detail}"),
+            None => format!("Vérification impossible{detail}"),
+        };
+        terminer(&d, &auto.id, &exec_id, Statut::Sautee, resume, None, maintenant);
+        return;
+    }
+    ouvrir(&d, &actuelle, &exec_id, maintenant);
+}
+
+fn derniere_ligne(sortie: &str) -> Option<String> {
+    let ligne = sortie.lines().rev().map(str::trim).find(|l| !l.is_empty() && *l != "…")?;
+    Some(couper(ligne, 160))
 }
 
 enum Ouverture {
