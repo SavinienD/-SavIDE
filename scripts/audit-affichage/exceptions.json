@@ -28,6 +28,11 @@
       "raison": "Bouton flottant ↓ (aller en bas du chat) : il flotte volontairement au-dessus des messages quand on n'est plus en bas, et disparaît dès qu'on y revient."
     },
     {
+      "regle": "chevauchement",
+      "selecteur": ".axe-cloche__panneau",
+      "raison": "Liste de la cloche (notifications), ouverte au clic sur la cloche de la barre du haut : elle flotte au-dessus du contenu (comme tout menu déroulant) et se ferme par Échap, un clic à côté ou l'ouverture d'un événement."
+    },
+    {
       "regle": "libelle-2-lignes",
       "selecteur": ".titlebar__update-popover-notes",
       "raison": "Notes de version : des phrases, qui passent normalement à la ligne dans la fenêtre de 320 px."

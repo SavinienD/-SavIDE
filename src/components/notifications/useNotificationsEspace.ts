@@ -16,7 +16,7 @@ type Espace = {
   ouvrirIci: (sessionId: string) => void;
   ouvrirJournal: (sessionId: string, connexion: string, titre: string) => void;
   ouvrirDossier?: (chemin: string, sessionId?: string) => void;
-  ouvrirLibre?: (sessionId?: string) => void;
+  ouvrirLibre?: (sessionId: string) => void;
 };
 
 export function useNotificationsEspace(espace: Espace): void {

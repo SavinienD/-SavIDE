@@ -66,8 +66,8 @@ export function NotificationsSection() {
         <h3>Événements</h3>
         {EVENEMENTS.map(ligne)}
       </section>
-      <section className="axe-notifs-reglages__bloc" aria-label="Manière de prévenir">
-        <h3>Manière de prévenir</h3>
+      <section className="axe-notifs-reglages__bloc" aria-label="Alertes">
+        <h3>Alertes</h3>
         {MANIERES.map(ligne)}
       </section>
       <div className="axe-notifs-reglages__ligne">

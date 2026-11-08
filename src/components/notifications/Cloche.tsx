@@ -25,7 +25,7 @@ function texteSansGenre(ev: EvenementNotif): string {
 export function Cloche() {
   const { evenements, nonLus } = useCentreNotifications();
   const [ouvert, setOuvert] = useState(false);
-  const [position, setPosition] = useState<{ top: number; right: number } | null>(null);
+  const [position, setPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const boutonRef = useRef<HTMLButtonElement | null>(null);
   const panneauRef = useRef<HTMLDivElement | null>(null);
 
@@ -33,7 +33,10 @@ export function Cloche() {
     if (!ouvert || !boutonRef.current) return;
     const placer = () => {
       const r = boutonRef.current?.getBoundingClientRect();
-      if (r) setPosition({ top: Math.round(r.bottom + 6), right: Math.max(8, Math.round(window.innerWidth - r.right)) });
+      if (!r) return;
+      // Sous la cloche, aligné sur sa gauche, sans jamais sortir de la fenêtre.
+      const width = Math.min(360, window.innerWidth - 16);
+      setPosition({ top: Math.round(r.bottom + 6), left: Math.round(Math.max(8, Math.min(r.left, window.innerWidth - width - 8))), width });
     };
     placer();
     window.addEventListener("resize", placer);
@@ -113,7 +116,7 @@ export function Cloche() {
               className="axe-cloche__panneau"
               role="dialog"
               aria-label="Notifications"
-              style={{ top: position.top, right: position.right }}
+              style={{ top: position.top, left: position.left, width: position.width }}
               onKeyDown={parcourir}
             >
               <div className="axe-cloche__entete">
