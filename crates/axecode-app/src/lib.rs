@@ -1,5 +1,5 @@
 pub mod agent;
-pub mod appel_unique; // rlm186 : appel unique au modèle, sans session ni outils
+pub mod appel_unique; // appel unique au modèle, sans session ni outils
 pub mod bash;
 pub mod compact;
 pub mod dossiers; // dossiers renommés ou déplacés

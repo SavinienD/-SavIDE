@@ -133,7 +133,7 @@ mod git;
 mod forges; // rédaction IA, PR, checks, issues (GitHub, Forgejo / Gitea)
 mod harness; // harness
 mod harness_backup; // cleanup
-mod ia_appel; // rlm186 : commande ia_appel_unique (appel unique au modèle)
+mod ia_appel; // commande ia_appel_unique (appel unique au modèle)
 mod models;
 mod offline; // v2-l6
 mod platform;
@@ -380,7 +380,7 @@ pub fn run() {
             gardien_page::page_battement,
             gardien_page::page_journal,
             gardien_page::page_reprise_demandee,
-            ia_appel::ia_appel_unique, // rlm186
+            ia_appel::ia_appel_unique,
             voix::voix_transcrire, // voix
             voix::voix_annuler,
             voix::voix_etat,
