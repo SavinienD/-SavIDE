@@ -6,8 +6,37 @@
 .axe-notifs-reglages__case { display: flex; align-items: flex-start; gap: 8px; min-height: 24px; color: var(--text-0); cursor: pointer; }
 .axe-notifs-reglages__case > input { flex: none; width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--accent); }
 .axe-notifs-reglages__texte { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+/* Volet étroit (Réglages dans une colonne de 170 px, banc 800x600) : le libellé reste sur une ligne. */
+.axe-notifs-reglages__texte > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .axe-notifs-reglages__aide { margin: 0; color: var(--text-3); font-size: var(--fs-sm); }
 .axe-notifs-reglages__ligne { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
 .axe-notifs-reglages__bouton { flex: none; min-height: 28px; padding: 4px 12px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-2); color: var(--text-1); cursor: pointer; }
 .axe-notifs-reglages__bouton:hover { background: var(--bg-3); color: var(--text-0); }
 .axe-notifs-reglages__bouton:focus-visible, .axe-notifs-reglages__case > input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Cloche de la barre du haut. */
+.axe-cloche__bouton { position: relative; }
+.axe-cloche__compte { min-width: 14px; height: 14px; padding: 0 4px; border-radius: 7px; background: #d93025; color: #fff; font-size: 10px; font-weight: 600; line-height: 14px; text-align: center; font-variant-numeric: tabular-nums; }
+.axe-cloche__panneau { position: fixed; z-index: 400; display: flex; flex-direction: column; width: min(360px, calc(100vw - 16px)); max-height: min(480px, 70vh); border: 1px solid var(--line-strong); border-radius: var(--r-card, 8px); background: var(--bg-1); color: var(--text-1); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28); font-size: calc(12px * var(--text-scale, 1)); }
+.axe-cloche__entete { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line-strong); }
+.axe-cloche__entete strong { color: var(--text-0); font-size: calc(13px * var(--text-scale, 1)); }
+.axe-cloche__tout { margin-left: auto; min-height: 24px; padding: 2px 8px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-2); color: var(--text-1); cursor: pointer; font: inherit; font-size: calc(11px * var(--text-scale, 1)); }
+.axe-cloche__tout:hover:not(:disabled) { color: var(--text-0); border-color: var(--accent); }
+.axe-cloche__tout:disabled { opacity: 0.5; cursor: default; }
+.axe-cloche__liste { flex: 1 1 auto; min-height: 0; margin: 0; padding: 4px; overflow: auto; list-style: none; }
+.axe-cloche__item { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding: 8px; border: 0; border-radius: var(--r-small); background: transparent; color: var(--text-1); text-align: left; font: inherit; cursor: pointer; }
+.axe-cloche__item:hover, .axe-cloche__item:focus-visible { background: var(--bg-2); outline: none; }
+.axe-cloche__item:focus-visible { box-shadow: inset 0 0 0 1px var(--accent); }
+.axe-cloche__item[data-lu="true"] { color: var(--text-2); }
+.axe-cloche__pastille { flex: none; width: 8px; height: 8px; margin-top: 4px; border-radius: 50%; background: var(--text-2); }
+.axe-cloche__pastille[data-genre="attente"] { background: #eab308; }
+.axe-cloche__pastille[data-genre="fini"] { background: #4ade80; }
+.axe-cloche__pastille[data-genre="echec"] { background: #f87171; }
+.axe-cloche__pastille[data-genre="info"] { background: var(--accent); }
+.axe-cloche__item[data-lu="true"] .axe-cloche__pastille { opacity: 0.35; }
+.axe-cloche__corps { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.axe-cloche__titre { overflow: hidden; color: var(--text-0); text-overflow: ellipsis; white-space: nowrap; }
+.axe-cloche__item[data-lu="true"] .axe-cloche__titre { color: var(--text-1); }
+.axe-cloche__texte { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.axe-cloche__details { overflow: hidden; color: var(--text-2); font-size: calc(11px * var(--text-scale, 1)); text-overflow: ellipsis; white-space: nowrap; }
+.axe-cloche__vide { margin: 0; padding: 16px 12px; color: var(--text-2); }

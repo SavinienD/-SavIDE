@@ -450,6 +450,11 @@ export const SCENES = [
   { id: "reglages-notifications", sim: { notifications: NOTIFS_TABLEAU() }, stockage: () => colonnes([ids(3)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='notifications']", ".axe-notifs-reglages__bouton[data-action='essayer']"],
     temoins: ["sel:.axe-notifs-reglages", "compte:.axe-notifs-reglages__case=7", "sel:.axe-notifs-reglages [role='status']"] },
+  // Cloche de la barre du haut : 3 non lus (attend, fini, échec) + une information lue ; puis sans rien.
+  { id: "cloche-ouverte", sim: { notifications: NOTIFS_TABLEAU() }, stockage: () => colonnes([ids(3)]), clics: [".axe-cloche__bouton"],
+    temoins: ["sel:.axe-cloche__bouton[data-non-lus='3']", "sel:.axe-cloche__panneau", "compte:.axe-cloche__item=4", "compte:.axe-cloche__item[data-lu='false']=3"] },
+  { id: "cloche-vide", sim: {}, stockage: () => colonnes([ids(3)]), clics: [".axe-cloche__bouton"],
+    temoins: ["sel:.axe-cloche__panneau", "sel:.axe-cloche__vide", "absent:.axe-cloche__compte"] },
   { id: "agents-archives", sim: { tour: "en_cours", sessionsDemon: SESSIONS_AGENTS() }, stockage: () => colonnes([ids(3)]), agents: true,
     clics: [".axe-agents__filters summary", ".axe-agents__filters input[data-filtre='archives']"],
     temoins: ["compte:.axe-agents__row[data-sous-agent='true']=12", "sel:.axe-agents__counts[data-running='3'][data-idle='5'][data-inactive='6']"] },

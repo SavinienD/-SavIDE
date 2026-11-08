@@ -59,6 +59,7 @@ import { RemotePanel } from "./RemotePanel";
 import { SearchPane } from "./SearchPane";
 import { AgentsView } from "./agents/AgentsView"; // agents
 import { useNotificationsEspace } from "./notifications/useNotificationsEspace";
+import { Cloche } from "./notifications/Cloche";
 import { SessionTree } from "./agents/SessionTree"; // agents
 import { SessionJournal } from "./agents/SessionJournal"; // sub-m
 // remote
@@ -3786,6 +3787,7 @@ export function Workspace({
             <Icon icon="solar:settings-linear" width={12} height={12} />
             <span className="titlebar__btn-label">Réglages</span>
           </button>
+          <Cloche /> {/* événements récents, non-lus */}
           <button
             className="titlebar__btn"
             data-action="accueil"

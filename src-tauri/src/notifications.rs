@@ -11,6 +11,8 @@
 //! - Notification du système seulement si aucune fenêtre qui a le focus n'affiche la
 //!   conversation : Windows = toast WinRT (clic = ouvrir la conversation), macOS = `osascript`
 //!   + rebond du Dock, Linux = `notify-send` (clic = ouvrir si le serveur le permet).
+//! - Badge de l'icône = nombre de non-lus : Windows = pastille sur le bouton de la barre des
+//!   tâches, macOS = Dock, Linux = lanceur (Unity) quand il existe.
 //!
 //! Aucune dépendance ajoutée : le greffon officiel qui sait suivre les clics sur ordinateur
 //! (tauri-plugin-notification 2.6+) exige Tauri 2.12 ; nous sommes en 2.10.
@@ -267,6 +269,10 @@ impl Centre {
         verrou(&self.vues).get(fenetre).cloned()
     }
 
+    pub(crate) fn non_lus(&self) -> usize {
+        verrou(&self.donnees).evenements.iter().filter(|e| !e.lu).count()
+    }
+
     pub(crate) fn etat(&self) -> Value {
         let d = verrou(&self.donnees);
         let non_lus = d.evenements.iter().filter(|e| !e.lu).count();
@@ -305,9 +311,10 @@ fn affichee(app: &AppHandle, session: Option<&str>) -> bool {
         .any(|(label, w)| w.is_focused().unwrap_or(false) && centre().vue_de(label).as_deref() == Some(session))
 }
 
-/// Envoie l'état à toutes les fenêtres.
+/// Envoie l'état à toutes les fenêtres et met le badge de l'icône à jour.
 fn publier(app: &AppHandle) {
     let _ = app.emit(EVENEMENT_ETAT, centre().etat());
+    badge(app, centre().non_lus());
 }
 
 /// Clic sur une notification : la fenêtre qui a le focus (sinon la principale) revient
@@ -324,6 +331,82 @@ pub(crate) fn ouvrir(app: &AppHandle, ev: &Evenement) {
         let _ = w.show();
         let _ = w.set_focus();
         let _ = app.emit_to(w.label(), EVENEMENT_OUVRIR, ev);
+    }
+}
+
+// ---- Badge de l'icône ------------------------------------------------------------------
+
+const TAILLE_BADGE: u32 = 32;
+
+/// Chiffres 3 x 5 (lignes de 3 bits, bit de gauche en premier) et « + ».
+fn glyphe(c: char) -> [u8; 5] {
+    match c {
+        '0' => [0b111, 0b101, 0b101, 0b101, 0b111],
+        '1' => [0b010, 0b110, 0b010, 0b010, 0b111],
+        '2' => [0b111, 0b001, 0b111, 0b100, 0b111],
+        '3' => [0b111, 0b001, 0b111, 0b001, 0b111],
+        '4' => [0b101, 0b101, 0b111, 0b001, 0b001],
+        '5' => [0b111, 0b100, 0b111, 0b001, 0b111],
+        '6' => [0b111, 0b100, 0b111, 0b101, 0b111],
+        '7' => [0b111, 0b001, 0b001, 0b010, 0b010],
+        '8' => [0b111, 0b101, 0b111, 0b101, 0b111],
+        '9' => [0b111, 0b101, 0b111, 0b001, 0b111],
+        _ => [0b000, 0b010, 0b111, 0b010, 0b000],
+    }
+}
+
+/// Pastille de la barre des tâches de Windows (32 x 32, RGBA) : disque rouge et nombre en
+/// blanc (« 9+ » au-delà de 9).
+pub(crate) fn image_badge(n: usize) -> Vec<u8> {
+    let t = TAILLE_BADGE as i32;
+    let mut rgba = vec![0u8; (t * t * 4) as usize];
+    let centre = (t as f32 - 1.0) / 2.0;
+    let rayon = t as f32 / 2.0;
+    for y in 0..t {
+        for x in 0..t {
+            let d = ((x as f32 - centre).powi(2) + (y as f32 - centre).powi(2)).sqrt();
+            let couverture = (rayon - d).clamp(0.0, 1.0);
+            if couverture > 0.0 {
+                let i = ((y * t + x) * 4) as usize;
+                rgba[i..i + 4].copy_from_slice(&[0xD9, 0x30, 0x25, (couverture * 255.0) as u8]);
+            }
+        }
+    }
+    let texte: Vec<char> = if n > 9 { vec!['9', '+'] } else { n.to_string().chars().collect() };
+    let echelle: i32 = if texte.len() > 1 { 3 } else { 4 };
+    let largeur = texte.len() as i32 * 3 * echelle + (texte.len() as i32 - 1) * echelle;
+    let (x0, y0) = ((t - largeur) / 2, (t - 5 * echelle) / 2);
+    for (k, c) in texte.iter().enumerate() {
+        let gx = x0 + k as i32 * 4 * echelle;
+        for (ligne, bits) in glyphe(*c).iter().enumerate() {
+            for col in 0..3 {
+                if bits & (0b100 >> col) == 0 {
+                    continue;
+                }
+                for dy in 0..echelle {
+                    for dx in 0..echelle {
+                        let (x, y) = (gx + col * echelle + dx, y0 + ligne as i32 * echelle + dy);
+                        if (0..t).contains(&x) && (0..t).contains(&y) {
+                            let i = ((y * t + x) * 4) as usize;
+                            rgba[i..i + 4].copy_from_slice(&[0xFF, 0xFF, 0xFF, 0xFF]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    rgba
+}
+
+fn badge(app: &AppHandle, n: usize) {
+    #[cfg(windows)]
+    for w in app.webview_windows().values() {
+        let icone = (n > 0).then(|| tauri::image::Image::new_owned(image_badge(n), TAILLE_BADGE, TAILLE_BADGE));
+        let _ = w.set_overlay_icon(icone);
+    }
+    #[cfg(not(windows))]
+    if let Some(w) = app.webview_windows().values().next() {
+        let _ = w.set_badge_count((n > 0).then_some(n as i64));
     }
 }
 
@@ -677,5 +760,19 @@ mod tests {
         let args = arguments_notify_send("SavIDE", "-titre", "texte", true);
         assert_eq!(args, ["--app-name=SavIDE", "--expire-time=10000", "--action=default=Ouvrir", "--wait", "--", "-titre", "texte"]);
         assert!(!arguments_notify_send("SavIDE", "t", "x", false).iter().any(|a| a == "--wait"));
+    }
+
+    #[test]
+    fn badge_dessine() {
+        for n in [1usize, 7, 12] {
+            let img = image_badge(n);
+            assert_eq!(img.len(), (TAILLE_BADGE * TAILLE_BADGE * 4) as usize);
+            let blancs = img.chunks(4).filter(|p| p == &[0xFF, 0xFF, 0xFF, 0xFF]).count();
+            let rouges = img.chunks(4).filter(|p| p[0] == 0xD9 && p[3] == 0xFF).count();
+            assert!(blancs > 20, "{n} : chiffre dessiné ({blancs} pixels)");
+            assert!(rouges > 400, "{n} : disque dessiné ({rouges} pixels)");
+            assert_eq!(&img[0..4], &[0, 0, 0, 0], "coin transparent");
+        }
+        assert_ne!(image_badge(1), image_badge(7));
     }
 }
