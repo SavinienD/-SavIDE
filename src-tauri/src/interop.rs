@@ -151,3 +151,57 @@ pub(super) async fn interop_skills_desinstaller(input: DesinstallerInput) -> Ipc
     }
     store.delete(&entry.meta.id).map(|_| ()).map_err(err)
 }
+
+// ---- serveurs MCP (Claude Code, Codex, Cursor, VS Code) --------------------
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct ScanMcpInput {
+    #[serde(default)]
+    workspace_path: Option<String>,
+}
+
+/// Dossier ouvert (local) dont on lit aussi `.mcp.json`, `.cursor/` et `.vscode/`.
+fn dossier_local(path: Option<&str>) -> Option<std::path::PathBuf> {
+    let path = path.filter(|p| !p.trim().is_empty() && !p.starts_with("axe-cloud://"))?;
+    axecode_app::workspace::normalize_workspace_root(path).ok()
+}
+
+/// Réglages > MCP « Importer » : serveurs des autres outils, sans aucune valeur secrète.
+#[tauri::command]
+pub(super) async fn interop_mcp_scanner(
+    state: tauri::State<'_, crate::DesktopState>,
+    input: ScanMcpInput,
+) -> IpcResult<Value> {
+    use axecode_app::import_mcp;
+    let ws = dossier_local(input.workspace_path.as_deref());
+    let actuels = state.store.load_mcp_settings().map_err(err)?;
+    let liste = import_mcp::scanner(&import_mcp::sources_du_poste(ws.as_deref()), ws.as_deref(), &actuels);
+    serde_json::to_value(liste).map_err(err)
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct ImportMcpInput {
+    #[serde(default)]
+    workspace_path: Option<String>,
+    cles: Vec<String>,
+}
+
+/// Ajoute les serveurs cochés à la configuration MCP (les fichiers sont relus ici :
+/// les valeurs secrètes ne passent jamais par l'interface).
+#[tauri::command]
+pub(super) async fn interop_mcp_importer(
+    state: tauri::State<'_, crate::DesktopState>,
+    input: ImportMcpInput,
+) -> IpcResult<Value> {
+    use axecode_app::import_mcp;
+    let ws = dossier_local(input.workspace_path.as_deref());
+    let actuels = state.store.load_mcp_settings().map_err(err)?;
+    let fait = import_mcp::importer(&import_mcp::sources_du_poste(ws.as_deref()), ws.as_deref(), &actuels, &input.cles)
+        .map_err(err)?;
+    if !fait.importes.is_empty() {
+        state.store.save_mcp_settings(&fait.settings).map_err(err)?;
+    }
+    Ok(json!({"importes": fait.importes, "erreurs": fait.erreurs}))
+}

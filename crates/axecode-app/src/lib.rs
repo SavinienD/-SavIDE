@@ -16,6 +16,7 @@ pub mod orchestre; // ds16
 pub mod cua; // cua
 pub mod comfyui; // comfyui
 pub mod commandes_naturelles; // cmdnat
+pub mod import_mcp;
 #[cfg(windows)]
 mod powershell;
 pub mod question;

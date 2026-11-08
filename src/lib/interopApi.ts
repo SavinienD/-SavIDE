@@ -3,6 +3,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { EtatDesConsignes } from "./consignes";
 import type { ApercuUrl, RapportImport, SkillExterne, SkillInstalle } from "./skillsExternes";
+import type { RapportMcp, ServeurTrouve } from "./importMcp";
 
 export const interopApi = {
   consignes: (workspacePath: string) =>
@@ -19,4 +20,8 @@ export const interopApi = {
     invoke<SkillInstalle[]>("interop_skills_url_installes", { input: { workspacePath } }),
   skillsDesinstaller: (workspacePath: string, id: string) =>
     invoke<null>("interop_skills_desinstaller", { input: { workspacePath, id } }),
+  mcpScanner: (workspacePath?: string | null) =>
+    invoke<ServeurTrouve[]>("interop_mcp_scanner", { input: { workspacePath: workspacePath ?? null } }),
+  mcpImporter: (workspacePath: string | null | undefined, cles: string[]) =>
+    invoke<RapportMcp>("interop_mcp_importer", { input: { workspacePath: workspacePath ?? null, cles } }),
 };

@@ -390,6 +390,8 @@ pub fn run() {
             interop::interop_skills_url_installer,
             interop::interop_skills_url_installes,
             interop::interop_skills_desinstaller,
+            interop::interop_mcp_scanner,
+            interop::interop_mcp_importer,
             comptes::list_provider_accounts,
             comptes::disconnect_provider_account,
             voix::voix_ouvrir_reglages_micro,

@@ -8,6 +8,7 @@ import { dependancesTauri, deplacerEtOuvrir, nomDe, noterDossiersRecents, ouvrir
 import { DossierIntrouvable } from "./components/DossierIntrouvable";
 import { ecouterRaccourcis, fournirActions, numeroTouche, versionRaccourcis } from "./axe/raccourcis";
 import { samePath } from "./components/freechat/freechatApi";
+import { PropositionMcp } from "./components/settings/PropositionMcp";
 import { api } from "./lib/ipc";
 import { freechatApi } from "./components/freechat/freechatApi"; // freechat
 import { CloudLogin } from "./components/cloud/CloudLogin"; // cloud
@@ -444,6 +445,7 @@ export default function App() {
           }))
         }
       />
+      <PropositionMcp workspacePath={state.bootstrap.workspace.path} />
     </>
   );
 }

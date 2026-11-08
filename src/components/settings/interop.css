@@ -48,3 +48,14 @@
   border-radius: var(--r-small); background: var(--bg-2); color: var(--text-0); white-space: pre-wrap; overflow-wrap: anywhere;
   font-size: calc(11.5px * var(--text-scale, 1)); }
 
+/* Réglages > MCP : notes de la boîte d'import ; proposition du premier lancement. */
+.axe-interop__note { flex: 1 0 100%; min-width: 0; padding-left: 22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--text-2); font-size: calc(11px * var(--text-scale, 1)); }
+.axe-interop__note[data-genre="doublon"] { color: var(--accent); }
+.axe-interop__liste code.axe-interop__desc { font-size: calc(11px * var(--text-scale, 1)); }
+.axe-interop__proposition { position: fixed; top: 48px; right: 16px; z-index: 80; display: flex; flex-direction: column; gap: 8px;
+  width: min(320px, calc(100vw - 32px)); padding: 12px 14px; border: 1px solid var(--line-strong); border-radius: var(--r-medium, 8px);
+  background: var(--bg-1); color: var(--text-0); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); font-size: calc(12px * var(--text-scale, 1)); }
+.axe-interop__proposition strong { font-size: calc(13px * var(--text-scale, 1)); }
+.axe-interop__proposition p { margin: 0; color: var(--text-1); }
+

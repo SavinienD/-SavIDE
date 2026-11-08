@@ -45,6 +45,7 @@ import { PythonSkillPreview, isPySkillEnabled } from "./settings/PythonSkillPrev
 import { ComptesSupplementaires } from "./settings/ComptesSupplementaires";
 import { MenuHarnais, usePartageHarnais } from "./settings/HarnaisPartage";
 import { SkillsExternes } from "./settings/SkillsExternes";
+import { ImportMcp } from "./settings/ImportMcp";
 type SkillKindFilter = "all" | "recipe" | "python";
 import { sanitizeOpenRouterName, type ModelEntry } from "../lib/models";
 import type {
@@ -109,6 +110,7 @@ export function SettingsPane({ workspacePath }: Props) {
   const [knownToolCounts, setKnownToolCounts] = useState<Record<string, number>>({});
 
   const [probing, setProbing] = useState(false);
+  const [rechargeMcp, setRechargeMcp] = useState(0); // après un import
 
   // e7 — catalogue d'ajout : la configuration affichée est expurgée des
   // secrets (clés API, jetons, chaînes de connexion) ; les valeurs réelles
@@ -306,7 +308,7 @@ export function SettingsPane({ workspacePath }: Props) {
     return () => {
       disposed = true;
     };
-  }, []);
+  }, [rechargeMcp]);
 
   // Remember the latest successful tool count per server so we can keep
   // displaying a count (in a disabled tone) even after the server is toggled
@@ -1521,6 +1523,7 @@ export function SettingsPane({ workspacePath }: Props) {
             onTestCandidate={testCandidateServer}
             testingServerId={testingServerId}
             onTestServer={(id) => void testSavedServer(id)}
+            actionsInterop={<ImportMcp workspacePath={workspacePath} onImported={() => setRechargeMcp((n) => n + 1)} />}
           />
         ) : section === "harness" ? (
           <>
@@ -2317,6 +2320,7 @@ type McpSectionProps = {
   onTestCandidate: (server: McpServerConfig) => Promise<McpServerProbe>;
   testingServerId: string | null;
   onTestServer: (id: string) => void;
+  actionsInterop?: React.ReactNode; // bouton « Importer »
 };
 
 function McpSection({
@@ -2353,6 +2357,7 @@ function McpSection({
   onTestCandidate,
   testingServerId,
   onTestServer,
+  actionsInterop,
 }: McpSectionProps) {
   // zoom — the JSON editor follows the text size (only chars grow).
   const [textScale, setTextScale] = useState<number>(() => loadTextScale());
@@ -2384,6 +2389,7 @@ function McpSection({
               {status}
             </span>
           )}
+          {actionsInterop}
           <button
             type="button"
             className="settings-pane__btn"

@@ -123,6 +123,7 @@ Code map:
 │   │       ├── image.rs
 │   │       ├── lib.rs
 │   │       ├── mcp.rs
+│   │       ├── import_mcp.rs # serveurs MCP de Claude Code, Codex, Cursor, VS Code (liste sans secret, import)
 │   │       ├── powershell.rs
 │   │       ├── question.rs
 │   │       ├── read.rs
