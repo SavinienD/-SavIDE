@@ -2,8 +2,10 @@
 //! commentaires), fin du journal d'un check, issues, nouvelle PR. GitHub (REST) et
 //! Forgejo / Gitea (/api/v1) ont des réponses proches : seules les différences sont
 //! traitées à part (checks = check runs + statuts chez GitHub, statuts chez Forgejo).
+//! GitLab (merge requests, pipelines) : forges/gitlab.rs.
 
 use super::detection::DepotForge;
+use super::gitlab;
 use super::http::ClientForge;
 use super::modele::*;
 use crate::*;
@@ -58,6 +60,9 @@ pub(crate) fn issue(v: &Value) -> Issue {
 }
 
 pub(crate) async fn prs(c: &ClientForge, d: &DepotForge, toutes: bool) -> std::result::Result<Vec<PrResume>, String> {
+    if d.genre == "gitlab" {
+        return gitlab::prs(c, d, toutes).await;
+    }
     let etat = if toutes { "all" } else { "open" };
     let chemin = if github(d) {
         format!("/repos/{}/pulls?state={etat}&per_page=50&sort=updated&direction=desc", d.chemin())
@@ -68,6 +73,9 @@ pub(crate) async fn prs(c: &ClientForge, d: &DepotForge, toutes: bool) -> std::r
 }
 
 pub(crate) async fn issues(c: &ClientForge, d: &DepotForge) -> std::result::Result<Vec<Issue>, String> {
+    if d.genre == "gitlab" {
+        return gitlab::issues(c, d).await;
+    }
     let chemin = if github(d) {
         format!("/repos/{}/issues?state=open&per_page=50&sort=updated", d.chemin())
     } else {
@@ -153,6 +161,9 @@ fn commentaire(v: &Value, fichier: bool) -> Commentaire {
 }
 
 pub(crate) async fn detail(c: &ClientForge, d: &DepotForge, numero: u64) -> std::result::Result<PrDetail, String> {
+    if d.genre == "gitlab" {
+        return gitlab::detail(c, d, numero).await;
+    }
     let chemin = d.chemin();
     let pr = c.get_json(&format!("/repos/{chemin}/pulls/{numero}")).await?;
     let sha = pr.pointer("/head/sha").and_then(Value::as_str).unwrap_or("").to_string();
@@ -240,6 +251,9 @@ pub(crate) async fn detail(c: &ClientForge, d: &DepotForge, numero: u64) -> std:
 
 /// Fin du journal d'un check (job GitHub Actions ; run Forgejo Actions par son lien).
 pub(crate) async fn journal(c: &ClientForge, d: &DepotForge, check: &str, url: Option<&str>) -> std::result::Result<Option<String>, String> {
+    if d.genre == "gitlab" {
+        return gitlab::journal(c, d, check).await;
+    }
     if github(d) {
         if !check.chars().all(|ch| ch.is_ascii_digit()) || check.is_empty() {
             return Ok(None);
@@ -266,6 +280,9 @@ pub(crate) async fn creer_pr(
     base: &str,
     brouillon: bool,
 ) -> std::result::Result<PrCreee, String> {
+    if d.genre == "gitlab" {
+        return gitlab::creer_pr(c, d, titre, description, tete, base, brouillon).await;
+    }
     let corps = if github(d) {
         json!({ "title": titre, "body": description, "head": tete, "base": base, "draft": brouillon })
     } else {

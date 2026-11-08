@@ -72,9 +72,8 @@ fn depot_git(workspace_path: &str) -> std::result::Result<PathBuf, String> {
 
 fn non_pris_en_charge(d: &DepotForge) -> Option<String> {
     match d.genre.as_str() {
-        "github" | "gitea" => None,
-        "gitlab" => Some("GitLab n'est pas encore pris en charge ici : seulement GitHub et Forgejo / Gitea.".into()),
-        _ => Some(format!("{} n'est pas pris en charge : seulement GitHub et Forgejo / Gitea.", d.hote)),
+        "github" | "gitea" | "gitlab" => None,
+        _ => Some(format!("{} n'est pas pris en charge : seulement GitHub, GitLab et Forgejo / Gitea.", d.hote)),
     }
 }
 
@@ -95,7 +94,10 @@ async fn client(workspace_path: &str) -> std::result::Result<(DepotForge, Client
         return Err(message);
     }
     let jeton = jeton_de(&d).await;
-    let c = ClientForge::nouveau(&d.url_api, jeton, d.genre == "github")?;
+    let mut c = ClientForge::nouveau(&d.url_api, jeton, d.genre == "github")?;
+    if d.genre == "gitlab" {
+        c = c.gitlab();
+    }
     Ok((d, c, repo))
 }
 

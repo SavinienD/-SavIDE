@@ -14,6 +14,7 @@ struct Requete {
     methode: String,
     chemin: String,
     autorisation: Option<String>,
+    jeton_prive: Option<String>,
     corps: String,
 }
 
@@ -45,6 +46,7 @@ fn servir(route: Route) -> FauxServeur {
                 let chemin = parts.next().unwrap_or("").to_string();
                 let mut longueur = 0usize;
                 let mut autorisation = None;
+                let mut jeton_prive = None;
                 loop {
                     let mut l = String::new();
                     if lecteur.read_line(&mut l).unwrap_or(0) == 0 || l == "\r\n" {
@@ -54,12 +56,13 @@ fn servir(route: Route) -> FauxServeur {
                     match nom.to_ascii_lowercase().as_str() {
                         "content-length" => longueur = valeur.trim().parse().unwrap_or(0),
                         "authorization" => autorisation = Some(valeur.trim().to_string()),
+                        "private-token" => jeton_prive = Some(valeur.trim().to_string()),
                         _ => {}
                     }
                 }
                 let mut corps = vec![0u8; longueur];
                 lecteur.read_exact(&mut corps).ok();
-                let req = Requete { methode, chemin, autorisation, corps: String::from_utf8_lossy(&corps).to_string() };
+                let req = Requete { methode, chemin, autorisation, jeton_prive, corps: String::from_utf8_lossy(&corps).to_string() };
                 journal.lock().unwrap().push(req.clone());
                 let (statut, type_, texte, entetes) = route(&req);
                 let mut reponse = format!(
@@ -263,4 +266,76 @@ async fn erreurs_de_la_forge_expliquees() {
     assert!(api::prs(&mauvais, &d, false).await.unwrap_err().starts_with("Jeton refusé (401)"));
     let ferme = ClientForge::nouveau("http://127.0.0.1:9/api/v1", None, false).unwrap();
     assert!(api::issues(&ferme, &d).await.is_err());
+}
+
+fn route_gitlab() -> Route {
+    Box::new(|r: &Requete| {
+        let p = r.chemin.as_str();
+        let mr = json!({"iid": 5, "title": "Draft: pipelines dans l'IDE", "author": {"username": "nora"}, "state": "opened", "draft": true,
+            "source_branch": "pipelines", "target_branch": "main", "sha": "f00d", "description": "Liste des jobs.",
+            "web_url": "https://gitlab.exemple.fr/groupe/sous/outil/-/merge_requests/5", "updated_at": "2026-11-08T10:00:00Z",
+            "head_pipeline": {"id": 77, "status": "failed"}});
+        match (r.methode.as_str(), p) {
+            ("GET", "/api/v4/projects/groupe%2Fsous%2Foutil/merge_requests?state=opened&order_by=updated_at&per_page=50") => json_ok(json!([mr])),
+            ("GET", "/api/v4/projects/groupe%2Fsous%2Foutil/merge_requests/5") => json_ok(mr),
+            ("GET", "/api/v4/projects/groupe%2Fsous%2Foutil/pipelines/77/jobs?per_page=100") => json_ok(json!([
+                {"id": 901, "name": "tests", "stage": "test", "status": "failed", "web_url": "https://gitlab.exemple.fr/j/901", "failure_reason": "script_failure"},
+                {"id": 902, "name": "lint", "stage": "test", "status": "success", "web_url": "https://gitlab.exemple.fr/j/902"}])),
+            ("GET", "/api/v4/projects/groupe%2Fsous%2Foutil/merge_requests/5/notes?sort=asc&per_page=100") => json_ok(json!([
+                {"id": 1, "body": "a poussé 2 commits", "system": true, "author": {"username": "nora"}, "created_at": "2026-11-08T10:01:00Z"},
+                {"id": 2, "body": "Variable inutilisée", "system": false, "author": {"username": "leo"}, "created_at": "2026-11-08T10:02:00Z",
+                 "position": {"new_path": "src/c.rs", "new_line": 12, "old_path": "src/c.rs", "old_line": null}},
+                {"id": 3, "body": "Merci", "system": false, "author": {"username": "nora"}, "created_at": "2026-11-08T10:03:00Z"}])),
+            ("GET", "/api/v4/projects/groupe%2Fsous%2Foutil/merge_requests/5/approvals") => json_ok(json!({"approved_by": [{"user": {"id": 4, "username": "leo"}}]})),
+            ("GET", "/api/v4/projects/groupe%2Fsous%2Foutil/jobs/901/trace") => (200, "text/plain", "$ cargo test\nerror: test failed, to rerun pass `--lib`\n".into(), Vec::new()),
+            ("GET", "/api/v4/projects/groupe%2Fsous%2Foutil/issues?state=opened&order_by=updated_at&per_page=50") => json_ok(json!([
+                {"iid": 9, "title": "Pipelines", "author": {"username": "leo"}, "description": "Voir les jobs", "labels": ["ci"],
+                 "web_url": "https://gitlab.exemple.fr/groupe/sous/outil/-/issues/9", "updated_at": "2026-11-07T09:00:00Z", "user_notes_count": 1}])),
+            ("POST", "/api/v4/projects/groupe%2Fsous%2Foutil/merge_requests") => json_ok(json!({"iid": 6, "web_url": "https://gitlab.exemple.fr/groupe/sous/outil/-/merge_requests/6"})),
+            _ => (404, "application/json", json!({"message": "404 Not Found"}).to_string(), Vec::new()),
+        }
+    })
+}
+
+#[tokio::test]
+async fn gitlab_liste_detail_journal_issues_et_creation() {
+    let serveur = servir(route_gitlab());
+    let d = DepotForge {
+        genre: "gitlab".into(),
+        hote: "127.0.0.1".into(),
+        proprietaire: "groupe/sous".into(),
+        nom: "outil".into(),
+        url_web: format!("{}/groupe/sous/outil", serveur.base),
+        url_api: format!("{}/api/v4", serveur.base),
+        remote: "origin".into(),
+    };
+    let c = ClientForge::nouveau(&d.url_api, Some("glpat-test".into()), false).unwrap().gitlab();
+
+    let prs = api::prs(&c, &d, false).await.unwrap();
+    assert_eq!((prs.len(), prs[0].numero, prs[0].brouillon), (1, 5, true));
+    assert_eq!((prs[0].branche.as_str(), prs[0].base.as_str(), prs[0].auteur.as_str()), ("pipelines", "main", "nora"));
+
+    let detail = api::detail(&c, &d, 5).await.unwrap();
+    assert_eq!(detail.description, "Liste des jobs.");
+    let checks: Vec<(&str, &str)> = detail.checks.iter().map(|k| (k.nom.as_str(), k.etat.as_str())).collect();
+    assert_eq!(checks, vec![("test / tests", "echec"), ("test / lint", "succes")]);
+    assert_eq!(detail.revues.len(), 1);
+    assert_eq!(detail.revues[0].etat, "approuvee");
+    assert_eq!(detail.commentaires.len(), 2, "notes système écartées");
+    assert_eq!((detail.commentaires[0].fichier.as_deref(), detail.commentaires[0].ligne), (Some("src/c.rs"), Some(12)));
+
+    let journal = api::journal(&c, &d, &detail.checks[0].id, None).await.unwrap().unwrap_or_default();
+    assert!(journal.contains("error: test failed"));
+    let issues = api::issues(&c, &d).await.unwrap();
+    assert_eq!((issues[0].numero, issues[0].etiquettes.clone()), (9, vec!["ci".to_string()]));
+
+    let creee = api::creer_pr(&c, &d, "Nouvelle MR", "", "fonction", "main", true).await.unwrap();
+    assert_eq!(creee.numero, 6);
+    let requetes = serveur.requetes.lock().unwrap().clone();
+    let post = requetes.iter().find(|r| r.methode == "POST").unwrap();
+    let corps: Value = serde_json::from_str(&post.corps).unwrap();
+    assert_eq!(corps["title"], json!("Draft: Nouvelle MR"));
+    assert_eq!(corps["source_branch"], json!("fonction"));
+    assert!(requetes.iter().all(|r| r.autorisation.is_none()), "GitLab : jeton dans PRIVATE-TOKEN, pas Authorization");
+    assert!(requetes.iter().all(|r| r.jeton_prive.as_deref() == Some("glpat-test")));
 }

@@ -347,7 +347,7 @@ Code map:
 │       ├── freechat.rs # freechat — conversations libres : espace partagé <data>/scratch côté IDE, IPC freechat_index/open/relocate, synchro service -> store (conversations libres créées sur le web / la Vue Agents), renommage/suppression répercutés
 │       ├── custom_providers.rs # providers — instances configurables (providers.json + provider-keys.json), IPC provider_*, modelOverrides, détection Ollama/LM Studio
 │       ├── git.rs # + état de la branche (avance/retard, opération en cours), fetch, commit avec « modifier le dernier », poussée --force-with-lease, abandon fusion/rebase, hook qui refuse un commit
-│       ├── forges # rédaction IA (contexte.rs : diff tronqué, masque.rs : secrets masqués/exclus) ; forges GitHub et Forgejo/Gitea (detection.rs, jetons.rs forge-tokens.json, http.rs, api.rs, commandes.rs forge_*, tests.rs faux serveur)
+│       ├── forges # rédaction IA (contexte.rs : diff tronqué, masque.rs : secrets masqués/exclus) ; forges GitHub, GitLab et Forgejo/Gitea (detection.rs, jetons.rs forge-tokens.json, http.rs, api.rs, gitlab.rs, commandes.rs forge_*, tests.rs faux serveur)
 │       ├── harness.rs # harness — IPC harness_* (CRUD, promote/demote, refinements, rollback, import brain, refine start/status), couche harness par tour
 │       ├── harness_backup.rs # cleanup — sauvegarde périodique du harness (config harness-backup.json, IPC harness_backup_*)
 │       ├── ia_appel.rs # rlm186 — commande ia_appel_unique (appel unique au modèle depuis l'interface)

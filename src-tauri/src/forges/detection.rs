@@ -1,5 +1,5 @@
 //! Forge du dépôt, déduite de l'adresse du remote : GitHub (github.com), GitLab (hôte
-//! « gitlab… », non pris en charge ici), sinon Forgejo / Gitea (API /api/v1).
+//! « gitlab… », API /api/v4, groupes et sous-groupes), sinon Forgejo / Gitea (API /api/v1).
 
 use crate::git::{git_output, remote_par_defaut};
 use crate::*;
@@ -94,9 +94,19 @@ pub(crate) fn analyser_remote(remote: &str, url: &str) -> Option<DepotForge> {
     } else {
         "gitea"
     };
-    let (url_web, url_api) = match genre {
-        "github" => (format!("https://github.com/{proprietaire}/{nom}"), "https://api.github.com".to_string()),
-        _ => (format!("{base}/{proprietaire}/{nom}"), format!("{base}/api/v1")),
+    let (proprietaire, url_web, url_api) = match genre {
+        "github" => (
+            proprietaire.clone(),
+            format!("https://github.com/{proprietaire}/{nom}"),
+            "https://api.github.com".to_string(),
+        ),
+        // GitLab : tout le chemin est celui du projet (groupe/sous-groupe/projet).
+        "gitlab" => {
+            let groupe = segments[..segments.len() - 1].join("/");
+            let racine = format!("{schema_web}://{hote}");
+            (groupe.clone(), format!("{racine}/{groupe}/{nom}"), format!("{racine}/api/v4"))
+        }
+        _ => (proprietaire.clone(), format!("{base}/{proprietaire}/{nom}"), format!("{base}/api/v1")),
     };
     Some(DepotForge {
         genre: genre.into(),
@@ -166,7 +176,9 @@ mod tests {
         let f = d("https://exemple.fr/gitea/equipe/outil");
         assert_eq!(f.url_api, "https://exemple.fr/gitea/api/v1");
         assert_eq!(f.chemin(), "equipe/outil");
-        assert_eq!(d("git@gitlab.com:a/b.git").genre, "gitlab");
+        let g = d("git@gitlab.com:groupe/sous-groupe/outil.git");
+        assert_eq!((g.genre.as_str(), g.proprietaire.as_str(), g.nom.as_str()), ("gitlab", "groupe/sous-groupe", "outil"));
+        assert_eq!((g.url_api.as_str(), g.url_web.as_str()), ("https://gitlab.com/api/v4", "https://gitlab.com/groupe/sous-groupe/outil"));
         assert_eq!(d("https://bitbucket.org/a/b.git").genre, "inconnu");
     }
 

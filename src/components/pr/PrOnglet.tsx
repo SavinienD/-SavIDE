@@ -137,12 +137,14 @@ export function EnteteForge({
           <Icon icon="solar:arrow-right-up-linear" width={13} height={13} />
         </button>
       </div>
-      {(saisie || (!etat.jeton && d.genre === "gitea")) && (
+      {(saisie || (!etat.jeton && d.genre !== "github")) && (
         <div className="git-pr__jeton">
           <span className="git-pr__note">
             {d.genre === "github"
               ? "Connectez GitHub CLI (gh auth login) ou collez un jeton (droits : contenu, PR, issues, actions en lecture)."
-              : `Jeton d'accès de ${d.hote} : Paramètres > Applications > Générer un jeton (dépôt et issues).`}
+              : d.genre === "gitlab"
+                ? `Jeton d'accès de ${d.hote} : Préférences > Jetons d'accès (accès à l'API).`
+                : `Jeton d'accès de ${d.hote} : Paramètres > Applications > Générer un jeton (dépôt et issues).`}
           </span>
           <div className="git-pr__jeton-ligne">
             <input
@@ -329,7 +331,7 @@ export function PrOnglet({
           branches={branches}
           brancheCourante={brancheCourante}
           branchePrincipale={branchePrincipale}
-          brouillonPossible={etat?.depot?.genre === "github" || etat?.depot?.genre === "gitea"}
+          brouillonPossible={Boolean(etat?.depot && !etat.message)}
           annuler={() => setVue({ genre: "liste" })}
           creee={(numero) => setVue({ genre: "detail", numero })}
           notifier={notifier}

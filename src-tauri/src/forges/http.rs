@@ -9,6 +9,7 @@ pub(crate) struct ClientForge {
     base: String,
     jeton: Option<String>,
     github: bool,
+    gitlab: bool,
 }
 
 impl ClientForge {
@@ -19,7 +20,13 @@ impl ClientForge {
             .user_agent(concat!("axecode/", env!("CARGO_PKG_VERSION")))
             .build()
             .map_err(|e| e.to_string())?;
-        Ok(Self { http, base: base.trim_end_matches('/').to_string(), jeton, github })
+        Ok(Self { http, base: base.trim_end_matches('/').to_string(), jeton, github, gitlab: false })
+    }
+
+    /// API GitLab : jeton dans l'en-tête PRIVATE-TOKEN.
+    pub(crate) fn gitlab(mut self) -> Self {
+        self.gitlab = true;
+        self
     }
 
     pub(crate) fn a_un_jeton(&self) -> bool {
@@ -41,10 +48,14 @@ impl ClientForge {
             r = r.header("Accept", "application/json");
         }
         if let Some(jeton) = &self.jeton {
-            r = r.header(
-                "Authorization",
-                if self.github { format!("Bearer {jeton}") } else { format!("token {jeton}") },
-            );
+            r = if self.gitlab {
+                r.header("PRIVATE-TOKEN", jeton.as_str())
+            } else {
+                r.header(
+                    "Authorization",
+                    if self.github { format!("Bearer {jeton}") } else { format!("token {jeton}") },
+                )
+            };
         }
         r
     }
