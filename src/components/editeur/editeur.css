@@ -72,3 +72,40 @@
   bottom: auto;
   top: -4px;
 }
+
+/* Markdown : boutons « Côte à côte » et « Aperçu / Source » (collés à droite de la barre d'onglets),
+   source à gauche et aperçu à droite en mode côte à côte. */
+.md-actions {
+  position: sticky;
+  right: 0;
+  z-index: 8;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  margin-left: auto;
+  background: var(--bg-1);
+  box-shadow: -8px 0 12px var(--bg-1);
+}
+.md-actions .tab-action {
+  margin: 0 4px;
+}
+.md-actions .tab-action:last-child {
+  margin-right: 8px;
+}
+.md-actions .editor-preview-toggle {
+  position: static;
+  margin-left: 4px;
+  box-shadow: none;
+}
+.md-actions .tab-action:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+.editor-text-stack[data-mode="cote"] .editor-monaco-layer {
+  right: 50%;
+}
+.editor-text-stack[data-mode="cote"] .editor-md-preview {
+  left: 50%;
+  padding: 20px 24px 32px;
+  border-left: 1px solid var(--line);
+}

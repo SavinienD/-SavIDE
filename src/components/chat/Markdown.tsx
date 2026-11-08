@@ -20,12 +20,15 @@ import { PreCopiable } from "./PreCopiable"; // copier-code
 import { useMenuCheminChat } from "./MenuCheminChat";
 import { caseDansLigne } from "./casesMarkdown";
 import { decouperLiens, estFichier, estUrl, raccourcirUrl } from "./liensChat";
+import { rehypeAncresLignes } from "../editeur/rehypeAncresLignes";
 
 type Props = {
   text: string;
   onOpenFile: (path: string) => void;
   /** aperçu d'un fichier : clic sur une case = ligne (base 1) de sa source. Absent (chat) : cases figées. */
   onToggleTask?: (ligne: number) => void;
+  /** aperçu d'un fichier : ancres « data-ligne » (ligne source) en tête des blocs. */
+  lignesSource?: boolean;
 };
 
 /** ligne source de l'élément de liste en cours (pour sa case), null hors liste à cocher. */
@@ -188,7 +191,7 @@ export function FileLinkedText({ text, onOpenFile }: Props) {
  * Markdown renderer tuned for chat. GFM + highlight.js. Memoized so
  * streaming token-by-token re-renders don't trash the whole tree.
  */
-export const Markdown = memo(function Markdown({ text, onOpenFile: ouvrirDemande, onToggleTask }: Props) {
+export const Markdown = memo(function Markdown({ text, onOpenFile: ouvrirDemande, onToggleTask, lignesSource }: Props) {
   // defil178 — composants stables : recréés à chaque rendu, ils changeaient de type pour
   // React, qui démontait puis remontait chaque paragraphe, bloc de code et diagramme (à chaque
   // morceau de texte reçu, à chaque nouvel onOpenFile) : lien cliqué et focus perdus. Le rappel
@@ -303,7 +306,10 @@ export const Markdown = memo(function Markdown({ text, onOpenFile: ouvrirDemande
     <div className="md">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[[rehypeHighlight, { detect: true, ignoreMissing: true }]]}
+        rehypePlugins={[
+          [rehypeHighlight, { detect: true, ignoreMissing: true }],
+          ...(lignesSource ? [rehypeAncresLignes] : []), // après la coloration
+        ]}
         components={components}
       >
         {text}

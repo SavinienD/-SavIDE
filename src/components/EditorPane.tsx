@@ -30,6 +30,8 @@ import { OpenWithDefaultApp, ViewerError } from "./viewers/common"; // viewers
 import { ecouterReglagesEditeur, lireReglagesEditeur, optionsMonaco } from "./editeur/reglagesEditeur";
 import { PlanificateurSauvegarde } from "./editeur/sauvegardeAuto";
 import { useMargeGit } from "./editeur/useMargeGit";
+import { memoriserModeMarkdown, modeMarkdownMemorise, type ModeMarkdown } from "./editeur/modeMarkdown";
+import { useDefilementSynchro } from "./editeur/useDefilementSynchro";
 import { cloudConnectionFromPath } from "../lib/ipc";
 
 if (!(globalThis as typeof globalThis & { MonacoEnvironment?: unknown }).MonacoEnvironment) {
@@ -123,12 +125,9 @@ export function EditorPane({
   // the wrapper re-applies Monaco's `options` prop on change.
   const [textScale, setTextScale] = useState<number>(() => loadTextScale());
   useEffect(() => onTextScaleChange(setTextScale), []);
-  // Per-tab toggle: `true` shows the rendered markdown preview instead of
-  // the Monaco editor. Keyed by `relativePath` so switching tabs preserves
-  // each file's view mode.
-  const [markdownPreview, setMarkdownPreview] = useState<
-    Record<string, boolean>
-  >({});
+  // affichage de chaque .md : source, côte à côte (source + aperçu) ou aperçu seul.
+  // Par onglet (`relativePath`), mémorisé par fichier (editeur/modeMarkdown.ts).
+  const [modesMarkdown, setModesMarkdown] = useState<Record<string, ModeMarkdown>>({});
   // Position of the custom right-click menu on the image viewer. `null`
   // means the menu is closed. We store viewport coordinates because the
   // menu is rendered with `position: fixed`.
@@ -147,11 +146,14 @@ export function EditorPane({
   const activeIsMarkdown = activeTab
     ? isMarkdownPath(activeTab.relativePath)
     : false;
-  const activePreview = activeTab
-    ? markdownPreview[activeTab.relativePath] ??
-      vueMemorisee(activeTab.doc.absolutePath) ?? // html
-      isPlanMarkdownPath(activeTab.relativePath)
-    : false;
+  const modeMd: ModeMarkdown =
+    activeTab && activeIsMarkdown
+      ? modesMarkdown[activeTab.relativePath] ??
+        modeMarkdownMemorise(activeTab.doc.absolutePath) ??
+        (isPlanMarkdownPath(activeTab.relativePath) ? "apercu" : "source")
+      : "source";
+  const activePreview = modeMd === "apercu";
+  const activeCote = modeMd === "cote";
   // viewers — route the tab by extension. File viewers (PDF, workbooks,
   // undecodable CSV) replace Monaco; overlay viewers (CSV table, HTML
   // preview) are toggled over the live buffer, Markdown-style.
@@ -199,16 +201,21 @@ export function EditorPane({
     !(espace && cloudConnectionFromPath(espace)),
   );
 
-  const toggleMarkdownPreview = useCallback(() => {
-    if (!activeTab) return;
-    const path = activeTab.relativePath;
-    const absolu = activeTab.doc.absolutePath;
-    setMarkdownPreview((prev) => {
-      const rendu = !(prev[path] ?? vueMemorisee(absolu) ?? isPlanMarkdownPath(path));
-      memoriserVue(absolu, rendu); // html
-      return { ...prev, [path]: rendu };
-    });
-  }, [activeTab]);
+  const changerModeMarkdown = useCallback(
+    (mode: ModeMarkdown) => {
+      if (!activeTab) return;
+      memoriserModeMarkdown(activeTab.doc.absolutePath, mode);
+      setModesMarkdown((prev) => ({ ...prev, [activeTab.relativePath]: mode }));
+    },
+    [activeTab],
+  );
+  const toggleMarkdownPreview = useCallback(
+    () => changerModeMarkdown(activePreview ? "source" : "apercu"),
+    [activePreview, changerModeMarkdown],
+  );
+  // côte à côte : défilement synchronisé de l'éditeur et de l'aperçu.
+  const [apercuMd, setApercuMd] = useState<HTMLDivElement | null>(null);
+  useDefilementSynchro(editorRef.current, apercuMd, activeCote && showTextEditor, activeTab?.buffer ?? "", editorReadySeq);
 
   const handleOpenFileLink = useCallback(
     (path: string) => {
@@ -305,9 +312,9 @@ export function EditorPane({
       return;
     }
     if (!activeIsMarkdown || !activePreview) return;
-    setMarkdownPreview((prev) => ({
+    setModesMarkdown((prev) => ({
       ...prev,
-      [revealTarget.relativePath]: false,
+      [revealTarget.relativePath]: "source",
     }));
   }, [
     activeIsMarkdown,
@@ -556,9 +563,24 @@ export function EditorPane({
         )}
         <div className="tabs__spacer" />
         {activeIsMarkdown && (
+          // « Côte à côte » (source + aperçu) à côté de la bascule Aperçu / Source.
+          <div className="md-actions">
+          <button
+            type="button"
+            className="tab-action md-actions__cote"
+            data-mode-md="cote"
+            data-active={activeCote ? "true" : "false"}
+            aria-pressed={activeCote}
+            onClick={() => changerModeMarkdown(activeCote ? "source" : "cote")}
+            title={activeCote ? "Revenir à la source seule" : "Source et aperçu côte à côte"}
+          >
+            <Icon icon="solar:sidebar-code-linear" width={13} height={13} />
+            <span>Côte à côte</span>
+          </button>
           <button
             type="button"
             className="tab-action editor-preview-toggle"
+            data-mode-md="apercu"
             data-active={activePreview ? "true" : "false"}
             onClick={toggleMarkdownPreview}
             title={
@@ -578,6 +600,7 @@ export function EditorPane({
             />
             <span>{activePreview ? "Source" : "Aperçu"}</span>
           </button>
+          </div>
         )}
         {overlaySpec && showTextEditor && (
           // viewers — CSV "Tableau / Texte brut", HTML "Aperçu / Code".
@@ -687,6 +710,7 @@ export function EditorPane({
               data-preview={
                 (activeIsMarkdown && activePreview) || activeOverlay ? "true" : "false"
               }
+              data-mode={activeIsMarkdown ? modeMd : undefined}
             >
               <div
                 className="editor-monaco-layer"
@@ -722,12 +746,13 @@ export function EditorPane({
                   }}
                 />
               </div>
-              {activeIsMarkdown && activePreview && (
-                <div className="editor-md-preview" tabIndex={-1} onKeyDown={readOnlyEditor ? undefined : toucheApercu}>
+              {activeIsMarkdown && (activePreview || activeCote) && (
+                <div className="editor-md-preview" ref={setApercuMd} tabIndex={-1} onKeyDown={readOnlyEditor ? undefined : toucheApercu}>
                   <Markdown
                     text={activeTab.buffer}
                     onOpenFile={handleOpenFileLink}
                     onToggleTask={readOnlyEditor ? undefined : basculerCaseApercu}
+                    lignesSource
                   />
                 </div>
               )}

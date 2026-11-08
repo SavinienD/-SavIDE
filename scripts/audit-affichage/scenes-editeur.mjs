@@ -42,4 +42,14 @@ export const SCENES_EDITEUR = [
   { id: "editeur-rouvrir", ...EDITEUR, ouvrirFichier: "app.ts", clics: [".editor-col .tab[data-onglet-chemin='app.ts'] .tab__close"],
     touches: ["Control+Alt+o"],
     temoins: ["sel:.editor-col .tab[data-onglet-chemin='app.ts'][data-active='true']"] },
+  // ED2a — Markdown : « Côte à côte » (source à gauche, aperçu à droite), défilement synchronisé
+  // (Ctrl+Fin dans l'éditeur amène l'aperçu en bas), bascule Aperçu / Source inchangée.
+  { id: "editeur-md-cote", ...EDITEUR, ouvrirFichier: "notes.md", clics: [".md-actions [data-mode-md='cote']"],
+    temoins: ["sel:.editor-text-stack[data-mode='cote'] .editor-md-preview h1", "sel:.editor-text-stack[data-mode='cote'] .editor-monaco-layer .monaco-editor .view-lines",
+      "sel:.md-actions [data-mode-md='cote'][data-active='true']", "clic:.md-actions .editor-preview-toggle", "sel:.editor-md-preview[data-defile='haut']"] },
+  { id: "editeur-md-defilement", ...EDITEUR, ouvrirFichier: "notes.md", clics: [".md-actions [data-mode-md='cote']"],
+    saisies: [[".editor-monaco-layer .monaco-editor textarea", ""]], touches: ["Control+End"],
+    temoins: ["sel:.editor-md-preview[data-defile='bas']", "Fin de la procédure."] },
+  { id: "editeur-md-apercu", ...EDITEUR, ouvrirFichier: "notes.md", clics: [".editor-preview-toggle"],
+    temoins: ["sel:.editor-text-stack[data-mode='apercu'] .editor-md-preview h1", "sel:.md-actions [data-mode-md='cote'][data-active='false']"] },
 ];
