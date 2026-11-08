@@ -8,6 +8,7 @@ import { simulationCollegue } from "./collegue";
 import { simulationGit } from "./git"; // panneau Git, PR, issues
 import { simulationQuotas } from "./quotas"; // quotas
 import { simulationWorktrees } from "./worktrees"; // worktrees
+import { simulationConflits, simulationRevue } from "./revue"; // revue des changements
 
 export type Scene = {
   /** ordre-dossiers — open_workspace ouvre le dossier demandé (et non l'espace du banc). */
@@ -170,6 +171,8 @@ export function installerSimulation(scene: Scene): void {
         }
       : { providers: [], modelOverrides: {}, kinds: [] };
   const h: Record<string, (a: any, brut: any) => unknown> = {
+    ...simulationRevue(scene), // revue des changements
+    ...simulationConflits(scene),
     // Scène « maj-badge » : une version disponible (badge discret, installation sur clic seulement).
     updater_check: () =>
       scene.majDispo

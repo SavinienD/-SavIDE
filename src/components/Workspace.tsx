@@ -60,6 +60,7 @@ import {
 import { RemotePanel } from "./RemotePanel";
 import { SearchPane } from "./SearchPane";
 import { AgentsView } from "./agents/AgentsView"; // agents
+import { HoteRevue } from "./revue/HoteRevue"; // revue des changements
 import { SessionTree } from "./agents/SessionTree"; // agents
 import { SessionJournal } from "./agents/SessionJournal"; // sub-m
 // remote
@@ -3661,6 +3662,7 @@ export function Workspace({
       {noticeEl}
       {/* worktrees — « Nouveau worktree », tâches de fond, ouverture du worktree créé */}
       <WorktreesRacine dossier={workspacePath} onOuvrirDossier={(p, c) => onOpenFolder?.(p, c)} onFermerTerminaux={closeTerminalPanel} onAfficherTerminal={showTerminal} />
+      <HoteRevue workspacePath={workspacePath} />
       {/* e6 — les volets detaches vivent ici, dans la fenetre de l'application. */}
       <VoletsFlottants
         volets={volets}

@@ -1,0 +1,850 @@
+/* Revue des changements : vue « Changements », notes, conflits. */
+.revue-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+}
+.revue-vue {
+  container: revue / inline-size;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-1);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-elevated);
+  color: var(--text-1);
+  font-family: var(--font-ui);
+}
+.revue-vue :is(button, select, textarea):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.revue-espace {
+  flex: 1 1 auto;
+}
+.revue-tete {
+  flex: 0 0 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 16px;
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+.revue-tete__titre {
+  margin: 0;
+  font-size: var(--fs-base);
+  font-weight: 500;
+  color: var(--text-0);
+  white-space: nowrap;
+}
+.revue-onglets {
+  display: inline-flex;
+  gap: 2px;
+}
+.revue-onglets > button,
+.revue-segments > button {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--r-med);
+  background: transparent;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.revue-onglets > button:hover,
+.revue-segments > button:hover {
+  color: var(--text-0);
+  background: var(--bg-3);
+}
+.revue-onglets > button[data-actif="true"],
+.revue-segments > button[data-actif="true"] {
+  color: var(--text-0);
+  background: var(--bg-4);
+}
+.revue-onglets__nombre {
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+.revue-segments {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-med);
+  flex: 0 0 auto;
+}
+.revue-segments > button {
+  height: 20px;
+}
+.revue-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: var(--r-med);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.revue-icone:hover:not(:disabled) {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+.revue-icone:disabled,
+.revue-bouton:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+.revue-bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-med);
+  background: var(--bg-2);
+  color: var(--text-1);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.revue-bouton:hover:not(:disabled) {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+.revue-bouton > svg {
+  color: var(--text-3);
+  flex: 0 0 auto;
+}
+.revue-bouton--principal {
+  background: var(--text-0);
+  border-color: transparent;
+  color: var(--bg-0);
+}
+.revue-bouton--principal > svg {
+  color: inherit;
+}
+.revue-bouton--principal:hover:not(:disabled) {
+  background: var(--text-1);
+  color: var(--bg-0);
+}
+.revue-bouton[data-actif="true"] {
+  background: var(--bg-4);
+  color: var(--text-0);
+}
+:is(.revue-bouton, .revue-icone, .revue-lien)[data-arme="true"] {
+  color: var(--danger);
+  border-color: rgba(245, 115, 127, 0.4);
+}
+.revue-lien {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 4px;
+  border-radius: var(--r-small);
+  background: transparent;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.revue-lien:hover {
+  color: var(--text-0);
+}
+.revue-champ {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+.revue-champ > span {
+  white-space: nowrap;
+}
+.revue-champ select {
+  height: 26px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-med);
+  background: var(--bg-2);
+  color: var(--text-1);
+  font-size: var(--fs-sm);
+}
+.revue-champ--base {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.revue-champ--base select {
+  max-width: 200px;
+}
+.revue-avis {
+  margin: 0;
+  padding: 6px 12px;
+  font-size: var(--fs-xs);
+  line-height: 1.45;
+  color: var(--text-1);
+  background: var(--bg-2);
+  word-break: break-word;
+}
+.revue-avis[data-genre="erreur"] {
+  color: var(--danger);
+}
+.revue-plus {
+  color: var(--diff-add-fg);
+}
+.revue-moins {
+  color: var(--diff-rem-fg);
+}
+
+/* Corps : fichiers | diff | notes */
+.revue-corps {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
+}
+.revue-corps[data-notes="true"] {
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr) minmax(240px, 300px);
+}
+.revue-corps__conflits {
+  grid-column: 1 / -1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.revue-colonne--fichiers {
+  container: revue-fichiers / inline-size;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px;
+  border-right: 1px solid var(--line);
+}
+.revue-fichiers__titre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  margin: 4px 0 0;
+  padding: 0 8px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.revue-fichiers__nombre {
+  font-family: var(--font-mono);
+  color: var(--text-3);
+}
+.revue-fichiers__vide {
+  margin: 0;
+  padding: 16px 12px;
+  font-size: var(--fs-sm);
+  color: var(--text-3);
+}
+.revue-fichier {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: var(--r-med);
+}
+.revue-fichier:hover {
+  background: var(--bg-3);
+}
+.revue-fichier[data-actif="true"] {
+  background: var(--bg-4);
+}
+.revue-fichier__principal {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--text-1);
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+}
+.revue-fichier__statut {
+  flex: 0 0 12px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  text-align: center;
+  color: var(--text-3);
+}
+.revue-fichier__statut:is([data-statut="?"], [data-statut="A"]) {
+  color: var(--diff-add-fg);
+}
+.revue-fichier__statut[data-statut="D"] {
+  color: var(--diff-rem-fg);
+}
+.revue-fichier__statut[data-statut="U"] {
+  color: var(--danger);
+}
+.revue-fichier__nom {
+  flex: 0 1 auto;
+  min-width: 2.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.revue-fichier__dossier {
+  flex: 0 1 auto;
+  min-width: 2.5em;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+.revue-fichier__notes {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+  font-size: var(--fs-xs);
+  color: var(--accent-2);
+}
+.revue-fichier__compte {
+  display: inline-flex;
+  gap: 4px;
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+/* Colonne étroite : le dossier reste dans l'info-bulle (sinon « … » illisible). */
+@container revue-fichiers (max-width: 200px) {
+  .revue-fichier__dossier {
+    display: none;
+  }
+}
+.revue-fichier__actions {
+  display: none;
+  gap: 2px;
+  padding-right: 4px;
+}
+.revue-fichier:hover .revue-fichier__actions,
+.revue-fichier:focus-within .revue-fichier__actions {
+  display: flex;
+}
+
+/* Diff */
+.revue-diff {
+  container: revue-diff / inline-size;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.revue-diff__tete,
+.revue-diff__barre {
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+.revue-diff__barre {
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.revue-diff__chemin {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+.revue-diff__nom {
+  flex: 0 1 auto;
+  min-width: 4em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-0);
+}
+.revue-diff__dossier,
+.revue-diff__groupe {
+  min-width: 2.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+.revue-diff__groupe {
+  flex: 0 0 auto;
+}
+.revue-diff__compte {
+  display: inline-flex;
+  gap: 6px;
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+.revue-diff__bloc {
+  flex: 0 0 auto;
+  min-width: 88px;
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: center;
+}
+.revue-diff__zone {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--editor-bg);
+}
+.revue-diff__monaco {
+  position: absolute;
+  inset: 0;
+}
+.revue-diff__message {
+  margin: 0;
+  padding: 24px;
+  font-size: var(--fs-sm);
+  color: var(--text-3);
+}
+.revue-diff__avis {
+  flex: 0 0 auto;
+}
+.revue-ligne-notee {
+  background: var(--accent-2-soft);
+}
+.revue-marge-notee::before {
+  content: "";
+  display: block;
+  width: 3px;
+  height: 100%;
+  margin-left: 8px;
+  border-radius: 2px;
+  background: var(--accent-2);
+}
+
+/* Notes */
+.revue-notes {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--line);
+  background: var(--bg-1);
+}
+.revue-notes__tete {
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+.revue-notes__tete h3 {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-0);
+}
+.revue-notes__nombre {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+.revue-notes__tete .revue-lien {
+  margin-left: auto;
+}
+.revue-notes__liste {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.revue-notes__aide {
+  margin: 0;
+  padding: 0 12px 12px;
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--text-3);
+}
+.revue-note {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-med);
+  background: var(--bg-2);
+}
+.revue-note--brouillon {
+  margin: 8px 8px 0;
+  border-color: var(--line-strong);
+}
+.revue-note__repere {
+  padding: 0 48px 0 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  text-align: left;
+  word-break: break-all;
+}
+.revue-note--brouillon .revue-note__repere {
+  padding-right: 0;
+}
+.revue-note__repere--lien {
+  min-height: 24px;
+  cursor: pointer;
+}
+.revue-note__repere--lien:hover {
+  color: var(--text-0);
+  text-decoration: underline;
+}
+.revue-note__extrait {
+  margin: 0;
+  max-height: 96px;
+  overflow: auto;
+  padding: 6px 8px;
+  border-radius: var(--r-small);
+  background: var(--editor-bg);
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-sm);
+  color: var(--text-2);
+  white-space: pre;
+}
+.revue-note__texte {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+  color: var(--text-1);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.revue-note__saisie {
+  width: 100%;
+  min-height: 64px;
+  resize: vertical;
+  padding: 6px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-small);
+  background: var(--bg-0);
+  color: var(--text-0);
+  font: inherit;
+  font-size: var(--fs-sm);
+  box-sizing: border-box;
+}
+.revue-note__boutons {
+  display: flex;
+  gap: 8px;
+}
+.revue-note__outils {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: none;
+  gap: 2px;
+}
+.revue-note:hover .revue-note__outils,
+.revue-note:focus-within .revue-note__outils {
+  display: flex;
+}
+.revue-notes__envoi {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+}
+.revue-notes__envoyer {
+  justify-content: center;
+  height: 28px;
+}
+.revue-notes__envoi .revue-avis {
+  padding: 6px 8px;
+  border-radius: var(--r-small);
+}
+
+/* Fenêtre moyenne ou étroite (zoom, petit écran) : les notes passent par-dessus le diff. */
+@container revue (max-width: 1199px) {
+  .revue-corps[data-notes="true"] {
+    grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);
+  }
+  /* Sous les deux barres du diff : le tiroir ne couvre que le texte (jamais les boutons). */
+  .revue-corps[data-notes="true"] > .revue-notes {
+    position: absolute;
+    top: 72px;
+    right: 0;
+    bottom: 0;
+    width: min(300px, 70%);
+    z-index: 2;
+    box-shadow: var(--shadow-elevated);
+  }
+}
+@container revue (max-width: 720px) {
+  .revue-champ--base > span,
+  .revue-diff__groupe,
+  .revue-diff__dossier {
+    display: none;
+  }
+  .revue-corps,
+  .revue-corps[data-notes="true"] {
+    grid-template-columns: minmax(140px, 160px) minmax(0, 1fr);
+  }
+  .revue-champ--base select {
+    max-width: 120px;
+  }
+}
+@media (max-width: 640px) {
+  .revue-voile {
+    padding: 8px;
+  }
+}
+
+.revue-vue:focus {
+  outline: none;
+}
+
+/* Tiroir des notes (note prise dans l'aperçu Markdown) */
+.revue-voile--tiroir {
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.25);
+}
+.revue-tiroir {
+  flex: 0 0 auto;
+  width: min(340px, 100%);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-card);
+  background: var(--bg-1);
+  box-shadow: var(--shadow-elevated);
+  overflow: hidden;
+  font-family: var(--font-ui);
+}
+.revue-tiroir :is(button, select, textarea):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.revue-tiroir__barre {
+  flex: 0 0 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+.revue-tiroir .revue-notes {
+  flex: 1 1 auto;
+  border-left: 0;
+}
+.revue-apercu-repere {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+.revue-apercu-noter {
+  position: fixed;
+  z-index: 310;
+  transform: translateX(-100%);
+  box-shadow: var(--shadow-focus);
+}
+
+/* Conflits : notre version | la leur, puis le résultat */
+.revue-conflits {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.revue-conflits__tete {
+  flex: 0 0 auto;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.revue-conflits__titre {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-0);
+}
+.revue-conflits__reste,
+.revue-conflits__aide {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.revue-conflits__corps {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
+}
+.revue-conflits__fichier {
+  container: revue-conflit / inline-size;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.revue-conflits__versions {
+  flex: 1 1 0;
+  min-height: 96px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  border-bottom: 1px solid var(--line);
+}
+.revue-conflits__volet,
+.revue-conflits__resultat {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--editor-bg);
+}
+.revue-conflits__volet + .revue-conflits__volet {
+  border-left: 1px solid var(--line);
+}
+.revue-conflits__resultat {
+  flex: 1.4 1 0;
+  min-height: 120px;
+}
+.revue-conflits__etiquette {
+  flex: 0 0 24px;
+  margin: 0;
+  padding: 0 12px;
+  display: block;
+  line-height: 24px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--text-2);
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.revue-monaco {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+}
+.revue-conflits__pied {
+  flex: 0 0 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-top: 1px solid var(--line);
+}
+.revue-conflits__absent {
+  padding: 8px 12px;
+}
+.revue-conflit-marqueur {
+  background: var(--bg-3);
+}
+.revue-conflit-nous {
+  background: var(--diff-add-bg);
+}
+.revue-conflit-eux {
+  background: var(--accent-soft);
+}
+@container revue (max-width: 720px) {
+  .revue-conflits__corps {
+    grid-template-columns: minmax(120px, 150px) minmax(0, 1fr);
+  }
+  .revue-conflits__reste,
+  .revue-conflits__aide {
+    display: none;
+  }
+}
+
+.revue-conflits__prendre {
+  flex: 0 0 auto;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.revue-conflits__dossier {
+  margin-left: 8px;
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+/* Diff étroit : on garde le nom, les compteurs et les actions (icônes seules). Sous 700 px,
+   Monaco montre de toute façon le diff en ligne : le choix « côte à côte » se masque. */
+@container revue-diff (max-width: 700px) {
+  .revue-diff__dossier,
+  .revue-diff__groupe,
+  .revue-diff__tete .revue-segments {
+    display: none;
+  }
+}
+@container revue-diff (max-width: 600px) {
+  .revue-diff__barre .revue-bouton > span {
+    display: none;
+  }
+  .revue-diff__barre {
+    gap: 4px;
+  }
+}
+@container revue-conflit (max-width: 640px) {
+  .revue-conflits__aide {
+    display: none;
+  }
+}
+@container revue-conflit (max-width: 480px) {
+  .revue-conflits__prendre {
+    display: none;
+  }
+}

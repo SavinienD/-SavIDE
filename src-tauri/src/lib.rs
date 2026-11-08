@@ -169,6 +169,8 @@ mod workflow;
 mod workspace;
 mod dossiers; // dossiers renommés ou déplacés
 mod worktrees; // worktrees : une tâche = un worktree prêt à l'emploi
+mod diff; // revue des changements
+mod conflits; // conflits à 3 volets
 
 use context::*;
 use models::*;
@@ -513,6 +515,13 @@ pub fn run() {
             dossiers::dossier_retrouver,
             dossiers::dossier_deplacer,
             dossiers::dossiers_noter,
+            diff::revue_liste, // revue des changements
+            diff::revue_diff,
+            diff::revue_appliquer,
+            conflits::revue_conflits,
+            conflits::revue_conflit_fichier,
+            conflits::revue_conflit_resoudre,
+            conflits::revue_conflits_action,
             workspace::open_cloud_workspace, // v2-l2.3
             workspace::open_new_window,
             workspace::reset_window_title,

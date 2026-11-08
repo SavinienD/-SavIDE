@@ -19,6 +19,7 @@ import { IssuesOnglet } from "./pr/IssuesOnglet";
 import "./pr/pr.css";
 import { infoBulle } from "../axe/raccourcis"; // worktrees
 import { dossierLocal, ouvrirWorktrees } from "./worktrees/evenements"; // worktrees
+import { ouvrirRevue } from "./revue/HoteRevue"; // revue des changements
 import type {
   GitBranch,
   GitRepositorySnapshot,
@@ -1143,6 +1144,11 @@ export function GitPanel({
                 <span className="git-panel__count">{totalChanges}</span>
               )}
             </span>
+            {!isCloud && (
+              <button type="button" className="git-panel__head-btn" data-revue="ouvrir" style={{ marginLeft: "auto" }} onClick={() => ouvrirRevue({ dossier: workspacePath })} title={infoBulle("Voir les changements", "revueChangements")} aria-label="Voir les changements">
+                <Icon icon="solar:document-text-linear" width={14} height={14} />
+              </button>
+            )}
             {totalChanges > 0 && (
               <button
                 type="button"

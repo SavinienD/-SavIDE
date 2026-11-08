@@ -27,6 +27,7 @@ import {
 import { FallbackHost, ViewerHost, usesFileViewer, viewerForPath } from "./viewers/ViewerHost"; // viewers
 import { ZoomableImage } from "./viewers/ImageZoom"; // viewers
 import { OpenWithDefaultApp, ViewerError } from "./viewers/common"; // viewers
+import { NoteApercu } from "./revue/NoteApercu"; // notes de relecture sur l'aperçu
 
 if (!(globalThis as typeof globalThis & { MonacoEnvironment?: unknown }).MonacoEnvironment) {
   (
@@ -663,6 +664,7 @@ export function EditorPane({
               </div>
               {activeIsMarkdown && activePreview && (
                 <div className="editor-md-preview" tabIndex={-1} onKeyDown={readOnlyEditor ? undefined : toucheApercu}>
+                  {activeTab.external ? null : <NoteApercu fichier={activeTab.relativePath} source={activeTab.buffer} />}
                   <Markdown
                     text={activeTab.buffer}
                     onOpenFile={handleOpenFileLink}

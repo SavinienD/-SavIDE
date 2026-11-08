@@ -55,7 +55,13 @@ export type RaccourciId =
   | "deplacerColonne"
   | "rechercherMac"
   | "dossierRecent"
-  | "nouveauWorktree"; // worktrees
+  | "nouveauWorktree" // worktrees
+  | "revueChangements" // revue des changements
+  | "revueBlocSuivant"
+  | "revueBlocPrecedent"
+  | "revueFichierSuivant"
+  | "revueFichierPrecedent"
+  | "revueNoter";
 
 type Touche = {
   /** Ctrl (ou Cmd sur macOS). */
@@ -72,7 +78,7 @@ type Touche = {
 
 export type Raccourci = {
   id: RaccourciId;
-  categorie: "Conversations" | "Onglets" | "Panneaux" | "Dossiers" | "Cloud et appareils" | "Affichage";
+  categorie: "Conversations" | "Onglets" | "Panneaux" | "Dossiers" | "Cloud et appareils" | "Affichage" | "Revue";
   libelle: string;
   /** Texte affiché, ex. « Ctrl + Maj + N ». */
   combinaison: string;
@@ -107,6 +113,13 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "focusChat", categorie: "Panneaux", libelle: "Aller à la zone de saisie du chat", combinaison: "Ctrl + Maj + T", touche: { ctrl: true, shift: true, touches: ["t", "code:KeyT"] } },
   { id: "settings", categorie: "Panneaux", libelle: "Ouvrir les Réglages", combinaison: "Ctrl + ,", touche: { ctrl: true, touches: [",", "code:Comma"] } },
   { id: "accueil", categorie: "Panneaux", libelle: "Revenir à l'accueil", combinaison: "Ctrl + Maj + H", touche: { ctrl: true, shift: true, touches: ["h"] } },
+  // Revue des changements : la vue fournit ses actions tant qu'elle est ouverte.
+  { id: "revueChangements", categorie: "Panneaux", libelle: "Voir les changements du dossier (diff, notes, conflits)", combinaison: "Ctrl + Maj + D", touche: { ctrl: true, shift: true, touches: ["d", "code:KeyD"] } },
+  { id: "revueBlocSuivant", categorie: "Revue", libelle: "Bloc modifié suivant", combinaison: "F7", touche: { touches: ["f7"] } },
+  { id: "revueBlocPrecedent", categorie: "Revue", libelle: "Bloc modifié précédent", combinaison: "Maj + F7", touche: { shift: true, touches: ["f7"] } },
+  { id: "revueFichierSuivant", categorie: "Revue", libelle: "Fichier suivant", combinaison: "Alt + ↓", touche: { alt: true, touches: ["arrowdown"] } },
+  { id: "revueFichierPrecedent", categorie: "Revue", libelle: "Fichier précédent", combinaison: "Alt + ↑", touche: { alt: true, touches: ["arrowup"] } },
+  { id: "revueNoter", categorie: "Revue", libelle: "Noter les lignes choisies", combinaison: "Alt + N", touche: { alt: true, touches: ["n", "code:KeyN"] } },
 
   { id: "nouveauWorktree", categorie: "Dossiers", libelle: "Nouveau worktree (une branche et son dossier pour une tâche)", combinaison: "Ctrl + Maj + W", touche: { ctrl: true, shift: true, touches: ["w", "code:KeyW"] } }, // worktrees
   // touche physique (AZERTY : Ctrl + « & » = Ctrl+1) ; le numéro est lu par numeroTouche.

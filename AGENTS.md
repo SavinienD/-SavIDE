@@ -353,6 +353,8 @@ Code map:
 │       ├── custom_providers.rs # providers — instances configurables (providers.json + provider-keys.json), IPC provider_*, modelOverrides, détection Ollama/LM Studio
 │       ├── git.rs # + état de la branche (avance/retard, opération en cours), fetch, commit avec « modifier le dernier », poussée --force-with-lease, abandon fusion/rebase, hook qui refuse un commit
 │       ├── forges # rédaction IA (contexte.rs : diff tronqué, masque.rs : secrets masqués/exclus) ; forges GitHub, GitLab et Forgejo/Gitea (detection.rs, jetons.rs forge-tokens.json, http.rs, api.rs, gitlab.rs, commandes.rs forge_*, tests.rs faux serveur)
+│       ├── diff.rs # revue des changements — fichiers modifiés (HEAD ou branche de base), textes du diff, indexation d'un bloc ou de lignes (patch partiel + git apply --cached)
+│       ├── conflits.rs # revue des changements — conflits : versions base / nôtre / leur, marquer résolu, continuer, abandonner
 │       ├── harness.rs # harness — IPC harness_* (CRUD, promote/demote, refinements, rollback, import brain, refine start/status), couche harness par tour
 │       ├── harness_backup.rs # cleanup — sauvegarde périodique du harness (config harness-backup.json, IPC harness_backup_*)
 │       ├── ia_appel.rs # commande ia_appel_unique (appel unique au modèle depuis l'interface)
@@ -431,6 +433,11 @@ Code map:
     │   ├── TerminalPanel.tsx # multi-onglets PTY : Ctrl+Tab, renommage, PowerShell/WSL et scrollback texte local
     │   ├── GitPanel.tsx # onglets Dépôt / PR / Issues ; Rédiger (IA), compteurs, fetch, amend, forcer, abandon, Réparer avec l'IA
     │   ├── pr # gitApi.ts, forgeApi.ts, consignes.ts (prompts + consignes pour l'agent), redaction.ts (appel unique), versAgent.ts (texte mis dans la saisie de la conversation), PrOnglet.tsx, IssuesOnglet.tsx, pr.css
+    │   ├── revue # vue « Changements » (Ctrl+Maj+D) : diff Monaco, notes de relecture envoyées à l'agent, indexation partielle, conflits à 3 volets
+    │   │   ├── HoteRevue.tsx / VueRevue.tsx / ListeFichiers.tsx / DiffMonaco.tsx / PanneauNotes.tsx / ChoixConversation.tsx
+    │   │   ├── VueConflits.tsx / MonacoSimple.tsx / NoteApercu.tsx (crochet de l'aperçu Markdown)
+    │   │   ├── revueApi.ts / notes.ts / envoi.ts / selectionDiff.ts / blocsConflit.ts / apercuNotes.ts / infoBulle.ts (modules purs testés)
+    │   │   └── revue.css
     │   ├── RemotePanel.tsx
     │   ├── SearchPane.tsx
     │   ├── SettingsPane.tsx
