@@ -5,6 +5,7 @@ import { mockIPC, mockWindows, mockConvertFileSrc } from "@tauri-apps/api/mocks"
 import { emit } from "@tauri-apps/api/event";
 import * as D from "./donnees";
 import { simulationCollegue } from "./collegue";
+import { simulationInterop } from "./interop";
 
 export type Scene = {
   /** ordre-dossiers — open_workspace ouvre le dossier demandé (et non l'espace du banc). */
@@ -550,6 +551,7 @@ export function installerSimulation(scene: Scene): void {
   }
   // Scène « collegue » : espace cloud d'un collègue sans fournisseur sur son PC.
   if (scene.collegue) Object.assign(h, simulationCollegue(scene, { ...h }));
+  Object.assign(h, simulationInterop(scene, h));
   mockWindows("main");
   mockConvertFileSrc("windows");
   mockIPC(

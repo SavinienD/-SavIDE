@@ -166,6 +166,10 @@
       "regle": "chevauchement",
       "selecteur": ".settings-pane__tool-credential-field",
       "raison": "Champ de clé API (ApiKeyField) : les boutons Afficher / Copier sont posés dans le champ, à droite, exprès (padding-right de 64 px réservé au texte)."
-    }
+    },
+    {"regle": "*", "selecteur": ".settings-pane__skill-list, .settings-pane__skill-preview .settings-pane__empty, .axe-backup__row", "situation": "/interop-(consignes|skills-[a-z]+)$", "raison": "Scènes de la reprise (Claude Code, Codex…) : volet des Réglages (Skills, Harnais) derrière la boîte d'import ou le bloc des consignes ; ces défauts existaient avant (mêmes scènes rendues sur la version précédente) et ne sont pas l'objet de la scène."},
+    {"regle": "cible-petite", "selecteur": ".tab__close", "situation": "/interop-", "raison": "Défaut déjà présent : croix « Fermer l'onglet » de l'onglet ouvert derrière les réglages, comme dans les scènes harnais-*."},
+    {"regle": "chevauchement", "selecteur": ".axe-interop__proposition, .chat-body__content", "situation": "/interop-proposition$", "raison": "Proposition du premier lancement : petite carte flottante en haut à droite, montrée une seule fois ; elle passe devant le contenu par conception et se ferme par « Choisir… » ou « Plus tard »."},
+    {"regle": "libelle-2-lignes", "selecteur": ".axe-validation__code", "raison": "Code de la cellule à valider (« Demander avant d'agir ») : il passe à la ligne exprès (pre-wrap), dans un cadre qui défile."}
   ]
 }
