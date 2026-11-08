@@ -20,7 +20,7 @@ import { onThemeChange } from "../axe/theme"; // theme
 import { xtermTheme } from "../axe/themeTargets"; // theme
 import { MONO_BASE_PX } from "../axe/zoom"; // zoom — taille fixe (e19 : le reglage ne concerne que le chat et les documents)
 import type { TerminalDataPayload, TerminalExitPayload } from "../types";
-import { ouvrirLien } from "./navigateur/liens"; // lot 186 : navigateur intégré ou du système
+import { ouvrirLien } from "./navigateur/liens"; // navigateur intégré ou du système
 
 type TerminalStatus = "idle" | "starting" | "running" | "exited" | "error";
 
@@ -454,7 +454,7 @@ function TerminalSurface({
       if (!event.metaKey && !event.ctrlKey) return;
       event.preventDefault();
       event.stopPropagation();
-      ouvrirLien(uri, (u) => api.openExternalUrl(u), event.shiftKey); // lot 186 (Maj : l'autre navigateur)
+      ouvrirLien(uri, (u) => api.openExternalUrl(u), event.shiftKey); // Maj : l'autre navigateur
     });
     const unicode11 = new Unicode11Addon();
     const clipboard = new ClipboardAddon();

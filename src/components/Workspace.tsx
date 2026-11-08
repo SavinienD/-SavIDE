@@ -141,7 +141,7 @@ import { loadUiZoom } from "../axe/zoom";
 import { apprendreDuMessage } from "../axe/voix/vocabulaireAuto"; // voix-vocabulaire
 import { noterConversation } from "../lib/gardienPage";
 import { garderSeulement } from "./chat/vuesConversations"; // mémoire
-import { useOngletNavigateur } from "./navigateur/useOngletNavigateur"; // lot 186 : navigateur intégré
+import { useOngletNavigateur } from "./navigateur/useOngletNavigateur"; // navigateur intégré
 
 type Props = {
   bootstrap: WorkspaceBootstrap;
@@ -812,7 +812,7 @@ export function Workspace({
   const [remoteOpen, setRemoteOpen] = useState(false);
   const [remoteActive, setRemoteActive] = useState(false);
   const [settingsActive, setSettingsActive] = useState(false);
-  // lot 186 — onglet Navigateur (navigateur intégré, Design Mode, ports, pilotage par l'agent).
+  // onglet Navigateur (navigateur intégré, Design Mode, ports, pilotage par l'agent).
   const navigateur = useOngletNavigateur({
     workspacePath, conversationId: activeConv.id, settingsActive, remoteActive, activeTabIndex,
     quitterAutres: () => { setSettingsActive(false); setRemoteActive(false); },
@@ -2924,8 +2924,8 @@ export function Workspace({
   };
   const actionsRaccourcisRef = useRef<Parameters<typeof fournirActions>[0]>({});
   actionsRaccourcisRef.current = {
-    fermerOnglet: () => { if (!navigateur.fermerSiActif()) closeActiveEditorTab(); }, // lot 186 : Ctrl+W ferme aussi le Navigateur
-    navigateur: () => navigateur.ouvrir(), // lot 186
+    fermerOnglet: () => { if (!navigateur.fermerSiActif()) closeActiveEditorTab(); }, // Ctrl+W ferme aussi le Navigateur
+    navigateur: () => navigateur.ouvrir(),
     terminal: () => toggleTerminalRef.current(),
     enregistrer: () => {
       if (settingsActive) return;
@@ -3533,7 +3533,7 @@ export function Workspace({
                   setSettingsActive(true);
                 }}
                 onSettingsClose={closeSettings}
-                ongletsSpeciaux={premiere ? navigateur.onglets : undefined} // lot 186
+                ongletsSpeciaux={premiere ? navigateur.onglets : undefined}
                 onQuitterSpecial={navigateur.quitter}
               />
             </div>
@@ -3757,7 +3757,7 @@ export function Workspace({
             />
             <span className="titlebar__btn-label">Terminal</span>
           </button>
-          {navigateur.bouton /* lot 186 */}
+          {navigateur.bouton}
           <button
             className="titlebar__btn"
             data-on={gaucheReduite ? "false" : "true"}

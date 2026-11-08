@@ -1,4 +1,4 @@
-// Lot 186 — l'onglet « Navigateur » dans l'IDE : état ouvert / affiché, bouton de la barre
+// l'onglet « Navigateur » dans l'IDE : état ouvert / affiché, bouton de la barre
 // de titre, liens du chat et du terminal, demande de l'agent (navigateur.ouvrir). Le
 // Workspace n'a que quelques lignes d'accroche : ce hook rend l'onglet spécial pour
 // l'éditeur (EditorPane.ongletsSpeciaux) et le bouton de la barre.

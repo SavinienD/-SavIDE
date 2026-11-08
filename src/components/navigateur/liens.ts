@@ -1,4 +1,4 @@
-// Lot 186 — où s'ouvrent les liens http(s) du chat et du terminal : navigateur intégré
+// où s'ouvrent les liens http(s) du chat et du terminal : navigateur intégré
 // (onglet Navigateur de l'IDE) ou navigateur du système. Réglage gardé dans le stockage
 // local ; Maj (avec le clic) inverse le choix pour un lien.
 // Module sans React (testé par node).

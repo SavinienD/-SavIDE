@@ -1,4 +1,4 @@
-// Design Mode du navigateur intégré (lot 186) : survol surligné, un clic choisit
+// Design Mode du navigateur intégré : survol surligné, un clic choisit
 // l'élément, Échap annule. Évalué par l'appli dans la page ; l'appli relit le choix
 // (window.__axecodeDesign.prendre()) : la page n'a aucun moyen d'appeler l'appli.
 (function () {

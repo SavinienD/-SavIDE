@@ -54,7 +54,7 @@ if (!(globalThis as typeof globalThis & { MonacoEnvironment?: unknown }).MonacoE
 
 loader.config({ monaco: monacoNs });
 
-/** Lot 186 — onglet qui n'est pas un fichier (Navigateur), rendu par son module. */
+/** onglet qui n'est pas un fichier (Navigateur), rendu par son module. */
 export type OngletSpecial = {
   cle: string;
   titre: string;
@@ -90,9 +90,9 @@ type Props = {
   revealTarget?: EditorRevealTarget | null;
   onSettingsActivate?: () => void;
   onSettingsClose?: () => void;
-  /** Lot 186 — onglets spéciaux (Navigateur) après Réglages et « À distance ». */
+  /** onglets spéciaux (Navigateur) après Réglages et « À distance ». */
   ongletsSpeciaux?: OngletSpecial[];
-  /** Lot 186 — un onglet de fichier, Réglages ou « À distance » a été cliqué. */
+  /** un onglet de fichier, Réglages ou « À distance » a été cliqué. */
   onQuitterSpecial?: () => void;
 };
 
@@ -121,7 +121,7 @@ export function EditorPane({
   ongletsSpeciaux,
   onQuitterSpecial,
 }: Props) {
-  const specialActif = ongletsSpeciaux?.some((o) => o.actif) ?? false; // lot 186
+  const specialActif = ongletsSpeciaux?.some((o) => o.actif) ?? false;
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const searchDecorationsRef =
     useRef<Monaco.editor.IEditorDecorationsCollection | null>(null);

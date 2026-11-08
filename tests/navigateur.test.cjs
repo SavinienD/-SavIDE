@@ -5,7 +5,7 @@ const path = require("node:path");
 const test = require("node:test");
 const ts = require("typescript");
 
-// Lot 186 — navigateur intégré : modules sans React (liens, tailles, recouvrement,
+// navigateur intégré : modules sans React (liens, tailles, recouvrement,
 // texte de l'élément choisi, envoi au chat) et accroches (raccourci, réglage, éditeur).
 Module._extensions[".ts"] = (module, filename) => {
   const javascript = ts.transpileModule(fs.readFileSync(filename, "utf8"), {

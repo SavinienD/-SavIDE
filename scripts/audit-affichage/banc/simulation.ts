@@ -551,7 +551,7 @@ export function installerSimulation(scene: Scene): void {
   }
   // Scène « collegue » : espace cloud d'un collègue sans fournisseur sur son PC.
   if (scene.collegue) Object.assign(h, simulationCollegue(scene, { ...h }));
-  Object.assign(h, simulationNavigateur(scene)); // lot 186 : navigateur intégré
+  Object.assign(h, simulationNavigateur(scene)); // navigateur intégré
   mockWindows("main");
   mockConvertFileSrc("windows");
   mockIPC(

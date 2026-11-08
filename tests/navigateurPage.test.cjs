@@ -4,7 +4,7 @@ const path = require("node:path");
 const test = require("node:test");
 const { JSDOM } = require("jsdom");
 
-// Lot 186 — scripts évalués dans la page du navigateur intégré (src-tauri/src/navigateur/page) :
+// scripts évalués dans la page du navigateur intégré (src-tauri/src/navigateur/page) :
 // lecture compacte, clic, saisie, touches, attente, Design Mode. jsdom n'a pas de mise en page :
 // chaque élément reçoit une taille sauf ceux marqués data-sans-taille.
 const racine = path.resolve(__dirname, "..");

@@ -1,4 +1,4 @@
-// Lot 186 — « Envoyer à la conversation » : le texte va dans la saisie de la conversation
+// « Envoyer à la conversation » : le texte va dans la saisie de la conversation
 // active (ajouté à la fin, l'utilisateur écrit ensuite sa demande). Chaque saisie du
 // chat s'inscrit ici pour sa conversation. Module sans React (testé par node).
 

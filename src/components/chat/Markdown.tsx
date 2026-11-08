@@ -18,7 +18,7 @@ import { api } from "../../lib/ipc";
 import { MermaidDiagram } from "./MermaidDiagram";
 import { PreCopiable } from "./PreCopiable"; // copier-code
 import { useMenuCheminChat } from "./MenuCheminChat";
-import { ouvrirLien } from "../navigateur/liens"; // lot 186 : navigateur intégré ou du système
+import { ouvrirLien } from "../navigateur/liens"; // navigateur intégré ou du système
 import { caseDansLigne } from "./casesMarkdown";
 import { decouperLiens, estFichier, estUrl, raccourcirUrl } from "./liensChat";
 
@@ -57,7 +57,7 @@ function UrlLink({ href, children }: { href: string; children: ReactNode }) {
       onClick={(event) => {
         event.preventDefault();
         event.stopPropagation();
-        ouvrirLien(href, (u) => api.openExternalUrl(u), event.shiftKey); // lot 186 (Maj : l'autre navigateur)
+        ouvrirLien(href, (u) => api.openExternalUrl(u), event.shiftKey); // Maj : l'autre navigateur
       }}
     >
       {children}

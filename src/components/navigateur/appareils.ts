@@ -1,4 +1,4 @@
-// Lot 186 — tailles d'écran du navigateur intégré et calcul de la zone de la vue native.
+// tailles d'écran du navigateur intégré et calcul de la zone de la vue native.
 // Module sans React (testé par node).
 
 export type AppareilId = "bureau" | "tablette" | "telephone";

@@ -55,7 +55,7 @@ export type RaccourciId =
   | "deplacerColonne"
   | "rechercherMac"
   | "dossierRecent"
-  | "navigateur"; // lot 186
+  | "navigateur";
 
 type Touche = {
   /** Ctrl (ou Cmd sur macOS). */
@@ -107,7 +107,7 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "focusChat", categorie: "Panneaux", libelle: "Aller à la zone de saisie du chat", combinaison: "Ctrl + Maj + T", touche: { ctrl: true, shift: true, touches: ["t", "code:KeyT"] } },
   { id: "settings", categorie: "Panneaux", libelle: "Ouvrir les Réglages", combinaison: "Ctrl + ,", touche: { ctrl: true, touches: [",", "code:Comma"] } },
   { id: "accueil", categorie: "Panneaux", libelle: "Revenir à l'accueil", combinaison: "Ctrl + Maj + H", touche: { ctrl: true, shift: true, touches: ["h"] } },
-  { id: "navigateur", categorie: "Panneaux", libelle: "Ouvrir le navigateur intégré", combinaison: "Ctrl + Maj + B", touche: { ctrl: true, shift: true, touches: ["b", "code:KeyB"] } }, // lot 186
+  { id: "navigateur", categorie: "Panneaux", libelle: "Ouvrir le navigateur intégré", combinaison: "Ctrl + Maj + B", touche: { ctrl: true, shift: true, touches: ["b", "code:KeyB"] } },
 
   // touche physique (AZERTY : Ctrl + « & » = Ctrl+1) ; le numéro est lu par numeroTouche.
   { id: "dossierRecent", categorie: "Dossiers", libelle: "Ouvrir le dossier n° 1 à 9 (ordre de l'accueil, inchangé jusqu'au retour à l'accueil)", combinaison: "Ctrl + 1…9", touche: { ctrl: true, touches: ["code:Digit1", "code:Digit2", "code:Digit3", "code:Digit4", "code:Digit5", "code:Digit6", "code:Digit7", "code:Digit8", "code:Digit9", "code:Numpad1", "code:Numpad2", "code:Numpad3", "code:Numpad4", "code:Numpad5", "code:Numpad6", "code:Numpad7", "code:Numpad8", "code:Numpad9"] } },

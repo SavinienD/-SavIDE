@@ -1,4 +1,4 @@
-// Lot 186 — navigateur intégré simulé pour le banc (la vue native n'existe pas ici) :
+// navigateur intégré simulé pour le banc (la vue native n'existe pas ici) :
 // état de la page, serveurs du dossier (ports), Design Mode qui choisit un élément.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { emit } from "@tauri-apps/api/event";

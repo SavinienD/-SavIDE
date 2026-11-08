@@ -46,7 +46,7 @@ import { fileIcon } from "../../lib/fileIcon";
 import { DicteeBouton } from "../../axe/voix/DicteeBouton"; // voix
 import { insererTexteDicte } from "../../axe/voix/inserer"; // voix
 import { brancherBrouillons, enregistrerComposeur } from "../../axe/voix/dicteeCible";
-import { ajouterAuTexte, enregistrerCibleChat } from "../navigateur/versChat"; // lot 186 : élément choisi dans le navigateur
+import { ajouterAuTexte, enregistrerCibleChat } from "../navigateur/versChat"; // élément choisi dans le navigateur
 import { api, cloudConnectionFromPath } from "../../lib/ipc";
 import { actionsDuPc, modelesEspace, NOTE_COMPACTION_ESPACE } from "../../lib/modelesEspace"; // parcours-collegue
 import { expliquerErreurIA } from "../../lib/erreursIA"; // parcours-collegue
@@ -2954,7 +2954,7 @@ export function ChatPane({
     () => enregistrerComposeur(conversationId, (dicte) => insererDicteeRef.current(dicte)),
     [conversationId],
   );
-  // lot 186 — « Envoyer à la conversation » (Design Mode du navigateur) : ajouté à la fin de la saisie.
+  // « Envoyer à la conversation » (Design Mode du navigateur) : ajouté à la fin de la saisie.
   useEffect(
     () => enregistrerCibleChat(conversationId, (ajout) => {
       const valeur = ajouterAuTexte(textareaRef.current?.value ?? "", ajout);

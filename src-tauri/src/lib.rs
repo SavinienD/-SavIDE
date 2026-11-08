@@ -166,7 +166,7 @@ mod viewers; // viewers
 mod workflow;
 mod workspace;
 mod dossiers; // dossiers renommés ou déplacés
-mod navigateur; // lot 186 : navigateur intégré, Design Mode, ports, pilotage par l'agent
+mod navigateur; // navigateur intégré, Design Mode, ports, pilotage par l'agent
 
 use context::*;
 use models::*;
@@ -289,7 +289,7 @@ pub fn run() {
         .setup(|app| {
             updater::nettoyer_au_demarrage(app.handle()); // marqueur d'une version déjà installée
             daemon_client::attach_on_startup(app.handle()); // daemon
-            navigateur::demarrer_pont(app.handle()); // lot 186 : l'agent pilote le navigateur intégré
+            navigateur::demarrer_pont(app.handle()); // l'agent pilote le navigateur intégré
             #[cfg(target_os = "windows")]
             let _ = app;
 
@@ -337,7 +337,7 @@ pub fn run() {
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::Destroyed => {
                 gardien_page::fenetre_detruite(window.label());
-                navigateur::fenetre_detruite(window.label()); // lot 186
+                navigateur::fenetre_detruite(window.label());
                 remove_window_workspace(&window.app_handle(), window.label().to_string());
             }
             tauri::WindowEvent::Focused(true) => {
@@ -381,7 +381,7 @@ pub fn run() {
             gardien_page::page_battement,
             gardien_page::page_journal,
             gardien_page::page_reprise_demandee,
-            navigateur::navigateur_enregistrer, // lot 186
+            navigateur::navigateur_enregistrer,
             navigateur::navigateur_placer,
             navigateur::navigateur_aller,
             navigateur::navigateur_action,

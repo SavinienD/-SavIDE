@@ -1,4 +1,4 @@
-// Lot 186 — la page du navigateur est une vue native posée AU-DESSUS de l'interface :
+// la page du navigateur est une vue native posée AU-DESSUS de l'interface :
 // un menu, une fenêtre ou une bulle de l'interface qui passe sur l'onglet serait caché
 // dessous. Tant qu'un tel élément recouvre la zone, la vue native est cachée.
 // Module sans React (testé par node).

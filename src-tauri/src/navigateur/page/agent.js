@@ -1,4 +1,4 @@
-// Bibliothèque injectée dans la page du navigateur intégré (lot 186) : lecture compacte
+// Bibliothèque injectée dans la page du navigateur intégré : lecture compacte
 // de la page (texte + éléments interactifs numérotés e1, e2…) et actions de l'agent.
 // Évaluée par l'appli (evaluate_script de la vue web) : la page ne reçoit aucune API
 // de l'appli, et tout ce que cette bibliothèque renvoie est traité comme une donnée.

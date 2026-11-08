@@ -1,4 +1,4 @@
-//! Navigateur intégré (lot 186) : onglet « Navigateur » de l'IDE (barre d'adresse,
+//! Navigateur intégré : onglet « Navigateur » de l'IDE (barre d'adresse,
 //! précédent / suivant / recharger, zoom, outils de développement, tailles d'écran,
 //! téléchargements), Design Mode (choisir un élément de la page pour la conversation),
 //! liste des ports ouverts par le dossier, et pilotage de la page par l'agent

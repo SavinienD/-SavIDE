@@ -1,4 +1,4 @@
-// Lot 186 — onglet « Navigateur » de l'IDE : barre (précédent, suivant, recharger, adresse,
+// onglet « Navigateur » de l'IDE : barre (précédent, suivant, recharger, adresse,
 // zoom, tailles d'écran, Choisir un élément, Ports, outils de développement), page d'accueil
 // (serveurs du dossier) et volet de l'élément choisi. La page web elle-même est une vue
 // native posée par l'appli sur la zone `.nav__page` : rien de l'interface ne doit passer

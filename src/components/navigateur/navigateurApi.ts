@@ -1,4 +1,4 @@
-// Lot 186 — navigateur intégré : commandes de l'appli (src-tauri/src/navigateur) et
+// navigateur intégré : commandes de l'appli (src-tauri/src/navigateur) et
 // événements. La page affichée est une vue native posée par l'appli au-dessus de
 // l'onglet : ce module ne fait que la placer, la piloter et écouter son état.
 import { invoke } from "@tauri-apps/api/core";

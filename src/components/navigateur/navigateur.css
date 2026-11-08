@@ -1,4 +1,4 @@
-/* Lot 186 — onglet Navigateur : barre, page (vue native posée par l'appli sur .nav__page),
+/* onglet Navigateur : barre, page (vue native posée par l'appli sur .nav__page),
    accueil (serveurs du dossier) et volet latéral (ports, élément choisi). Mêmes jetons que
    l'éditeur ; rien ne passe au-dessus de la page : les volets sont à côté d'elle. */
 .nav {

@@ -1,4 +1,4 @@
-// Lot 186 — Réglages > Navigateur : où s'ouvrent les liens du chat et du terminal.
+// Réglages > Navigateur : où s'ouvrent les liens du chat et du terminal.
 import { useEffect, useState } from "react";
 import { EVENEMENT_MODE_LIENS, MODES_LIENS, ecrireModeLiens, lireModeLiens, type ModeLiens } from "./liens";
 import "./navigateur.css";

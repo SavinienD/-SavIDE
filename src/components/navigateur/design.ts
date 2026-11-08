@@ -1,4 +1,4 @@
-// Lot 186 — Design Mode : texte envoyé à la conversation pour l'élément choisi dans la
+// Design Mode : texte envoyé à la conversation pour l'élément choisi dans la
 // page (sélecteur, taille, styles utiles, HTML tronqué). Module sans React (testé par node).
 import type { ElementChoisi } from "./navigateurApi";
 
