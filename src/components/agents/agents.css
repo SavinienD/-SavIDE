@@ -20,6 +20,9 @@
    nombre de sous-agents et le modèle passent sous le nom, au lieu d'être réduits
    à « 3… » et « c… » à côté d'un nom tronqué. */
 .axe-agents { container: vue-agents / inline-size; }
+/* Les éléments de la vue gardent leur hauteur et c'est la vue qui défile : serrés par la colonne
+   flex (bouton des automatisations, bascule Arbre / Tableau, liste), leur texte était rogné en bas à 800 px. */
+.axe-agents > * { flex-shrink: 0; }
 @container vue-agents (max-width: 27em) {
   .axe-agents__row:has(> .axe-agents__label) { flex-wrap: wrap; row-gap: 0; }
   .axe-agents__row > .axe-agents__label { flex: 1 0 calc(100% - 41px); }
