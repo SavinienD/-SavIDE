@@ -123,3 +123,18 @@ test("accroches : raccourci, réglage, onglet spécial de l'éditeur, liens du c
   assert.match(lire("src/components/TerminalPanel.tsx"), /ouvrirLien\(uri, /);
   assert.match(lire("src/components/chat/ChatPane.tsx"), /enregistrerCibleChat\(conversationId/);
 });
+
+test("recouvrement : un élément flottant invisible ne cache pas la page (mode Bureau)", () => {
+  const style = { display: "block", visibility: "visible", opacity: "0" };
+  const el = { parentElement: null, getBoundingClientRect: () => ({ left: 900, top: 100, width: 200, height: 100 }), contains: () => false };
+  const doc = {
+    defaultView: { getComputedStyle: () => style, innerWidth: 1600, innerHeight: 900 },
+    elementFromPoint: () => el,
+    querySelectorAll: () => ({ forEach: (f) => f(el) }),
+  };
+  assert.equal(recouvrement.rectsFlottants(doc, null).length, 0);
+  style.opacity = "1";
+  assert.equal(recouvrement.rectsFlottants(doc, null).length, 1);
+  doc.elementFromPoint = () => ({});
+  assert.equal(recouvrement.rectsFlottants(doc, null).length, 0);
+});
