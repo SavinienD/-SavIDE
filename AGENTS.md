@@ -7,6 +7,7 @@ Code map:
 ├── AGENTS.md
 ├── Cargo.lock
 ├── Cargo.toml
+├── docs # dont worktrees-toml.md (format de worktrees.toml)
 ├── EDIT_FILE_HARNESS_COMPARISON.md
 ├── EDIT_TOOL_COMPARISON.md
 ├── FEATURES.md
@@ -364,7 +365,9 @@ Code map:
 │       ├── updater.rs
 │       ├── viewers.rs # viewers — viewer_read_bytes (plages, ArrayBuffer brut), viewer_zip_list/read/extract, viewer_sqlite_tables/rows (lecture seule, query_only)
 │       ├── workflow.rs
-│       └── workspace.rs
+│       ├── workspace.rs
+│       ├── worktrees.rs # worktrees — commandes worktrees_* : réglages du dépôt (worktrees.toml), création du fichier
+│       └── worktrees # config.rs (worktrees.toml + scripts d'orca.yaml, empreinte des commandes), depot.rs (appels git), partage.rs (liens, jonctions, copies, mesure), tests.rs
 └── src
     ├── App.tsx
     ├── main.tsx

@@ -166,6 +166,7 @@ mod viewers; // viewers
 mod workflow;
 mod workspace;
 mod dossiers; // dossiers renommés ou déplacés
+mod worktrees; // worktrees : une tâche = un worktree prêt à l'emploi
 
 use context::*;
 use models::*;
@@ -624,6 +625,8 @@ pub fn run() {
             git::git_push_command,
             git::git_pull_command,
             git::git_create_pull_request_command,
+            worktrees::worktrees_config, // worktrees
+            worktrees::worktrees_config_creer,
             updater::updater_check,
             updater::updater_download_and_install,
             updater::updater_restart,
