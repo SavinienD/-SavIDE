@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Welcome } from "./components/Welcome";
 import { Workspace } from "./components/Workspace";
+import { useServiceNotifications } from "./components/notifications/useServiceNotifications";
 import { UpdateBadge } from "./components/UpdateBadge";
 import { noterOuverture, libererOrdre, deriveName, dossierRecentNumero, loadRecents, removeRecent } from "./lib/recents";
 import { open as choisirDossier } from "@tauri-apps/plugin-dialog";
@@ -188,6 +189,8 @@ export default function App() {
     },
     [],
   );
+  // Fins de tour notifiées ; ouvreur de secours (depuis l'accueil).
+  useServiceNotifications({ ouvrirDossier: (chemin, id) => void openWorkspace(chemin, id), ouvrirLibre: (id) => void openFreeChat({ conversationId: id }) });
 
   // Démarrage : directement l'accueil. Les mises à jour ne sont plus forcées
   // (demande utilisateur) : <UpdateBadge /> affiche « Mise à jour X

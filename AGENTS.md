@@ -351,6 +351,7 @@ Code map:
 │       ├── lib.rs
 │       ├── main.rs
 │       ├── models.rs
+│       ├── notifications.rs # centre des notifications : événements (cloche), états des sessions (vue Tableau), réglages, <données>/notifications.json ; une même fin signalée par plusieurs fenêtres n'est gardée qu'une fois
 │       ├── offline.rs # v2-l6 — mode désynchronisé : miroir local + journal (<data>/offline/<connexion>) et IPC offline_* (prepare, list, read, write, create, delete, rename, journal, sync, resolve, forget)
 │       ├── platform.rs
 │       ├── providers.rs
@@ -387,6 +388,7 @@ Code map:
     │   │   ├── RemoteConversations.tsx # remote — sessions d'une connexion distante : liste, création (modèles cloud proposés), fil depuis sessions.tree (erreurs de tour visibles), changement de modèle, envoi, arrêt
     │   │   ├── SessionTree.tsx # /tree : arbre du journal, revenir à un point, fork (par connexion)
     │   │   ├── agents.css
+    │   │   ├── AgentsTableau.tsx / agentsTableau.ts # Vue « Tableau » : colonnes Attend votre réponse / Travaille / Fini, non lu / Échec / Au repos (bascule Arbre / Tableau mémorisée, portée ce dossier / tous les dossiers)
     │   │   ├── agentsApi.ts # wrappers daemon_call / daemon_sessions / axe://daemon, routage par connexion ; serviceAgentsApi (agents.list/spawn/status/stop/result en cloud)
     │   │   └── remoteItems.ts # remote — modèles proposés pour une session distante (axe-cloud d'abord, mémorisés par connexion), fil affichable (messages + erreurs), explications lisibles des erreurs
     │   ├── cloud # cloud — mode cloud (connexion Google, onglets Agent / Atelier / Terminal)
@@ -444,6 +446,13 @@ Code map:
     │   ├── Welcome.tsx # freechat — écran d'accueil : « Nouvelle conversation » / « Ouvrir un dossier », conversations libres et dossiers récents
     │   ├── WindowControls.tsx
     │   ├── Workspace.tsx # dispositions « ide » et « chat » (freechat : même ChatPane, FreechatView)
+    │   ├── notifications # notifications des agents
+    │   │   ├── notificationsApi.ts # IPC notifications_* (src-tauri/src/notifications.rs), types, événements de l'état et de l'ouverture
+    │   │   ├── suivi.ts # fins de tour repérées dans les événements du service (fini, attend votre réponse, échec), pur
+    │   │   ├── ouvrir.ts # ouvreurs de conversation (espace affiché, puis secours de l'appli), pur
+    │   │   ├── store.ts # état du centre partagé par les composants d'une fenêtre
+    │   │   ├── useServiceNotifications.ts # monté par App.tsx : suit le service, signale au centre, ouvre la conversation d'une notification
+    │   │   └── useNotificationsEspace.ts # monté par Workspace.tsx : conversation affichée (lue), ouvreur prioritaire
     │   ├── freechat # freechat — mode conversation libre
     │   │   ├── FreechatView.tsx # vue plein écran : barre latérale (libres + par projet, recherche), chat centré, ouvrir un dossier pour la conversation
     │   │   ├── freechatApi.ts # IPC freechat_*, utilitaires (titres, chemins, dates relatives)

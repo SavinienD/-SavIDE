@@ -58,6 +58,7 @@ import {
 import { RemotePanel } from "./RemotePanel";
 import { SearchPane } from "./SearchPane";
 import { AgentsView } from "./agents/AgentsView"; // agents
+import { useNotificationsEspace } from "./notifications/useNotificationsEspace";
 import { SessionTree } from "./agents/SessionTree"; // agents
 import { SessionJournal } from "./agents/SessionJournal"; // sub-m
 // remote
@@ -566,6 +567,10 @@ export function Workspace({
     },
     [workspacePath, activeConv.id, streamingConversationIds],
   );
+  // Conversation affichée (lue) et ouverture depuis une notification, la cloche ou le tableau.
+  useNotificationsEspace({ workspacePath, connexion: cloudConnection ?? LOCAL_CONNECTION, affichee: journalSession?.id ?? activeConv.id ?? null,
+    ouvrirIci: (id) => { setJournalSession(null); void selectConversation(id); }, ouvrirJournal: (id, conn, title) => setJournalSession({ id, conn, title }),
+    ouvrirDossier: onOpenFolder, ouvrirLibre: onOpenFreeChat });
 
   const createConversation = useCallback(async (titre: string) => {
     const seq = ++navigationSeqRef.current;

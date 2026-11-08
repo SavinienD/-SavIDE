@@ -205,3 +205,32 @@
 .axe-agents__head--compact .axe-agents__filters[open] > label { white-space: nowrap; display: flex; align-items: center; gap: 6px; min-width: 0; min-height: 24px; }
 .axe-agents__head--compact .axe-agents__filters[open] > label > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .axe-agents__head--compact .axe-agents__filters[open] > label > input { flex: none; width: 16px; height: 16px; margin: 0; }
+
+/* Vue « Tableau » (colonnes par état), bascule Arbre / Tableau, portée. */
+.axe-agents__vues { display: inline-flex; flex: none; border: 1px solid var(--line-strong); border-radius: var(--r-small); overflow: hidden; }
+.axe-agents .axe-agents__vues > button { margin: 0; min-height: 24px; border: 0; border-radius: 0; background: transparent; color: var(--text-2); }
+.axe-agents .axe-agents__vues > button + button { border-left: 1px solid var(--line-strong); }
+.axe-agents .axe-agents__vues > button[aria-pressed="true"] { background: var(--bg-2); color: var(--text-0); box-shadow: inset 0 -2px 0 var(--accent); }
+.axe-agents__portee { min-width: 0; max-width: 100%; min-height: 24px; padding: 2px 4px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-2); color: var(--text-0); font: inherit; font-size: calc(11px * var(--text-scale, 1)); }
+.axe-tableau { display: grid; grid-template-columns: repeat(auto-fit, minmax(14em, 1fr)); gap: 10px 12px; align-items: start; }
+.axe-tableau__colonne { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.axe-tableau__titre { display: flex; align-items: center; gap: 6px; min-height: 24px; margin: 0; color: var(--text-1); font-size: calc(11px * var(--text-scale, 1)); font-weight: 600; letter-spacing: .02em; }
+.axe-tableau__libelle { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-tableau__nombre { color: var(--text-2); font-weight: 400; font-variant-numeric: tabular-nums; }
+.axe-agents .axe-tableau__plier { margin-left: auto; min-height: 24px; font-weight: 400; }
+.axe-tableau__pastille { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--text-2); }
+.axe-tableau__pastille[data-colonne="attente"] { background: #eab308; }
+.axe-tableau__pastille[data-colonne="travaille"] { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.axe-tableau__pastille[data-colonne="fini"] { background: #4ade80; }
+.axe-tableau__pastille[data-colonne="echec"] { background: #f87171; }
+.axe-tableau__cartes { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.axe-agents .axe-tableau__carte { display: flex; flex-direction: column; align-items: stretch; gap: 2px; width: 100%; min-height: 32px; padding: 6px 8px; border: 1px solid var(--line-strong); border-left: 3px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-1); color: var(--text-1); text-align: left; font-size: calc(12px * var(--text-scale, 1)); }
+.axe-agents .axe-tableau__carte[data-colonne="attente"] { border-left-color: #eab308; }
+.axe-agents .axe-tableau__carte[data-colonne="travaille"] { border-left-color: var(--accent); }
+.axe-agents .axe-tableau__carte[data-colonne="fini"] { border-left-color: #4ade80; }
+.axe-agents .axe-tableau__carte[data-colonne="echec"] { border-left-color: #f87171; }
+.axe-agents .axe-tableau__carte:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.axe-tableau__haut { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.axe-tableau__nom { min-width: 0; overflow: hidden; color: var(--text-0); text-overflow: ellipsis; white-space: nowrap; }
+.axe-tableau__texte { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--text-1); overflow-wrap: anywhere; }
+.axe-tableau__details { overflow: hidden; color: var(--text-2); font-size: calc(11px * var(--text-scale, 1)); text-overflow: ellipsis; white-space: nowrap; }

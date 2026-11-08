@@ -372,6 +372,13 @@ export function installerSimulation(scene: Scene): void {
     get_openrouter_provider_status: () => ({ ...statut(false), hasApiKey: false }),
     // « sessionsDemon » = liste du service sous sa forme réelle.
     daemon_sessions: () => (Array.isArray(scene.sessionsDemon) ? scene.sessionsDemon : sessions(scene)),
+    // Centre des notifications (« notifications » : état rendu par notifications_lister).
+    notifications_lister: () => scene.notifications ?? null,
+    notifications_signaler: () => ({ nouveau: true, systeme: false, son: false }),
+    notifications_effacer_etat: () => null,
+    notifications_marquer_lu: () => null,
+    notifications_vue: () => null,
+    notifications_reglages: (a: any) => a?.reglages ?? (scene.notifications as any)?.reglages ?? null,
     list_workspace_entries_command: (a) => {
       const dossier = a.relativePath ?? a.input?.relativePath ?? "";
       const liste = D.entrees(dossier);

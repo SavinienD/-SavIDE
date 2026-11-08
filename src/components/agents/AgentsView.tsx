@@ -10,6 +10,11 @@ import { api } from "../../lib/ipc";
 import type { ActiveTurnsChangedPayload } from "../../types";
 import { majSessionsEnCours, sessionsEnCours } from "../../lib/toursActifs";
 import { archive, compter, dansLeDossier, statutsEffectifs } from "./agentsStatut";
+// Vue « Tableau », portée « ce dossier / tous les dossiers », ouverture partout.
+import { AgentsTableau } from "./AgentsTableau";
+import { CLE_PORTEE, CLE_VUE, demandeAttention, lireVue } from "./agentsTableau";
+import { useCentreNotifications } from "../notifications/store";
+import { ouvrirCible } from "../notifications/ouvrir";
 import "./agents.css";
 
 type Props = {
@@ -68,6 +73,20 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
   // sub-m — task (1st line of the first user message) of each sub-agent, by key.
   const [tasks, setTasks] = useState<Record<string, string>>({});
   const modelChoices = useModelChoices();
+  // Vue mémorisée, portée, états notés par le centre des notifications.
+  const [vue, setVue] = useState<"arbre" | "tableau">(() => lireVue(typeof window === "undefined" ? null : window.localStorage));
+  const [tousDossiers, setTousDossiers] = useState(() => {
+    try { return window.localStorage.getItem(CLE_PORTEE) === "1"; } catch { return false; }
+  });
+  const { etats } = useCentreNotifications();
+  const choisirVue = (v: "arbre" | "tableau") => {
+    setVue(v);
+    try { window.localStorage.setItem(CLE_VUE, v); } catch { /* stockage indisponible */ }
+  };
+  const choisirPortee = (tous: boolean) => {
+    setTousDossiers(tous);
+    try { window.localStorage.setItem(CLE_PORTEE, tous ? "1" : "0"); } catch { /* stockage indisponible */ }
+  };
 
   // tours envoyés par la fenêtre (la conversation ouverte travaille alors que le service
   // la voit « déchargée ») et sessions annoncées « running » par les événements du service local.
@@ -104,7 +123,8 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
           // Local sessions are scoped to the open project (+ free conversations,
           // freechat); remote ones live in remote folders.
           // même comparaison que le rond d'activité (préfixe \\?\ du service, casse).
-          const scoped = t.id === LOCAL_CONNECTION ? all.filter((s) => dansLeDossier(s, workspacePath)) : all;
+          // « tous les dossiers » : toutes les sessions du poste.
+          const scoped = t.id === LOCAL_CONNECTION && !tousDossiers ? all.filter((s) => dansLeDossier(s, workspacePath)) : all;
           if (t.id === LOCAL_CONNECTION) setEnCoursService(sessionsEnCours(all));
           return scoped.map((s) => ({ ...s, conn: t.id, connName: t.name }));
         } catch (e) {
@@ -115,7 +135,7 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
     );
     setSessions(lists.flat());
     setError(errors.length ? `Service indisponible — ${errors.join(" · ")}` : null);
-  }, [workspacePath, active, allMachines]);
+  }, [workspacePath, active, allMachines, tousDossiers]);
   // remote end
 
   useEffect(() => {
@@ -151,6 +171,11 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
     return sessionsAff.filter((s) => showArchived || !archive(s, statut));
   }, [sessionsAff, showArchived]);
   const forest = useMemo(() => buildTree(visibleSessions), [visibleSessions]);
+  // tableau : les sessions visibles, plus celles qui demandent une réponse ou ont échoué.
+  const sessionsTableau = useMemo(() => {
+    const statut = new Map(sessionsAff.map((s) => [s.id, s.status] as const));
+    return sessionsAff.filter((s) => showArchived || !archive(s, statut) || demandeAttention(etats[s.id]));
+  }, [sessionsAff, showArchived, etats]);
   // remote — roots grouped by machine
   const machines = useMemo(() => {
     const groups = new Map<string, { name: string; nodes: TreeNode[] }>();
@@ -206,6 +231,10 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
 
   // freechat — a free conversation opens in the free conversation view.
   const openSession = (meta: SessionMeta) => {
+    // session d'un autre dossier (« tous les dossiers ») : ouverte dans son dossier.
+    if (meta.conn === LOCAL_CONNECTION && !meta.scratch && !dansLeDossier(meta, workspacePath)) {
+      if (ouvrirCible({ sessionId: meta.id, dossier: meta.workspaceId, sousAgent: Boolean(meta.parentId), titre: meta.name })) return;
+    }
     // sub-m — sub-agents (and remote sessions) open as a read-only journal.
     if (onOpenJournal && (meta.parentId || meta.conn !== LOCAL_CONNECTION)) {
       onOpenJournal(meta.id, meta.conn, meta.name || meta.id.slice(0, 8));
@@ -216,6 +245,7 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
     else onOpenConversation?.(meta.id);
   };
   const canOpen = (meta: SessionMeta) =>
+    (meta.conn === LOCAL_CONNECTION && !meta.scratch && !dansLeDossier(meta, workspacePath)) ||
     (Boolean(onOpenJournal) && (Boolean(meta.parentId) || meta.conn !== LOCAL_CONNECTION)) ||
     (meta.conn === LOCAL_CONNECTION &&
     Boolean(meta.scratch ? onOpenFreeConversation ?? onOpenConversation : onOpenConversation));
@@ -337,6 +367,15 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
           <span className="axe-agents__dot" data-status="idle" /> {counts.idle}
           <span className="axe-agents__dot" data-status="inactive" /> {counts.inactive}
         </span>
+        {/* Bascule Arbre / Tableau (mémorisée) et portée. */}
+        <span className="axe-agents__vues" role="group" aria-label="Affichage des agents">
+          <button type="button" data-vue="arbre" aria-pressed={vue === "arbre"} onClick={() => choisirVue("arbre")}>Arbre</button>
+          <button type="button" data-vue="tableau" aria-pressed={vue === "tableau"} onClick={() => choisirVue("tableau")}>Tableau</button>
+        </span>
+        <select className="axe-agents__portee" aria-label="Dossiers montrés" value={tousDossiers ? "tous" : "ce"} onChange={(e) => choisirPortee(e.target.value === "tous")}>
+          <option value="ce">Ce dossier</option>
+          <option value="tous">Tous les dossiers</option>
+        </select>
         <details className="axe-agents__filters">
           <summary title="Filtres">Filtres</summary>
           <label title="Sessions archivées et sous-agents terminés"><input type="checkbox" data-filtre="archives" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /><span>archivés</span></label>
@@ -349,6 +388,9 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
 
       {/* agents — external agent CLIs launched by the service */}
 
+      {vue === "tableau" ? (
+        <AgentsTableau sessions={sessionsTableau} etats={etats} tousDossiers={tousDossiers} taches={tasks} onOuvrir={(s) => { setSelectedId(key(s)); openSession(s); }} />
+      ) : (
       <ul className="axe-agents__list">
         {forest.length === 0 ? <li className="axe-agents__muted">Aucune session pour ce projet.</li> : null}
         {machines.length > 1 || (machines[0] && machines[0][0] !== LOCAL_CONNECTION)
@@ -360,6 +402,7 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
             ))
           : renderRoots(forest)}
       </ul>
+      )}
 
       <details className="axe-agents__external">
         <summary>Agents externes (CLI)</summary>

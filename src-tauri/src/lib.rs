@@ -166,6 +166,7 @@ mod viewers; // viewers
 mod workflow;
 mod workspace;
 mod dossiers; // dossiers renommés ou déplacés
+mod notifications; // notifications, cloche, badge
 
 use context::*;
 use models::*;
@@ -628,6 +629,13 @@ pub fn run() {
             updater::updater_download_and_install,
             updater::updater_restart,
             updater::updater_current_version,
+            // Centre des notifications
+            notifications::notifications_lister,
+            notifications::notifications_signaler,
+            notifications::notifications_effacer_etat,
+            notifications::notifications_marquer_lu,
+            notifications::notifications_vue,
+            notifications::notifications_reglages,
         ])
         .build(tauri::generate_context!())
         .expect("error while building SavIDE desktop")
