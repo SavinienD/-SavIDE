@@ -450,7 +450,7 @@ Code map:
     │   ├── notifications # notifications des agents
     │   │   ├── Cloche.tsx # cloche de la barre du haut : événements récents, non-lus, « Tout marquer lu », clic = ouvrir (badge de l'icône : notifications.rs)
     │   │   ├── contrat.ts # CONTRAT COMMUN « ide-notification » (CustomEvent des autres écrans) : documentation, notifier(), écoute
-    │   │   ├── SommeilSection.tsx # Réglages > Service : endormir une conversation inactive après N min (RPC sommeil.*)
+    │   │   ├── SommeilSection.tsx # Réglages > Notifications : endormir une conversation inactive après N min (RPC sommeil.*)
     │   │   ├── NotificationsSection.tsx # Réglages > Notifications : événements, notification du système, son court, ne pas déranger, essai
     │   │   ├── son.ts # son court synthétisé (WebAudio, aucun fichier), préparé au premier geste
     │   │   ├── notifications.css

@@ -455,10 +455,10 @@ export const SCENES = [
     temoins: ["sel:.axe-cloche__bouton[data-non-lus='3']", "sel:.axe-cloche__panneau", "compte:.axe-cloche__item=4", "compte:.axe-cloche__item[data-lu='false']=3"] },
   { id: "cloche-vide", sim: {}, stockage: () => colonnes([ids(3)]), clics: [".axe-cloche__bouton"],
     temoins: ["sel:.axe-cloche__panneau", "sel:.axe-cloche__vide", "absent:.axe-cloche__compte"] },
-  // Conversations endormies : Réglages > Service (délai) et bouton « Endormir » d'une conversation inactive.
-  { id: "reglages-service-sommeil", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true,
-    clics: [".settings-pane__nav-item[data-section='service']"], temoins: ["sel:.axe-sommeil", "sel:select.axe-sommeil__delai"] },
-  { id: "agents-endormir", sim: { sessionsDemon: SESSIONS_TABLEAU() }, stockage: () => colonnes([ids(3)]), agents: true, clicAgent: "VPN du client",
+  // Conversations endormies : Réglages > Notifications (délai) et bouton « Endormir » d'une conversation inactive.
+  { id: "reglages-sommeil", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='notifications']"], temoins: ["sel:.axe-sommeil", "sel:select.axe-sommeil__delai"] },
+  { id: "agents-endormir", sim: { sessionsDemon: SESSIONS_TABLEAU() }, stockage: () => colonnes([ids(3)]), agents: true, clics: [".axe-agents__row[data-status='idle']:not([data-sous-agent])"],
     temoins: ["sel:.axe-agents__actions button[data-action='endormir']"] },
   { id: "agents-archives", sim: { tour: "en_cours", sessionsDemon: SESSIONS_AGENTS() }, stockage: () => colonnes([ids(3)]), agents: true,
     clics: [".axe-agents__filters summary", ".axe-agents__filters input[data-filtre='archives']"],

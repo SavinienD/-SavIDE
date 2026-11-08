@@ -1,5 +1,5 @@
 //! Conversations endormies : le délai après lequel une conversation inactive
-//! est endormie se règle (Réglages > Service) au lieu des 30 min fixes. Endormir = décharger la
+//! est endormie se règle (Réglages > Notifications) au lieu des 30 min fixes. Endormir = décharger la
 //! session (`unload`) : instantané du noyau (ses variables sont reprises par un nouveau noyau au
 //! message suivant, sauf fichiers ouverts, connexions et processus), puis arrêt de son processus
 //! Python, ce qui libère la mémoire. Le bouton « Endormir » de l'onglet Agents appelle

@@ -1,5 +1,5 @@
 "use strict";
-// Conversations endormies : Réglages > Service (délai, « Jamais »), bouton
+// Conversations endormies : Réglages > Notifications (délai, « Jamais »), bouton
 // « Endormir » de l'onglet Agents (sessions.unload). La reprise des variables par un nouveau
 // noyau est vérifiée par python/tests/test_sommeil.py ; le délai du service par
 // crates/axecode-daemon/tests/sommeil.rs.
@@ -71,7 +71,7 @@ test("Endormir = sessions.unload sur la connexion de la session", async () => {
   assert.deepEqual(appels[0], ["daemon_call", { input: { method: "sessions.unload", params: { sessionId: "s-1" }, connection: "local" } }]);
 });
 
-test("Réglages > Service : délai par défaut affiché, « Jamais » enregistré dans le service du poste", async () => {
+test("Réglages > Notifications : délai par défaut affiché, « Jamais » enregistré dans le service du poste", async () => {
   appels.length = 0;
   const hote = document.createElement("div");
   document.body.appendChild(hote);

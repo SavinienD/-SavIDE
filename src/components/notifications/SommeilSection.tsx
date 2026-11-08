@@ -1,4 +1,4 @@
-// Réglages > Service : délai après lequel une conversation inactive est
+// Réglages > Notifications : délai après lequel une conversation inactive est
 // endormie (son noyau Python s'arrête pour libérer la mémoire ; il repart au message suivant).
 // Réglage du service de ce poste (crates/axecode-daemon/src/sommeil.rs, RPC sommeil.get/set).
 // Vérifié (python/tests/test_sommeil.py) : un nouveau noyau reprend les variables de l'instantané,

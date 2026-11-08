@@ -1537,11 +1537,11 @@ export function SettingsPane({ workspacePath }: Props) {
         ) : section === "repl" ? (
           <><ReplToolsPane workspacePath={workspacePath} />{EDITION_LOCALE ? null : <RegistrePane />}</> /* repl + e4 (le registre demande le serveur : absent de l'édition locale) */
         ) : section === "service" ? (
-          <><ServicePane /><SommeilSection /></> /* daemon + conversations inactives */
+          <ServicePane /> /* daemon */
         ) : section === "shortcuts" ? (
           <RaccourcisSection /> /* raccourcis */
         ) : section === "notifications" ? (
-          <NotificationsSection />
+          <><NotificationsSection /><SommeilSection /></> /* + conversations inactives (la section Service est masquée dans cette édition) */
         ) : section === "voice" ? (
           <VoixSection workspacePath={workspacePath} /> /* voix */
         ) : section === "connections" ? (
