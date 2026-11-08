@@ -152,3 +152,26 @@ test("accroches W3 / W4 : onglet et panneau Worktrees, nettoyage, commandes", ()
   const lib = lire("src-tauri/src/lib.rs");
   for (const c of ["worktrees_lister", "worktree_supprimer", "worktrees_nettoyage", "worktrees_prune"]) assert.ok(lib.includes(`worktrees::${c}`), c);
 });
+
+test("raccourci « Nouveau worktree » : Ctrl+Alt+W, sans conflit (Ctrl+Maj+W reste à « Fermer tous les fichiers »)", () => {
+  if (!Module._extensions[".ts"]) {
+    Module._extensions[".ts"] = (m, fichier) => m._compile(ts.transpileModule(fs.readFileSync(fichier, "utf8"), {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+    }).outputText, fichier);
+  }
+  if (typeof global.localStorage === "undefined") {
+    const memoire = new Map();
+    global.localStorage = { getItem: (k) => (memoire.has(k) ? memoire.get(k) : null), setItem: (k, v) => memoire.set(k, String(v)), removeItem: (k) => memoire.delete(k) };
+  }
+  const R = require(path.resolve(__dirname, "../src/axe/raccourcis.ts"));
+  const ev = (o) => ({ ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, key: "", code: "", ...o });
+  const nouveau = R.RACCOURCIS.find((r) => r.id === "nouveauWorktree");
+  assert.equal(nouveau.combinaison, "Ctrl + Alt + W");
+  const ctrlAltW = ev({ ctrlKey: true, altKey: true, key: "w", code: "KeyW" });
+  assert.ok(R.correspond(nouveau, ctrlAltW, false));
+  assert.ok(R.correspond(nouveau, ev({ metaKey: true, altKey: true, key: "∑", code: "KeyW" }), true), "macOS : ⌥ change le caractère, touche physique lue");
+  for (const r of R.RACCOURCIS) if (r.id !== "nouveauWorktree") assert.ok(!R.correspond(r, ctrlAltW, false), `${r.id} prend aussi Ctrl+Alt+W`);
+  const ctrlMajW = ev({ ctrlKey: true, shiftKey: true, key: "W", code: "KeyW" });
+  assert.deepEqual(R.RACCOURCIS.filter((r) => R.correspond(r, ctrlMajW, false)).map((r) => r.id), ["fermerTousFichiers"]);
+  assert.equal(R.verifierCombinaison("nouveauWorktree", R.lireCombinaison(ctrlAltW, false), false), null);
+});

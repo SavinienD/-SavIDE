@@ -128,7 +128,8 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "revueNoter", categorie: "Revue", libelle: "Noter les lignes choisies", combinaison: "Alt + N", touche: { alt: true, touches: ["n", "code:KeyN"] } },
   { id: "navigateur", categorie: "Panneaux", libelle: "Ouvrir le navigateur intégré", combinaison: "Ctrl + Maj + B", touche: { ctrl: true, shift: true, touches: ["b", "code:KeyB"] } },
 
-  { id: "nouveauWorktree", categorie: "Dossiers", libelle: "Nouveau worktree (une branche et son dossier pour une tâche)", combinaison: "Ctrl + Maj + W", touche: { ctrl: true, shift: true, touches: ["w", "code:KeyW"] } }, // worktrees
+  // Ctrl+Maj+W reste à « Fermer tous les fichiers » (famille de Ctrl+W) ; Ctrl+Alt+E est évité (AltGr+E = € au clavier français).
+  { id: "nouveauWorktree", categorie: "Dossiers", libelle: "Nouveau worktree (une branche et son dossier pour une tâche)", combinaison: "Ctrl + Alt + W", touche: { ctrl: true, alt: true, touches: ["w", "code:KeyW"] } }, // worktrees
   // touche physique (AZERTY : Ctrl + « & » = Ctrl+1) ; le numéro est lu par numeroTouche.
   { id: "dossierRecent", categorie: "Dossiers", libelle: "Ouvrir le dossier n° 1 à 9 (ordre de l'accueil, inchangé jusqu'au retour à l'accueil)", combinaison: "Ctrl + 1…9", touche: { ctrl: true, touches: ["code:Digit1", "code:Digit2", "code:Digit3", "code:Digit4", "code:Digit5", "code:Digit6", "code:Digit7", "code:Digit8", "code:Digit9", "code:Numpad1", "code:Numpad2", "code:Numpad3", "code:Numpad4", "code:Numpad5", "code:Numpad6", "code:Numpad7", "code:Numpad8", "code:Numpad9"] } },
 

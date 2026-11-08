@@ -1,9 +1,9 @@
 // Worktrees — scènes du banc d'affichage : « Nouveau worktree », tâches de fond
 // (création en arrière-plan, script visible), liste par dépôt et nettoyage.
-// Gestes par sélecteur ou raccourci (Ctrl+Maj+W), jamais par un libellé traduit.
+// Gestes par sélecteur ou raccourci (Ctrl+Alt+W), jamais par un libellé traduit.
 import { WS_BANC as WS } from "./constantes.mjs";
 
-const NOUVEAU = { sim: { worktrees: true }, touches: ["Control+Shift+W"], taper: [{ sel: "#wt-titre", texte: "Corriger le calcul du panier" }] };
+const NOUVEAU = { sim: { worktrees: true }, touches: ["Control+Alt+W"], taper: [{ sel: "#wt-titre", texte: "Corriger le calcul du panier" }] };
 
 export const SCENES_WORKTREES = [
   // W1 — dialogue ouvert au clavier : branche proposée depuis le titre, commandes du projet à accepter.
@@ -11,7 +11,7 @@ export const SCENES_WORKTREES = [
     temoins: ["sel:.wt-nouveau", "champ:#wt-branche=corriger-le-calcul-du-panier", "sel:.wt-nouveau .wt-commandes",
       "clic:.wt-nouveau [data-action='valider']", "clic:.wt-nouveau [data-action='lancer-commandes'] input", "appel:worktrees_config"] },
   // W1 — dépôt sans worktrees.toml : rien n'est partagé ni lancé, « Créer le fichier » proposé.
-  { id: "worktrees-nouveau-sans-fichier", sim: { worktrees: true, wtSansFichier: true }, touches: ["Control+Shift+W"],
+  { id: "worktrees-nouveau-sans-fichier", sim: { worktrees: true, wtSansFichier: true }, touches: ["Control+Alt+W"],
     temoins: ["sel:.wt-nouveau", "clic:.wt-nouveau [data-action='creer-config']", "absent:.wt-nouveau .wt-commandes"] },
   // W1 — « Créer » : le dialogue se ferme tout de suite, la carte de la tâche suit les étapes (Annuler).
   { id: "worktrees-creation", ...NOUVEAU, cliquer: ".wt-nouveau [data-action='valider']",
