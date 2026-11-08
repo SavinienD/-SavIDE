@@ -212,7 +212,7 @@
 .axe-agents .axe-agents__vues > button + button { border-left: 1px solid var(--line-strong); }
 .axe-agents .axe-agents__vues > button[aria-pressed="true"] { background: var(--bg-2); color: var(--text-0); box-shadow: inset 0 -2px 0 var(--accent); }
 .axe-agents__portee { min-width: 0; max-width: 100%; min-height: 24px; padding: 2px 4px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-2); color: var(--text-0); font: inherit; font-size: calc(11px * var(--text-scale, 1)); }
-.axe-tableau { display: grid; grid-template-columns: repeat(auto-fit, minmax(14em, 1fr)); gap: 10px 12px; align-items: start; }
+.axe-tableau { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(14em, 100%), 1fr)); gap: 10px 12px; align-items: start; min-width: 0; }
 .axe-tableau__colonne { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .axe-tableau__titre { display: flex; align-items: center; gap: 6px; min-height: 24px; margin: 0; color: var(--text-1); font-size: calc(11px * var(--text-scale, 1)); font-weight: 600; letter-spacing: .02em; }
 .axe-tableau__libelle { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
