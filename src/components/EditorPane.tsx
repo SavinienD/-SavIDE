@@ -32,6 +32,8 @@ import { PlanificateurSauvegarde } from "./editeur/sauvegardeAuto";
 import { useMargeGit } from "./editeur/useMargeGit";
 import { memoriserModeMarkdown, modeMarkdownMemorise, type ModeMarkdown } from "./editeur/modeMarkdown";
 import { useDefilementSynchro } from "./editeur/useDefilementSynchro";
+import { useImagesMarkdown } from "./editeur/useImagesMarkdown";
+import { dossierDe } from "./editeur/imagesMarkdown";
 import { cloudConnectionFromPath } from "../lib/ipc";
 
 if (!(globalThis as typeof globalThis & { MonacoEnvironment?: unknown }).MonacoEnvironment) {
@@ -213,6 +215,9 @@ export function EditorPane({
     () => changerModeMarkdown(activePreview ? "source" : "apercu"),
     [activePreview, changerModeMarkdown],
   );
+  // image collée ou déposée dans un .md : enregistrée dans images/, lien inséré.
+  useImagesMarkdown(editorRef.current, showTextEditor ? activeTab : undefined, espace, editorReadySeq);
+  const espaceLocal = !(espace && cloudConnectionFromPath(espace));
   // côte à côte : défilement synchronisé de l'éditeur et de l'aperçu.
   const [apercuMd, setApercuMd] = useState<HTMLDivElement | null>(null);
   useDefilementSynchro(editorRef.current, apercuMd, activeCote && showTextEditor, activeTab?.buffer ?? "", editorReadySeq);
@@ -716,6 +721,7 @@ export function EditorPane({
                 className="editor-monaco-layer"
                 data-minimap={reglagesEditeur.minimap ? "true" : "false"}
                 data-retour-ligne={reglagesEditeur.retourLigne ? "true" : "false"}
+                data-depot-markdown={activeIsMarkdown && !readOnlyEditor && !activePreview ? activeTab.relativePath : undefined}
               >
                 <Editor
                   key={activeTab.relativePath}
@@ -753,6 +759,7 @@ export function EditorPane({
                     onOpenFile={handleOpenFileLink}
                     onToggleTask={readOnlyEditor ? undefined : basculerCaseApercu}
                     lignesSource
+                    dossierImages={espaceLocal ? dossierDe(activeTab.doc.absolutePath) : undefined}
                   />
                 </div>
               )}

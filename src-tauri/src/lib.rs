@@ -442,6 +442,7 @@ pub fn run() {
             viewers::viewer_sqlite_tables,
             viewers::viewer_sqlite_rows,
             editeur::editeur_fichier_head,
+            editeur::editeur_image_markdown,
             // repl
             repl_settings::repl_settings_get,
             repl_settings::repl_settings_save,

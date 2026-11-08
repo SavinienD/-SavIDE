@@ -52,4 +52,11 @@ export const SCENES_EDITEUR = [
     temoins: ["sel:.editor-md-preview[data-defile='bas']", "Fin de la procédure."] },
   { id: "editeur-md-apercu", ...EDITEUR, ouvrirFichier: "notes.md", clics: [".editor-preview-toggle"],
     temoins: ["sel:.editor-text-stack[data-mode='apercu'] .editor-md-preview h1", "sel:.md-actions [data-mode-md='cote'][data-active='false']"] },
+  // ED2b — image déposée depuis l'explorateur du système sur l'éditeur d'un .md : enregistrée dans
+  // images/ (editeur_image_markdown simulé) et lien inséré dans le texte ; Côte à côte : l'aperçu l'affiche.
+  { id: "editeur-md-image-deposee", ...EDITEUR, ouvrirFichier: "notes.md",
+    depot: { cible: ".editor-monaco-layer[data-depot-markdown='notes.md']", chemins: ["C:\\Users\\utilisateur\\Images\\capture ecran.png"] },
+    temoins: ["appel:editeur_image_markdown", "(images/capture-ecran.png)", "sel:.editor-col .tab[data-active='true'] .tab__dirty"] },
+  { id: "editeur-md-image-apercu", ...EDITEUR, ouvrirFichier: "notes.md", clics: [".md-actions [data-mode-md='cote']"],
+    temoins: ["sel:.editor-md-preview img[src*='renvois.png']", "absent:.editor-md-preview img[src='images/renvois.png']"] },
 ];

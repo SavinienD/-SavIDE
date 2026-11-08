@@ -144,6 +144,7 @@ import { garderSeulement } from "./chat/vuesConversations"; // mémoire
 import { appliquerEnregistrement } from "./editeur/onglets";
 import { cheminARouvrir, fermerTousLesFichiers, memoriserFermeture, peutRouvrir, sauverAvantFermeture } from "./editeur/fermeture";
 import { EntreesMenuOnglet } from "./editeur/MenuOnglet";
+import { DEPOT_MARKDOWN_EVENT } from "./editeur/useImagesMarkdown";
 
 type Props = {
   bootstrap: WorkspaceBootstrap;
@@ -2027,6 +2028,14 @@ export function Workspace({
             const paths = event.payload.paths ?? [];
             if (surHarnais) {
               window.dispatchEvent(new CustomEvent("axecode:depot-harnais", { detail: { paths } }));
+              return;
+            }
+            // images déposées sur l'éditeur d'un .md : ajoutées au Markdown (images/).
+            const cibleMd = position
+              ? [...document.querySelectorAll<HTMLElement>("[data-depot-markdown]")].find((el) => dansRect(position, el.getBoundingClientRect()))
+              : undefined;
+            if (cibleMd && position && paths.length) {
+              window.dispatchEvent(new CustomEvent(DEPOT_MARKDOWN_EVENT, { detail: { chemin: cibleMd.dataset.depotMarkdown, paths, x: position.x, y: position.y } }));
               return;
             }
             if (!paths.length) {
