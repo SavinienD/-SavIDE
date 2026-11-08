@@ -167,7 +167,7 @@ function ListeWorktrees({ dossier, actif, onOuvrirDossier, onFermerTerminaux }: 
     }
     majReglages((r) => ({ ...r, endormis: [...r.endormis, ...ws.map((w) => w.dossier).filter((d) => !contient(r.endormis, d))] }));
     setChoisis([]);
-    setMessage(ws.length === 1 ? `${ws[0].nom} endormi : terminaux fermés, conversations arrêtées.` : `${ws.length} worktrees endormis.`);
+    setMessage(ws.length === 1 ? `${ws[0].nom} endormi : terminaux fermés, conversations arrêtées.` : `${ws.length} worktrees endormis.`);
   };
 
   const reveiller = (w: WorktreeInfo) => majReglages((r) => ({ ...r, endormis: r.endormis.filter((d) => !memeChemin(d, w.dossier)) }));
@@ -200,7 +200,7 @@ function ListeWorktrees({ dossier, actif, onOuvrirDossier, onFermerTerminaux }: 
           archivesEnAttente.current.set(t.id, { depot: w.depot, branche: w.branche, titre: w.nom, dossier: w.dossier, dateMs: Date.now(), lien: lienDe(reglagesRef.current, w.dossier) });
         }
       } catch (e) {
-        erreurs.push(`${w.nom} : ${texteErreur(e)}`);
+        erreurs.push(`${w.nom} : ${texteErreur(e)}`);
       }
     }
     const empreinte = choix.empreinte;
@@ -291,7 +291,7 @@ function ListeWorktrees({ dossier, actif, onOuvrirDossier, onFermerTerminaux }: 
     const etat = [
       ouvert ? "ouvert dans cette fenêtre" : null,
       w.modifies ? `${w.modifies} fichier(s) modifié(s)` : null,
-      w.dernierCommitMs ? `dernier commit ${ilYa(w.dernierCommitMs, Date.now())}` : null,
+      w.dernierCommitMs ? `dernière validation (commit) ${ilYa(w.dernierCommitMs, Date.now())}` : null,
     ].filter(Boolean).join(" · ");
     return (
       <li
@@ -323,7 +323,7 @@ function ListeWorktrees({ dossier, actif, onOuvrirDossier, onFermerTerminaux }: 
           {tache ? <Icon icon="solar:refresh-linear" width={12} height={12} className="wt-ligne__tache" aria-label={tache.message} /> : null}
           {epingle ? <Icon icon="solar:pin-linear" width={12} height={12} aria-label="Épinglé" /> : null}
           {endormi ? <Icon icon="solar:moon-sleep-linear" width={12} height={12} aria-label="Endormi" /> : null}
-          {w.introuvable ? <span className="wt-badge" data-genre="alerte" title="Dossier introuvable : « Nettoyer » l'oublie">absent</span> : null}
+          {w.introuvable ? <span className="wt-badge" data-genre="alerte" title="Dossier introuvable : « Nettoyer » l'oublie">absent</span> : null}
           {w.modifies ? <span className="wt-badge" title={`${w.modifies} fichier(s) modifié(s) ou non suivi(s)`}>{w.modifies} modif.</span> : null}
           {w.avance ? <span className="wt-badge" title={`${w.avance} commit(s) en avance sur ${w.reference}`}>↑{w.avance}</span> : null}
           {w.retard ? <span className="wt-badge" title={`${w.retard} commit(s) en retard sur ${w.reference}`}>↓{w.retard}</span> : null}

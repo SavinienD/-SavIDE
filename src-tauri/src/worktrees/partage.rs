@@ -44,16 +44,16 @@ pub(crate) fn appliquer(
         let source = depot.join(rel);
         let cible = worktree.join(rel);
         if fs::symlink_metadata(&source).is_err() {
-            bilan.avertissements.push(format!("« {rel} » absent du dépôt principal : rien à partager"));
+            bilan.avertissements.push(format!("« {rel} » absent du dépôt principal : rien à partager"));
             continue;
         }
         if fs::symlink_metadata(&cible).is_ok() {
-            bilan.avertissements.push(format!("« {rel} » existe déjà dans le worktree : pas de lien"));
+            bilan.avertissements.push(format!("« {rel} » existe déjà dans le worktree : pas de lien"));
             continue;
         }
         if !ignore(rel) {
             bilan.avertissements.push(format!(
-                "« {rel} » n'est pas ignoré par git : pas de lien (il apparaîtrait comme modifié)"
+                "« {rel} » n'est pas ignoré par git : pas de lien (il apparaîtrait comme modifié)"
             ));
             continue;
         }
@@ -68,9 +68,9 @@ pub(crate) fn appliquer(
                 match copier(&source, &cible, &mut budget) {
                     Ok(()) => {
                         bilan.faits.push(Partage { chemin: rel.clone(), mode: "copie".into() });
-                        bilan.avertissements.push(format!("« {rel} » copié : lien impossible ({err})"));
+                        bilan.avertissements.push(format!("« {rel} » copié : lien impossible ({err})"));
                     }
-                    Err(err2) => bilan.avertissements.push(format!("« {rel} » non partagé : {err2}")),
+                    Err(err2) => bilan.avertissements.push(format!("« {rel} » non partagé : {err2}")),
                 }
             }
         }
@@ -79,7 +79,7 @@ pub(crate) fn appliquer(
         let source = depot.join(rel);
         let cible = worktree.join(rel);
         if fs::symlink_metadata(&source).is_err() {
-            bilan.avertissements.push(format!("« {rel} » absent du dépôt principal : rien à copier"));
+            bilan.avertissements.push(format!("« {rel} » absent du dépôt principal : rien à copier"));
             continue;
         }
         if fs::symlink_metadata(&cible).is_ok() {
@@ -91,7 +91,7 @@ pub(crate) fn appliquer(
         let mut budget = Budget::default();
         match copier(&source, &cible, &mut budget) {
             Ok(()) => bilan.faits.push(Partage { chemin: rel.clone(), mode: "copie".into() }),
-            Err(err) => bilan.avertissements.push(format!("« {rel} » non copié : {err}")),
+            Err(err) => bilan.avertissements.push(format!("« {rel} » non copié : {err}")),
         }
     }
     bilan
@@ -171,7 +171,7 @@ pub(crate) fn exclure(admin_commun: &Path, chemins: &[String]) -> Vec<String> {
     }
 }
 
-const ENTETE_EXCLUDE: &str = "# worktrees : liens partagés (git voit un lien comme un fichier)";
+const ENTETE_EXCLUDE: &str = "# worktrees : liens partagés (git voit un lien comme un fichier)";
 
 pub(crate) fn noter(admin: &Path, faits: &[Partage]) {
     let chemin = admin.join(FICHIER_SUIVI);
@@ -205,8 +205,7 @@ fn creer_lien(source: &Path, cible: &Path) -> io::Result<&'static str> {
     let cible_os = super::depot::chemin_os(cible);
     if source.is_dir() {
         // Jonction : pas besoin du mode développeur ni d'être administrateur.
-        let mut cmd = std::process::Command::new("cmd");
-        super::depot::masquer_console(&mut cmd);
+        let mut cmd = crate::__nw_std("cmd");
         let sortie = cmd
             .arg("/C")
             .arg("mklink")

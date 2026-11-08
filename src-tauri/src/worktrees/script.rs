@@ -23,7 +23,7 @@ pub(crate) struct Lance {
 pub(crate) fn lancer(dossier: &Path, script: &str, env: &[(String, String)]) -> Result<Lance, String> {
     let paire = native_pty_system()
         .openpty(PtySize { rows: 30, cols: 120, pixel_width: 0, pixel_height: 0 })
-        .map_err(|err| format!("terminal impossible à ouvrir : {err}"))?;
+        .map_err(|err| format!("terminal impossible à ouvrir : {err}"))?;
     let mut cmd = commande(script);
     cmd.cwd(super::depot::chemin_os(dossier).as_os_str());
     cmd.env("TERM", "xterm-256color");
@@ -34,7 +34,7 @@ pub(crate) fn lancer(dossier: &Path, script: &str, env: &[(String, String)]) -> 
     let enfant = paire
         .slave
         .spawn_command(cmd)
-        .map_err(|err| format!("script impossible à lancer : {err}"))?;
+        .map_err(|err| format!("script impossible à lancer : {err}"))?;
     drop(paire.slave);
     let lecteur = paire.master.try_clone_reader().map_err(|err| err.to_string())?;
     let ecriture = paire.master.take_writer().map_err(|err| err.to_string())?;

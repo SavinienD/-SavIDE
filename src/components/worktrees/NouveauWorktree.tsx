@@ -111,7 +111,7 @@ export function NouveauWorktree({
           id="wt-titre"
           data-autofocus
           className="git-panel__dialog-input"
-          placeholder="Ex. : corriger le calcul du panier"
+          placeholder="Ex. : corriger le calcul du panier"
           value={titre}
           maxLength={120}
           onChange={(e) => setTitre(e.target.value)}
@@ -154,18 +154,18 @@ export function NouveauWorktree({
           ))}
           {cfg.fichiers.length === 0 ? (
             <div className="wt-projet__ligne">
-              <span>Pas de worktrees.toml : rien n'est partagé ni lancé.</span>
+              <span>Pas de worktrees.toml : rien n'est partagé ni lancé.</span>
               <button type="button" className="git-panel__dialog-btn wt-lien" data-action="creer-config" onClick={() => void creerFichier()}>
                 Créer le fichier
               </button>
             </div>
           ) : null}
-          {partages.length ? <div className="wt-projet__ligne" title={partages.join(", ")}>Partage : {partages.join(", ")}</div> : null}
+          {partages.length ? <div className="wt-projet__ligne" title={partages.join(", ")}>Partage : {partages.join(", ")}</div> : null}
           {commandes ? (
             <>
               <label className="git-panel__dialog-check" data-action="lancer-commandes">
                 <input type="checkbox" checked={lancer} onChange={(e) => setLancer(e.target.checked)} />
-                <span>{approuve ? "Lancer les commandes du projet" : "Lancer ces commandes (nouvelles : lisez-les)"}</span>
+                <span>{approuve ? "Lancer les commandes du projet" : "Lancer ces commandes (nouvelles : lisez-les)"}</span>
               </label>
               <pre className="wt-commandes">{texteCommandes(cfg.scriptCreation, cfg.terminaux, cfg.scriptSuppression)}</pre>
             </>
@@ -179,9 +179,9 @@ export function NouveauWorktree({
 
 export function texteCommandes(script: string | null, terminaux: TerminalDefaut[], suppression: string | null = null): string {
   const lignes: string[] = [];
-  if (script) lignes.push("Préparation :", ...script.split("\n").map((l) => `  ${l}`));
+  if (script) lignes.push("Préparation :", ...script.split("\n").map((l) => `  ${l}`));
   const avecCommande = terminaux.filter((t) => t.commande);
-  if (avecCommande.length) lignes.push("Terminaux :", ...avecCommande.map((t) => `  ${t.nom} : ${t.commande}`));
-  if (suppression) lignes.push("À la suppression :", ...suppression.split("\n").map((l) => `  ${l}`));
+  if (avecCommande.length) lignes.push("Terminaux :", ...avecCommande.map((t) => `  ${t.nom} : ${t.commande}`));
+  if (suppression) lignes.push("À la suppression :", ...suppression.split("\n").map((l) => `  ${l}`));
   return lignes.join("\n");
 }

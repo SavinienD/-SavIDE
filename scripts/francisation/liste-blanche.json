@@ -296,5 +296,15 @@
   "fichier": "src/components/pr/PrOnglet.tsx",
   "terme": "gh auth login",
   "raison": "commande de GitHub CLI à taper dans un terminal"
+ },
+ {
+  "fichier": "src/components/worktrees/",
+  "terme": "\\bHEAD\\b",
+  "raison": "HEAD : terme Git (HEAD détachée)"
+ },
+ {
+  "fichier": "src/components/worktrees/logique.ts",
+  "motif": "^(Ko|Mo|Go|To)$",
+  "raison": "unités de taille : To = téraoctet"
  }
 ]

@@ -45,7 +45,7 @@ async fn en_fond<T: Send + 'static>(
 ) -> Result<T, String> {
     tauri::async_runtime::spawn_blocking(f)
         .await
-        .map_err(|err| format!("tâche interrompue : {err}"))?
+        .map_err(|err| format!("tâche interrompue : {err}"))?
 }
 
 fn nom_dossier(chemin: &Path) -> String {
@@ -85,7 +85,7 @@ pub(crate) async fn worktrees_config_creer(input: DepotInput) -> Result<ConfigDe
             return Err(format!("{} existe déjà", config::FICHIER));
         }
         std::fs::write(&chemin, config::modele(&racine))
-            .map_err(|err| format!("{} impossible à écrire : {err}", config::FICHIER))?;
+            .map_err(|err| format!("{} impossible à écrire : {err}", config::FICHIER))?;
         config_depot(&racine.display().to_string())
     })
     .await

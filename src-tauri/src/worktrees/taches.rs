@@ -321,14 +321,14 @@ pub(crate) fn preparer_creation(d: &DemandeCreation) -> Result<Tache, String> {
     let racine = depot::racine_principale(&depart)?;
     let branche = d.branche.trim().to_string();
     if !depot::nom_branche_valide(&racine, &branche) {
-        return Err(format!("Nom de branche invalide : « {branche} »"));
+        return Err(format!("Nom de branche invalide : « {branche} »"));
     }
     let liste = depot::lister(&racine)?;
     let existait = depot::branche_locale_existe(&racine, &branche);
     if existait {
         if let Some(w) = liste.iter().find(|w| w.branche.as_deref() == Some(branche.as_str())) {
             return Err(format!(
-                "La branche « {branche} » est déjà ouverte dans {}",
+                "La branche « {branche} » est déjà ouverte dans {}",
                 depot::chemin_os(&w.chemin).display()
             ));
         }
@@ -347,7 +347,7 @@ pub(crate) fn preparer_creation(d: &DemandeCreation) -> Result<Tache, String> {
             .or_else(|| depot::branche_principale(&racine))
             .unwrap_or_else(|| "HEAD".to_string());
         if !depot::revision_existe(&racine, &base) {
-            return Err(format!("Branche de départ « {base} » introuvable"));
+            return Err(format!("Branche de départ « {base} » introuvable"));
         }
         Some(base)
     };
@@ -464,7 +464,7 @@ fn message_etape(t: &Tache) -> String {
         (Genre::Creation, Etape::Fin) => "Worktree prêt".to_string(),
         (_, Etape::Script) => "Script de suppression…".to_string(),
         (Genre::Suppression, Etape::Git) => "Suppression du dossier…".to_string(),
-        (Genre::Archivage, Etape::Git) => "Archivage : retrait du dossier…".to_string(),
+        (Genre::Archivage, Etape::Git) => "Archivage : retrait du dossier…".to_string(),
         (Genre::Suppression, Etape::Fin) => "Worktree supprimé".to_string(),
         (Genre::Archivage, Etape::Fin) => format!("Worktree archivé (branche {branche} gardée)"),
         (_, Etape::Partage) => String::new(),
@@ -539,7 +539,7 @@ pub(crate) fn oublier(id: &str) -> Result<(), String> {
     let mut reg = verrou();
     if let Some(e) = reg.get(id) {
         if e.tache.etat == Etat::EnCours {
-            return Err("tâche en cours : annulez-la d'abord".to_string());
+            return Err("tâche en cours : annulez-la d'abord".to_string());
         }
         reg.remove(id);
     }
@@ -684,7 +684,7 @@ fn arreter(hote: &dyn Hote, tache: &Tache, erreur: Option<(&'static str, String,
                 t.message = match (t.genre, t.etape) {
                     (Genre::Creation, Etape::Script) => "Préparation arrêtée (le worktree reste utilisable)".to_string(),
                     (Genre::Creation, _) => "Création annulée".to_string(),
-                    _ => "Suppression annulée : rien n'a été retiré".to_string(),
+                    _ => "Suppression annulée : rien n'a été retiré".to_string(),
                 };
             }
         }
@@ -737,7 +737,7 @@ fn git_annulable(racine: &Path, args: &[String], c: &Controle) -> Result<depot::
     cmd.args(args).stdout(Stdio::piped()).stderr(Stdio::piped());
     let mut enfant = cmd
         .spawn()
-        .map_err(|err| echec("git", format!("git impossible à lancer ({err}) : installez Git"), None))?;
+        .map_err(|err| echec("git", format!("git impossible à lancer ({err}) : installez Git"), None))?;
     let lire_tout = |flux: Option<Box<dyn Read + Send>>| {
         std::thread::spawn(move || {
             let mut octets = Vec::new();
@@ -758,7 +758,7 @@ fn git_annulable(racine: &Path, args: &[String], c: &Controle) -> Result<depot::
         match enfant.try_wait() {
             Ok(Some(statut)) => break statut,
             Ok(None) => std::thread::sleep(PAS),
-            Err(err) => return Err(echec("git", format!("git : {err}"), None)),
+            Err(err) => return Err(echec("git", format!("git : {err}"), None)),
         }
     };
     Ok(depot::Sortie {
@@ -862,7 +862,7 @@ fn lancer_script(hote: &Arc<dyn Hote>, t: &Tache, c: &Arc<Controle>) -> Result<M
     if t.options.empreinte.is_none() || t.options.empreinte != cfg.empreinte {
         return Err(echec(
             "empreinte",
-            "Les commandes du projet ont changé : vérifiez-les avant de relancer",
+            "Les commandes du projet ont changé : vérifiez-les avant de relancer",
             Some(script),
         ));
     }

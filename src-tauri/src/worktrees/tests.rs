@@ -2,7 +2,6 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use super::{config, depot, partage, script};
@@ -18,7 +17,7 @@ fn dossier_temp(nom: &str) -> PathBuf {
 }
 
 fn git_test(dossier: &Path, args: &[&str]) {
-    let sortie = Command::new("git")
+    let sortie = crate::__nw_std("git")
         .arg("-C")
         .arg(dossier)
         .args(["-c", "user.name=Test", "-c", "user.email=test@example.com", "-c", "commit.gpgsign=false"])

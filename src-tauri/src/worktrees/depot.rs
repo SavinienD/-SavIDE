@@ -96,7 +96,7 @@ pub(crate) fn git(dossier: &Path, args: &[&str]) -> Result<Sortie, String> {
     }
     let sortie = cmd
         .output()
-        .map_err(|err| format!("git introuvable ou impossible à lancer ({err}) : installez Git"))?;
+        .map_err(|err| format!("git introuvable ou impossible à lancer ({err}) : installez Git"))?;
     Ok(Sortie {
         stdout: String::from_utf8_lossy(&sortie.stdout).to_string(),
         stderr: String::from_utf8_lossy(&sortie.stderr).to_string(),
@@ -124,7 +124,7 @@ pub(crate) fn message_echec(args: &[&str], sortie: &Sortie) -> String {
     if detail.is_empty() {
         format!("échec de git {commande}")
     } else {
-        format!("échec de git {commande} : {detail}")
+        format!("échec de git {commande} : {detail}")
     }
 }
 

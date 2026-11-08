@@ -78,7 +78,7 @@ export function NettoyageWorktrees({ chemins, dossierOuvert, onFermer }: { chemi
         });
         noterLanceeIci(t.id);
       } catch (e) {
-        erreurs.push(`${w.nom} : ${texteErreur(e)}`);
+        erreurs.push(`${w.nom} : ${texteErreur(e)}`);
       }
     }
     const empreinte = c.empreinte;

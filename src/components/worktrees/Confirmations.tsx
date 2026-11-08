@@ -51,7 +51,7 @@ export function ConfirmationSuppression({
   }, [depot]);
   const modifies = worktrees.filter((w) => (w.modifies ?? 0) > 0);
   const n = worktrees.length;
-  const nom = n === 1 ? `« ${worktrees[0].nom} »` : `${n} worktrees`;
+  const nom = n === 1 ? `« ${worktrees[0].nom} »` : `${n} worktrees`;
   const script = config?.config.scriptSuppression ?? null;
   const valider = async () => {
     setOccupe(true);
@@ -66,11 +66,11 @@ export function ConfirmationSuppression({
   };
   return (
     <Dialogue
-      titre={mode === "supprimer" ? `Supprimer ${nom} ?` : `Archiver ${nom} ?`}
+      titre={mode === "supprimer" ? `Supprimer ${nom} ?` : `Archiver ${nom} ?`}
       description={
         mode === "supprimer"
           ? "Le dossier est retiré du disque. La branche est gardée, sauf si vous cochez ci-dessous."
-          : "Le dossier est retiré, la branche est gardée : « Restaurer » le recrée."
+          : "Le dossier est retiré, la branche est gardée : « Restaurer » le recrée."
       }
       libelle={mode === "supprimer" ? "Supprimer" : "Archiver"}
       danger={mode === "supprimer"}
@@ -131,7 +131,7 @@ export function DialogueLien({
   return (
     <Dialogue
       titre="Lien vers une PR ou une issue"
-      description={<>Pour le worktree <strong className="git-panel__dialog-strong">{worktree.nom}</strong>. Vide : pas de lien.</>}
+      description={<>Pour le worktree <strong className="git-panel__dialog-strong">{worktree.nom}</strong>. Vide : pas de lien.</>}
       libelle="Enregistrer"
       desactive={!valide}
       onValider={() => {
@@ -189,8 +189,8 @@ export function DialogueBase({
   if (choix && !branches.includes(choix)) branches.unshift(choix);
   return (
     <Dialogue
-      titre={`Branche de départ : ${nomDe(depot)}`}
-      description={`Les nouveaux worktrees partent de cette branche (par défaut : ${config?.branchePrincipale ?? "la branche principale"}).`}
+      titre={`Branche de départ : ${nomDe(depot)}`}
+      description={`Les nouveaux worktrees partent de cette branche (par défaut : ${config?.branchePrincipale ?? "la branche principale"}).`}
       libelle="Enregistrer"
       desactive={!choix}
       onValider={() => {

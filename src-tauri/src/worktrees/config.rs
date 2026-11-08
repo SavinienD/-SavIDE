@@ -132,19 +132,19 @@ fn lire_fichier(chemin: &Path, nom: &str, erreurs: &mut Vec<String>) -> Option<S
         return None;
     }
     if meta.len() > TAILLE_MAX {
-        erreurs.push(format!("{nom} : fichier trop gros (256 Ko au plus), ignoré"));
+        erreurs.push(format!("{nom} : fichier trop gros (256 Ko au plus), ignoré"));
         return None;
     }
     match fs::read(chemin) {
         Ok(octets) => match String::from_utf8(octets) {
             Ok(texte) => Some(texte.trim_start_matches('\u{feff}').to_string()),
             Err(_) => {
-                erreurs.push(format!("{nom} : le fichier n'est pas en UTF-8, ignoré"));
+                erreurs.push(format!("{nom} : le fichier n'est pas en UTF-8, ignoré"));
                 None
             }
         },
         Err(err) => {
-            erreurs.push(format!("{nom} : lecture impossible ({err})"));
+            erreurs.push(format!("{nom} : lecture impossible ({err})"));
             None
         }
     }
@@ -154,7 +154,7 @@ fn analyser_toml(texte: &str) -> Result<Brut, String> {
     toml::from_str::<Brut>(texte).map_err(|err| {
         let detail = err.to_string();
         let detail = detail.trim();
-        format!("{FICHIER} invalide, ignoré : {detail}")
+        format!("{FICHIER} invalide, ignoré : {detail}")
     })
 }
 
@@ -175,7 +175,7 @@ fn appliquer(config: &mut Config, brut: Brut) {
     config.copies = chemins_valides(&brut.partage.copies, "copies", &mut config.erreurs);
     if brut.terminaux.len() > MAX_TERMINAUX {
         config.erreurs.push(format!(
-            "terminaux : {MAX_TERMINAUX} au plus, les suivants sont ignorés"
+            "terminaux : {MAX_TERMINAUX} au plus, les suivants sont ignorés"
         ));
     }
     config.terminaux = brut
@@ -224,13 +224,13 @@ fn chemins_valides(liste: &[String], cle: &str, erreurs: &mut Vec<String>) -> Ve
                 }
             }
             None => erreurs.push(format!(
-                "partage.{cle} : « {} » refusé (chemin relatif au dépôt, sans « .. »)",
+                "partage.{cle} : « {} » refusé (chemin relatif au dépôt, sans « .. »)",
                 brut.trim()
             )),
         }
     }
     if liste.len() > MAX_CHEMINS {
-        erreurs.push(format!("partage.{cle} : {MAX_CHEMINS} chemins au plus"));
+        erreurs.push(format!("partage.{cle} : {MAX_CHEMINS} chemins au plus"));
     }
     sortie
 }
