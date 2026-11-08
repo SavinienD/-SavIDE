@@ -425,6 +425,7 @@ Code map:
     │   │   ├── PaletteAller.tsx / sourcesAller.ts # Ctrl+K : onglets, conversations, dossiers, sous-agents, terminaux, Réglages, texte des conversations (tests/paletteAller.test.cjs)
     │   │   ├── PaletteAccueil.tsx # Ctrl+K sur l'accueil (accroche dans App.tsx)
     │   │   ├── indexReglages.ts # sections des Réglages (mêmes data-section que SettingsPane ; édition locale : sans Service ni Appareils)
+    │   │   ├── RechercheReglages.tsx / rechercheReglages.ts # recherche dans les Réglages : champ en haut du volet, index des réglages (+ raccourcis), signalement (tests/rechercheReglages.test.cjs)
     │   ├── TerminalPanel.tsx # multi-onglets PTY : Ctrl+Tab, renommage, PowerShell/WSL et scrollback texte local
     │   ├── GitPanel.tsx
     │   ├── RemotePanel.tsx

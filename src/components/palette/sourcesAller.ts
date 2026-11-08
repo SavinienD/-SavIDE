@@ -18,6 +18,10 @@ export type Source = {
   indication?: string;
   /** Rang par défaut (récence) : 0 = premier. */
   ordre: number;
+  /** Mots cherchés en plus, non affichés (mots-clés d'un réglage…). */
+  cle?: string;
+  /** Proposé seulement quand on tape (un réglage précis, pas toute la liste). */
+  seulementSiCherche?: boolean;
 };
 
 type Groupe = { titre: string; vide: number; plein: number };
@@ -60,12 +64,14 @@ export function elementsAller(requete: string, sources: Source[]): ElementPalett
   for (const s of sources) {
     let score = 0;
     let el: ElementPalette;
-    if (vide) el = element(s);
-    else {
+    if (vide) {
+      if (s.seulementSiCherche) continue;
+      el = element(s);
+    } else {
       const dansTitre = correspondance(requete, s.titre);
       const dansDetail = dansTitre ? null : s.detail ? correspondance(requete, s.detail) : null;
       // Mots répartis entre le titre et le détail (« reglages raccourcis »).
-      const ensemble = dansTitre || dansDetail ? null : correspondance(requete, `${s.titre} ${s.detail ?? ""}`);
+      const ensemble = dansTitre || dansDetail ? null : correspondance(requete, `${s.titre} ${s.detail ?? ""} ${s.cle ?? ""}`);
       if (dansTitre) {
         score = dansTitre.score;
         el = element(s, dansTitre.positions);
@@ -75,7 +81,8 @@ export function elementsAller(requete: string, sources: Source[]): ElementPalett
       } else if (ensemble) {
         score = ensemble.score / 2;
         const n = s.titre.length + 1;
-        el = element(s, ensemble.positions.filter((p) => p < n), ensemble.positions.filter((p) => p >= n).map((p) => p - n));
+        const d = (s.detail ?? "").length;
+        el = element(s, ensemble.positions.filter((p) => p < n), ensemble.positions.filter((p) => p >= n && p < n + d).map((p) => p - n));
       } else continue;
     }
     const titre = GROUPES[s.genre].titre;

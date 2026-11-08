@@ -9,6 +9,7 @@ import { conversationTitle, displayPath, folderName, relativeTime, samePath } fr
 import { getActiveConnection } from "../settings/connectionsApi";
 import { demanderSectionReglages } from "../../lib/sectionReglages";
 import { SECTIONS_REGLAGES } from "./indexReglages";
+import { allerAuReglage, tousLesReglages } from "./rechercheReglages";
 import { Palette, type ElementPalette } from "./Palette";
 import {
   listerConversations,
@@ -177,6 +178,17 @@ export function PaletteAller({ contexte, onFermer }: { contexte: ContexteAller; 
           demanderSectionReglages(s.id);
         }),
       );
+      // Chaque réglage connu (et chaque raccourci), seulement quand on tape.
+      tousLesReglages().forEach((r, i) => {
+        const s = SECTIONS_REGLAGES.find((x) => x.id === r.section);
+        ajouter(
+          { genre: "reglage", id: `${r.section}:${r.titre}`, titre: r.titre, detail: `Réglages › ${s?.titre ?? ""}`, cle: r.motsCles, icone: s?.icone ?? "solar:settings-linear", ordre: 100 + i, seulementSiCherche: true },
+          () => {
+            c.ouvrirReglages?.();
+            allerAuReglage(r.section, r.titre);
+          },
+        );
+      });
     }
     for (const a of c.actions ?? []) ajouter(a.source, a.faire);
     return { sources, effets };

@@ -849,4 +849,18 @@ export const SCENES = [
   { id: "palette-aller-accueil-dossier", espace: false, sim: { ouvrirChemin: true }, stockage: () => ({ "axecode.recentWorkspaces": RECENTS_TROIS() }),
     touches: ["Control+k", "c", "a", "b", "i", "n", "e", "t", "Enter"],
     temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\cabinet-martin", "absent:.palette"] },
+  // Lot palette (P3) — recherche dans les Réglages : un mot (sans accents ni casse) filtre les
+  // sections et les réglages ; un clic ouvre la section et signale le réglage ; Ctrl+K les trouve aussi.
+  { id: "reglages-recherche", stockage: () => colonnes([ids(1)]), reglages: true,
+    taper: [{ sel: ".recherche-reglages__champ input", texte: "zoom", ajouter: true }],
+    temoins: ["sel:.recherche-reglages[data-active='true'] .recherche-reglages__ligne[data-genre='reglage'] mark", "absent:.settings-pane__nav > .settings-pane__nav-item", "Zoom de l'interface"] },
+  { id: "reglages-recherche-aller", stockage: () => colonnes([ids(1)]), reglages: true,
+    taper: [{ sel: ".recherche-reglages__champ input", texte: "compactage", ajouter: true }], touchesFin: ["ArrowDown", "Enter"],
+    temoins: ["sel:.recherche-reglages__resultats [data-section='repl'][data-active='true']"] },
+  { id: "reglages-recherche-vide", stockage: () => colonnes([ids(1)]), reglages: true,
+    taper: [{ sel: ".recherche-reglages__champ input", texte: "xyzw", ajouter: true }],
+    temoins: ["sel:.recherche-reglages__vide"] },
+  { id: "palette-aller-reglage-precis", stockage: () => colonnes([ids(1)]), touches: ["Control+k"],
+    taper: [{ sel: ".palette__champ input", texte: "compactage auto", ajouter: true }], touchesFin: ["Enter"],
+    temoins: ["absent:.palette", "sel:.settings-pane__nav-item[data-section='repl'][data-active='true']"] },
 ];

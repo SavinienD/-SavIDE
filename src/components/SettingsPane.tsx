@@ -44,6 +44,7 @@ import { oublierSectionReglages, sectionReglagesDemandee } from "../lib/sectionR
 import { PythonSkillPreview, isPySkillEnabled } from "./settings/PythonSkillPreview";
 import { ComptesSupplementaires } from "./settings/ComptesSupplementaires";
 import { MenuHarnais, usePartageHarnais } from "./settings/HarnaisPartage";
+import { RechercheReglages } from "./palette/RechercheReglages"; // lot palette : recherche dans les Réglages
 type SkillKindFilter = "all" | "recipe" | "python";
 import { sanitizeOpenRouterName, type ModelEntry } from "../lib/models";
 import type {
@@ -1249,6 +1250,7 @@ export function SettingsPane({ workspacePath }: Props) {
   return (
     <div className="settings-pane">
       <nav className="settings-pane__nav" aria-label="Sections des réglages">
+        <RechercheReglages section={section} onSection={(s) => setSection(s as Section)} /> {/* lot palette */}
         <button
           type="button"
           className="settings-pane__nav-item"

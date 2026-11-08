@@ -192,3 +192,123 @@
     display: none;
   }
 }
+
+/* Lot palette (P3) — recherche dans les Réglages : champ en haut de la liste des sections ;
+   pendant une recherche, les résultats (2 lignes au plus chacun) remplacent la liste. */
+.recherche-reglages {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+  min-width: 0;
+}
+.recherche-reglages__champ {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 4px 0 8px;
+  border-radius: var(--r-med);
+  background: var(--bg-2);
+  color: var(--text-3);
+  min-width: 0;
+}
+.recherche-reglages__champ:focus-within {
+  box-shadow: 0 0 0 1px var(--line-strong);
+}
+.recherche-reglages__champ input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text-0);
+  font: inherit;
+  font-size: var(--fs-xs);
+}
+.recherche-reglages__champ input::placeholder {
+  color: var(--text-3);
+}
+.recherche-reglages__effacer {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--r-small);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.recherche-reglages__effacer:hover {
+  color: var(--text-0);
+}
+.settings-pane__nav:has(.recherche-reglages[data-active="true"]) > .settings-pane__nav-item {
+  display: none;
+}
+.recherche-reglages__resultats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.recherche-reglages__ligne {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  min-height: 28px;
+  padding: 4px 9px;
+  border-radius: var(--r-med);
+  color: var(--text-2);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+.recherche-reglages__ligne[data-genre="section"] {
+  font-weight: 500;
+}
+.recherche-reglages__ligne[data-genre="reglage"] {
+  padding-left: 33px;
+}
+.recherche-reglages__ligne[data-actif="true"],
+.recherche-reglages__ligne:hover {
+  background: var(--bg-2);
+  color: var(--text-0);
+}
+.recherche-reglages__ligne[data-active="true"] {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+.recherche-reglages__icone {
+  flex: none;
+  opacity: 0.85;
+}
+.recherche-reglages__texte {
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+.recherche-reglages mark {
+  background: transparent;
+  color: var(--accent-hi);
+  font-weight: 600;
+}
+.recherche-reglages__vide {
+  padding: 4px 9px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+/* Réglage atteint depuis la recherche ou Ctrl+K : signalé un instant. */
+.recherche-reglages__cible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-small);
+}
