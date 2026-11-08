@@ -467,3 +467,143 @@ fn texte_des_scripts() {
     assert_eq!(script::decouper_utf8(&mut attente), "é");
     assert!(attente.is_empty());
 }
+
+// ---------------------------------------------------------------------------
+// W3 : liste par dépôt, suppression, archivage.
+
+fn worktree_test(r: &Path, branche: &str) -> PathBuf {
+    let dossier = r.parent().unwrap().join(format!("wt-{branche}"));
+    git_test(r, &["worktree", "add", "-q", "-b", branche, dossier.to_str().unwrap(), "main"]);
+    depot::canonique(&dossier)
+}
+
+fn suppression(r: &Path, dossier: &Path) -> taches::DemandeSuppression {
+    taches::DemandeSuppression {
+        depot: r.display().to_string(),
+        dossier: dossier.display().to_string(),
+        archiver: false,
+        supprimer_branche: false,
+        forcer_branche: false,
+        forcer: false,
+        lancer_script: false,
+        empreinte: None,
+        titre: None,
+    }
+}
+
+#[test]
+fn liste_par_depot_etat_et_comparaison() {
+    let r = depot_test("liste");
+    let a = worktree_test(&r, "tache-a");
+    let b = worktree_test(&r, "tache-b");
+    commit_test(&a, "a.txt", "travail sur a");
+    commit_test(&r, "main.txt", "suite de main");
+    fs::write(b.join("brouillon.txt"), "x").unwrap();
+    let chemins = vec![r.display().to_string(), a.display().to_string(), "/dossier/absent".to_string()];
+    let depots = super::lister_depots(&chemins, &HashMap::new());
+    assert_eq!(depots.len(), 1, "un seul groupe pour le dépôt et son worktree");
+    let d = &depots[0];
+    assert_eq!(d.branche_principale.as_deref(), Some("main"));
+    assert_eq!(d.worktrees.len(), 3);
+    assert!(d.worktrees[0].principal);
+    let wa = d.worktrees.iter().find(|w| w.branche.as_deref() == Some("tache-a")).unwrap();
+    assert_eq!((wa.avance, wa.retard, wa.reference.as_deref()), (Some(1), Some(1), Some("main")));
+    assert_eq!(wa.modifies, Some(0));
+    assert!(wa.dernier_commit_ms.is_some());
+    let wb = d.worktrees.iter().find(|w| w.branche.as_deref() == Some("tache-b")).unwrap();
+    assert_eq!(wb.modifies, Some(1));
+    assert_eq!((wb.avance, wb.retard), (Some(0), Some(1)));
+    // Base choisie pour ce dépôt : comparaison avec elle.
+    let mut bases = HashMap::new();
+    bases.insert(r.display().to_string(), "tache-a".to_string());
+    let d = &super::lister_depots(&chemins, &bases)[0];
+    let wb = d.worktrees.iter().find(|w| w.branche.as_deref() == Some("tache-b")).unwrap();
+    assert_eq!(wb.reference.as_deref(), Some("tache-a"));
+    fs::remove_dir_all(&b).unwrap();
+    let d = &super::lister_depots(&chemins, &HashMap::new())[0];
+    assert!(d.worktrees.iter().find(|w| w.branche.as_deref() == Some("tache-b")).unwrap().introuvable);
+}
+
+#[cfg(unix)]
+#[test]
+fn suppression_retire_les_liens_sans_toucher_au_depot() {
+    let r = depot_test("suppression");
+    fs::create_dir_all(r.join("node_modules/paquet")).unwrap();
+    fs::write(r.join("node_modules/paquet/index.js"), "précieux").unwrap();
+    fs::write(r.join("worktrees.toml"), "[partage]\nliens = [\"node_modules\"]\n").unwrap();
+    let hote = Arc::new(HoteTest::default());
+    let id = taches::lancer(hote.clone(), taches::preparer_creation(&demande(&r, "a-supprimer", false, None)).unwrap()).id;
+    let creee = finie(&id);
+    assert_eq!(creee.etat, taches::Etat::Reussi, "{:?}", creee.detail);
+    let dossier = PathBuf::from(&creee.dossier);
+    assert!(partage::est_lien(&dossier.join("node_modules")));
+    // Le lien n'est plus dans worktrees.toml : il est quand même retiré (noté à la création).
+    fs::write(r.join("worktrees.toml"), "").unwrap();
+    let mut d = suppression(&r, &dossier);
+    d.supprimer_branche = true;
+    let t = taches::preparer_suppression(&d).unwrap();
+    assert_eq!(t.etapes, vec![taches::Etape::Git, taches::Etape::Fin]);
+    let id = taches::lancer(hote, t).id;
+    let t = finie(&id);
+    assert_eq!(t.etat, taches::Etat::Reussi, "{} {:?}", t.message, t.detail);
+    assert!(!dossier.exists());
+    assert_eq!(fs::read_to_string(r.join("node_modules/paquet/index.js")).unwrap(), "précieux");
+    assert!(!depot::branche_locale_existe(&r, "a-supprimer"), "branche fusionnée supprimée");
+    assert!(t.avertissements.is_empty(), "{:?}", t.avertissements);
+}
+
+#[test]
+fn suppression_refusee_si_modifie_puis_forcee_et_branche_non_fusionnee_gardee() {
+    let r = depot_test("modifie");
+    let w = worktree_test(&r, "en-cours");
+    commit_test(&w, "w.txt", "commit propre");
+    fs::write(w.join("non-suivi.txt"), "x").unwrap();
+    let hote = Arc::new(HoteTest::default());
+    let mut d = suppression(&r, &w);
+    d.supprimer_branche = true;
+    let id = taches::lancer(hote.clone(), taches::preparer_suppression(&d).unwrap()).id;
+    let t = finie(&id);
+    assert_eq!(t.raison.as_deref(), Some("modifie"), "{}", t.message);
+    assert!(w.exists());
+    taches::reprendre(hote, &id, taches::Reprise { forcer: true, ..Default::default() }).unwrap();
+    let t = finie(&id);
+    assert_eq!(t.etat, taches::Etat::Reussi, "{:?}", t.detail);
+    assert!(!w.exists());
+    assert!(depot::branche_locale_existe(&r, "en-cours"), "branche non fusionnée gardée");
+    assert_eq!(t.avertissements.len(), 1, "{:?}", t.avertissements);
+}
+
+#[cfg(unix)]
+#[test]
+fn archivage_avec_script_de_suppression_garde_la_branche() {
+    let r = depot_test("archive");
+    let w = worktree_test(&r, "archivee");
+    fs::write(r.join("worktrees.toml"), "[scripts]\nsuppression = \"echo \\\"$WORKTREE_BRANCH\\\" > \\\"$WORKTREE_ROOT_PATH/trace.txt\\\"\"\n").unwrap();
+    let cfg = config::lire(&r);
+    assert!(cfg.erreurs.is_empty(), "{:?}", cfg.erreurs);
+    let mut d = suppression(&r, &w);
+    d.archiver = true;
+    d.supprimer_branche = true; // ignoré pour un archivage
+    d.lancer_script = true;
+    d.empreinte = cfg.empreinte.clone();
+    let t = taches::preparer_suppression(&d).unwrap();
+    assert_eq!(t.genre, taches::Genre::Archivage);
+    assert_eq!(t.etapes, vec![taches::Etape::Script, taches::Etape::Git, taches::Etape::Fin]);
+    let id = taches::lancer(Arc::new(HoteTest::default()), t).id;
+    let t = finie(&id);
+    assert_eq!(t.etat, taches::Etat::Reussi, "{} {:?}", t.message, t.detail);
+    assert_eq!(fs::read_to_string(r.join("trace.txt")).unwrap().trim(), "archivee");
+    assert!(!w.exists());
+    assert!(depot::branche_locale_existe(&r, "archivee"));
+    assert!(t.message.contains("archivé"), "{}", t.message);
+}
+
+#[test]
+fn principal_et_verrouille_refuses() {
+    let r = depot_test("refus");
+    assert!(taches::preparer_suppression(&suppression(&r, &r)).unwrap_err().contains("principal"));
+    let w = worktree_test(&r, "verrou");
+    git_test(&r, &["worktree", "lock", w.to_str().unwrap()]);
+    assert!(taches::preparer_suppression(&suppression(&r, &w)).unwrap_err().contains("verrouillé"));
+    assert!(taches::preparer_suppression(&suppression(&r, Path::new("/pas/un/worktree"))).is_err());
+}

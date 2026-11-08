@@ -156,6 +156,12 @@ export function urlValide(url: string): boolean {
   }
 }
 
+/** Ordre d'un groupe : dossier principal, puis épinglés, puis les autres (par nom). */
+export function ordonnerWorktrees<T extends { dossier: string; nom: string; principal: boolean }>(liste: T[], epingles: string[]): T[] {
+  const rang = (w: T) => (w.principal ? 0 : contient(epingles, w.dossier) ? 1 : 2);
+  return [...liste].sort((a, b) => rang(a) - rang(b) || a.nom.localeCompare(b.nom, "fr"));
+}
+
 /** Libellé court d'un lien : « PR #12 », « Issue #34 », sinon le nom de domaine. */
 export function libelleLien(url: string): string {
   const m = /\/(pull|pulls|merge_requests|issues|issue)\/(\d+)/.exec(url);

@@ -93,7 +93,63 @@ export function simulationWorktrees(scene: any): Record<string, (a: any, brut: a
     worktree_tache_oublier: () => null,
     write_terminal: () => null,
     resize_terminal: () => null,
+    // W3 / W4
+    worktrees_lister: () => (scene.wtListe ? depotsListe() : []),
+    worktree_supprimer: (a: any) => {
+      (window as any).__bancWorktrees.suppressions.push(a);
+      const t = tache("t-suppr-" + taches.length, a.archiver ? "archivage" : "suppression", a.titre ?? "worktree", "corriger-le-panier", a.lancerScript ? "script" : "git", "en_cours", { message: "Suppression du dossier…" });
+      taches.push(t);
+      return t;
+    },
+    worktrees_nettoyage: () => infosNettoyage(),
+    worktrees_prune: () => 1,
   };
+}
+
+
+// W3 / W4 — dépôts de la liste et examen du nettoyage.
+const ligne = (dossier: string, nom: string, branche: string | null, extra: any = {}) => ({
+  dossier, nom, branche, principal: false, detache: !branche, verrouille: false, introuvable: false,
+  modifies: 0, avance: 0, retard: 0, reference: "main", dernierCommitMs: D.T0 - 3_600_000, ...extra,
+});
+const LONG = "migration-des-postes-du-standard-telephonique-pour-le-cabinet";
+export function depotsListe() {
+  return [
+    {
+      depot: DEPOT, nom: D.NOM_WS, branchePrincipale: "main", erreur: null,
+      worktrees: [
+        ligne(DEPOT, D.NOM_WS, "main", { principal: true, modifies: 2, retard: 3, reference: "origin/main" }),
+        ligne(`${CONTENEUR}\\corriger-le-panier`, "corriger-le-panier", "corriger-le-panier", { modifies: 4, avance: 2, retard: 1 }),
+        ligne(`${CONTENEUR}\\${LONG}`, LONG, LONG, { avance: 5 }),
+        ligne(`${CONTENEUR}\\ancienne-tache`, "ancienne-tache", "ancienne-tache", { introuvable: true, modifies: null, avance: null, retard: null, reference: null, dernierCommitMs: null }),
+        ligne(`${CONTENEUR}\\revue-pr-42`, "revue-pr-42", null, { reference: null, avance: null, retard: null }),
+      ],
+    },
+    {
+      depot: AUTRE_DEPOT, nom: "cabinet-martin", branchePrincipale: "master", erreur: null,
+      worktrees: [
+        ligne(AUTRE_DEPOT, "cabinet-martin", "master", { principal: true, reference: null, avance: null, retard: null }),
+        ligne(`${AUTRE_DEPOT}-worktrees\\export-csv`, "export-csv", "export-csv", { avance: 1, reference: "master" }),
+      ],
+    },
+  ];
+}
+export const REGLAGES_LISTE = {
+  depots: { [DEPOT]: { base: "main" } },
+  epingles: [`${CONTENEUR}\\corriger-le-panier`],
+  liens: { [`${CONTENEUR}\\corriger-le-panier`]: "https://github.com/exemple/projet/pull/42" },
+  endormis: [`${CONTENEUR}\\${LONG}`],
+  archives: [{ depot: DEPOT, branche: "vieille-idee", titre: "Vieille idée de cache", dossier: `${CONTENEUR}\\vieille-idee`, dateMs: D.T0 - 5 * 86_400_000 }],
+};
+export function infosNettoyage() {
+  const jour = 86_400_000;
+  const maintenant = Date.now();
+  return [
+    { depot: DEPOT, dossier: `${CONTENEUR}\\fusionnee`, branche: "fusionnee", fusionne: true, introuvable: false, modifies: 0, octets: 1_530_000_000, tailleCoupee: false, activiteMs: maintenant - 12 * jour },
+    { depot: DEPOT, dossier: `${CONTENEUR}\\ancienne-tache`, branche: "ancienne-tache", fusionne: false, introuvable: true, modifies: null, octets: null, tailleCoupee: false, activiteMs: null },
+    { depot: DEPOT, dossier: `${CONTENEUR}\\${LONG}`, branche: LONG, fusionne: false, introuvable: false, modifies: 3, octets: 4_200_000_000, tailleCoupee: true, activiteMs: maintenant - 45 * jour },
+    { depot: AUTRE_DEPOT, dossier: `${AUTRE_DEPOT}-worktrees\\export-csv`, branche: "export-csv", fusionne: false, introuvable: false, modifies: 0, octets: 82_000_000, tailleCoupee: false, activiteMs: maintenant - 2 * 3_600_000 },
+  ];
 }
 
 export { AUTRE_DEPOT, CONTENEUR, DEPOT };

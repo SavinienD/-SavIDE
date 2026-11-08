@@ -121,3 +121,17 @@ test("accroches : Workspace, panneau Git, terminaux, raccourci, commandes Tauri"
   const lib = lire("src-tauri/src/lib.rs");
   for (const c of ["worktrees_config", "worktree_creer", "worktree_tache_reprendre", "worktree_tache_sortie"]) assert.ok(lib.includes(`worktrees::${c}`), c);
 });
+
+test("liste : dossier principal, puis épinglés, puis par nom", () => {
+  const w = (dossier, nom, principal = false) => ({ dossier, nom, principal });
+  const liste = [w("/d/z", "zeta"), w("/d/b", "beta"), w("/d", "depot", true), w("/d/a", "alpha")];
+  assert.deepEqual(L.ordonnerWorktrees(liste, ["/d/z"]).map((x) => x.nom), ["depot", "zeta", "alpha", "beta"]);
+});
+
+test("accroches W3 : onglet et panneau Worktrees, commandes", () => {
+  const ws = lire("src/components/Workspace.tsx");
+  assert.match(ws, /<OngletWorktrees dossier=\{workspacePath\} actif=\{bottomTab === "worktrees"\}/);
+  assert.match(ws, /<PanneauWorktrees dossier=\{workspacePath\} actif=\{bottomTab === "worktrees"\}/);
+  const lib = lire("src-tauri/src/lib.rs");
+  for (const c of ["worktrees_lister", "worktree_supprimer"]) assert.ok(lib.includes(`worktrees::${c}`), c);
+});

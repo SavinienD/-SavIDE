@@ -26,6 +26,7 @@ import { EditorPane } from "./EditorPane";
 import { SettingsPane } from "./SettingsPane";
 import { TerminalPanel } from "./TerminalPanel";
 import { WorktreesRacine } from "./worktrees/WorktreesRacine"; // worktrees
+import { OngletWorktrees, PanneauWorktrees } from "./worktrees/ListeWorktrees"; // worktrees
 import { CloudTerminalPanel } from "./cloud/CloudTerminalPanel"; // e8
 import { CLOUD_CONNECTION, cloudApi } from "./cloud/cloudApi"; // e15
 import { CloudLoginButton } from "./cloud/CloudLoginButton"; // connexion-google
@@ -253,7 +254,7 @@ export function Workspace({
     ).then((f) => { un = f; });
     return () => un?.();
   }, []);
-  const [bottomTab, setBottomTab] = useState<"conversations" | "agents">( // agents
+  const [bottomTab, setBottomTab] = useState<"conversations" | "agents" | "worktrees">( // agents ; worktrees
     "conversations",
   );
   // sub-n — le bandeau « N agent(s) au travail » du chat ouvre la vue Agents.
@@ -3234,6 +3235,7 @@ export function Workspace({
             <span>Agents</span>
           </button>
           {/* agents end */}
+          <OngletWorktrees dossier={workspacePath} actif={bottomTab === "worktrees"} onActiver={() => setBottomTab("worktrees")} /> {/* worktrees */}
         </div>
         <VoletOutils volet="panneauBas" volets={volets} classeBouton="sidebar__head-btn" />
         {bottomTab === "conversations" &&
@@ -3327,6 +3329,7 @@ export function Workspace({
         </div>
       ) : null}
       {/* agents end */}
+      <PanneauWorktrees dossier={workspacePath} actif={bottomTab === "worktrees"} onOuvrirDossier={(p) => onOpenFolder?.(p)} onFermerTerminaux={closeTerminalPanel} /> {/* worktrees */}
     </div>  );
 
   // e17b — colonnes de fichiers : la disposition garde les chemins par
