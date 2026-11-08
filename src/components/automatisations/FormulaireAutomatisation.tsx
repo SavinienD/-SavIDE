@@ -230,7 +230,8 @@ export function FormulaireAutomatisation({ initiale, dossierCourant, connexion, 
           <span className="auto-champ__libelle">Modèle</span>
           <select value={b.modele} onChange={(e) => maj("modele", e.target.value)}>
             {modeleInconnu ? <option value={b.modele}>{b.modele}</option> : null}
-            {!b.modele ? <option value="">Aucun modèle</option> : null}
+            {/* Pas de paragraphe sous le champ : il apparaissait puis disparaissait pendant la lecture des modèles. */}
+            {!b.modele ? <option value="">{choix.length ? "Choisir un modèle" : "Aucun modèle (connectez un fournisseur dans les Réglages)"}</option> : null}
             {choix.map((c) => (
               <option key={c.value} value={c.value}>
                 {c.label}
@@ -238,7 +239,6 @@ export function FormulaireAutomatisation({ initiale, dossierCourant, connexion, 
             ))}
           </select>
         </label>
-        {!choix.length ? <p className="auto-muet">Aucun modèle : connectez un fournisseur dans les Réglages.</p> : null}
         <fieldset className="auto-champ">
           <legend className="auto-champ__libelle">Conversation</legend>
           <label className="auto-choix">

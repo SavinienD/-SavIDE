@@ -839,10 +839,14 @@ export const SCENES = [
   { id: "auto-creer", sim: { automatisations: "plusieurs" }, stockage: () => colonnes([ids(1)]), agents: true,
     clics: [".auto-entree", ".auto-ecran__tete .auto-btn--primaire"],
     temoins: ["sel:.auto-form", "clic:.auto-form__actions .auto-btn--primaire", "clic:.auto-form__actions .auto-btn:not(.auto-btn--primaire)", "sel:.auto-apercu"] },
-  // … les cases du bas (amenées à l'écran : à 800x600 les champs défilent, les boutons restent visibles) : un clic décoche le rattrapage.
+  // … les cases du bas, amenées à l'écran l'une après l'autre puis cliquées (à 800x600 les champs défilent, les
+  // boutons restent visibles). Témoins « sel: » et non « clic: » : le banc agrandit le texte APRÈS les gestes,
+  // ce qui repousse le bas d'une zone déjà défilée hors de la vue (constaté à texte 110 %).
   { id: "auto-creer-bas", sim: { automatisations: "plusieurs" }, stockage: () => colonnes([ids(1)]), agents: true,
-    clics: [".auto-entree", ".auto-ecran__tete .auto-btn--primaire"], cliquer: ".auto-form input[type='checkbox']", defilerAvantClic: true,
-    temoins: ["clic:.auto-form input[type='checkbox']", "sel:.auto-form input[data-champ='rattrapage']:not(:checked)", "clic:.auto-form__actions .auto-btn--primaire"] },
+    clics: [".auto-entree", ".auto-ecran__tete .auto-btn--primaire"], defilerAvantClic: true,
+    cliquer: [".auto-form input[data-champ='rattrapage']", ".auto-form input[data-champ='active']"],
+    temoins: ["sel:.auto-form input[data-champ='rattrapage']:not(:checked)", "sel:.auto-form input[data-champ='active']:not(:checked)",
+      "clic:.auto-form__actions .auto-btn--primaire"] },
   { id: "auto-modifier-jours", sim: { automatisations: "plusieurs" }, stockage: () => colonnes([ids(1)]), agents: true,
     clics: [".auto-entree", ".auto-carte[data-id='a-tickets'] [data-action='modifier']"],
     temoins: ["compte:.auto-jour=7", "compte:.auto-jour[aria-pressed='true']=5", "clic:.auto-jour"] },
