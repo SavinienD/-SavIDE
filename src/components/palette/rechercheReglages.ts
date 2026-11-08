@@ -11,7 +11,7 @@ export type ReglageConnu = { section: string; titre: string; motsCles?: string }
 
 /** Mots qui mènent à une section entière. */
 export const MOTS_SECTIONS: Record<string, string> = {
-  about: "version mise à jour axecode",
+  about: "version mise à jour savide",
   appearance: "thème couleurs fond zoom texte",
   providers: "modèles comptes abonnement connexion clé api",
   mcp: "serveurs outils",
