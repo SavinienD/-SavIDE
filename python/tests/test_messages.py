@@ -1,4 +1,4 @@
-"""Lot rlm : messages.send(receiver_role="all")."""
+"""messages.send(receiver_role="all")."""
 import pytest
 
 from axecode_kernel import bridge, messages

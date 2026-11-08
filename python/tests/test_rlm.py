@@ -1,4 +1,4 @@
-"""Lot rlm : appels légers (query, query_lot) et outils des sous-agents."""
+"""Appels légers (query, query_lot) et outils des sous-agents."""
 import pytest
 
 from axecode_kernel import bridge, rlm
