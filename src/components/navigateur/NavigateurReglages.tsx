@@ -13,7 +13,7 @@ export function NavigateurReglages() {
   return (
     <div className="axe-appearance nav-reglages">
       <header>
-        <h2>Navigateur</h2>
+        <h2 title="Navigateur">Navigateur</h2>
         <p className="axe-appearance__hint">
           Onglet Navigateur de l'IDE : votre appli web à côté de l'agent. Les téléchargements vont dans le dossier Téléchargements.
         </p>

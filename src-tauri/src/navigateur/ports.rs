@@ -104,6 +104,7 @@ pub(crate) fn lister(dossier: &str) -> Vec<PortOuvert> {
 }
 
 /// Linux : lignes de `/proc/net/tcp` ou `tcp6` → (port, adresse, inode) des sockets en écoute.
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 pub(crate) fn lire_table_proc(texte: &str, ipv6: bool) -> Vec<(u16, String, u64)> {
     texte
         .lines()
@@ -121,6 +122,7 @@ pub(crate) fn lire_table_proc(texte: &str, ipv6: bool) -> Vec<(u16, String, u64)
         .collect()
 }
 
+#[cfg_attr(not(target_os = "linux"), allow(dead_code))]
 fn adresse_proc(hex: &str, ipv6: bool) -> String {
     let octets: Vec<u8> = (0..hex.len() / 2).filter_map(|i| u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16).ok()).collect();
     if !ipv6 && octets.len() == 4 {

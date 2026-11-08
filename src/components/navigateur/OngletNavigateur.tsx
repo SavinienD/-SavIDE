@@ -25,6 +25,8 @@ type Props = {
 
 /** Une seule copie de l'onglet pilote la vue native (éditeur dupliqué : l'autre attend). */
 let proprietaire: string | null = null;
+/** Dernier lien du chat ou du terminal déjà ouvert (un nouveau montage ne le rouvre pas). */
+let demandeTraitee = 0;
 
 function notifier(genre: "info" | "echec", titre: string, texte: string, dossier: string) {
   window.dispatchEvent(new CustomEvent("ide-notification", { detail: { genre, titre, texte, dossier } }));
@@ -121,7 +123,9 @@ export function OngletNavigateur({ workspacePath, actif, conversationId, demande
 
   // Lien du chat ou du terminal.
   useEffect(() => {
-    if (demande && moi) void aller(demande.url);
+    if (!demande || !moi || demande.n === demandeTraitee) return;
+    demandeTraitee = demande.n;
+    void aller(demande.url);
   }, [demande, moi, aller]);
 
   const chargerPorts = useCallback(async () => {

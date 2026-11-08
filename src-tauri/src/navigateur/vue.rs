@@ -96,7 +96,9 @@ fn conteneur_linux(fenetre: &WebviewWindow) -> Result<gtk::Fixed, String> {
     overlay.add_overlay(&fixe);
     overlay.set_overlay_pass_through(&fixe, true);
     principale.add(&overlay);
-    overlay.show_all();
+    // show() et non show_all() : un élément caché exprès dans la boîte (menu) le reste.
+    overlay.show();
+    fixe.show();
     Ok(fixe)
 }
 
