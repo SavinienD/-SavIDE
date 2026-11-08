@@ -101,6 +101,7 @@ Code map:
 │   │   ├── Cargo.toml
 │   │   └── src
 │   │       ├── agent.rs
+│   │       ├── appel_unique.rs # rlm186 — appel unique au modèle (sans session, outils ni harnais) : rlm.query/query_lot, commande ia_appel_unique
 │   │       ├── agent
 │   │       │   ├── assistant_message.rs
 │   │       │   ├── cancel.rs
@@ -348,6 +349,7 @@ Code map:
 │       ├── git.rs
 │       ├── harness.rs # harness — IPC harness_* (CRUD, promote/demote, refinements, rollback, import brain, refine start/status), couche harness par tour
 │       ├── harness_backup.rs # cleanup — sauvegarde périodique du harness (config harness-backup.json, IPC harness_backup_*)
+│       ├── ia_appel.rs # rlm186 — commande ia_appel_unique (appel unique au modèle depuis l'interface)
 │       ├── lib.rs
 │       ├── main.rs
 │       ├── models.rs
@@ -470,6 +472,7 @@ Code map:
     ├── lib
     │   ├── cloudOnline.ts # v2-l6 — état de joignabilité du service cloud, sondes 15→60 s, garde d'écriture hors ligne
     │   ├── cloudOffline.ts # v2-l6 (tranche 2) — copie locale (miroir) hors ligne : offline_* , état en attente, sync/conflits
+    │   ├── appelUnique.ts # rlm186 — appelUnique() : commande ia_appel_unique
     │   ├── fileIcon.ts
     │   ├── ipc.ts # IPC local + remote_* ; cloudRpc et routage skills.* en cloud (v2-l2.4) ; lectures/écritures via le miroir hors ligne ; conversations (list/load/rename) routées vers le service en cloud (v2-l7)
     │   ├── language.ts
