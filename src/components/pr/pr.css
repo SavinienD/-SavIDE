@@ -1,0 +1,207 @@
+/* Panneau Git : compteurs, bandeau d'opération en cours, rédaction IA, onglets PR et
+   Issues. Mêmes surfaces que le reste du panneau (styles.css, .git-panel__*). */
+
+/* Panneau étroit (volet bas, fenêtre de 800 px) : Récupérer / Pousser / Forcer en icônes
+   (leur info-bulle garde le nom), pour laisser la place au nom de la branche. */
+.git-panel {
+  container-type: inline-size;
+  container-name: git-panel;
+}
+@container git-panel (max-width: 460px) {
+  .git-panel .git-panel__head-action > span {
+    display: none;
+  }
+  .git-panel .git-panel__head-action {
+    padding: 0 5px;
+  }
+}
+
+/* Croix de la notice : cible de 22 px comme les autres boutons du panneau
+   (sélecteur à deux classes : styles.css est chargé après ce fichier). */
+.git-panel .git-panel__notice-close {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+}
+
+.git-pr__compteurs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.git-pr__compteur {
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  color: var(--text-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.git-pr__compteur[data-sens="retard"] {
+  color: var(--accent-2);
+}
+
+.git-panel__head-action.git-pr__forcer,
+.git-panel__head-action.git-pr__forcer > svg {
+  color: var(--danger);
+}
+
+.git-pr__bandeau {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+  color: var(--text-1);
+  background: var(--bg-2);
+}
+.git-pr__bandeau > svg {
+  flex: 0 0 auto;
+  color: var(--danger);
+}
+.git-pr__bandeau-texte {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.git-pr__bandeau-btn,
+.git-pr__notice-lien,
+.git-pr__notice-action {
+  flex: 0 0 auto;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--r-med);
+  background: var(--bg-3);
+  color: var(--text-0);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 140ms ease, opacity 140ms ease;
+}
+.git-pr__bandeau-btn:hover:not(:disabled),
+.git-pr__notice-action:hover {
+  background: var(--bg-4);
+}
+.git-pr__bandeau-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.git-pr__notice-lien {
+  background: transparent;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.git-pr__sortie {
+  flex: 0 0 auto;
+  max-height: 160px;
+  overflow: auto;
+  margin: 0;
+  padding: 6px 10px;
+  background: var(--bg-1);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Message de commit sur plusieurs lignes (rédigé par l'IA ou à la main). */
+.git-panel__field.git-pr__champ-message {
+  height: auto;
+  min-height: 26px;
+  padding: 0 10px;
+  align-items: stretch;
+}
+.git-pr__message {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 26px;
+  box-sizing: border-box;
+  resize: none;
+  padding: 4px 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text-0);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  line-height: 18px;
+  letter-spacing: -0.005em;
+}
+.git-pr__message::placeholder {
+  color: var(--text-3);
+}
+
+.git-pr__note {
+  padding: 0 4px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  line-height: 1.4;
+}
+.git-pr__note[data-genre="attention"] {
+  color: var(--accent-2);
+}
+
+.git-pr__commit-barre {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.git-pr__commit-barre > .git-panel__action {
+  margin-left: auto;
+}
+
+.git-pr__bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--r-med);
+  background: transparent;
+  color: var(--text-1);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, opacity 140ms ease;
+}
+.git-pr__bouton:hover:not(:disabled) {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+.git-pr__bouton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.git-pr__bouton > svg {
+  flex: 0 0 auto;
+  color: var(--text-3);
+}
+
+.git-pr__case {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 24px;
+  padding: 0 4px;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.git-pr__case input[type="checkbox"] {
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+

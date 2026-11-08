@@ -10,6 +10,11 @@ import {
 import { createPortal } from "react-dom";
 import { Icon } from "@iconify/react";
 import { api, cloudConnectionFromPath } from "../lib/ipc";
+import { gitApi, libelleOperation, titreAbandon, type GitEtat } from "./pr/gitApi";
+import { consigneHook } from "./pr/consignes";
+import { redigerCommit } from "./pr/redaction";
+import { envoyerALAgent } from "./pr/versAgent";
+import "./pr/pr.css";
 import type {
   GitBranch,
   GitPullRequestOutput,
@@ -54,9 +59,14 @@ type Props = {
 };
 
 type Notice = {
-  kind: "success" | "error";
+  kind: "success" | "error" | "info";
   text: string;
   sticky?: boolean;
+  // Sortie complète de git ou du hook, dépliable sous le message.
+  details?: string | null;
+  actions?: { cle: string; label: string; onClick: () => void }[];
+  // Repère stable de la notice (banc, tests) : jamais affiché.
+  cle?: string;
 };
 
 type RemoveTarget = {
@@ -104,6 +114,13 @@ export function GitPanel({
   // mirrors how multi-select works in the rest of the sidebar).
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [commitMessage, setCommitMessage] = useState("");
+  // État de la branche (avance / retard, opération en cours, dernier commit) : espaces locaux.
+  const [etat, setEtat] = useState<GitEtat | null>(null);
+  const [modifierDernier, setModifierDernier] = useState(false);
+  const [noteRedaction, setNoteRedaction] = useState<string | null>(null);
+  const [confirmForce, setConfirmForce] = useState(false);
+  const [confirmAbandon, setConfirmAbandon] = useState(false);
+  const [detailsOuverts, setDetailsOuverts] = useState(false);
 
   // Worktree composer (modal)
   const [createWtOpen, setCreateWtOpen] = useState(false);
@@ -154,6 +171,11 @@ export function GitPanel({
     setNotice(null);
     setSelected(new Set());
     setCommitMessage("");
+    setEtat(null);
+    setModifierDernier(false);
+    setNoteRedaction(null);
+    setConfirmForce(false);
+    setConfirmAbandon(false);
     setCreateWtOpen(false);
     setWtBranchName("");
     setWtBaseBranch("");
@@ -184,7 +206,8 @@ export function GitPanel({
     (next: Notice) => {
       clearNoticeTimer();
       setNotice(next);
-      if (next.kind === "success" && !next.sticky) {
+      setDetailsOuverts(false);
+      if (next.kind !== "error" && !next.sticky) {
         noticeTimerRef.current = window.setTimeout(() => {
           setNotice(null);
           noticeTimerRef.current = null;
@@ -217,6 +240,19 @@ export function GitPanel({
         return;
       }
       setSnapshot(next);
+      // État de la branche : commandes locales (un espace cloud n'en a pas).
+      if (next.isRepository && !cloudConnectionFromPath(ws)) {
+        gitApi.etat(ws).then(
+          (e) => {
+            if (workspacePathRef.current === ws && seq === requestSeqRef.current) setEtat(e);
+          },
+          () => {
+            if (workspacePathRef.current === ws && seq === requestSeqRef.current) setEtat(null);
+          },
+        );
+      } else {
+        setEtat(null);
+      }
       // Drop any stale selections for files no longer in status.
       const available = new Set(next.status.map((file) => file.path));
       setSelected((prev) => {
@@ -358,6 +394,29 @@ export function GitPanel({
     });
   }, [snapshot]);
 
+  const espaceCloud = cloudConnectionFromPath(workspacePath) !== null;
+
+  // Commit refusé par un hook : la sortie part dans la saisie de la conversation.
+  const reparerAvecIa = useCallback(
+    (crochet: string, message: string, fichiers: string[], sortie: string) => {
+      const livraison = envoyerALAgent(
+        consigneHook({ crochet, message, fichiers, sortie }),
+        workspacePath,
+      );
+      showNotice(
+        livraison === "saisie"
+          ? { kind: "info", cle: "consigne-saisie", text: "Consigne mise dans la conversation : relisez-la puis Entrée." }
+          : {
+              kind: "info",
+              cle: "consigne-copiee",
+              sticky: true,
+              text: "Aucune conversation ouverte ici : la consigne est copiée dans le presse-papiers.",
+            },
+      );
+    },
+    [showNotice, workspacePath],
+  );
+
   const handleCommit = useCallback(() => {
     const message = commitMessage.trim();
     if (!message) {
@@ -365,28 +424,149 @@ export function GitPanel({
       return;
     }
     const paths = Array.from(selected);
-    if (paths.length === 0) {
+    const amend = modifierDernier && !espaceCloud;
+    if (paths.length === 0 && !amend) {
       showNotice({ kind: "error", text: "Sélectionnez au moins un fichier à valider." });
+      return;
+    }
+    if (espaceCloud) {
+      void runAction(
+        "commit",
+        () => api.gitCommit(workspacePath, message, paths),
+        (result) => {
+          setCommitMessage("");
+          setSelected(new Set());
+          return { kind: "success", text: result.message };
+        },
+      );
       return;
     }
     void runAction(
       "commit",
-      () => api.gitCommit(workspacePath, message, paths),
-      (result) => {
-        setCommitMessage("");
-        setSelected(new Set());
-        return { kind: "success", text: result.message };
+      () => gitApi.valider(workspacePath, message, paths, amend),
+      (result): Notice => {
+        if (result.ok) {
+          setCommitMessage("");
+          setSelected(new Set());
+          setModifierDernier(false);
+          setNoteRedaction(null);
+          return { kind: "success", text: result.message };
+        }
+        const crochet = result.crochet;
+        return {
+          kind: "error",
+          sticky: true,
+          text: result.message,
+          details: result.sortie,
+          actions: crochet
+            ? [
+                {
+                  cle: "reparer",
+                  label: "Réparer avec l'IA",
+                  onClick: () => reparerAvecIa(crochet, message, paths, result.sortie ?? ""),
+                },
+              ]
+            : undefined,
+        };
       },
     );
-  }, [commitMessage, runAction, selected, showNotice, workspacePath]);
+  }, [
+    commitMessage,
+    espaceCloud,
+    modifierDernier,
+    reparerAvecIa,
+    runAction,
+    selected,
+    showNotice,
+    workspacePath,
+  ]);
 
   const handlePush = useCallback(() => {
+    if (espaceCloud) {
+      void runAction(
+        "push",
+        () => api.gitPush(workspacePath),
+        (result) => ({ kind: "success", text: result.message }),
+      );
+      return;
+    }
     void runAction(
       "push",
-      () => api.gitPush(workspacePath),
-      (result) => ({ kind: "success", text: result.message }),
+      () => gitApi.pousser(workspacePath, false),
+      (r): Notice =>
+        r.ok
+          ? { kind: "success", text: r.message }
+          : {
+              kind: "error",
+              sticky: true,
+              text: r.message,
+              details: r.sortie,
+              actions: r.rejete
+                ? [{ cle: "forcer", label: "Pousser en forçant…", onClick: () => setConfirmForce(true) }]
+                : undefined,
+            },
+    );
+  }, [espaceCloud, runAction, workspacePath]);
+
+  const handleForcePush = useCallback(() => {
+    void runAction(
+      "force-push",
+      () => gitApi.pousser(workspacePath, true),
+      (r): Notice => {
+        setConfirmForce(false);
+        return r.ok
+          ? { kind: "success", text: r.message }
+          : { kind: "error", sticky: true, text: r.message, details: r.sortie };
+      },
     );
   }, [runAction, workspacePath]);
+
+  const handleFetch = useCallback(() => {
+    void runAction(
+      "fetch",
+      () => gitApi.fetch(workspacePath),
+      (r) => ({ kind: "success", text: r.message }),
+    );
+  }, [runAction, workspacePath]);
+
+  const handleAbandon = useCallback(() => {
+    void runAction(
+      "abandon",
+      () => gitApi.abandonner(workspacePath),
+      (r) => {
+        setConfirmAbandon(false);
+        return { kind: "success", text: r.message };
+      },
+    );
+  }, [runAction, workspacePath]);
+
+  // « Rédiger » : message écrit par l'IA à partir du diff des fichiers choisis.
+  const handleRediger = useCallback(() => {
+    const paths = Array.from(selected);
+    if (paths.length === 0) {
+      showNotice({ kind: "error", text: "Sélectionnez les fichiers du commit." });
+      return;
+    }
+    void runAction(
+      "rediger",
+      () => redigerCommit(workspacePath, paths),
+      (r) => {
+        setCommitMessage(r.message);
+        setNoteRedaction(r.note);
+        return null;
+      },
+    );
+  }, [runAction, selected, showNotice, workspacePath]);
+
+  const basculerModifierDernier = useCallback(
+    (actif: boolean) => {
+      setModifierDernier(actif);
+      if (actif && !commitMessage.trim() && etat?.dernierCommit) {
+        setCommitMessage(etat.dernierCommit.message);
+      }
+    },
+    [commitMessage, etat],
+  );
 
   const handlePull = useCallback(() => {
     void runAction(
@@ -746,7 +926,9 @@ export function GitPanel({
   const allSelected = totalChanges > 0 && selected.size === totalChanges;
   const noneSelected = selected.size === 0;
   const anyBusy = busyKey !== null;
-  const isCloud = cloudConnectionFromPath(workspacePath) !== null;
+  const isCloud = espaceCloud;
+  const peutValider =
+    commitMessage.trim() !== "" && (!noneSelected || (modifierDernier && !isCloud));
   const branchOptions =
     snapshot.currentBranch && !localBranches.some((b) => b.name === snapshot.currentBranch)
       ? [snapshot.currentBranch, ...localBranches.map((b) => b.name)]
@@ -775,6 +957,28 @@ export function GitPanel({
               {snapshot.dirtyCount}
             </span>
           )}
+          {etat && (etat.avance > 0 || etat.retard > 0) && (
+            <span className="git-pr__compteurs">
+              {etat.avance > 0 && (
+                <span
+                  className="git-pr__compteur"
+                  data-sens="avance"
+                  title={`${etat.avance} commit${etat.avance === 1 ? "" : "s"} à pousser`}
+                >
+                  ↑{etat.avance}
+                </span>
+              )}
+              {etat.retard > 0 && (
+                <span
+                  className="git-pr__compteur"
+                  data-sens="retard"
+                  title={`${etat.retard} commit${etat.retard === 1 ? "" : "s"} à récupérer`}
+                >
+                  ↓{etat.retard}
+                </span>
+              )}
+            </span>
+          )}
         </span>
         <span className="git-panel__head-actions">
           {isCloud && branchOptions.length > 0 && (
@@ -793,6 +997,23 @@ export function GitPanel({
                 </option>
               ))}
             </select>
+          )}
+          {!isCloud && (
+            <button
+              type="button"
+              className="git-panel__head-btn"
+              data-action="fetch"
+              onClick={handleFetch}
+              disabled={anyBusy}
+              title="Lire le dépôt distant (fetch), sans rien changer ici"
+              aria-label="Lire le dépôt distant"
+            >
+              {busyKey === "fetch" ? (
+                <span className="git-panel__spinner git-panel__spinner--inline" />
+              ) : (
+                <Icon icon="solar:cloud-download-linear" width={14} height={14} />
+              )}
+            </button>
           )}
           <button
             type="button"
@@ -830,6 +1051,18 @@ export function GitPanel({
             )}
             <span>Pousser</span>
           </button>
+          {!isCloud && etat && etat.avance > 0 && etat.retard > 0 && (
+            <button
+              type="button"
+              className="git-panel__head-action git-pr__forcer"
+              onClick={() => setConfirmForce(true)}
+              disabled={anyBusy}
+              title="Branche divergente : pousser en forçant (--force-with-lease)"
+            >
+              <Icon icon="solar:danger-triangle-linear" width={13} height={13} />
+              <span>Forcer…</span>
+            </button>
+          )}
           <button
             type="button"
             className="git-panel__head-btn"
@@ -846,9 +1079,31 @@ export function GitPanel({
         <div
           className="git-panel__notice"
           data-kind={notice.kind}
+          data-cle={notice.cle}
           role={notice.kind === "error" ? "alert" : "status"}
         >
           <span className="git-panel__notice-text">{notice.text}</span>
+          {notice.details && (
+            <button
+              type="button"
+              className="git-pr__notice-lien"
+              onClick={() => setDetailsOuverts((v) => !v)}
+              aria-expanded={detailsOuverts}
+            >
+              {detailsOuverts ? "Masquer" : "Détails"}
+            </button>
+          )}
+          {notice.actions?.map((action) => (
+            <button
+              key={action.cle}
+              type="button"
+              className="git-pr__notice-action"
+              data-action={action.cle}
+              onClick={action.onClick}
+            >
+              {action.label}
+            </button>
+          ))}
           <button
             type="button"
             className="git-panel__notice-close"
@@ -856,6 +1111,24 @@ export function GitPanel({
             title="Ignorer"
           >
             <Icon icon="solar:close-circle-linear" width={12} height={12} />
+          </button>
+        </div>
+      )}
+      {notice?.details && detailsOuverts && <pre className="git-pr__sortie">{notice.details}</pre>}
+
+      {etat?.operation && (
+        <div className="git-pr__bandeau" role="status">
+          <Icon icon="solar:danger-triangle-linear" width={13} height={13} />
+          <span className="git-pr__bandeau-texte">
+            {libelleOperation(etat.operation)} en cours : résolvez les conflits puis validez, ou abandonnez.
+          </span>
+          <button
+            type="button"
+            className="git-pr__bandeau-btn"
+            onClick={() => setConfirmAbandon(true)}
+            disabled={anyBusy}
+          >
+            Abandonner
           </button>
         </div>
       )}
@@ -899,54 +1172,96 @@ export function GitPanel({
           )}
 
           <div className="git-panel__commit">
-            <div className="git-panel__field">
-              <input
-                type="text"
+            <div className="git-panel__field git-pr__champ-message">
+              <textarea
+                className="git-pr__message"
+                rows={Math.min(6, Math.max(1, commitMessage.split("\n").length))}
                 placeholder={
-                  totalChanges === 0
-                    ? "Rien à valider"
-                    : noneSelected
-                      ? "Sélectionnez les fichiers à valider"
-                      : "Message de validation (commit)"
+                  modifierDernier
+                    ? "Message du dernier commit"
+                    : totalChanges === 0
+                      ? "Rien à valider"
+                      : noneSelected
+                        ? "Sélectionnez les fichiers à valider"
+                        : "Message de validation (commit)"
                 }
+                aria-label="Message de validation (commit)"
                 value={commitMessage}
                 onChange={(e) => setCommitMessage(e.target.value)}
                 onKeyDown={(e) => {
-                  if (
-                    e.key === "Enter" &&
-                    !e.shiftKey &&
-                    !noneSelected &&
-                    commitMessage.trim()
-                  ) {
+                  if (e.key === "Enter" && !e.shiftKey && peutValider) {
                     e.preventDefault();
                     handleCommit();
                   }
                 }}
-                disabled={totalChanges === 0 || anyBusy}
+                disabled={(totalChanges === 0 && !modifierDernier) || anyBusy}
               />
             </div>
-            <button
-              type="button"
-              className="git-panel__action"
-              onClick={handleCommit}
-              disabled={anyBusy || noneSelected || !commitMessage.trim()}
-              title={
-                noneSelected
-                  ? "Sélectionnez au moins un fichier"
-                  : !commitMessage.trim()
+            {noteRedaction && <div className="git-pr__note">{noteRedaction}</div>}
+            {modifierDernier && etat?.dernierCommit?.pousse && (
+              <div className="git-pr__note" data-genre="attention">
+                Ce commit est déjà poussé : il faudra ensuite pousser en forçant.
+              </div>
+            )}
+            <div className="git-pr__commit-barre">
+              {!isCloud && (
+                <button
+                  type="button"
+                  className="git-pr__bouton"
+                  data-action="rediger"
+                  onClick={handleRediger}
+                  disabled={anyBusy || noneSelected}
+                  title={
+                    noneSelected
+                      ? "Sélectionnez les fichiers du commit"
+                      : "Rédiger le message avec l'IA à partir du diff des fichiers choisis"
+                  }
+                >
+                  {busyKey === "rediger" ? (
+                    <span className="git-panel__spinner git-panel__spinner--inline" />
+                  ) : (
+                    <Icon icon="solar:magic-stick-3-linear" width={13} height={13} />
+                  )}
+                  <span>{busyKey === "rediger" ? "Rédaction…" : "Rédiger"}</span>
+                </button>
+              )}
+              {!isCloud && etat?.dernierCommit && (
+                <label className="git-pr__case" title="Remplacer le dernier commit au lieu d'en créer un nouveau">
+                  <input
+                    type="checkbox"
+                    checked={modifierDernier}
+                    onChange={(e) => basculerModifierDernier(e.target.checked)}
+                    disabled={anyBusy}
+                  />
+                  <span>Modifier le dernier commit</span>
+                </label>
+              )}
+              <button
+                type="button"
+                className="git-panel__action"
+                data-action="valider"
+                onClick={handleCommit}
+                disabled={anyBusy || !peutValider}
+                title={
+                  !commitMessage.trim()
                     ? "Écrivez un message de validation"
-                    : `Valider ${selected.size} fichier${
-                        selected.size === 1 ? "" : "s"
-                      }`
-              }
-            >
-              {busyKey === "commit" ? (
-                <span className="git-panel__spinner git-panel__spinner--inline" />
-              ) : null}
-              <span>
-                Valider{noneSelected ? "" : ` (${selected.size})`}
-              </span>
-            </button>
+                    : modifierDernier
+                      ? "Remplacer le dernier commit au lieu d'en créer un nouveau"
+                      : noneSelected
+                        ? "Sélectionnez au moins un fichier"
+                        : `Valider ${selected.size} fichier${selected.size === 1 ? "" : "s"}`
+                }
+              >
+                {busyKey === "commit" ? (
+                  <span className="git-panel__spinner git-panel__spinner--inline" />
+                ) : null}
+                <span>
+                  {modifierDernier
+                    ? "Modifier le commit"
+                    : `Valider${noneSelected ? "" : ` (${selected.size})`}`}
+                </span>
+              </button>
+            </div>
           </div>
         </section>
 
@@ -1365,6 +1680,40 @@ export function GitPanel({
           </div>
         )}
       </GitDialog>
+
+      <GitDialog
+        open={confirmForce}
+        onClose={() => {
+          if (busyKey !== "force-push") setConfirmForce(false);
+        }}
+        title="Pousser en forçant ?"
+        description={
+          <span>
+            La branche distante{" "}
+            <code className="git-panel__dialog-code">{etat?.amont ?? "amont"}</code> sera
+            remplacée par votre branche locale. Avec{" "}
+            <code className="git-panel__dialog-code">--force-with-lease</code>, git refuse si
+            quelqu'un y a poussé depuis votre dernière lecture du dépôt distant (fetch).
+          </span>
+        }
+        primaryLabel="Pousser en forçant"
+        primaryDanger
+        primaryBusy={busyKey === "force-push"}
+        onPrimary={handleForcePush}
+      />
+
+      <GitDialog
+        open={confirmAbandon}
+        onClose={() => {
+          if (busyKey !== "abandon") setConfirmAbandon(false);
+        }}
+        title={titreAbandon(etat?.operation ?? null)}
+        description="Les fichiers reviennent à l'état d'avant l'opération ; les conflits déjà résolus sont perdus."
+        primaryLabel="Abandonner"
+        primaryDanger
+        primaryBusy={busyKey === "abandon"}
+        onPrimary={handleAbandon}
+      />
 
       <GitDialog
         open={renameBranchTarget !== null}
