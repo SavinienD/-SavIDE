@@ -114,6 +114,8 @@ impl Daemon {
                     // nothing to do on an archived session: no restore
                     | methods::SESSIONS_UNLOAD
                     | methods::SESSIONS_DETACH
+                    // jauge du contexte de l'en-tête du chat : simple lecture
+                    | "sessions.context"
             )
             && !(method == methods::SESSIONS_UPDATE
                 && params.get("archived").and_then(Value::as_bool) == Some(false))
@@ -367,6 +369,8 @@ impl Daemon {
             }
             // commandes — indicateurs /goal et /heartbeat (lecture, arrêt)
             methods::SESSIONS_COMMANDS_STATE => ok(crate::commandes_rpc::state(self, &sid(&params)?)?),
+            // Jauge du contexte et minuteur du cache de l'en-tête du chat.
+            "sessions.context" => ok(crate::contexte_rpc::session(self, &sid(&params)?)?),
             methods::SESSIONS_COMMANDS_SET => {
                 let op = opt_str(&params, "op").unwrap_or_default();
                 ok(crate::commandes_rpc::set(self, &sid(&params)?, &op)?)

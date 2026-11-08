@@ -3,6 +3,8 @@
 
 mod budget;
 mod compaction;
+/// Jauge du contexte et minuteur du cache (en-tête du chat).
+pub mod dernier_appel;
 // providers — providers declared in `<data_dir>/providers.json`.
 pub mod declared;
 mod host;

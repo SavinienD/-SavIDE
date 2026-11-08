@@ -718,6 +718,10 @@ impl Provider for OverriddenProvider {
     async fn stream(&self, request: ProviderRequest) -> axecode_core::Result<axecode_core::ProviderStream> {
         self.0.stream(request).await
     }
+
+    fn prompt_cache_ttl_secs(&self, model: &ModelRef) -> Option<u32> {
+        self.0.prompt_cache_ttl_secs(model)
+    }
 }
 
 /// Wrap a registry entry with the override decorator (cheap: one Arc).
