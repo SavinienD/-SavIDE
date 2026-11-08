@@ -352,6 +352,7 @@ Code map:
 │       ├── main.rs
 │       ├── models.rs
 │       ├── offline.rs # v2-l6 — mode désynchronisé : miroir local + journal (<data>/offline/<connexion>) et IPC offline_* (prepare, list, read, write, create, delete, rename, journal, sync, resolve, forget)
+│       ├── palette.rs # lot palette — palette_fichiers (Ctrl+P : rg --files, .gitignore respecté, repli sur la liste interne)
 │       ├── platform.rs
 │       ├── providers.rs
 │       ├── quota.rs # providers — IPC provider_quota (usage OAuth Anthropic + historique d'épuisement)
@@ -413,6 +414,12 @@ Code map:
     │   ├── ConversationList.tsx
     │   ├── EditorPane.tsx
     │   ├── FileTree.tsx
+    │   ├── palette # lot palette — Ctrl+P / Ctrl+K « aller partout vite »
+    │   │   ├── Palette.tsx # fenêtre commune (champ + liste, tout au clavier) ; palette.css
+    │   │   ├── PaletteEspace.tsx # accroche unique dans Workspace.tsx : raccourcis, récents, ouverture (autre colonne)
+    │   │   ├── PaletteFichiers.tsx # Ctrl+P : fichier par son nom (récents d'abord)
+    │   │   ├── flou.ts # recherche approximative sans casse ni accents (tests/paletteFichiers.test.cjs)
+    │   │   ├── recents.ts / ouvertureFichier.ts / paletteApi.ts # fichiers récents par dossier, colonne voisine, IPC
     │   ├── TerminalPanel.tsx # multi-onglets PTY : Ctrl+Tab, renommage, PowerShell/WSL et scrollback texte local
     │   ├── GitPanel.tsx
     │   ├── RemotePanel.tsx

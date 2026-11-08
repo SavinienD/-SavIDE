@@ -760,6 +760,8 @@ async function preparerScene(page, si, sc) {
     else if (e.demon) await page.evaluate((charge) => window.__bancEmettre?.("axe://daemon", charge), e.demon);
     await pause(e.pause ?? 150);
   }
+  // lot palette — « touchesFin » : touches tapées en dernier (ex. Control+Enter dans une palette).
+  await taperTouches(page, sc.touchesFin);
   if (sc.retrecirTerminal) {
     // Le volet bas rétrécit après l'ouverture (fenêtre réduite, volet latéral élargi) :
     // xterm doit se replier sur la nouvelle largeur, rien ne doit rester rogné à droite.

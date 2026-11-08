@@ -54,7 +54,8 @@ export type RaccourciId =
   | "fermerMolette"
   | "deplacerColonne"
   | "rechercherMac"
-  | "dossierRecent";
+  | "dossierRecent"
+  | "ouvrirFichier"; // lot palette
 
 type Touche = {
   /** Ctrl (ou Cmd sur macOS). */
@@ -101,6 +102,8 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "enregistrer", categorie: "Onglets", libelle: "Enregistrer le fichier", combinaison: "Ctrl + S", touche: { ctrl: true, touches: ["s"] } },
   { id: "rechercherMac", categorie: "Onglets", libelle: "Rechercher dans les fichiers (hors éditeur et terminal)", combinaison: "Ctrl + F", touche: { ctrl: true, touches: ["f"] }, macSeulement: true, horsEditeur: true },
   { id: "rechercheFichiers", categorie: "Onglets", libelle: "Rechercher dans les fichiers", combinaison: "Ctrl + Maj + F", touche: { ctrl: true, shift: true, touches: ["f"] } },
+  // lot palette — ouverture rapide (laissée au terminal : historique du shell).
+  { id: "ouvrirFichier", categorie: "Onglets", libelle: "Ouvrir un fichier par son nom", combinaison: "Ctrl + P", touche: { ctrl: true, touches: ["p", "code:KeyP"] }, horsTerminal: true },
   { id: "terminal", categorie: "Panneaux", libelle: "Afficher / masquer le terminal", combinaison: "Ctrl + J", touche: { ctrl: true, touches: ["j"] } },
   { id: "focusExplorateur", categorie: "Panneaux", libelle: "Aller à l'explorateur de fichiers", combinaison: "Ctrl + Maj + E", touche: { ctrl: true, shift: true, touches: ["e", "code:KeyE"] } },
   { id: "focusChat", categorie: "Panneaux", libelle: "Aller à la zone de saisie du chat", combinaison: "Ctrl + Maj + T", touche: { ctrl: true, shift: true, touches: ["t", "code:KeyT"] } },

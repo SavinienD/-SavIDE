@@ -141,6 +141,7 @@ import { loadUiZoom } from "../axe/zoom";
 import { apprendreDuMessage } from "../axe/voix/vocabulaireAuto"; // voix-vocabulaire
 import { noterConversation } from "../lib/gardienPage";
 import { garderSeulement } from "./chat/vuesConversations"; // mémoire
+import { PaletteEspace } from "./palette/PaletteEspace"; // lot palette : Ctrl+P, Ctrl+K
 
 type Props = {
   bootstrap: WorkspaceBootstrap;
@@ -3655,6 +3656,7 @@ export function Workspace({
   return (
     <div className="workspace">
       {noticeEl}
+      <PaletteEspace workspacePath={workspacePath} layout={layout} fichierActif={activeFilePath} openFile={openFile} disposition={dispositionFichiers} setDisposition={setDispositionFichiers} /> {/* lot palette */}
       {/* e6 — les volets detaches vivent ici, dans la fenetre de l'application. */}
       <VoletsFlottants
         volets={volets}

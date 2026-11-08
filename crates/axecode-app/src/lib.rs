@@ -23,6 +23,7 @@ pub mod read;
 pub mod repl; // repl
 pub mod rlm; // rlm
 mod ripgrep;
+pub use ripgrep::ensure_ripgrep_executable; // lot palette : rg --files (Ctrl+P)
 pub mod guet; // guet
 pub mod session_commands; // goal
 pub mod skill;

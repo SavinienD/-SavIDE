@@ -822,4 +822,17 @@ export const SCENES = [
     temoins: ["absent:.axe-registre", "sel:.axe-repl__field input[type='number']", "sel:.axe-repl__field select"] },
   { id: "outils-repl-modules", ...REGISTRE(".axe-repl__modules"),
     temoins: ["absent:.axe-registre", "sel:.axe-repl__case input[type='checkbox']", "compte:.axe-repl__module=3"] },
+  // Lot palette (P1) — Ctrl+P : ouvrir un fichier par son nom (liste par rg --files simulée),
+  // lettres trouvées surlignées, Entrée ouvre, Ctrl+Entrée ouvre dans une autre colonne.
+  { id: "palette-fichiers", stockage: () => colonnes([ids(1)]), touches: ["Control+p"],
+    temoins: ["sel:.palette[data-palette='fichiers'] .palette__champ input", "sel:.palette__element[data-actif='true']", "README.md", "appel:palette_fichiers"] },
+  { id: "palette-fichiers-cherche", stockage: () => colonnes([ids(1)]), touches: ["Control+p"],
+    taper: [{ sel: ".palette__champ input", texte: "wsp", ajouter: true }],
+    temoins: ["sel:.palette__element[data-index='0'] .palette__titre[title='Workspace.tsx'] mark", "absent:.palette__element[data-index='0'] .palette__titre[title='README.md']"] },
+  { id: "palette-fichiers-ouvrir", stockage: () => colonnes([ids(1)]), touches: ["Control+p"],
+    taper: [{ sel: ".palette__champ input", texte: "readme", ajouter: true }], touchesFin: ["Enter"],
+    temoins: ["absent:.palette", "sel:.editor-col .tabs .tab[data-active='true']", "appel:read_workspace_file_command"] },
+  { id: "palette-fichiers-colonne", stockage: () => colonnes([ids(1)]), ouvrirFichier: "Cargo.toml", touches: ["Control+p"],
+    taper: [{ sel: ".palette__champ input", texte: "stream", ajouter: true }], touchesFin: ["Control+Enter"],
+    temoins: ["absent:.palette", "compte:.colonne-fichiers=2", "sel:.colonne-fichiers[data-colonne-index='1'] .tab[data-active='true']"] },
 ];

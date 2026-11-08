@@ -1,0 +1,193 @@
+/* Lot palette — Ctrl+P (fichiers), Ctrl+K (aller à) : fenêtre en haut au centre,
+   surfaces plates de l'appli, une seule couleur d'accent pour les lettres trouvées. */
+
+.palette-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: min(12vh, 96px) 16px 16px;
+  background: rgba(8, 9, 11, 0.45);
+}
+
+.palette {
+  width: min(640px, 100%);
+  max-height: min(560px, calc(100vh - min(12vh, 96px) - 16px));
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-2);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-elevated);
+  color: var(--text-1);
+  font-family: var(--font-ui);
+}
+
+.palette__champ {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-3);
+}
+.palette__champ input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text-0);
+  font: inherit;
+  font-size: var(--fs-base);
+}
+.palette__champ input::placeholder {
+  color: var(--text-3);
+}
+
+.palette__liste {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.palette__groupe {
+  padding: 8px 8px 4px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.palette__element {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border-radius: var(--r-small);
+  color: var(--text-1);
+  cursor: pointer;
+}
+.palette__element[data-actif="true"] {
+  background: var(--bg-4);
+  color: var(--text-0);
+}
+.palette__icone {
+  flex: none;
+  color: var(--text-3);
+}
+
+.palette__textes {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.palette__titre {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-sm);
+}
+.palette__detail {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+.palette mark {
+  background: transparent;
+  color: var(--accent-hi);
+  font-weight: 600;
+}
+/* Extrait d'une conversation : le mot cherché sur fond d'accent, comme dans le harnais. */
+.palette__element[data-genre="extrait"] .palette__textes {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+}
+.palette__element[data-genre="extrait"] .palette__detail mark {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--text-0);
+  font-weight: 400;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.palette__indication {
+  flex: none;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.palette__etat {
+  padding: 16px 12px;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+
+.palette__note {
+  flex: none;
+  padding: 4px 12px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.palette__aide {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+.palette__aide-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.palette__aide kbd {
+  padding: 0 4px;
+  border-radius: var(--r-micro);
+  background: var(--bg-4);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+@media (max-height: 520px) {
+  .palette-fond {
+    padding-top: 16px;
+  }
+  .palette {
+    max-height: calc(100vh - 32px);
+  }
+  .palette__aide {
+    display: none;
+  }
+}
