@@ -292,8 +292,9 @@ export function EcranAutomatisations({ dossierCourant, onFermer }: Props) {
   }
 
   const titre = vue.genre === "formulaire" ? (vue.automatisation ? "Modifier l'automatisation" : "Nouvelle automatisation") : "Automatisations";
+  // Un clic hors du panneau ferme la liste, jamais un formulaire en cours ni une conversation ouverte.
   return (
-    <div className="auto-ecran" onMouseDown={(e) => e.target === e.currentTarget && onFermer()}>
+    <div className="auto-ecran" onMouseDown={(e) => e.target === e.currentTarget && vue.genre === "liste" && onFermer()}>
       <div
         className="auto-ecran__panneau"
         role="dialog"
