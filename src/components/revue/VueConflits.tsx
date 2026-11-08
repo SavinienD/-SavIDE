@@ -347,8 +347,6 @@ export function VueConflits({ dossier, fichier, onFini }: { dossier: string; fic
                 </div>
               </div>
               <div className="revue-diff__barre" data-blocs={blocs.length}>
-                <span className="revue-diff__nom" title={choix}>{nom}</span>
-                {sousDossier ? <span className="revue-diff__dossier">{sousDossier}</span> : null}
                 <button type="button" className="revue-icone" disabled={!blocs.length} onClick={() => allerBloc(courant - 1)} title={infoBulle("Conflit précédent", "revueBlocPrecedent")} aria-label="Conflit précédent">
                   <Icon icon="solar:alt-arrow-left-linear" width={15} height={15} />
                 </button>
@@ -357,12 +355,16 @@ export function VueConflits({ dossier, fichier, onFini }: { dossier: string; fic
                   <Icon icon="solar:alt-arrow-right-linear" width={15} height={15} />
                 </button>
                 <span className="revue-espace" />
-                <button type="button" className="revue-bouton" data-action="prendre-nous" disabled={courant < 0} onClick={() => prendre("nous")}>Prendre la nôtre</button>
-                <button type="button" className="revue-bouton" data-action="prendre-eux" disabled={courant < 0} onClick={() => prendre("eux")}>Prendre la leur</button>
-                <button type="button" className="revue-bouton" data-action="prendre-deux" disabled={courant < 0} onClick={() => prendre("deux")}>Prendre les deux</button>
+                <span className="revue-conflits__prendre" id="revue-prendre">Prendre</span>
+                <button type="button" className="revue-bouton" data-action="prendre-nous" disabled={courant < 0} onClick={() => prendre("nous")} aria-label="Prendre la nôtre" title="Prendre notre version pour ce bloc">la nôtre</button>
+                <button type="button" className="revue-bouton" data-action="prendre-eux" disabled={courant < 0} onClick={() => prendre("eux")} aria-label="Prendre la leur" title="Prendre leur version pour ce bloc">la leur</button>
+                <button type="button" className="revue-bouton" data-action="prendre-deux" disabled={courant < 0} onClick={() => prendre("deux")} aria-label="Prendre les deux" title="Garder les deux versions, la nôtre d'abord">les deux</button>
               </div>
               <div className="revue-conflits__resultat">
-                <h3 className="revue-conflits__etiquette">Résultat (modifiable)</h3>
+                <h3 className="revue-conflits__etiquette" title={choix}>
+                  Résultat modifiable · {nom}
+                  {sousDossier ? <span className="revue-conflits__dossier">{sousDossier}</span> : null}
+                </h3>
                 <MonacoSimple
                   valeur={resultat}
                   langage={langage}

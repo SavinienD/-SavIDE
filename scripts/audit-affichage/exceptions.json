@@ -166,6 +166,12 @@
       "regle": "chevauchement",
       "selecteur": ".settings-pane__tool-credential-field",
       "raison": "Champ de clé API (ApiKeyField) : les boutons Afficher / Copier sont posés dans le champ, à droite, exprès (padding-right de 64 px réservé au texte)."
+    },
+    {
+      "regle": "cible-petite",
+      "selecteur": ".terminal-tab__close",
+      "situation": "/revue-depuis-git$",
+      "raison": "Scène revue-depuis-git : la vue « Changements » (voile modal) couvre le volet bas ; le banc vérifie la zone de clic de 20 px (::after) par elementFromPoint, qui tombe alors sur le voile. Bouton Fermer du terminal inchangé par la revue."
     }
   ]
 }

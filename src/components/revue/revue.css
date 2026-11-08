@@ -760,8 +760,8 @@
   flex: 0 0 24px;
   margin: 0;
   padding: 0 12px;
-  display: flex;
-  align-items: center;
+  display: block;
+  line-height: 24px;
   font-size: var(--fs-xs);
   font-weight: 500;
   color: var(--text-2);
@@ -804,4 +804,16 @@
   .revue-conflits__aide {
     display: none;
   }
+}
+
+.revue-conflits__prendre {
+  flex: 0 0 auto;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.revue-conflits__dossier {
+  margin-left: 8px;
+  color: var(--text-3);
+  font-weight: 400;
 }
