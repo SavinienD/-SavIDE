@@ -5,7 +5,7 @@ import { mockIPC, mockWindows, mockConvertFileSrc } from "@tauri-apps/api/mocks"
 import { emit } from "@tauri-apps/api/event";
 import * as D from "./donnees";
 import { simulationCollegue } from "./collegue";
-import { simulationQuotas } from "./quotas"; // lot quotas
+import { simulationQuotas } from "./quotas"; // quotas
 
 export type Scene = {
   /** ordre-dossiers — open_workspace ouvre le dossier demandé (et non l'espace du banc). */
@@ -551,7 +551,7 @@ export function installerSimulation(scene: Scene): void {
   }
   // Scène « collegue » : espace cloud d'un collègue sans fournisseur sur son PC.
   if (scene.collegue) Object.assign(h, simulationCollegue(scene, { ...h }));
-  // Lot quotas : plusieurs comptes avec quota, jauge du contexte (scènes quotas-*, jauge-*, reprise-*).
+  // Quotas : plusieurs comptes avec quota, jauge du contexte (scènes quotas-*, jauge-*, reprise-*).
   if (scene.quotas) Object.assign(h, simulationQuotas(scene, { ...h }));
   mockWindows("main");
   mockConvertFileSrc("windows");

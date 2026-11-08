@@ -1,4 +1,4 @@
-// Banc — lot quotas : quotas de plusieurs comptes (Claude, deux ChatGPT dont un à renouveler),
+// Banc — quotas : quotas de plusieurs comptes (Claude, deux ChatGPT dont un à renouveler),
 // jauge du contexte et minuteur du cache (`sessions.context`) pour les scènes « quotas-* »,
 // « jauge-* » et « reprise-* ». Formes réelles : src-tauri/src/quota.rs et
 // crates/axecode-daemon/src/contexte_rpc.rs.

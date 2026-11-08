@@ -103,7 +103,7 @@ const explorateurFerme = (largeur, hauteur) => ({
 const REGISTRE = (cible, ...suite) => ({ stockage: () => colonnes([ids(1)]), reglages: true,
   clics: [".settings-pane__nav-item[data-section='repl']"], cliquer: [cible, ...suite], defilerAvantClic: true, pauseClics: 500 });
 
-// Lot quotas — reprises prévues (stockage « reprise.file ») : la conversation c-001 et un sous-agent au nom long.
+// Quotas — reprises prévues (stockage « reprise.file ») : la conversation c-001 et un sous-agent au nom long.
 const REPRISES = () => {
   const t0 = Date.now();
   const r = (sessionId, parentId, nom) => ({ sessionId, parentId, nom, provider: "anthropic", aMs: t0 + 2 * 3_600_000 + 6 * 60_000, source: "quota", essais: 0, creeMs: t0 });
@@ -829,7 +829,7 @@ export const SCENES = [
     temoins: ["absent:.axe-registre", "sel:.axe-repl__field input[type='number']", "sel:.axe-repl__field select"] },
   { id: "outils-repl-modules", ...REGISTRE(".axe-repl__modules"),
     temoins: ["absent:.axe-registre", "sel:.axe-repl__case input[type='checkbox']", "compte:.axe-repl__module=3"] },
-  // Lot quotas — quotas de tous les abonnements dans la barre du haut : vue compacte (fenêtre la plus
+  // Quotas — quotas de tous les abonnements dans la barre du haut : vue compacte (fenêtre la plus
   // pleine, compte, heure de réinitialisation au-delà du seuil), détail au clic avec trois comptes (un
   // e-mail très long, un compte ChatGPT à renouveler), réglages % utilisé / % restant et seuil d'alerte.
   { id: "quotas-detail", sim: { quotas: "plusieurs" }, stockage: () => colonnes([ids(3)]), cliquer: ".axe-quota__pill",
@@ -838,7 +838,7 @@ export const SCENES = [
   { id: "quotas-restant", sim: { quotas: "plusieurs" }, stockage: () => ({ ...colonnes([ids(3)]), "quotas.reglages": { mode: "restant", seuil: 80 } }),
     cliquer: [".axe-quota__pill", ".axe-quota__choix button[aria-pressed='false']"],
     temoins: ["sel:.axe-quota__pill .axe-quota__compact", "sel:.axe-quota__choix button[aria-pressed='true']"] },
-  // Lot quotas — jauge du contexte (84 k / 200 k, repère du compactage) et minuteur du cache de 5 min
+  // Quotas — jauge du contexte (84 k / 200 k, repère du compactage) et minuteur du cache de 5 min
   // dans l'en-tête du chat, en une colonne et en trois colonnes étroites.
   // Colonne de 420 px (défaut) : barre, pourcentage et minuteur ; à 800 px, la colonne rétrécit : sans la barre.
   { id: "jauge-contexte", sim: { quotas: "plusieurs" }, stockage: () => colonnes([ids(3)]),
@@ -846,7 +846,7 @@ export const SCENES = [
       "si>1000:sel:.chat-head .jauge-contexte__jauge .jauge-contexte__barre"] },
   { id: "jauge-contexte-c3", sim: { quotas: "plusieurs" }, stockage: () => colonnes([ids(2), ["c-003"], ["c-004"]]),
     temoins: ["sel:.colonne-chat[data-focus='true'] .chat-head .jauge-contexte__jauge"] },
-  // Lot quotas — reprise automatique prévue après une limite d'abonnement : la conversation et un
+  // Quotas — reprise automatique prévue après une limite d'abonnement : la conversation et un
   // sous-agent au nom long ; « Annuler » retire la reprise de la conversation (le sous-agent reste).
   { id: "reprise-bandeau", sim: { quotas: "plusieurs" }, stockage: () => ({ ...colonnes([ids(3)]), "reprise.file": REPRISES() }),
     temoins: ["sel:.bandeau-reprise", "compte:.bandeau-reprise__ligne=2", "clic:.bandeau-reprise__ligne[data-enfant='false'] .bandeau-reprise__annuler"] },
