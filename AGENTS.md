@@ -61,7 +61,8 @@ Code map:
 │   │   ├── _documents.py # viewers — texte des xlsx/docx/pdf/pptx/odt/epub pour files.read (privé, non préchargé)
 │   │   ├── automatisations.py # automatisations — module automatisations : creer, lister, modifier, supprimer, lancer, historique (RPC automatisations.* du service)
 │   │   ├── rlm.py / messages.py / harness.py / refine.py / goal.py / heartbeat.py # modules E/D/F (brain)
-│   │   └── navigateur.py # ouvrir/lire(delta)/cliquer/remplir/touche/attendre/capture sur l'onglet Navigateur (host calls navigateur.*)
+│   │   ├── navigateur.py # ouvrir/lire(delta)/cliquer/remplir/touche/attendre/capture sur l'onglet Navigateur (host calls navigateur.*)
+│   │   └── agents_cli.py # agents en ligne de commande (Claude Code, Codex…) confiés depuis le REPL : disponibles / lancer / attendre / resultat / arreter
 │   └── tests # pytest files + shell + documents ; test_rlm.py / test_messages.py ; test_sommeil.py : un nouveau noyau reprend les variables de l'instantané
 ├── web # webui — app web des conversations (Vite + React, npm run build:web -> web/dist, embarquée dans le service)
 │   ├── index.html / vite.config.ts / tsconfig.json
@@ -145,6 +146,7 @@ Code map:
 │   │       ├── rlm.rs # rlm — sous-agents persistants rlm.* + messagerie famille nucléaire messages.* (FamilyHost), garde-fou quota
 │   │       ├── rlm # suivi.rs : fiche de lancement, statut final (réussi/échoué/bloqué/arrêté), stop/retry, worktree/fusionner/liberer, comparer, diffusion « all »
 │   │       ├── rlm_git.rs # worktrees git des sous-agents (branche sous-agent/<nom>, hors du dépôt), état, fusion (annulée sur conflit), libération
+│   │       ├── orchestre.rs # agents_spawn / agents_wait / agents_result ; agents_cli.* du noyau (mode non interactif des CLI)
 │   │       ├── session_commands.rs # goal — TurnHook /goal /autonomous (budgets + gate) /heartbeat /refine /compact
 │   │       ├── skill.rs
 │   │       ├── skills_url.rs # skill installé depuis une adresse git ou .zip (aperçu, version, mise à jour)
@@ -225,6 +227,7 @@ Code map:
 │   │   │   ├── process.rs
 │   │   │   └── python.rs # découverte python + paquet axecode_kernel
 │   │   └── tests/kernel.rs
+│   ├── axecode-agents # file des agents externes (src/store.rs) ; agents CLI : catalogue-cli.json, src/catalogue.rs (détection, réglages agents-cli.json, lignes de commande)
 │   ├── axecode-harness # harness — Continual Harness
 │   │   ├── Cargo.toml
 │   │   └── src
@@ -384,7 +387,7 @@ Code map:
 │       ├── remote.rs
 │       ├── repl_settings.rs # repl — IPC repl_settings_get/save, repl_catalog
 │       ├── state.rs
-│       ├── terminal.rs # PTY multi-onglets ; sélection PowerShell/WSL bash
+│       ├── terminal.rs # PTY multi-onglets ; sélection PowerShell/WSL bash ; terminaux d'agents CLI (spawn_agent_terminal), réglages agents_cli_*
 │       ├── tests.rs
 │       ├── turns.rs # v2-l2.4c — send_message force le pont REPL en cloud (agent sur le service)
 │       ├── updater.rs
@@ -465,7 +468,14 @@ Code map:
     │   │   ├── imageAvantApres.ts # type d'image, cadre commun et glissière de la comparaison avant / après
     │   │   └── editeur.css
     │   ├── FileTree.tsx
-    │   ├── TerminalPanel.tsx # multi-onglets PTY : Ctrl+Tab, renommage, PowerShell/WSL et scrollback texte local
+    │   ├── TerminalPanel.tsx # multi-onglets PTY : Ctrl+Tab, renommage, PowerShell/WSL et scrollback texte local ; agents CLI (état, Relancer), recherche, scindé, gestionnaire, glisser un fichier
+    │   ├── agents-cli # agents en ligne de commande dans les terminaux
+    │   │   ├── catalogueCli.ts / ReglagesAgentsCli.tsx # catalogue (crates/axecode-agents/catalogue-cli.json), Réglages > Agents CLI
+    │   │   ├── NouvelAgentMenu.tsx / MenuFlottant.tsx / ActionsTerminal.tsx # menus de la barre des terminaux
+    │   │   ├── etatAgent.ts # état travaille / attend / fini (BEL, OSC 9, OSC 777, invites), notification ide-notification
+    │   │   ├── outilsTerminal.ts / RechercheTerminal.tsx # recherche (Ctrl+F), copie de la sortie, fichier glissé
+    │   │   ├── commandesEnregistrees.ts / CommandesEnregistrees.tsx # commandes et prompts enregistrés (terminal, chat, Réglages)
+    │   │   └── agents-cli.css
     │   ├── GitPanel.tsx # onglets Dépôt / PR / Issues ; Rédiger (IA), compteurs, fetch, amend, forcer, abandon, Réparer avec l'IA
     │   ├── pr # gitApi.ts, forgeApi.ts, consignes.ts (prompts + consignes pour l'agent), redaction.ts (appel unique), versAgent.ts (texte mis dans la saisie de la conversation), PrOnglet.tsx, IssuesOnglet.tsx, pr.css
     │   ├── revue # vue « Changements » (Ctrl+Maj+D) : diff Monaco, notes de relecture envoyées à l'agent, indexation partielle, conflits à 3 volets

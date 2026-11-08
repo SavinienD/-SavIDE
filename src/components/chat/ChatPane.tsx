@@ -44,6 +44,7 @@ import { ERREUR_DEPART } from "./departFile"; // file-envoi-affiche
 import { avecNote, noteConversation } from "./arrierePlan"; // arriere-plan
 import { fileIcon } from "../../lib/fileIcon";
 import { DicteeBouton } from "../../axe/voix/DicteeBouton"; // voix
+import { BoutonCommandesChat } from "../agents-cli/CommandesEnregistrees"; // commandes et prompts enregistrés
 import { insererTexteDicte } from "../../axe/voix/inserer"; // voix
 import { brancherBrouillons, enregistrerComposeur } from "../../axe/voix/dicteeCible";
 import { brancherCompositeur } from "../pr/versAgent"; // panneau Git : consignes envoyées à l'agent
@@ -4204,6 +4205,7 @@ export function ChatPane({
               >
                 <Icon icon="solar:add-circle-linear" width={18} height={18} />
               </button>
+              <BoutonCommandesChat dossier={workspacePath} onInserer={insererDictee} />
               {noProvidersConfigured ? (
                 <button
                   type="button"

@@ -7,13 +7,14 @@
 //! commands declared in its configuration, each in its own process group, and
 //! supervises them (concurrency cap, deadline, stop).
 
+pub mod catalogue; // agents en ligne de commande (catalogue, détection, réglages)
 pub mod config;
 mod store;
 
 pub use config::{AgentsConfig, DEFAULT_MODELE};
 pub use store::{
-    atomic_write, pid_alive, AgentStore, AgentSummary, ResultView, SpawnRequest, Spawned, Statut,
-    StatusView, TaskState,
+    atomic_write, pid_alive, AgentStore, AgentSummary, LancementCli, ResultView, SpawnRequest, Spawned,
+    Statut, StatusView, TaskState,
 };
 
 /// Errors surfaced to the RPC layer; messages are part of the frozen contract.

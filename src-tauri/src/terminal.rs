@@ -40,16 +40,6 @@ pub(super) async fn spawn_terminal(
     let workspace_root =
         normalize_workspace_root(&input.workspace_path).map_err(error_to_string)?;
 
-    let pty_system = native_pty_system();
-    let pair = pty_system
-        .openpty(terminal_size(
-            input.cols,
-            input.rows,
-            input.pixel_width,
-            input.pixel_height,
-        ))
-        .map_err(error_to_string)?;
-
     let mut command = if input.shell.as_deref() == Some("bash") {
         bash_terminal_command().await.map_err(error_to_string)?
     } else {
@@ -61,6 +51,22 @@ pub(super) async fn spawn_terminal(
     command.env("COLORTERM", "truecolor");
     command.env("AXECODE_WORKSPACE", workspace_dir.as_os_str());
 
+    let size = terminal_size(input.cols, input.rows, input.pixel_width, input.pixel_height);
+    lancer_pty(app, &state, session_id, token, size, command).await
+}
+
+/// Ouvre un pseudo-terminal, y lance `command` et relaie sa sortie (événements
+/// terminal-data / terminal-exit) ; remplace un terminal de même identifiant.
+async fn lancer_pty(
+    app: AppHandle,
+    state: &DesktopState,
+    session_id: String,
+    token: String,
+    size: PtySize,
+    command: CommandBuilder,
+) -> std::result::Result<TerminalSpawnOutput, String> {
+    let pty_system = native_pty_system();
+    let pair = pty_system.openpty(size).map_err(error_to_string)?;
     let child = pair.slave.spawn_command(command).map_err(error_to_string)?;
     drop(pair.slave);
 
@@ -377,4 +383,175 @@ fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
         c.creation_flags(0x0800_0000);
     }
     c
+}
+
+
+// ---------------------------------------------------------------------------
+// Agents en ligne de commande (Claude Code, Codex, Gemini CLI…) : catalogue,
+// détection et réglages (Réglages > Agents en ligne de commande).
+
+use axecode_app::orchestre::{cli, dossier_donnees};
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct AgentsCliReglagesInput {
+    reglages: cli::Reglages,
+}
+
+/// Les agents du catalogue, installés ou non, avec leurs réglages.
+#[tauri::command]
+pub(super) async fn agents_cli_etat() -> std::result::Result<Vec<cli::EtatAgent>, String> {
+    Ok(cli::etat(&cli::Reglages::lire(&dossier_donnees())))
+}
+
+/// Enregistre les réglages et renvoie l'état relu.
+#[tauri::command]
+pub(super) async fn agents_cli_enregistrer(
+    input: AgentsCliReglagesInput,
+) -> std::result::Result<Vec<cli::EtatAgent>, String> {
+    let dossier = dossier_donnees();
+    input.reglages.ecrire(&dossier).map_err(error_to_string)?;
+    Ok(cli::etat(&cli::Reglages::lire(&dossier)))
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct AgentTerminalInput {
+    dossier: String,
+    cli: String,
+    #[serde(default)]
+    reprendre: bool,
+    session_id: String,
+    token: String,
+    cols: u16,
+    rows: u16,
+    #[serde(default)]
+    pixel_width: u16,
+    #[serde(default)]
+    pixel_height: u16,
+}
+
+/// Terminal d'un agent en ligne de commande : son programme tourne seul dans
+/// le pseudo-terminal (pas de shell), dans le dossier demandé ; quand il
+/// s'arrête, l'onglet reçoit son code de sortie (terminal-exit).
+#[tauri::command]
+pub(super) async fn spawn_agent_terminal(
+    app: AppHandle,
+    state: State<'_, DesktopState>,
+    input: AgentTerminalInput,
+) -> std::result::Result<TerminalSpawnOutput, String> {
+    let session_id = validate_terminal_value(&input.session_id, "identifiant de session")?.to_string();
+    let token = validate_terminal_value(&input.token, "jeton de session")?.to_string();
+    let dossier = normalize_workspace_root(&input.dossier).map_err(error_to_string)?;
+    let command = commande_agent(&input.cli, input.reprendre, &dossier).await?;
+    let size = terminal_size(input.cols, input.rows, input.pixel_width, input.pixel_height);
+    lancer_pty(app, &state, session_id, token, size, command).await
+}
+
+/// Programme de l'agent (réglage, PATH, dossiers usuels) avec ses arguments :
+/// reprise, arguments de lancement, autonomie complète si elle est réglée.
+async fn commande_agent(
+    id: &str,
+    reprendre: bool,
+    dossier: &std::path::Path,
+) -> std::result::Result<CommandBuilder, String> {
+    let agent = cli::agent(id).ok_or_else(|| format!("agent inconnu : {id}"))?;
+    let reglage = cli::Reglages::lire(&dossier_donnees()).de(id);
+    let programme = cli::trouver(agent, &reglage).ok_or_else(|| {
+        format!(
+            "{} est introuvable sur ce poste. Installez-le ({}) ou indiquez son exécutable dans Réglages > Agents CLI.",
+            agent.nom, agent.installation
+        )
+    })?;
+    let args = cli::args_interactifs(agent, &reglage, reprendre)?;
+    let mut command = programme_dans_pty(&programme, &args).await?;
+    let dir = axecode_app::workspace::os_path(dossier);
+    command.cwd(dir.as_os_str());
+    command.env("TERM", "xterm-256color");
+    command.env("COLORTERM", "truecolor");
+    if let Some(parent) = programme.parent() {
+        // node (nvm, volta…) est souvent à côté du programme, hors du PATH de l'appli.
+        let mut chemins = vec![parent.to_path_buf()];
+        if let Some(path) = std::env::var_os("PATH") {
+            chemins.extend(std::env::split_paths(&path));
+        }
+        if let Ok(path) = std::env::join_paths(chemins) {
+            command.env("PATH", path);
+        }
+    }
+    for (cle, valeur) in cli::env_agent(agent, &reglage) {
+        command.env(cle, valeur);
+    }
+    Ok(command)
+}
+
+#[cfg(windows)]
+async fn programme_dans_pty(
+    programme: &std::path::Path,
+    args: &[String],
+) -> std::result::Result<CommandBuilder, String> {
+    let extension = programme
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(str::to_ascii_lowercase)
+        .unwrap_or_default();
+    if extension == "exe" || extension == "com" {
+        let mut command = CommandBuilder::new(programme.as_os_str());
+        for arg in args {
+            command.arg(arg);
+        }
+        return Ok(command);
+    }
+    // .cmd, .bat, .ps1 (installations npm) : PowerShell 7 les lance tous et rend leur code.
+    let shell = axecode_app::ensure_powershell_7_executable()
+        .await
+        .map_err(error_to_string)?;
+    let mut command = CommandBuilder::new(shell.as_os_str());
+    for arg in ["-NoLogo", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command"] {
+        command.arg(arg);
+    }
+    command.arg(ligne_powershell(programme, args));
+    command.env("POWERSHELL_TELEMETRY_OPTOUT", "1");
+    Ok(command)
+}
+
+#[cfg(not(windows))]
+async fn programme_dans_pty(
+    programme: &std::path::Path,
+    args: &[String],
+) -> std::result::Result<CommandBuilder, String> {
+    let mut command = CommandBuilder::new(programme.as_os_str());
+    for arg in args {
+        command.arg(arg);
+    }
+    Ok(command)
+}
+
+/// `& 'C:\…\claude.cmd' '--model' 'opus'; exit $LASTEXITCODE` : chaque argument
+/// entre guillemets simples (doublés à l'intérieur), rien n'est interprété.
+#[cfg_attr(not(windows), allow(dead_code))]
+pub(super) fn ligne_powershell(programme: &std::path::Path, args: &[String]) -> String {
+    let cite = |texte: &str| format!("'{}'", texte.replace('\'', "''"));
+    let mut ligne = format!("& {}", cite(&programme.to_string_lossy()));
+    for arg in args {
+        ligne.push(' ');
+        ligne.push_str(&cite(arg));
+    }
+    ligne.push_str("; exit $LASTEXITCODE");
+    ligne
+}
+
+#[cfg(test)]
+mod tests_agents {
+    use super::*;
+
+    #[test]
+    fn ligne_powershell_cite_tout() {
+        let p = std::path::Path::new(r"C:\Users\moi\AppData\Roaming\npm\claude.cmd");
+        assert_eq!(
+            ligne_powershell(p, &["--model".into(), "l'opus $x".into()]),
+            r"& 'C:\Users\moi\AppData\Roaming\npm\claude.cmd' '--model' 'l''opus $x'; exit $LASTEXITCODE"
+        );
+        assert_eq!(ligne_powershell(std::path::Path::new("codex.cmd"), &[]), "& 'codex.cmd'; exit $LASTEXITCODE");
+    }
 }

@@ -39,6 +39,7 @@ import "./volets/volets.css"; // e6
 import { cloudConnectionFromPath, cloudRpc } from "../lib/ipc"; // v2-l2.3
 import { preferenceModeleEspace } from "../lib/modelesEspace"; // parcours-collegue
 import { demanderSectionReglages } from "../lib/sectionReglages"; // parcours-collegue
+import { definirFichierActif } from "./agents-cli/commandesEnregistrees"; // commandes enregistrées
 import {
   CloudOfflineError,
   getCloudStatus,
@@ -2702,6 +2703,8 @@ export function Workspace({
     !settingsActive && !remoteActive && activeTabIndex >= 0 && tabs[activeTabIndex]
       ? tabs[activeTabIndex].relativePath
       : null;
+  const fichierEditeur = activeTabIndex >= 0 ? tabs[activeTabIndex]?.relativePath ?? null : null;
+  useEffect(() => definirFichierActif(fichierEditeur), [fichierEditeur]); // commandes enregistrées : {fichier}
   const terminalVisible = terminalAvailable && terminalOpen;
   const activeConversationIsStreaming = streamingConversationIds.has(
     activeConv.id,

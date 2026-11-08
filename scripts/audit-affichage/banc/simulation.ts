@@ -13,6 +13,7 @@ import { simulationEditeur } from "./editeur";
 import { simulationNavigateur } from "./navigateur"; // navigateur intégré
 import { simulationAutomatisations } from "./automatisations"; // automatisations
 import { simulationInterop } from "./interop";
+import { simulationAgentsCli } from "./agentsCli"; // agents en ligne de commande
 
 export type Scene = {
   /** ordre-dossiers — open_workspace ouvre le dossier demandé (et non l'espace du banc). */
@@ -584,6 +585,7 @@ export function installerSimulation(scene: Scene): void {
   if (scene.editeur) Object.assign(h, simulationEditeur(scene, { ...h }));
   Object.assign(h, simulationNavigateur(scene)); // navigateur intégré
   Object.assign(h, simulationInterop(scene, h));
+  Object.assign(h, simulationAgentsCli(scene)); // agents en ligne de commande
   mockWindows("main");
   mockConvertFileSrc("windows");
   mockIPC(

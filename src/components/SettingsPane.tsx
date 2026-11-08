@@ -4,6 +4,8 @@ import Editor, { type OnMount } from "@monaco-editor/react";
 import { Icon } from "@iconify/react";
 import { api, cloudRpc } from "../lib/ipc"; // e16
 import { Markdown } from "./chat/Markdown";
+import { BoutonReglagesAgentsCli, ReglagesAgentsCli } from "./agents-cli/ReglagesAgentsCli"; // agents en ligne de commande
+import { BoutonReglagesCommandes, ReglagesCommandes } from "./agents-cli/CommandesEnregistrees";
 import { AxeLogo } from "../axe/Logo";
 import { dateMajLisible, noterLancement, versionAppli } from "../lib/versionAppli"; // apropos
 import { RaccourcisSection } from "../axe/RaccourcisSection"; // raccourcis
@@ -88,6 +90,8 @@ type Section =
   | "skills"
   | "harness" // harness
   | "repl" // repl
+  | "agentsCli" // agents en ligne de commande
+  | "commandes" // commandes et prompts enregistrés
   | "service" // daemon
   | "connections" // remote
   | "shortcuts" // raccourcis
@@ -1390,6 +1394,8 @@ export function SettingsPane({ workspacePath }: Props) {
           <span className="settings-pane__nav-label">Outils REPL</span>
           <span className="settings-pane__nav-count" />
         </button>
+        <BoutonReglagesAgentsCli actif={section === "agentsCli"} onClick={() => setSection("agentsCli")} />
+        <BoutonReglagesCommandes actif={section === "commandes"} onClick={() => setSection("commandes")} />
         {/* daemon — section cloud : masquée dans l'édition locale */}
         {EDITION_LOCALE ? null : <button
           type="button"
@@ -1569,6 +1575,10 @@ export function SettingsPane({ workspacePath }: Props) {
           </>
         ) : section === "repl" ? (
           <><ValidationDefaut /><ReplToolsPane workspacePath={workspacePath} />{EDITION_LOCALE ? null : <RegistrePane />}</> /* repl + e4 (le registre demande le serveur : absent de l'édition locale) */
+        ) : section === "agentsCli" ? (
+          <ReglagesAgentsCli /> /* agents en ligne de commande */
+        ) : section === "commandes" ? (
+          <ReglagesCommandes /> /* commandes et prompts enregistrés */
         ) : section === "service" ? (
           <ServicePane /> /* daemon */
         ) : section === "shortcuts" ? (

@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "notes": "Catalogue des agents en ligne de commande. args : arguments de lancement par défaut (modifiables dans les Réglages). autonomie : drapeaux d'autonomie complète (l'agent agit sans demander) ; autonomieLot : idem pour le mode non interactif s'ils diffèrent. reprise : arguments pour reprendre une session. nonInteractif : arguments du mode non interactif ; {options} = autonomie et modèle, {prompt} = la consigne (sinon elle passe par l'entrée standard). modele : arguments pour choisir le modèle. invites : expressions qui reconnaissent l'attente d'une réponse à l'écran.",
+  "agents": [
+    {
+      "id": "claude",
+      "nom": "Claude Code",
+      "commande": "claude",
+      "autonomie": ["--dangerously-skip-permissions"],
+      "reprise": ["--resume"],
+      "nonInteractif": ["-p", "{options}"],
+      "modele": ["--model", "{modele}"],
+      "installation": "https://docs.claude.com/en/docs/claude-code/setup",
+      "invites": ["\\? for shortcuts", "Do you want to"]
+    },
+    {
+      "id": "codex",
+      "nom": "Codex",
+      "commande": "codex",
+      "autonomie": ["--dangerously-bypass-approvals-and-sandbox"],
+      "reprise": ["resume"],
+      "nonInteractif": ["exec", "--skip-git-repo-check", "{options}"],
+      "modele": ["--model", "{modele}"],
+      "installation": "https://github.com/openai/codex",
+      "invites": ["⏎ send"]
+    },
+    {
+      "id": "gemini",
+      "nom": "Gemini CLI",
+      "commande": "gemini",
+      "autonomie": ["--yolo"],
+      "reprise": ["--resume"],
+      "nonInteractif": ["{options}"],
+      "modele": ["--model", "{modele}"],
+      "installation": "https://github.com/google-gemini/gemini-cli",
+      "invites": ["Type your message"]
+    },
+    {
+      "id": "opencode",
+      "nom": "OpenCode",
+      "commande": "opencode",
+      "autonomie": [],
+      "autonomieLot": ["--auto"],
+      "reprise": ["--continue"],
+      "nonInteractif": ["run", "--print-logs", "--log-level", "ERROR", "{options}"],
+      "modele": ["--model", "{modele}"],
+      "installation": "https://opencode.ai/docs/"
+    },
+    {
+      "id": "cursor",
+      "nom": "Cursor CLI",
+      "commande": "cursor-agent",
+      "alias": ["agent"],
+      "autonomie": ["--yolo"],
+      "reprise": ["resume"],
+      "nonInteractif": ["--print", "--output-format", "text", "{options}", "{prompt}"],
+      "modele": ["--model", "{modele}"],
+      "installation": "https://cursor.com/cli"
+    },
+    {
+      "id": "copilot",
+      "nom": "Copilot CLI",
+      "commande": "copilot",
+      "autonomie": ["--yolo"],
+      "reprise": ["--resume"],
+      "nonInteractif": ["{options}", "--prompt", "{prompt}"],
+      "modele": ["--model", "{modele}"],
+      "installation": "https://github.com/github/copilot-cli"
+    },
+    {
+      "id": "amp",
+      "nom": "Amp",
+      "commande": "amp",
+      "autonomie": ["--dangerously-allow-all"],
+      "reprise": ["threads", "continue"],
+      "nonInteractif": ["--execute", "{options}"],
+      "modele": ["--mode", "{modele}"],
+      "installation": "https://ampcode.com/manual"
+    },
+    {
+      "id": "goose",
+      "nom": "Goose",
+      "commande": "goose",
+      "autonomie": [],
+      "autonomieEnv": {"GOOSE_MODE": "auto"},
+      "reprise": ["session", "--resume"],
+      "nonInteractif": ["run", "{options}", "-t", "{prompt}"],
+      "installation": "https://block.github.io/goose/docs/getting-started/installation"
+    },
+    {
+      "id": "aider",
+      "nom": "Aider",
+      "commande": "aider",
+      "autonomie": ["--yes-always"],
+      "reprise": ["--restore-chat-history"],
+      "nonInteractif": ["{options}", "--message", "{prompt}"],
+      "modele": ["--model", "{modele}"],
+      "installation": "https://aider.chat/docs/install.html"
+    },
+    {
+      "id": "qwen",
+      "nom": "Qwen Code",
+      "commande": "qwen",
+      "autonomie": ["--approval-mode", "yolo"],
+      "reprise": ["--continue"],
+      "nonInteractif": ["{options}"],
+      "modele": ["--model", "{modele}"],
+      "installation": "https://github.com/QwenLM/qwen-code",
+      "invites": ["Type your message"]
+    },
+    {
+      "id": "kimi",
+      "nom": "Kimi CLI",
+      "commande": "kimi",
+      "autonomie": ["--yolo"],
+      "reprise": ["--continue"],
+      "nonInteractif": ["{options}", "--prompt", "{prompt}"],
+      "modele": ["--model", "{modele}"],
+      "installation": "https://github.com/MoonshotAI/kimi-cli"
+    },
+    {
+      "id": "crush",
+      "nom": "Crush",
+      "commande": "crush",
+      "autonomie": ["--yolo"],
+      "nonInteractif": ["run", "{options}", "{prompt}"],
+      "installation": "https://github.com/charmbracelet/crush"
+    },
+    {
+      "id": "droid",
+      "nom": "Droid (Factory)",
+      "commande": "droid",
+      "autonomie": ["--auto", "high"],
+      "reprise": ["--resume"],
+      "nonInteractif": ["exec", "{options}", "{prompt}"],
+      "modele": ["--model", "{modele}"],
+      "installation": "https://docs.factory.ai/cli/getting-started/quickstart"
+    }
+  ]
+}
