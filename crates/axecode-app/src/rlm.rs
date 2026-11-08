@@ -413,7 +413,12 @@ impl FamilyHost {
                     .find(|m| m.id == key || m.name == key)
                     .ok_or_else(|| anyhow!("no {role} named `{key}` (nuclear family only)"))?
             }
-            other => bail!("receiver_role must be parent, child or sibling (got `{other}`)"),
+            // rlm186 — diffusion : tous les enfants, sinon tous les frères et sœurs.
+            "all" => {
+                let body = if mode == "follow_up" { text.to_string() } else { format!("[new task] {text}") };
+                return self.broadcast(if children.is_empty() { siblings } else { children }, body).await;
+            }
+            other => bail!("receiver_role must be parent, child, sibling or all (got `{other}`)"),
         };
         let body = if mode == "follow_up" { text.to_string() } else { format!("[new task] {text}") };
         let id = self

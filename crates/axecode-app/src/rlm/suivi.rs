@@ -416,6 +416,28 @@ impl FamilyHost {
     }
 }
 
+impl FamilyHost {
+    /// `messages.send(receiver_role="all")` : le même message à chaque cible.
+    pub(super) async fn broadcast(&self, cibles: Vec<SessionMeta>, body: String) -> Result<Value> {
+        if cibles.is_empty() {
+            bail!("receiver_role=\"all\" : aucun enfant ni frère ou sœur à qui écrire");
+        }
+        let mut messages = Vec::new();
+        for cible in &cibles {
+            let id = self
+                .host
+                .post_peer_message(&self.session_id, &cible.id, body.clone())
+                .await
+                .map_err(|e| anyhow!("{e}"))?;
+            messages.push(json!({ "session_id": cible.id, "session_name": cible.name, "message_id": id }));
+        }
+        Ok(json!({
+            "delivered_to": cibles.iter().map(|c| c.id.clone()).collect::<Vec<_>>(),
+            "messages": messages,
+        }))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::{path::Path, sync::{Arc, Mutex}};
@@ -639,5 +661,30 @@ mod tests {
         // Une reprise d'un enfant encore au travail l'arrête d'abord.
         parent.dispatch("rlm.retry", &json!({"id": "migr-reprise"})).await.unwrap();
         assert_eq!(b.hote.arrets.lock().unwrap().last().map(String::as_str), Some("enfant2"));
+    }
+
+    #[tokio::test]
+    async fn diffusion_a_toute_la_famille() {
+        let b = banc();
+        let parent = famille(&b, "parent");
+        for nom in ["a", "b"] {
+            parent.dispatch("rlm.spawn", &json!({"prompt": "x", "name": nom})).await.unwrap();
+        }
+        let n0 = b.hote.messages.lock().unwrap().len();
+        let v = parent.dispatch("messages.send", &json!({"text": "cible changée", "receiver_role": "all"})).await.unwrap();
+        assert_eq!(v["delivered_to"], json!(["enfant1", "enfant2"]), "{v}");
+        let messages = b.hote.messages.lock().unwrap()[n0..].to_vec();
+        assert!(messages.iter().all(|(de, _, t)| de == "parent" && t == "[new task] cible changée"), "{messages:?}");
+        let v = famille(&b, "enfant1")
+            .dispatch("messages.send", &json!({"text": "j'ai fini types.ts", "receiver_role": "all", "mode": "follow_up"}))
+            .await
+            .unwrap();
+        assert_eq!(v["delivered_to"], json!(["enfant2"]), "un enfant écrit à ses frères et sœurs : {v}");
+        b.hote.sessions.lock().unwrap().push(meta("seul", None, "seul", "/tmp", "anthropic/claude"));
+        let err = famille(&b, "seul")
+            .dispatch("messages.send", &json!({"text": "x", "receiver_role": "all"}))
+            .await
+            .unwrap_err();
+        assert!(err.to_string().contains("aucun enfant"), "{err}");
     }
 }
