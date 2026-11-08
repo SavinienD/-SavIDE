@@ -64,4 +64,13 @@ export const SCENES_EDITEUR = [
     temoins: ["sel:.xv-mermaid .mermaid-diagram[data-state='ready'] svg", "sel:.editor-preview-toggle[data-active='true']"] },
   { id: "editeur-mermaid-zoom", ...EDITEUR, ouvrirFichier: "flux.mmd", clics: [".xv-mermaid .mermaid-diagram[data-state='ready']"],
     temoins: ["sel:.mermaid-zoom[role='dialog'] .mermaid-zoom__svg svg", "clic:.mermaid-zoom__toolbar button"] },
+  // ED3b — CSV : tri par colonne (clic sur l'en-tête : croissant, décroissant, sans tri), filtre des
+  // lignes trouvées (bouton entonnoir de la recherche) ; la 1re ligne (en-tête) reste en tête.
+  { id: "editeur-csv-tri", ...EDITEUR, ouvrirFichier: "donnees.csv", clics: [".xv-grid__tri[data-colonne='2']"],
+    temoins: ["sel:.xv-grid__colhead[aria-sort='ascending'] .xv-grid__tri[data-colonne='2']", "sel:.xv-grid__rowhead[data-r='1'][data-origine='4']",
+      "sel:.xv-grid__rowhead[data-r='0'][data-origine='0']", "clic:.xv-grid__tri[data-colonne='0']"] },
+  { id: "editeur-csv-tri-desc", ...EDITEUR, ouvrirFichier: "donnees.csv", clics: [".xv-grid__tri[data-colonne='2']", ".xv-grid__tri[data-colonne='2']"],
+    temoins: ["sel:.xv-grid__colhead[aria-sort='descending'] .xv-grid__tri[data-colonne='2']", "sel:.xv-grid__rowhead[data-r='1'][data-origine='23']"] },
+  { id: "editeur-csv-filtre", ...EDITEUR, ouvrirFichier: "donnees.csv", saisies: [[".xv-search input", "Lyon"]], apresSaisies: [".xv-search [data-action='filtrer']"],
+    temoins: ["sel:.xv-search [data-action='filtrer'][data-active='true']", "compte:.xv-grid__rowheads .xv-grid__rowhead=9", "9 / 25 lignes"] },
 ];

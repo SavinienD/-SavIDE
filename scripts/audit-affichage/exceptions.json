@@ -29,6 +29,12 @@
       "raison": "Éditeur : menu du clic droit sur un onglet de fichier, ouvert sous le pointeur ; il flotte au-dessus de l'onglet (comme tout menu contextuel) et se ferme par Échap ou un clic à côté."
     },
     {
+      "regle": "defilement-horizontal",
+      "selecteur": ".xv-grid",
+      "situation": "/editeur-csv",
+      "raison": "Éditeur : grille d'un tableau (CSV, classeur) : le défilement horizontal est voulu quand les colonnes sont plus larges que le volet (en-têtes de lignes et de colonnes figés)."
+    },
+    {
       "regle": "cible-petite",
       "selecteur": ".tab__close",
       "situation": "/editeur-(menu-onglet|mermaid-zoom)$",

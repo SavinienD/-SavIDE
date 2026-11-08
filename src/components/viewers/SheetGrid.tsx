@@ -3,6 +3,7 @@
 // sheets with hundreds of thousands of rows scroll smoothly.
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Icon } from "@iconify/react";
 import type { CellObject } from "xlsx";
 
 export const ROW_H = 24;
@@ -105,6 +106,11 @@ type Props = {
   onSelect: (cell: [number, number]) => void;
   /** Added to the displayed row numbers (paged data). */
   rowOffset?: number;
+  /** numéros (base 0) des lignes d'origine affichées (tri, filtre). */
+  rowNumbers?: number[];
+  /** tri en cours ; clic sur l'en-tête d'une colonne (croissant, décroissant, sans tri). */
+  tri?: { col: number; sens: "asc" | "desc" } | null;
+  onTri?: (col: number) => void;
 };
 
 export function SheetGrid({
@@ -115,6 +121,9 @@ export function SheetGrid({
   freezeFirstRow,
   onSelect,
   rowOffset = 0,
+  rowNumbers,
+  tri,
+  onTri,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [view, setView] = useState({ top: 0, left: 0, width: 800, height: 600 });
@@ -217,16 +226,45 @@ export function SheetGrid({
               </div>
             )}
           </div>
-          {columns.map((c) => (
-            <div
-              key={c}
-              className="xv-grid__colhead"
-              data-active={selected?.[1] === c ? "true" : undefined}
-              style={{ left: model.rowHeadWidth + model.lefts[c], width: model.widths[c] }}
-            >
-              {model.labels?.[c] ?? encodeCol(c)}
-            </div>
-          ))}
+          {columns.map((c) => {
+            const libelle = model.labels?.[c] ?? encodeCol(c);
+            const sens = tri?.col === c ? tri.sens : null;
+            return (
+              <div
+                key={c}
+                className="xv-grid__colhead"
+                role="columnheader"
+                aria-sort={onTri ? (sens === "asc" ? "ascending" : sens === "desc" ? "descending" : "none") : undefined}
+                data-active={selected?.[1] === c ? "true" : undefined}
+                data-tri={sens ?? undefined}
+                style={{ left: model.rowHeadWidth + model.lefts[c], width: model.widths[c] }}
+              >
+                {onTri ? (
+                  // tri par colonne
+                  <button
+                    type="button"
+                    className="xv-grid__tri"
+                    data-colonne={c}
+                    onClick={() => onTri(c)}
+                    title={
+                      sens === "asc"
+                        ? "Tri croissant\u00a0: cliquer pour le tri décroissant"
+                        : sens === "desc"
+                          ? "Tri décroissant\u00a0: cliquer pour enlever le tri"
+                          : "Trier par cette colonne"
+                    }
+                  >
+                    <span>{libelle}</span>
+                    {sens ? (
+                      <Icon icon={sens === "asc" ? "solar:alt-arrow-up-linear" : "solar:alt-arrow-down-linear"} width={11} height={11} />
+                    ) : null}
+                  </button>
+                ) : (
+                  libelle
+                )}
+              </div>
+            );
+          })}
           {frozen && (
             <div
               className="xv-grid__frozen"
@@ -242,9 +280,11 @@ export function SheetGrid({
               key={r}
               className="xv-grid__rowhead"
               data-active={selected?.[0] === r ? "true" : undefined}
+              data-r={r}
+              data-origine={rowNumbers?.[r]}
               style={{ top: r * ROW_H, height: ROW_H }}
             >
-              {r + 1 + rowOffset}
+              {rowNumbers ? (rowNumbers[r] ?? r) + 1 : r + 1 + rowOffset}
             </div>
           ))}
         </div>

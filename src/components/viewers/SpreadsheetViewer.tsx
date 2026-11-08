@@ -7,6 +7,7 @@ import { Icon } from "@iconify/react";
 import { read, utils, type CellObject, type WorkBook, type WorkSheet } from "xlsx";
 import { readAllBytes, formatBytes } from "./bytes";
 import { buildModel, cellKey, cellText, SheetGrid, type SheetModel } from "./SheetGrid";
+import { ordreLignes, triSuivant, type Tri } from "./triFiltre";
 
 function buildSheetModel(ws: WorkSheet): SheetModel {
   const ref = ws["!ref"];
@@ -97,6 +98,9 @@ export default function SpreadsheetViewer({ source }: { source: SpreadsheetSourc
   const [matchIndex, setMatchIndex] = useState(0);
   const [selected, setSelected] = useState<[number, number] | null>(null);
   const [freeze, setFreeze] = useState(true);
+  // tri par colonne (clic sur l'en-tête) et filtre des lignes trouvées par la recherche.
+  const [tri, setTri] = useState<Tri>(null);
+  const [filtrer, setFiltrer] = useState(false);
 
   const sheetNames = workbook?.SheetNames ?? [];
   const activeSheet = Math.min(sheetIndex, Math.max(0, sheetNames.length - 1));
@@ -112,21 +116,43 @@ export default function SpreadsheetViewer({ source }: { source: SpreadsheetSourc
     return () => clearTimeout(timer);
   }, [query]);
 
+  // lignes affichées : la 1re (figée) reste en tête, les autres triées / filtrées.
+  useEffect(() => setTri(null), [activeSheet]);
+  const ordre = useMemo(() => {
+    if (!model || (!tri && !(filtrer && debounced))) return null;
+    return ordreLignes(model.rows, (r, c) => cellText(model.data[r]?.[c]), {
+      entete: freeze && model.rows > 1,
+      tri,
+      filtre: filtrer ? debounced : "",
+      colonnes: model.cols,
+      // Classeurs : la valeur du nombre ou de la date (le texte affiché dépend du format).
+      nombre: (r, c) => {
+        const cell = model.data[r]?.[c];
+        if (cell?.t === "n" && typeof cell.v === "number") return cell.v;
+        return cell?.v instanceof Date ? cell.v.getTime() : null;
+      },
+    });
+  }, [model, tri, filtrer, debounced, freeze]);
+  const vue: SheetModel | null = useMemo(
+    () => (model && ordre ? { ...model, rows: ordre.length, data: ordre.map((r) => model.data[r]) } : model),
+    [model, ordre],
+  );
+
   const hits = useMemo(() => {
     const list: [number, number][] = [];
-    if (!model || !debounced) return list;
-    for (let r = 0; r < model.rows && list.length < MAX_MATCHES; r += 1) {
-      const row = model.data[r];
+    if (!vue || !debounced) return list;
+    for (let r = 0; r < vue.rows && list.length < MAX_MATCHES; r += 1) {
+      const row = vue.data[r];
       if (!row) continue;
       for (let c = 0; c < row.length; c += 1) {
         if (cellText(row[c]).toLowerCase().includes(debounced)) list.push([r, c]);
       }
     }
     return list;
-  }, [model, debounced]);
+  }, [vue, debounced]);
   const matchSet = useMemo(() => new Set(hits.map(([r, c]) => cellKey(r, c))), [hits]);
   useEffect(() => setMatchIndex(0), [hits]);
-  useEffect(() => setSelected(null), [activeSheet, workbook]);
+  useEffect(() => setSelected(null), [activeSheet, workbook, ordre]);
 
   const current = hits.length ? hits[Math.min(matchIndex, hits.length - 1)] : null;
   const step = (delta: number) => {
@@ -143,7 +169,7 @@ export default function SpreadsheetViewer({ source }: { source: SpreadsheetSourc
       </div>
     );
   }
-  if (!workbook || !model) {
+  if (!workbook || !model || !vue) {
     return (
       <div className="xv-state">
         <span className="xv-spinner" />
@@ -156,12 +182,14 @@ export default function SpreadsheetViewer({ source }: { source: SpreadsheetSourc
     );
   }
 
-  const selectedCell = selected ? model.data[selected[0]]?.[selected[1]] : undefined;
+  const selectedCell = selected ? vue.data[selected[0]]?.[selected[1]] : undefined;
+  const ligneOrigine = (r: number) => (ordre ? ordre[r] ?? r : r);
+  const filtreActif = Boolean(ordre && filtrer && debounced);
   return (
     <div className="xv-sheet">
       <div className="xv-toolbar">
         <span className="xv-toolbar__ref">
-          {selected ? utils.encode_cell({ r: selected[0], c: selected[1] }) : "—"}
+          {selected ? utils.encode_cell({ r: ligneOrigine(selected[0]), c: selected[1] }) : "—"}
         </span>
         <span className="xv-toolbar__value" title={cellText(selectedCell)}>
           {selectedCell?.f ? `=${selectedCell.f}` : cellText(selectedCell)}
@@ -197,13 +225,28 @@ export default function SpreadsheetViewer({ source }: { source: SpreadsheetSourc
           <button type="button" onClick={() => step(1)} disabled={!hits.length} title="Suivant">
             <Icon icon="solar:alt-arrow-down-linear" width={13} height={13} />
           </button>
+          <button
+            type="button"
+            data-action="filtrer"
+            data-active={filtrer ? "true" : "false"}
+            aria-pressed={filtrer}
+            onClick={() => setFiltrer((v) => !v)}
+            title={filtrer ? "Afficher toutes les lignes" : "N'afficher que les lignes trouvées"}
+          >
+            <Icon icon="solar:filter-linear" width={13} height={13} />
+          </button>
         </div>
       </div>
       {model.rows === 0 ? (
         <div className="xv-state">Feuille vide.</div>
+      ) : vue.rows === 0 ? (
+        <div className="xv-state">Aucune ligne ne contient ce texte.</div>
       ) : (
         <SheetGrid
-          model={model}
+          model={vue}
+          rowNumbers={ordre ?? undefined}
+          tri={tri}
+          onTri={(c) => setTri((t) => triSuivant(t, c))}
           matches={matchSet}
           current={current}
           selected={selected}
@@ -226,7 +269,9 @@ export default function SpreadsheetViewer({ source }: { source: SpreadsheetSourc
           ))}
         </div>
         <span className="xv-sheet__stats">
-          {model.rows.toLocaleString("fr-FR")} lignes × {model.cols.toLocaleString("fr-FR")} colonnes
+          {filtreActif
+            ? `${vue.rows.toLocaleString("fr-FR")} / ${model.rows.toLocaleString("fr-FR")} lignes`
+            : `${model.rows.toLocaleString("fr-FR")} lignes × ${model.cols.toLocaleString("fr-FR")} colonnes`}
         </span>
       </div>
     </div>
