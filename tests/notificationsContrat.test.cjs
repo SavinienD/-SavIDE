@@ -1,7 +1,7 @@
 "use strict";
 // Contrat commun « ide-notification » : les autres écrans émettent
 // window.dispatchEvent(new CustomEvent("ide-notification", { detail: { genre, titre, texte, dossier?, sessionId? } })) ;
-// ce lot l'écoute et le traite comme une fin de tour (cloche, badge, notification, son, tableau).
+// le centre des notifications l'écoute et le traite comme une fin de tour (cloche, badge, notification, son, tableau).
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const Module = require("node:module");
@@ -26,12 +26,12 @@ test("un ide-notification émis sur la fenêtre arrive au centre comme un signal
   const recus = [];
   const arreter = C.ecouterIdeNotifications(window, (s) => recus.push(s), () => 1234);
   window.dispatchEvent(new CustomEvent("ide-notification", {
-    detail: { genre: "attente", titre: "Worktree lot-agents", texte: "Valider la suppression de 3 fichiers\u00a0?", dossier: "C:\\depot", sessionId: "s-42" },
+    detail: { genre: "attente", titre: "Worktree correctif-panier", texte: "Valider la suppression de 3 fichiers\u00a0?", dossier: "C:\\depot", sessionId: "s-42" },
   }));
   C.notifier({ genre: "fini", titre: "Commit rédigé" }, window);
   assert.equal(recus.length, 2);
   assert.deepEqual({ ...recus[0], cle: undefined }, {
-    cle: undefined, genre: "attente", titre: "Worktree lot-agents", texte: "Valider la suppression de 3 fichiers\u00a0?",
+    cle: undefined, genre: "attente", titre: "Worktree correctif-panier", texte: "Valider la suppression de 3 fichiers\u00a0?",
     dossier: "C:\\depot", sessionId: "s-42", ts: 1234, alerter: true,
   });
   assert.match(recus[0].cle, /^ide:1234:\d+$/);

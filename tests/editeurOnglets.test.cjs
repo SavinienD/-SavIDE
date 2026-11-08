@@ -49,7 +49,7 @@ test("sans conflit : aucune autre entrée du registre ne prend ces touches, ni l
     for (const r of R.RACCOURCIS) if (r.id !== id) assert.ok(!R.correspond(r, e, false), `${r.id} prend aussi ${id}`);
     assert.equal(R.verifierCombinaison(id, R.lireCombinaison(e, false), false), null);
   }
-  // Déjà prises (consigne du lot) ou réservées à la palette : jamais celles-ci.
+  // Déjà prises ou réservées à la palette : jamais celles-ci.
   const prises = [
     ev({ ctrlKey: true, shiftKey: true, key: "T", code: "KeyT" }), ev({ ctrlKey: true, shiftKey: true, key: "E", code: "KeyE" }),
     ev({ ctrlKey: true, shiftKey: true, key: "F", code: "KeyF" }), ev({ ctrlKey: true, key: "p", code: "KeyP" }), ev({ ctrlKey: true, key: "k", code: "KeyK" }),

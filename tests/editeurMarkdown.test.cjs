@@ -90,7 +90,7 @@ test("défilement : ligne -> hauteur et hauteur -> ligne, par interpolation entr
 test("branchements : bouton Côte à côte, aperçu avec ancres, défilement synchronisé", () => {
   const ed = lire("src/components/EditorPane.tsx");
   assert.match(ed, /data-mode-md="cote"/);
-  assert.match(ed, /className="tab-action editor-preview-toggle"/, "le bouton Aperçu / Source garde sa classe (scènes, autres lots)");
+  assert.match(ed, /className="tab-action editor-preview-toggle"/, "le bouton Aperçu / Source garde sa classe (scènes, autres écrans)");
   assert.match(ed, /data-mode=\{/);
   assert.match(ed, /useDefilementSynchro\(/);
   assert.match(ed, /lignesSource/);

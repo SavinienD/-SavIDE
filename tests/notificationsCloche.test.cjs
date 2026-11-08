@@ -34,7 +34,7 @@ const ETAT = {
   evenements: [
     { cle: "c1:attente:1", genre: "attente", titre: "Publier la 0.1.86", texte: "Attend votre réponse\u00a0: on publie\u00a0?", sessionId: "c1", dossier: "\\\\?\\C:\\Users\\S\\projet", ts: T, lu: false },
     { cle: "c2:fini:1", genre: "fini", titre: "Facture OVH", texte: "Fini\u00a0: 42 lignes rapprochées.", sessionId: "c2", ts: T - 60_000, lu: false },
-    { cle: "info:1", genre: "info", titre: "Worktree prêt", texte: "lot-agents", ts: T - 120_000, lu: true },
+    { cle: "info:1", genre: "info", titre: "Worktree prêt", texte: "correctif-panier", ts: T - 120_000, lu: true },
   ],
   etats: {},
   reglages: {},

@@ -10,7 +10,7 @@
 //   « echec » (erreur), « info » (le reste). Inconnu : « info ».
 // - titre, texte : courts, en français (texte peut être vide). Sans titre ni texte : ignoré.
 // - dossier : chemin du dossier concerné ; sessionId : conversation ouverte au clic.
-// Ce lot (agents) l'ÉCOUTE (useServiceNotifications, monté par App.tsx) et le traite comme une
+// Le centre des notifications l'ÉCOUTE (useServiceNotifications, monté par App.tsx) et le traite comme une
 // fin de tour : cloche (non lu), badge de l'icône, notification du système et son selon
 // Réglages > Notifications — seulement si la fenêtre n'a pas le focus ou si la conversation
 // n'est pas affichée. Avec un sessionId et le genre « attente », « fini » ou « echec », la

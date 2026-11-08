@@ -49,7 +49,7 @@ const NOTIFS_TABLEAU = () => {
       ev("c-001:attente:1", "attente", "c-001", TITRES["c-001"], "Attend votre réponse\u00a0: Je relance le banc sur les quatre largeurs ou je publie tout de suite la 0.1.86 avec ces corrections ?"),
       ev("c-002:fini:1", "fini", "c-002", TITRES["c-002"], "Fini\u00a0: Les 42 lignes sont rapprochées, l'export comptable est dans exports/ovh-octobre.csv."),
       ev("c-003:echec:1", "echec", "c-003", TITRES["c-003"], "Échec\u00a0: retryable stream error: HTTP 529 overloaded_error: Overloaded"),
-      { cle: "info:1", genre: "info", titre: "Worktree prêt", texte: "lot-agents : dépendances installées, prêt à travailler.", ts: t - 60_000, lu: true },
+      { cle: "info:1", genre: "info", titre: "Worktree prêt", texte: "correctif-panier : dépendances installées, prêt à travailler.", ts: t - 60_000, lu: true },
     ],
     etats: {
       "c-001": { genre: "attente", depuis: t, texte: "Attend votre réponse\u00a0: Je relance le banc sur les quatre largeurs ou je publie tout de suite la 0.1.86 avec ces corrections ?", lu: false },

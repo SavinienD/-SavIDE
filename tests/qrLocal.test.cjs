@@ -62,7 +62,7 @@ const texteDe = (n) => Array.from({ length: n }, (_, i) => LETTRES[(i * 7 + 3) %
 const empreinte = (qr) => crypto.createHash("sha256").update(qr.modules.map((l) => l.map((b) => (b ? "1" : "0")).join("")).join("\n")).digest("hex");
 
 // Références bit à bit tirées de python-qrcode 8.2 (même version, niveau et masque) ;
-// pendant le lot, 176 codes (versions 1 à 40 × L/M/Q/H) ont aussi été relus par libzbar.
+// pendant la mise au point, 176 codes (versions 1 à 40 × L/M/Q/H) ont aussi été relus par libzbar.
 const REFERENCES = [
   { cle: "url-M-2", texte: "https://relay.exemple.fr/?code=482913", niveau: "M", masque: 2, version: 3, sha256: "51a77e28694a66da3b7cf9ff0e1480367c6038ade5cab57702f7eee3a0c21203" },
   { cle: "v7-Q-5", texte: texteDe(86), niveau: "Q", masque: 5, version: 7, sha256: "611a7d0f8423812e1970feb953bc24291e5e92fefb0560a330c0af9dfe82d327" },
