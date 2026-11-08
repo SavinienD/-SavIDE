@@ -54,7 +54,8 @@ export type RaccourciId =
   | "fermerMolette"
   | "deplacerColonne"
   | "rechercherMac"
-  | "dossierRecent";
+  | "dossierRecent"
+  | "validerAction";
 
 type Touche = {
   /** Ctrl (ou Cmd sur macOS). */
@@ -93,6 +94,7 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "archiver", categorie: "Conversations", libelle: "Archiver la conversation active", combinaison: "Ctrl + Maj + A", touche: { ctrl: true, shift: true, touches: ["a"] } },
   { id: "stop", categorie: "Conversations", libelle: "Arrêter la réponse en cours (depuis la conversation, aucun menu ouvert)", combinaison: "Échap", touche: { touches: ["escape"] } },
   { id: "dictee", categorie: "Conversations", libelle: "Dicter dans la zone de saisie", combinaison: "Ctrl + D", touche: { ctrl: true, touches: ["d", "code:KeyD"] }, horsEditeur: true },
+  { id: "validerAction", categorie: "Conversations", libelle: "Autoriser l'action en attente (mode « Demander avant d'agir »)", combinaison: "Ctrl + Maj + Entrée", touche: { ctrl: true, shift: true, touches: ["enter"] } },
   { id: "colonneChat", categorie: "Conversations", libelle: "Mettre la conversation dans une nouvelle colonne", combinaison: "Ctrl + \\", touche: { ctrl: true, touches: ["\\", "code:Backslash", "code:IntlBackslash"], physique: "Backslash" } },
 
   { id: "fermerOnglet", categorie: "Onglets", libelle: "Fermer l'onglet actif (fichier, Réglages, À distance)", combinaison: "Ctrl + W", touche: { ctrl: true, touches: ["w"] }, windowsSeulement: true },

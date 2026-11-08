@@ -6,6 +6,7 @@ mod context;
 mod events;
 mod history;
 mod mode;
+pub mod approbation; // « Demander avant d'agir »
 #[cfg(test)]
 mod tests;
 mod tool_dispatch;

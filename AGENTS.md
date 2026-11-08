@@ -109,6 +109,7 @@ Code map:
 │   │       │   ├── context.rs
 │   │       │   ├── events.rs
 │   │       │   ├── history.rs
+│   │       │   ├── approbation.rs # « Demander avant d'agir » : réglages, demandes en attente, crochet avant chaque cellule
 │   │       │   ├── mode.rs
 │   │       │   ├── tests.rs
 │   │       │   ├── tool_dispatch.rs
@@ -181,6 +182,7 @@ Code map:
 │   │   │   ├── auth.rs # remote — remote-auth.json : mots de passe argon2, jetons SHA-256, CLI set-password/token/auth
 │   │   │   ├── cli.rs # serve [--listen host:port --allow-host h]/status/shutdown/set-password/token partagés
 │   │   │   ├── client.rs # DaemonClient (pipe + connect_ws distant), ensure_daemon, lancement détaché
+│   │   │   ├── approbation_rpc.rs # RPC approbation.* (liste, repondre, mode, regler)
 │   │   │   ├── brain_rpc.rs # v2-l2.4 — RPC skills.*/harness.* : cerveau commun (skills + harnais) de l'espace du service, réglages skill-settings.json
 │   │   │   ├── daemon.rs # état, clients, broadcast
 │   │   │   ├── journal.rs # JSONL append-only + arbre + fork

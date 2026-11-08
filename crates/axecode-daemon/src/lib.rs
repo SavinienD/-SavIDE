@@ -28,6 +28,7 @@ pub mod agents_rpc; // v2-l7c
 pub mod voice_rpc; // voix
 pub mod commandes_rpc; // commandes
 pub mod queue_rpc; // file-demon
+pub mod approbation_rpc;
 mod term_rpc; // v2-l3
  // v2-l2 confined remote filesystem/Git
 

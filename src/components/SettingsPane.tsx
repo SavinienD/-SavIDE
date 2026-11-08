@@ -46,6 +46,7 @@ import { ComptesSupplementaires } from "./settings/ComptesSupplementaires";
 import { MenuHarnais, usePartageHarnais } from "./settings/HarnaisPartage";
 import { SkillsExternes } from "./settings/SkillsExternes";
 import { ImportMcp } from "./settings/ImportMcp";
+import { ValidationDefaut } from "./settings/ValidationDefaut";
 type SkillKindFilter = "all" | "recipe" | "python";
 import { sanitizeOpenRouterName, type ModelEntry } from "../lib/models";
 import type {
@@ -1531,7 +1532,7 @@ export function SettingsPane({ workspacePath }: Props) {
             <HarnessBackupSection workspacePath={workspacePath} /> {/* cleanup */}
           </>
         ) : section === "repl" ? (
-          <><ReplToolsPane workspacePath={workspacePath} />{EDITION_LOCALE ? null : <RegistrePane />}</> /* repl + e4 (le registre demande le serveur : absent de l'édition locale) */
+          <><ValidationDefaut /><ReplToolsPane workspacePath={workspacePath} />{EDITION_LOCALE ? null : <RegistrePane />}</> /* repl + e4 (le registre demande le serveur : absent de l'édition locale) */
         ) : section === "service" ? (
           <ServicePane /> /* daemon */
         ) : section === "shortcuts" ? (
