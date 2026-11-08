@@ -24,7 +24,7 @@ type Props = {
 export function MenuModeles({ modeles, choisi, ancre, titreFournisseur, iconeFournisseur, onChoisir }: Props) {
   const [texte, setTexte] = useState("");
   const [actif, setActif] = useState(0);
-  const [place, setPlace] = useState<(PlacementMenu & { largeurMax: number }) | null>(null);
+  const [place, setPlace] = useState<(PlacementMenu & { largeurMax: number; decalage: number }) | null>(null);
   const listeRef = useRef<HTMLDivElement | null>(null);
   const rechercheVisible = modeles.length > SEUIL_RECHERCHE;
   const visibles = useMemo(
@@ -43,7 +43,13 @@ export function MenuModeles({ modeles, choisi, ancre, titreFournisseur, iconeFou
       const zone = { haut: Math.max(0, col?.top ?? 0), bas: Math.min(window.innerHeight, col?.bottom ?? window.innerHeight) };
       // Largeur bornée à la colonne (volet étroit, e-mail long) : le reste passe en « … ».
       const droite = Math.min(window.innerWidth, col?.right ?? window.innerWidth);
-      setPlace({ ...placementMenu(r, zone), largeurMax: Math.max(160, Math.floor(droite - r.left - 8)) });
+      // Moins de 180 px (largeur minimale de la liste, .composer__popover) à droite du bouton (boutons
+      // ajoutés devant lui, colonne étroite) : la liste glisse vers la gauche pour rester dans la
+      // colonne, sans passer son bord gauche.
+      const dispo = Math.floor(droite - r.left - 8);
+      const gauche = Math.max(0, col?.left ?? 0) + 8;
+      const decalage = dispo < 180 ? Math.min(0, Math.max(dispo - 180, Math.floor(gauche - r.left))) : 0;
+      setPlace({ ...placementMenu(r, zone), largeurMax: Math.max(180, dispo - decalage), decalage });
     };
     mesurer();
     window.addEventListener("resize", mesurer);
@@ -87,7 +93,7 @@ export function MenuModeles({ modeles, choisi, ancre, titreFournisseur, iconeFou
       role="menu"
       aria-label="Modèle"
       data-direction={place?.direction ?? "haut"}
-      style={place ? { maxHeight: place.hauteurMax, maxWidth: place.largeurMax } : { visibility: "hidden" }}
+      style={place ? { maxHeight: place.hauteurMax, maxWidth: place.largeurMax, left: place.decalage || undefined } : { visibility: "hidden" }}
     >
       {rechercheVisible && (
         <input
