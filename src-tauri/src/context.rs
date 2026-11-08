@@ -433,9 +433,8 @@ pub(super) fn tool_name_set(tools: &[ToolDescriptor]) -> HashSet<String> {
 pub(super) fn workspace_rules_weight(workspace_root: &Path) -> Result<u64> {
     let mut weight = 0;
 
-    if let Some(instructions) =
-        read_workspace_prompt_file(workspace_root, WORKSPACE_INSTRUCTIONS_FILE)?
-    {
+    // mêmes fichiers que le prompt (AGENTS.md, CLAUDE.md, .claude/CLAUDE.md).
+    if let Some(instructions) = axecode_harness::consignes::texte(workspace_root) {
         weight += context_text_weight(&format!(
             "# Workspace instructions\n\nThe following instructions come from the current workspace and should be treated as the project source of truth.\n\n{instructions}"
         ));

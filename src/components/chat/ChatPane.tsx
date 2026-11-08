@@ -78,6 +78,8 @@ import { MenuModeles } from "./MenuModeles";
 import { useCatalogueModeles } from "../../lib/useCatalogueModeles";
 import { modelesAvecComptes, type CompteModele } from "../../lib/comptesModeles";
 import { estReveilGuet, formatHeure, texteReveil } from "./logiqueIndicateurs"; // commandes
+import { ValidationActions } from "./ValidationActions";
+import { BoutonValidation } from "./BoutonValidation";
 import type {
   AgentMode,
   AttachmentInput,
@@ -3964,6 +3966,7 @@ export function ChatPane({
               </div>
             )}
         {/* cleanup — swarm rail replaced by the Agents view (src/components/agents). */}
+        <ValidationActions workspacePath={workspacePath} conversationId={conversationId} />
         <div
           className="composer__box"
           data-drop={dropActive ? "true" : "false"}
@@ -4362,6 +4365,7 @@ export function ChatPane({
                 modele={modelRefFromId(model)}
                 onTexte={insererDictee}
               />
+              <BoutonValidation workspacePath={workspacePath} conversationId={conversationId} />
               <button
                 type="button"
                 className="composer__iconbtn"

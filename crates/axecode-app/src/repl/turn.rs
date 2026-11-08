@@ -413,6 +413,14 @@ async fn run_call(
         .await?;
         return Ok(Part::ToolResult { tool_call_id: call_id.to_string(), content, images: vec![], is_error: true, meta: None });
     }
+    // « Demander avant d'agir » : la cellule attend l'accord de l'utilisateur.
+    if let Some(refus) = crate::agent::approbation::avant_cellule(
+        &shared.data_dir, shared.host.as_ref(), &shared.meta(), sink, turn_id, call_id, &code,
+    )
+    .await?
+    {
+        return Ok(refus);
+    }
     // A kernel that died earlier is replaced here, at each call.
     let kernel = runtime.kernel().await?;
     let restart_note = runtime.take_restart_note();

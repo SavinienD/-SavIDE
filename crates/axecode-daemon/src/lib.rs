@@ -31,6 +31,7 @@ pub mod contexte_rpc; // jauge du contexte et minuteur du cache
 pub mod queue_rpc; // file-demon
 pub mod sommeil; // délai d'endormissement des conversations
 pub mod automatisations; // automatisations
+pub mod approbation_rpc;
 mod term_rpc; // v2-l3
  // v2-l2 confined remote filesystem/Git
 

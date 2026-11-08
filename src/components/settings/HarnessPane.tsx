@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BrainImportWizard } from "./BrainImportWizard";
+import { ConsignesDossier } from "./ConsignesDossier";
 import {
   HARNESS_KINDS,
   formatDate,
@@ -385,6 +386,7 @@ export function HarnessPane({ workspacePath }: Props) {
       </header>
 
       <BrainImportWizard workspacePath={workspacePath} onImported={() => void reload()} />
+      <ConsignesDossier workspacePath={workspacePath} />
 
       <input
         type="search"

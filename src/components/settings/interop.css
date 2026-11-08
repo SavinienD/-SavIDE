@@ -1,0 +1,91 @@
+/* reprise de Claude Code, Codex, Cursor, VS Code et validation des actions. */
+
+/* Réglages > Harnais : consignes du dossier. */
+.axe-interop__consignes { min-width: 0; max-width: 100%; font-size: calc(12px * var(--text-scale, 1)); color: var(--text-1); }
+.axe-interop__consignes > summary { min-width: 0; cursor: pointer; padding: 4px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-interop__consignes > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-small); }
+.axe-interop__consignes-liste { list-style: none; margin: 4px 0 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;
+  border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-1); }
+.axe-interop__consignes-liste li { display: flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; min-width: 0; }
+.axe-interop__consignes-liste code { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-0); }
+.axe-interop__consignes-liste span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); }
+.axe-interop__consignes-liste li[data-etat="lu"] span,
+.axe-interop__consignes-liste li[data-etat="tronque"] span { color: var(--text-1); }
+.axe-interop__consignes-liste li[data-etat="tronque"] span,
+.axe-interop__consignes-liste li[data-etat="plafond"] span,
+.axe-interop__consignes-liste li[data-etat="illisible"] span { color: var(--accent); }
+
+/* Réglages > Skills : bouton « Importer » et boîte d'import (Claude Code, Codex, adresse). */
+.axe-interop__badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 999px; background: var(--accent); color: #fff; font-size: calc(10px * var(--text-scale, 1)); line-height: 1; }
+.axe-interop__boite { width: min(640px, 100%); }
+.axe-interop__onglets { display: flex; gap: 4px; border-bottom: 1px solid var(--line-strong); }
+.axe-interop__onglets button { padding: 6px 10px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--text-1);
+  cursor: pointer; font-size: calc(12px * var(--text-scale, 1)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.axe-interop__onglets button[aria-selected="true"] { border-bottom-color: var(--accent); color: var(--text-0); }
+.axe-interop__onglets button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.axe-interop__groupe { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.axe-interop__groupe h4 { margin: 0; font-size: calc(12px * var(--text-scale, 1)); font-weight: 600; color: var(--text-1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-interop__groupe h4 code { font-weight: 400; color: var(--text-2); }
+.axe-interop__liste { list-style: none; margin: 0; padding: 0 !important; display: flex; flex-direction: column; gap: 2px; }
+.axe-interop__liste > li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; padding: 3px 0; }
+.axe-interop__liste > li > label { display: flex; align-items: center; gap: 6px; flex: 1 1 200px; min-width: 0; min-height: 24px; cursor: pointer; }
+.axe-interop__liste > li > label input { flex: none; width: 16px; height: 16px; margin: 0; }
+.axe-interop__liste strong { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-interop__desc { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); }
+.axe-interop__etat { flex: none; color: var(--text-2); font-size: calc(11px * var(--text-scale, 1)); white-space: nowrap; }
+.axe-interop__etat[data-etat="mise_a_jour"] { color: var(--accent); }
+.axe-interop__etat[data-etat="nouveau"] { color: var(--text-1); }
+.axe-interop__installe { display: flex; align-items: baseline; gap: 6px; flex: 1 1 160px; min-width: 0; }
+.axe-interop__url { display: flex; gap: 6px; min-width: 0; }
+.axe-interop__url input { flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid var(--line-strong); border-radius: var(--r-small);
+  background: var(--bg-2); color: var(--text-0); font: inherit; font-family: var(--font-mono, monospace); }
+.axe-interop__url input:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.axe-interop__lire { flex: 1 0 100%; min-width: 0; padding-left: 22px; color: var(--text-2); }
+.axe-interop__lire > summary { min-height: 24px; padding: 4px 0; box-sizing: border-box; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-interop__lire pre { max-height: 220px; overflow: auto; margin: 6px 0 0; padding: 8px; border: 1px solid var(--line-strong);
+  border-radius: var(--r-small); background: var(--bg-2); color: var(--text-0); white-space: pre-wrap; overflow-wrap: anywhere;
+  font-size: calc(11.5px * var(--text-scale, 1)); }
+
+/* Réglages > MCP : notes de la boîte d'import ; proposition du premier lancement. */
+.axe-interop__note { flex: 1 0 100%; min-width: 0; padding-left: 22px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--text-2); font-size: calc(11px * var(--text-scale, 1)); }
+.axe-interop__note[data-genre="doublon"] { color: var(--accent); }
+.axe-interop__liste code.axe-interop__desc { font-size: calc(11px * var(--text-scale, 1)); }
+.axe-interop__proposition { position: fixed; top: 48px; right: 16px; z-index: 80; display: flex; flex-direction: column; gap: 8px;
+  width: min(320px, calc(100vw - 32px)); padding: 12px 14px; border: 1px solid var(--line-strong); border-radius: var(--r-medium, 8px);
+  background: var(--bg-1); color: var(--text-0); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3); font-size: calc(12px * var(--text-scale, 1)); }
+.axe-interop__proposition strong { font-size: calc(13px * var(--text-scale, 1)); }
+.axe-interop__proposition p { margin: 0; color: var(--text-1); }
+
+/* Chat : actions à valider (mode « Demander avant d'agir »), au-dessus de la zone de saisie. */
+.axe-validation { display: flex; flex-direction: column; gap: 6px; margin: 0 0 6px; min-width: 0; container-type: inline-size; }
+.axe-validation__carte { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 8px 10px; border: 1px solid var(--accent);
+  border-radius: var(--r-small); background: var(--bg-1); color: var(--text-0); font-size: calc(12px * var(--text-scale, 1)); }
+.axe-validation__tete { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--accent); }
+.axe-validation__tete strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-0); }
+.axe-validation__outil { margin-left: auto; flex: none; color: var(--text-2); font-size: calc(11px * var(--text-scale, 1)); white-space: nowrap; }
+.axe-validation__code { margin: 0; max-height: min(180px, 24vh); overflow: auto; padding: 6px 8px; border: 1px solid var(--line-strong); border-radius: var(--r-small);
+  background: var(--bg-2); color: var(--text-0); font-family: var(--font-mono, monospace); font-size: calc(11.5px * var(--text-scale, 1));
+  white-space: pre-wrap; overflow-wrap: anywhere; }
+.axe-validation__code:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.axe-validation__actions, .axe-validation__refus { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.axe-validation__refus input { flex: 1 1 160px; min-width: 0; padding: 4px 8px; border: 1px solid var(--line-strong); border-radius: var(--r-small);
+  background: var(--bg-2); color: var(--text-0); font: inherit; }
+.axe-validation__refus input:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.axe-validation__actions .axe-harness__btn, .axe-validation__refus .axe-harness__btn { min-height: 26px; }
+.axe-validation__bouton[data-active="true"] { color: var(--accent); }
+.axe-validation__defaut { margin-bottom: 12px; }
+.axe-validation__autres { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; color: var(--text-2); font-size: calc(11px * var(--text-scale, 1)); }
+.axe-validation__autre { max-width: 100%; min-height: 22px; padding: 2px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border: 1px solid var(--line-strong); border-radius: 999px; background: var(--bg-2); color: var(--text-1); cursor: pointer; font: inherit; }
+.axe-validation__autre:hover, .axe-validation__autre:focus-visible { border-color: var(--accent); color: var(--text-0); }
+.axe-validation__court { display: none; }
+/* Colonne de chat étroite : la carte reste courte (seul le code défile), boutons et zone de saisie restent visibles. */
+@container (max-width: 320px) {
+  .axe-validation__outil { display: none; }
+  .axe-validation__code { max-height: 72px; }
+  .axe-validation__long { display: none; }
+  .axe-validation__court { display: inline; }
+}

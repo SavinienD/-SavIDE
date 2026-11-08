@@ -11,6 +11,7 @@ import { ecouterOuvertureDossier } from "./components/pr/versAgent"; // panneau 
 import { ecouterRaccourcis, fournirActions, numeroTouche, versionRaccourcis } from "./axe/raccourcis";
 import { samePath } from "./components/freechat/freechatApi";
 import { demarrerRepriseAuto } from "./axe/reprise/surveillanceReprise"; // reprise après une limite d'abonnement
+import { PropositionMcp } from "./components/settings/PropositionMcp";
 import { api } from "./lib/ipc";
 import { freechatApi } from "./components/freechat/freechatApi"; // freechat
 import { CloudLogin } from "./components/cloud/CloudLogin"; // cloud
@@ -458,6 +459,7 @@ export default function App() {
         }
       />
       <AutomatisationsGlobal dossierCourant={state.bootstrap.workspace.path} /> {/* automatisations — Ctrl+Maj+L */}
+      <PropositionMcp workspacePath={state.bootstrap.workspace.path} />
     </>
   );
 }

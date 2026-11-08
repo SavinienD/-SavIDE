@@ -113,6 +113,7 @@ Code map:
 │   │       │   ├── context.rs
 │   │       │   ├── events.rs
 │   │       │   ├── history.rs
+│   │       │   ├── approbation.rs # « Demander avant d'agir » : réglages, demandes en attente, crochet avant chaque cellule
 │   │       │   ├── mode.rs
 │   │       │   ├── tests.rs
 │   │       │   ├── tool_dispatch.rs
@@ -127,6 +128,7 @@ Code map:
 │   │       ├── image.rs
 │   │       ├── lib.rs
 │   │       ├── mcp.rs
+│   │       ├── import_mcp.rs # serveurs MCP de Claude Code, Codex, Cursor, VS Code (liste sans secret, import)
 │   │       ├── powershell.rs
 │   │       ├── question.rs
 │   │       ├── read.rs
@@ -145,6 +147,7 @@ Code map:
 │   │       ├── rlm_git.rs # worktrees git des sous-agents (branche sous-agent/<nom>, hors du dépôt), état, fusion (annulée sur conflit), libération
 │   │       ├── session_commands.rs # goal — TurnHook /goal /autonomous (budgets + gate) /heartbeat /refine /compact
 │   │       ├── skill.rs
+│   │       ├── skills_url.rs # skill installé depuis une adresse git ou .zip (aperçu, version, mise à jour)
 │   │       ├── store.rs
 │   │       ├── subagent.rs
 │   │       ├── team.rs
@@ -190,6 +193,7 @@ Code map:
 │   │   │   ├── automatisations_tests.rs # tests avec une horloge simulée
 │   │   │   ├── cli.rs # serve [--listen host:port --allow-host h]/status/shutdown/set-password/token partagés
 │   │   │   ├── client.rs # DaemonClient (pipe + connect_ws distant), ensure_daemon, lancement détaché
+│   │   │   ├── approbation_rpc.rs # RPC approbation.* (liste, repondre, mode, regler)
 │   │   │   ├── brain_rpc.rs # v2-l2.4 — RPC skills.*/harness.* : cerveau commun (skills + harnais) de l'espace du service, réglages skill-settings.json
 │   │   │   ├── daemon.rs # état, clients, broadcast
 │   │   │   ├── contexte_rpc.rs # RPC sessions.context : jauge du contexte et minuteur du cache de l'en-tête du chat
@@ -224,12 +228,14 @@ Code map:
 │   ├── axecode-harness # harness — Continual Harness
 │   │   ├── Cargo.toml
 │   │   └── src
+│   │       ├── consignes.rs # consignes du dossier : AGENTS.md, CLAUDE.md, .claude/CLAUDE.md (ordre, plafond commun, état)
 │   │       ├── host.rs # host calls harness.* / refine.history|rollback, archivage des plans
 │   │       ├── import.rs # import du kit brain
 │   │       ├── inject.rs # couche injectée par tour (notes, mémoires, skills, sous-agents, plans)
 │   │       ├── lib.rs
 │   │       ├── model.rs # types, portées, frontmatter YAML
 │   │       ├── refine.rs # /refine : planification, application, journal, rollback
+│   │       ├── skills_externes.rs # skills de Claude Code / Codex / ~/.agents copiés dans le harnais (.origine.json, mises à jour)
 │   │       └── store.rs # CRUD fichiers + index.json (global ~/.axecode/harness, projet .axecode/harness)
 │   ├── axecode-google
 │   │   ├── Cargo.toml
@@ -363,6 +369,7 @@ Code map:
 │       ├── diff.rs # revue des changements — fichiers modifiés (HEAD ou branche de base), textes du diff, indexation d'un bloc ou de lignes (patch partiel + git apply --cached)
 │       ├── conflits.rs # revue des changements — conflits : versions base / nôtre / leur, marquer résolu, continuer, abandonner
 │       ├── harness.rs # harness — IPC harness_* (CRUD, promote/demote, refinements, rollback, import brain, refine start/status), couche harness par tour
+│       ├── interop.rs # IPC interop_* : consignes, skills (Claude Code, Codex, adresse), import MCP
 │       ├── harness_backup.rs # cleanup — sauvegarde périodique du harness (config harness-backup.json, IPC harness_backup_*)
 │       ├── ia_appel.rs # commande ia_appel_unique (appel unique au modèle depuis l'interface)
 │       ├── lib.rs

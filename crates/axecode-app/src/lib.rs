@@ -17,6 +17,7 @@ pub mod orchestre; // ds16
 pub mod cua; // cua
 pub mod comfyui; // comfyui
 pub mod commandes_naturelles; // cmdnat
+pub mod import_mcp;
 #[cfg(windows)]
 mod powershell;
 pub mod question;
@@ -28,6 +29,7 @@ mod ripgrep;
 pub mod guet; // guet
 pub mod session_commands; // goal
 pub mod skill;
+pub mod skills_url;
 pub mod store;
 pub mod subagent;
 pub mod team;

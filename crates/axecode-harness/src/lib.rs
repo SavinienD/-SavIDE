@@ -1,6 +1,8 @@
 //! Continual harness for SavIDE.
 
 pub mod cloud_mirror;
+pub mod consignes;
+pub mod skills_externes;
 pub mod datadir;
 pub mod host;
 pub mod import;

@@ -134,6 +134,7 @@ mod forges; // rédaction IA, PR, checks, issues (GitHub, Forgejo / Gitea)
 mod harness; // harness
 mod harness_backup; // cleanup
 mod ia_appel; // commande ia_appel_unique (appel unique au modèle)
+mod interop;
 mod models;
 mod offline; // v2-l6
 mod platform;
@@ -402,6 +403,15 @@ pub fn run() {
             voix::voix_annuler,
             voix::voix_etat,
             catalogue::catalogue_modeles,
+            interop::interop_consignes,
+            interop::interop_skills_lister,
+            interop::interop_skills_importer,
+            interop::interop_skills_url_apercu,
+            interop::interop_skills_url_installer,
+            interop::interop_skills_url_installes,
+            interop::interop_skills_desinstaller,
+            interop::interop_mcp_scanner,
+            interop::interop_mcp_importer,
             comptes::list_provider_accounts,
             comptes::disconnect_provider_account,
             voix::voix_ouvrir_reglages_micro,

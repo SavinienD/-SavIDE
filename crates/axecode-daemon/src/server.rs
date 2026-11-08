@@ -185,6 +185,8 @@ impl Daemon {
             m if m.starts_with("sommeil.") => crate::sommeil::dispatch(self, m, &params),
             // automatisations — prompts planifiés
             m if m.starts_with("automatisations.") => crate::automatisations::dispatch(self, m, &params),
+            // « Demander avant d'agir » : réponses, réglages
+            m if m.starts_with("approbation.") => crate::approbation_rpc::dispatch(self, m, &params),
             // voix — dictée vocale : Whisper de la machine, nettoyage IA optionnel
             m if m.starts_with("voice.") => crate::voice_rpc::dispatch(self, m, &params).await,
             m if m.starts_with("term.") => {

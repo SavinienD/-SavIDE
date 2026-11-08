@@ -235,6 +235,10 @@
       "selecteur": ".tab__close",
       "situation": "/revue-apercu-note$",
       "raison": "Scène revue-apercu-note : le tiroir des notes a un voile modal ; le banc vérifie la zone de clic élargie du bouton Fermer de l'onglet par elementFromPoint, qui tombe alors sur le voile. Bouton de l'onglet inchangé par la revue."
-    }
+    },
+    {"regle": "*", "selecteur": ".settings-pane__skill-list, .settings-pane__skill-preview .settings-pane__empty, .axe-backup__row", "situation": "/interop-(consignes|skills-[a-z]+)$", "raison": "Scènes de la reprise (Claude Code, Codex…) : volet des Réglages (Skills, Harnais) derrière la boîte d'import ou le bloc des consignes ; ces défauts existaient avant (mêmes scènes rendues sur la version précédente) et ne sont pas l'objet de la scène."},
+    {"regle": "cible-petite", "selecteur": ".tab__close", "situation": "/interop-", "raison": "Défaut déjà présent : croix « Fermer l'onglet » de l'onglet ouvert derrière les réglages, comme dans les scènes harnais-*."},
+    {"regle": "chevauchement", "selecteur": ".axe-interop__proposition, .chat-body__content", "situation": "/interop-proposition$", "raison": "Proposition du premier lancement : petite carte flottante en haut à droite, montrée une seule fois ; elle passe devant le contenu par conception et se ferme par « Choisir… » ou « Plus tard »."},
+    {"regle": "libelle-2-lignes", "selecteur": ".axe-validation__code", "raison": "Code de la cellule à valider (« Demander avant d'agir ») : il passe à la ligne exprès (pre-wrap), dans un cadre qui défile."}
   ]
 }

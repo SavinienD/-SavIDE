@@ -8,6 +8,7 @@ import { scenesForge, scenesGit } from "./scenesGit.mjs"; // panneau Git, PR, is
 import { SCENES_WORKTREES } from "./scenes-worktrees.mjs"; // worktrees
 import { SCENES_REVUE } from "./scenesRevue.mjs"; // revue des changements
 import { SCENES_EDITEUR } from "./scenes-editeur.mjs";
+import { SCENES_INTEROP } from "./scenes-interop.mjs";
 
 const ids = (n, depart = 0) => Array.from({ length: n }, (_, i) => `c-${String(depart + i + 1).padStart(3, "0")}`);
 const recents25 = () => Array.from({ length: 25 }, (_, i) => ({ path: `C:\\Users\\utilisateur\\Documents\\Clients\\client-${String(i + 1).padStart(2, "0")}`, name: `client-${String(i + 1).padStart(2, "0")}`, lastOpenedMs: 1_790_000_000_000 - i * 3_600_000 }));
@@ -962,3 +963,4 @@ export const SCENES = [
   { id: "auto-echap", sim: { automatisations: "plusieurs" }, stockage: () => colonnes([ids(1)]), touches: ["Control+Shift+KeyL", "Escape"],
     temoins: ["absent:.auto-ecran"] },
 ];
+SCENES.push(...SCENES_INTEROP);
