@@ -42,7 +42,7 @@
       "autonomie": [],
       "autonomieLot": ["--auto"],
       "reprise": ["--continue"],
-      "nonInteractif": ["run", "{options}"],
+      "nonInteractif": ["run", "--print-logs", "--log-level", "ERROR", "{options}"],
       "modele": ["--model", "{modele}"],
       "installation": "https://opencode.ai/docs/"
     },

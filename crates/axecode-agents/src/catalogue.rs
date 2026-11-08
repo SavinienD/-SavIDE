@@ -256,6 +256,11 @@ pub fn dossiers_usuels() -> Vec<PathBuf> {
     for d in ["/usr/local/bin", "/opt/homebrew/bin", "/opt/local/bin", "/snap/bin"] {
         dossiers.push(PathBuf::from(d));
     }
+    // Programmes partagés installés avec le service (ex. OpenCode des agents externes).
+    #[cfg(not(windows))]
+    for d in crate::config::INSTALL_DIRS {
+        dossiers.push(PathBuf::from(d).join("bin"));
+    }
     dossiers
 }
 
@@ -450,7 +455,11 @@ mod tests {
         assert_eq!(l.args.last().map(String::as_str), Some("Fais X"));
         assert!(!l.prompt_stdin);
         let opencode = agent("opencode").unwrap();
-        assert_eq!(ligne_non_interactive(opencode, &reglage(true, None), "p", None).unwrap().args, vec!["run", "--auto"]);
+        // Erreurs du fournisseur (quota…) écrites dans le journal : sans elles, `opencode run` attend sans rien dire.
+        assert_eq!(
+            ligne_non_interactive(opencode, &reglage(true, None), "p", None).unwrap().args,
+            vec!["run", "--print-logs", "--log-level", "ERROR", "--auto"]
+        );
         let goose = agent("goose").unwrap();
         let l = ligne_non_interactive(goose, &reglage(true, None), "p", None).unwrap();
         assert_eq!(l.args, vec!["run", "-t", "p"]);

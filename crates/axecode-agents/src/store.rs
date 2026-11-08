@@ -71,6 +71,23 @@ impl Statut {
     }
 }
 
+/// Agent en ligne de commande (catalogue) : programme, arguments, dossier et
+/// environnement résolus par l'appelant. La consigne (`tache.md`) passe par
+/// l'entrée standard (`prompt_stdin`) ou est déjà dans les arguments.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LancementCli {
+    pub cli: String,
+    pub programme: String,
+    pub args: Vec<String>,
+    /// Dossier de travail de l'agent (le projet ou un arbre de travail).
+    pub dossier: String,
+    #[serde(default)]
+    pub env: BTreeMap<String, String>,
+    #[serde(default)]
+    pub prompt_stdin: bool,
+}
+
 /// `etat.json` on disk.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -86,6 +103,9 @@ pub struct TaskState {
     pub code_sortie: Option<i32>,
     /// Relative name of the journal (`journal.log`).
     pub journal: String,
+    /// Agent en ligne de commande : lancé tel quel, sans gabarit de la configuration.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lancement: Option<LancementCli>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -370,6 +390,9 @@ impl Inner {
             let tasks = self.tasks.lock().unwrap_or_else(|p| p.into_inner());
             tasks.get(id).cloned().ok_or(AgentsError::UnknownTask)?
         };
+        if let Some(lancement) = task.lancement.clone() {
+            return self.launch_cli(id, &lancement);
+        }
         let template = self
             .config
             .agents_commandes
@@ -418,7 +441,58 @@ impl Inner {
             }
         }
 
-        let mut child = command.spawn().map_err(|e| AgentsError::Launch(e.to_string()))?;
+        let child = command.spawn().map_err(|e| AgentsError::Launch(e.to_string()))?;
+        self.suivre_enfant(id, &dir, child, None)
+    }
+
+    /// Agent en ligne de commande : programme et arguments résolus par
+    /// l'appelant, dans son dossier, avec l'environnement de l'utilisateur
+    /// (ses clés et sa connexion au CLI) ; la consigne par l'entrée standard
+    /// ou déjà dans les arguments.
+    fn launch_cli(self: &Arc<Self>, id: &str, l: &LancementCli) -> Result<(), AgentsError> {
+        let dir = self.task_dir(id).ok_or(AgentsError::InvalidTask)?;
+        let dossier = PathBuf::from(&l.dossier);
+        if !dossier.is_dir() {
+            return Err(AgentsError::Launch(format!("dossier introuvable : {}", l.dossier)));
+        }
+        let mut command = __nw_tokio(&l.programme);
+        command
+            .args(&l.args)
+            .current_dir(&dossier)
+            .stdin(if l.prompt_stdin { Stdio::piped() } else { Stdio::null() })
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .env("TERM", "dumb")
+            .env("NO_COLOR", "1");
+        // node (nvm, volta…) est souvent à côté du programme, hors du PATH du service.
+        if let Some(parent) = Path::new(&l.programme).parent().filter(|p| !p.as_os_str().is_empty()) {
+            let mut chemins = vec![parent.to_path_buf()];
+            if let Some(path) = std::env::var_os("PATH") {
+                chemins.extend(std::env::split_paths(&path));
+            }
+            if let Ok(path) = std::env::join_paths(chemins) {
+                command.env("PATH", path);
+            }
+        }
+        for (cle, valeur) in &l.env {
+            command.env(cle, valeur);
+        }
+        #[cfg(unix)]
+        command.process_group(0);
+        let consigne = if l.prompt_stdin { Some(std::fs::read(dir.join(BRIEF_FILE))?) } else { None };
+        let child = command.spawn().map_err(|e| AgentsError::Launch(e.to_string()))?;
+        self.suivre_enfant(id, &dir, child, consigne)
+    }
+
+    /// Note le pid, écrit la consigne sur l'entrée standard (puis la ferme),
+    /// recopie stdout et stderr dans le journal et attend la fin du processus.
+    fn suivre_enfant(
+        self: &Arc<Self>,
+        id: &str,
+        dir: &Path,
+        mut child: tokio::process::Child,
+        consigne: Option<Vec<u8>>,
+    ) -> Result<(), AgentsError> {
         let pid = child.id();
         let cancelled = {
             let mut tasks = self.tasks.lock().unwrap_or_else(|p| p.into_inner());
@@ -445,6 +519,12 @@ impl Inner {
             .unwrap_or_else(|p| p.into_inner())
             .insert(id.to_string());
 
+        if let (Some(mut entree), Some(octets)) = (child.stdin.take(), consigne) {
+            tokio::spawn(async move {
+                let _ = entree.write_all(&octets).await;
+                let _ = entree.shutdown().await;
+            });
+        }
         let journal_path = dir.join(JOURNAL_FILE);
         let stdout = child.stdout.take();
         let stderr = child.stderr.take();
@@ -659,6 +739,16 @@ impl AgentStore {
         self.inner.tick();
     }
 
+    /// Agent en ligne de commande : même file (plafond, délai, arrêt, journal)
+    /// que les commandes de la configuration, lancé tel que `lancement` le dit.
+    pub fn spawn_cli(&self, brief: String, label: Option<String>, modele: Option<String>, lancement: LancementCli) -> Result<Spawned, AgentsError> {
+        if lancement.programme.trim().is_empty() || lancement.cli.trim().is_empty() {
+            return Err(AgentsError::UnknownCommand);
+        }
+        let commande = format!("cli:{}", lancement.cli);
+        self.ajouter(brief, label, commande, modele.unwrap_or_default(), Some(lancement))
+    }
+
     pub fn spawn(&self, request: SpawnRequest) -> Result<Spawned, AgentsError> {
         let brief = request.brief;
         if brief.trim().is_empty() {
@@ -690,11 +780,28 @@ impl AgentStore {
             .modele
             .filter(|m| !m.trim().is_empty())
             .unwrap_or_else(|| self.inner.config.agents_modele.clone());
+        self.ajouter(brief, request.label, commande, modele, None)
+    }
+
+    /// Crée la tâche (dossier, consigne, état) et la lance si une place est libre.
+    fn ajouter(
+        &self,
+        brief: String,
+        label: Option<String>,
+        commande: String,
+        modele: String,
+        lancement: Option<LancementCli>,
+    ) -> Result<Spawned, AgentsError> {
+        if brief.trim().is_empty() {
+            return Err(AgentsError::MissingBrief);
+        }
+        if brief.len() > MAX_BRIEF {
+            return Err(AgentsError::BriefTooLong);
+        }
         if modele.len() > MAX_MODELE || modele.chars().any(char::is_control) {
             return Err(AgentsError::InvalidTask);
         }
-        let label = request
-            .label
+        let label = label
             .map(|l| l.trim().to_string())
             .filter(|l| !l.is_empty())
             .unwrap_or_else(|| clip_chars(brief.trim(), 40));
@@ -728,6 +835,7 @@ impl AgentStore {
             fin_ms: None,
             code_sortie: None,
             journal: JOURNAL_FILE.to_string(),
+            lancement,
         };
         atomic_write(
             &dir.join(STATE_FILE),

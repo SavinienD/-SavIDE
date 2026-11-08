@@ -58,7 +58,8 @@ Code map:
 │   │   ├── bridge.py # RPC kernel→Rust bridge.call(method, params), images, file changes
 │   │   ├── files.py / shell.py / web.py / images.py / context.py / question.py / todo.py / skills.py / mcp.py / compact.py # modules préchargés
 │   │   ├── _documents.py # viewers — texte des xlsx/docx/pdf/pptx/odt/epub pour files.read (privé, non préchargé)
-│   │   └── rlm.py / messages.py / harness.py / refine.py / goal.py / heartbeat.py # modules E/D/F (brain)
+│   │   ├── rlm.py / messages.py / harness.py / refine.py / goal.py / heartbeat.py # modules E/D/F (brain)
+│   │   └── agents_cli.py # agents en ligne de commande (Claude Code, Codex…) confiés depuis le REPL : disponibles / lancer / attendre / resultat / arreter
 │   └── tests # pytest files + shell + documents
 ├── web # webui — app web des conversations (Vite + React, npm run build:web -> web/dist, embarquée dans le service)
 │   ├── index.html / vite.config.ts / tsconfig.json
@@ -136,6 +137,7 @@ Code map:
 │   │       │   ├── compaction.rs # compaction (résumé ; variables du kernel gardées)
 │   │       │   └── settings.rs # repl-settings.json (modules, seuil, max_tokens, plafond)
 │   │       ├── rlm.rs # rlm — sous-agents persistants rlm.* + messagerie famille nucléaire messages.* (FamilyHost), garde-fou quota
+│   │       ├── orchestre.rs # agents_spawn / agents_wait / agents_result ; agents_cli.* du noyau (mode non interactif des CLI)
 │   │       ├── session_commands.rs # goal — TurnHook /goal /autonomous (budgets + gate) /heartbeat /refine /compact
 │   │       ├── skill.rs
 │   │       ├── store.rs
@@ -208,6 +210,7 @@ Code map:
 │   │   │   ├── process.rs
 │   │   │   └── python.rs # découverte python + paquet axecode_kernel
 │   │   └── tests/kernel.rs
+│   ├── axecode-agents # file des agents externes (src/store.rs) ; agents CLI : catalogue-cli.json, src/catalogue.rs (détection, réglages agents-cli.json, lignes de commande)
 │   ├── axecode-harness # harness — Continual Harness
 │   │   ├── Cargo.toml
 │   │   └── src
@@ -358,7 +361,7 @@ Code map:
 │       ├── remote.rs
 │       ├── repl_settings.rs # repl — IPC repl_settings_get/save, repl_catalog
 │       ├── state.rs
-│       ├── terminal.rs # PTY multi-onglets ; sélection PowerShell/WSL bash
+│       ├── terminal.rs # PTY multi-onglets ; sélection PowerShell/WSL bash ; terminaux d'agents CLI (spawn_agent_terminal), réglages agents_cli_*
 │       ├── tests.rs
 │       ├── turns.rs # v2-l2.4c — send_message force le pont REPL en cloud (agent sur le service)
 │       ├── updater.rs
@@ -413,7 +416,14 @@ Code map:
     │   ├── ConversationList.tsx
     │   ├── EditorPane.tsx
     │   ├── FileTree.tsx
-    │   ├── TerminalPanel.tsx # multi-onglets PTY : Ctrl+Tab, renommage, PowerShell/WSL et scrollback texte local
+    │   ├── TerminalPanel.tsx # multi-onglets PTY : Ctrl+Tab, renommage, PowerShell/WSL et scrollback texte local ; agents CLI (état, Relancer), recherche, scindé, gestionnaire, glisser un fichier
+    │   ├── agents-cli # agents en ligne de commande dans les terminaux
+    │   │   ├── catalogueCli.ts / ReglagesAgentsCli.tsx # catalogue (crates/axecode-agents/catalogue-cli.json), Réglages > Agents CLI
+    │   │   ├── NouvelAgentMenu.tsx / MenuFlottant.tsx / ActionsTerminal.tsx # menus de la barre des terminaux
+    │   │   ├── etatAgent.ts # état travaille / attend / fini (BEL, OSC 9, OSC 777, invites), notification ide-notification
+    │   │   ├── outilsTerminal.ts / RechercheTerminal.tsx # recherche (Ctrl+F), copie de la sortie, fichier glissé
+    │   │   ├── commandesEnregistrees.ts / CommandesEnregistrees.tsx # commandes et prompts enregistrés (terminal, chat, Réglages)
+    │   │   └── agents-cli.css
     │   ├── GitPanel.tsx
     │   ├── RemotePanel.tsx
     │   ├── SearchPane.tsx

@@ -354,6 +354,8 @@ pub(crate) async fn dispatch(shared: &Arc<Shared>, method: &str, params: Value) 
             tool_json(tool.run(params).await)
         }
         "web.fetch" => tool_json(WebFetchTool::new().run(params).await),
+        // Agents en ligne de commande (module `agents_cli` du noyau).
+        m if crate::orchestre::est_appel_cli(m) => crate::orchestre::appel_cli(&shared.workspace(), m, params).await,
         "images.generate" => {
             let settings = AppStore::open_default()
                 .and_then(|s| s.load_tool_settings())
