@@ -73,4 +73,10 @@ export const SCENES_EDITEUR = [
     temoins: ["sel:.xv-grid__colhead[aria-sort='descending'] .xv-grid__tri[data-colonne='2']", "sel:.xv-grid__rowhead[data-r='1'][data-origine='23']"] },
   { id: "editeur-csv-filtre", ...EDITEUR, ouvrirFichier: "donnees.csv", saisies: [[".xv-search input", "Lyon"]], apresSaisies: [".xv-search [data-action='filtrer']"],
     temoins: ["sel:.xv-search [data-action='filtrer'][data-active='true']", "compte:.xv-grid__rowheads .xv-grid__rowhead=9", "9 / 25 lignes"] },
+  // ED3c — image modifiée depuis le dernier commit : « Avant / après » (glissière, côte à côte).
+  { id: "editeur-image-avant-apres", ...EDITEUR, ouvrirFichier: "logo.png", clics: ["[data-action='avant-apres']"],
+    temoins: ["sel:.xv-avap[data-mode='glissiere'] .xv-avap__cadre img.xv-avap__avant", "sel:.xv-avap__cadre img.xv-avap__apres", "clic:.xv-avap__curseur",
+      "clic:.xv-avap [data-mode-avap='cote']", "appel:editeur_fichier_head"] },
+  { id: "editeur-image-cote", ...EDITEUR, ouvrirFichier: "logo.png", clics: ["[data-action='avant-apres']", ".xv-avap [data-mode-avap='cote']"],
+    temoins: ["sel:.xv-avap[data-mode='cote'] .xv-avap__panneau[data-cote='avant'] img", "sel:.xv-avap__panneau[data-cote='apres'] img", "160 × 100 px"] },
 ];

@@ -110,3 +110,34 @@ export function useMargeGit(
     return () => window.clearTimeout(minuterie);
   }, [head, chemin, texte, editeur, version]);
 }
+
+/**
+ * Version HEAD d'un fichier du poste (null : pas de chemin, ou pas encore lue), relue quand la
+ * date du fichier change (enregistrement, image régénérée) et au retour dans la fenêtre.
+ */
+export function useFichierHead(chemin: string | null, date: number | null): FichierHead | null {
+  const [lu, setLu] = useState<{ chemin: string; head: FichierHead | null } | null>(null);
+  const dernierRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!chemin) {
+      dernierRef.current = null;
+      setLu(null);
+      return;
+    }
+    let fini = false;
+    const lire = (fraiche: boolean) =>
+      void lireFichierHead(chemin, fraiche).then((head) => {
+        if (!fini) setLu({ chemin, head });
+      });
+    // Même fichier, date changée : relu sans le cache de 2 s.
+    lire(dernierRef.current === chemin);
+    dernierRef.current = chemin;
+    const auRetour = () => lire(true);
+    window.addEventListener("focus", auRetour);
+    return () => {
+      fini = true;
+      window.removeEventListener("focus", auRetour);
+    };
+  }, [chemin, date]);
+  return lu && lu.chemin === chemin ? lu.head : null;
+}

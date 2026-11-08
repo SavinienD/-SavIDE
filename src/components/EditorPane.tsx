@@ -7,7 +7,7 @@ import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
 import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
 import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { Icon } from "@iconify/react";
 import { languageForPath } from "../lib/language";
 import { fileIcon } from "../lib/fileIcon";
@@ -34,6 +34,9 @@ import { memoriserModeMarkdown, modeMarkdownMemorise, type ModeMarkdown } from "
 import { useDefilementSynchro } from "./editeur/useDefilementSynchro";
 import { useImagesMarkdown } from "./editeur/useImagesMarkdown";
 import { dossierDe } from "./editeur/imagesMarkdown";
+import { useFichierHead } from "./editeur/useMargeGit";
+import { typeImageBase64 } from "./editeur/imageAvantApres";
+import { ImageAvantApres } from "./viewers/ImageAvantApres";
 import { cloudConnectionFromPath } from "../lib/ipc";
 
 if (!(globalThis as typeof globalThis & { MonacoEnvironment?: unknown }).MonacoEnvironment) {
@@ -218,6 +221,20 @@ export function EditorPane({
   // image collée ou déposée dans un .md : enregistrée dans images/, lien inséré.
   useImagesMarkdown(editorRef.current, showTextEditor ? activeTab : undefined, espace, editorReadySeq);
   const espaceLocal = !(espace && cloudConnectionFromPath(espace));
+  // image modifiée depuis le dernier commit : bouton « Avant / après ».
+  const imageActive = Boolean(activeTab && !activeTab.external && isPreviewableImagePath(activeTab.relativePath));
+  const headImage = useFichierHead(
+    espaceLocal && imageActive && activeTab ? activeTab.doc.absolutePath : null,
+    activeTab?.doc.lastModifiedMs ?? null,
+  );
+  const imageModifiee = Boolean(headImage && headImage.etat === "suivi" && headImage.modifie && headImage.base64);
+  const [avantApres, setAvantApres] = useState<Record<string, boolean>>({});
+  const comparerImage = Boolean(activeTab && imageModifiee && avantApres[activeTab.relativePath]);
+  const imageAvant = useMemo(
+    () => (headImage?.base64 && activeTab ? `data:${typeImageBase64(headImage.base64, activeTab.doc.name)};base64,${headImage.base64}` : ""),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [headImage?.base64, activeTab?.doc.name],
+  );
   // côte à côte : défilement synchronisé de l'éditeur et de l'aperçu.
   const [apercuMd, setApercuMd] = useState<HTMLDivElement | null>(null);
   useDefilementSynchro(editorRef.current, apercuMd, activeCote && showTextEditor, activeTab?.buffer ?? "", editorReadySeq);
@@ -607,6 +624,21 @@ export function EditorPane({
           </button>
           </div>
         )}
+        {imageModifiee && activeTab && (
+          // comparaison avec le dernier commit
+          <button
+            type="button"
+            className="tab-action editor-preview-toggle"
+            data-action="avant-apres"
+            data-active={comparerImage ? "true" : "false"}
+            aria-pressed={comparerImage}
+            onClick={() => setAvantApres((prev) => ({ ...prev, [activeTab.relativePath]: !comparerImage }))}
+            title={comparerImage ? "Afficher l'image seule" : "Comparer avec la dernière version validée (commit)"}
+          >
+            <Icon icon="solar:square-transfer-horizontal-linear" width={13} height={13} />
+            <span>Avant / après</span>
+          </button>
+        )}
         {overlaySpec && showTextEditor && (
           // viewers — CSV "Tableau / Texte brut", HTML "Aperçu / Code".
           <button
@@ -667,6 +699,14 @@ export function EditorPane({
                 setImageMenu({ x: event.clientX, y: event.clientY });
               }}
             >
+              {comparerImage && imageAvant ? (
+                <ImageAvantApres
+                  key={activeTab.relativePath}
+                  avant={imageAvant}
+                  apres={imagePreviewSrc(activeTab.doc)}
+                  nom={activeTab.doc.name}
+                />
+              ) : (
               <ZoomableImage
                 key={activeTab.relativePath}
                 src={imagePreviewSrc(activeTab.doc)}
@@ -687,6 +727,7 @@ export function EditorPane({
                   </ViewerError>
                 }
               />
+              )}
               {imageMenu && (
                 <ImageContextMenu
                   x={imageMenu.x}
