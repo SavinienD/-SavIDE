@@ -144,7 +144,7 @@ test("nettoyage : filtres fusionnés, introuvables, anciens", () => {
   assert.deepEqual(L.filtrerNettoyage(infos, "anciens", 1, t).map((i) => i.dossier), ["a", "c"]);
 });
 
-test("accroches W3 / W4 : onglet et panneau Worktrees, nettoyage, commandes", () => {
+test("accroches : onglet et panneau Worktrees, nettoyage, commandes", () => {
   const ws = lire("src/components/Workspace.tsx");
   assert.match(ws, /<OngletWorktrees dossier=\{workspacePath\} actif=\{bottomTab === "worktrees"\}/);
   assert.match(ws, /<PanneauWorktrees dossier=\{workspacePath\} actif=\{bottomTab === "worktrees"\}/);

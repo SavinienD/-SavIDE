@@ -1,5 +1,5 @@
 "use strict";
-// ED2b : image collée ou déposée dans un .md -> fichier dans images/ à côté
+// Image collée ou déposée dans un .md -> fichier dans images/ à côté
 // du .md (Rust editeur_image_markdown, tests cargo editeur::) et lien inséré ; images relatives
 // affichées dans l'aperçu.
 const assert = require("node:assert/strict");

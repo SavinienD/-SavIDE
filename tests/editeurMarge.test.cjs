@@ -1,5 +1,5 @@
 "use strict";
-// ED1b : marques de changements dans la marge par rapport à HEAD
+// Marques de changements dans la marge par rapport à HEAD
 // (ajouté, modifié, supprimé), version de HEAD lue par editeur_fichier_head (src-tauri/src/editeur.rs).
 const assert = require("node:assert/strict");
 const fs = require("node:fs");

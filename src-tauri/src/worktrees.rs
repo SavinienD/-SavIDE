@@ -92,7 +92,7 @@ pub(crate) async fn worktrees_config_creer(input: DepotInput) -> Result<ConfigDe
 }
 
 // ---------------------------------------------------------------------------
-// Tâches de fond (W1) : création en arrière-plan, Annuler / Réessayer / Relancer.
+// Tâches de fond : création en arrière-plan, Annuler / Réessayer / Relancer.
 
 /// Événement : une tâche a changé (charge = la tâche).
 pub(crate) const EVENEMENT_TACHE: &str = "worktrees-tache";
@@ -223,7 +223,7 @@ pub(crate) async fn worktree_tache_sortie(input: TacheInput) -> Result<SortieTac
 }
 
 // ---------------------------------------------------------------------------
-// Liste des worktrees par dépôt (W3) : état, en avance / en retard ; suppression, archivage.
+// Liste des worktrees par dépôt : état, en avance / en retard ; suppression, archivage.
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -400,7 +400,7 @@ pub(crate) async fn worktree_supprimer(
 }
 
 // ---------------------------------------------------------------------------
-// Nettoyage (W4) : fusionnés, introuvables, anciens, taille ; prune.
+// Nettoyage : fusionnés, introuvables, anciens, taille ; prune.
 
 #[tauri::command]
 pub(crate) async fn worktrees_nettoyage(input: nettoyage::NettoyageInput) -> Result<Vec<nettoyage::InfoNettoyage>, String> {

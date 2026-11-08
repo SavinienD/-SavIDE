@@ -1,4 +1,4 @@
-//! Écran de nettoyage des worktrees (W4) : fusionnés, introuvables, anciens,
+//! Écran de nettoyage des worktrees : fusionnés, introuvables, anciens,
 //! taille sur disque. La suppression elle-même passe par les tâches (taches.rs).
 
 use std::path::Path;

@@ -1,5 +1,5 @@
 "use strict";
-// ED3c : image modifiée depuis le dernier commit : avant / après (glissière ou
+// Image modifiée depuis le dernier commit : avant / après (glissière ou
 // côte à côte), bouton « Avant / après » dans la barre d'onglets ; version HEAD lue par
 // editeur_fichier_head (src-tauri/src/editeur.rs).
 const assert = require("node:assert/strict");

@@ -1,5 +1,5 @@
 "use strict";
-// ED2a : Markdown édité et aperçu côte à côte, défilement synchronisé
+// Markdown édité et aperçu côte à côte, défilement synchronisé
 // (ancres « data-ligne » posées par rehypeAncresLignes dans l'aperçu, interpolation ligne <-> hauteur).
 const assert = require("node:assert/strict");
 const fs = require("node:fs");

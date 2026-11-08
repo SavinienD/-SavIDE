@@ -38,14 +38,14 @@ export const SCENES_REVUE = [
     temoins: ["sel:.revue-diff__message", "absent:.revue-diff__monaco"] },
 ];
 
-// Aperçu Markdown (RV3) : texte choisi (triple clic sur le titre), « Noter » : tiroir des notes avec le brouillon.
+// Aperçu Markdown : texte choisi (triple clic sur le titre), « Noter » : tiroir des notes avec le brouillon.
 SCENES_REVUE.push(
   { id: "revue-apercu-note", sim: { fichierQcm: true }, ouvrirFichier: "qcm.md", clics: [".editor-preview-toggle"], taper: [{ sel: ".editor-md-preview h1", texte: "" }],
     cliquer: [".revue-apercu-noter"], pauseClics: 600,
     temoins: ["sel:.revue-tiroir .revue-note--brouillon .revue-note__saisie", "sel:.revue-tiroir .revue-note__extrait"] },
 );
 
-// Conflits (RV5) : fusion arrêtée, l'onglet des conflits s'ouvre seul ; « Prendre la nôtre » ; « Demander à l'agent ».
+// Conflits : fusion arrêtée, l'onglet des conflits s'ouvre seul ; « Prendre la nôtre » ; « Demander à l'agent ».
 SCENES_REVUE.push(
   { id: "revue-conflits", sim: { revue: "conflit" }, touches: OUVRIR,
     temoins: ["sel:.revue-conflits", "sel:.revue-conflits__versions .monaco-editor", "sel:.revue-conflits__resultat .monaco-editor",

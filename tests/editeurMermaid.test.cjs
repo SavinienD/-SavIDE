@@ -1,5 +1,5 @@
 "use strict";
-// ED3a : visionneuse des fichiers Mermaid (.mmd, .mermaid) : diagramme
+// Visionneuse des fichiers Mermaid (.mmd, .mermaid) : diagramme
 // au-dessus du code (bascule Diagramme / Code), agrandi au clic (molette = zoom).
 const assert = require("node:assert/strict");
 const fs = require("node:fs");

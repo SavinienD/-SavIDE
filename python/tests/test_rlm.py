@@ -72,7 +72,7 @@ def test_aides_completes():
     assert {"query", "query_lot"} <= set(rlm.__all__)
 
 
-# ----- R2 à R6 : worktree, arrêt, reprise, statut, course -----------------------
+# ----- worktree, arrêt, reprise, statut, course -----------------------
 
 def test_spawn_avec_worktree(monkeypatch):
     vus = _faux(monkeypatch, {"id": "s9", "session_name": "a", "worktree": "/p-sous-agents/a", "branche": "sous-agent/a"})

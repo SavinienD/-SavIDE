@@ -107,7 +107,7 @@ export function simulationWorktrees(scene: any): Record<string, (a: any, brut: a
 }
 
 
-// W3 / W4 — dépôts de la liste et examen du nettoyage.
+// Dépôts de la liste et examen du nettoyage.
 const ligne = (dossier: string, nom: string, branche: string | null, extra: any = {}) => ({
   dossier, nom, branche, principal: false, detache: !branche, verrouille: false, introuvable: false,
   modifies: 0, avance: 0, retard: 0, reference: "main", dernierCommitMs: D.T0 - 3_600_000, ...extra,

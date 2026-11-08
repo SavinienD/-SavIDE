@@ -239,7 +239,7 @@ fn mesurer_ne_suit_pas_les_liens() {
 }
 
 // ---------------------------------------------------------------------------
-// W1 : tâches de fond (création, script, reprise, annulation).
+// Tâches de fond (création, script, reprise, annulation).
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -468,7 +468,7 @@ fn texte_des_scripts() {
 }
 
 // ---------------------------------------------------------------------------
-// W3 : liste par dépôt, suppression, archivage.
+// Liste par dépôt, suppression, archivage.
 
 fn worktree_test(r: &Path, branche: &str) -> PathBuf {
     let dossier = r.parent().unwrap().join(format!("wt-{branche}"));
@@ -608,7 +608,7 @@ fn principal_et_verrouille_refuses() {
 }
 
 // ---------------------------------------------------------------------------
-// W4 : nettoyage (fusionnés, introuvables, anciens, taille).
+// Nettoyage (fusionnés, introuvables, anciens, taille).
 
 use super::nettoyage;
 

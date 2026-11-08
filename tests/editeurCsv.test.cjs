@@ -1,5 +1,5 @@
 "use strict";
-// ED3b : tableaux (CSV, TSV, classeurs) : tri par colonne (clic sur l'en-tête :
+// Tableaux (CSV, TSV, classeurs) : tri par colonne (clic sur l'en-tête :
 // croissant, décroissant, sans tri) et filtre (n'afficher que les lignes trouvées par la recherche).
 const assert = require("node:assert/strict");
 const fs = require("node:fs");

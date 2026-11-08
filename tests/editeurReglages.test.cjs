@@ -1,5 +1,5 @@
 "use strict";
-// ED1a : sauvegarde automatique (désactivée / après 1 s / en quittant
+// Sauvegarde automatique (désactivée / après 1 s / en quittant
 // l'onglet), retour à la ligne et minimap réglables, enregistrement qui ne perd pas la frappe.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");

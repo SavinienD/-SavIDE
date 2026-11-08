@@ -1,5 +1,5 @@
 "use strict";
-// ED1c : « Fermer tous les fichiers » et « Rouvrir l'onglet fermé »
+// « Fermer tous les fichiers » et « Rouvrir l'onglet fermé »
 // (raccourcis libres déclarés dans src/axe/raccourcis.ts, menu du clic droit sur un onglet).
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
