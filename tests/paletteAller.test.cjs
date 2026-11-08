@@ -31,11 +31,11 @@ const sources = () => [
   { genre: "dossier", id: "C:\\Clients\\cabinet-martin", titre: "cabinet-martin", detail: "C:\\Clients\\cabinet-martin", icone: "x", ordre: 0 },
   { genre: "dossier", id: "C:\\Clients\\atelier-durand", titre: "atelier-durand", detail: "C:\\Clients\\atelier-durand", icone: "x", ordre: 1 },
   { genre: "conversation", id: "c-1", titre: "Facture OVH d'octobre", detail: "cabinet-martin", icone: "x", ordre: 0 },
-  { genre: "conversation", id: "c-2", titre: "Tri des tickets Zendesk", detail: "atelier-durand", icone: "x", ordre: 1 },
-  { genre: "sousAgent", id: "sa-1", titre: "t-lotA", detail: "Tri des tickets Zendesk", icone: "x", ordre: 0 },
+  { genre: "conversation", id: "c-2", titre: "Tri des tickets du helpdesk", detail: "atelier-durand", icone: "x", ordre: 1 },
+  { genre: "sousAgent", id: "sa-1", titre: "t-lotA", detail: "Tri des tickets du helpdesk", icone: "x", ordre: 0 },
   { genre: "terminal", id: "terminal-1", titre: "Terminal 1", icone: "x", ordre: 0 },
   { genre: "reglage", id: "shortcuts", titre: "Raccourcis", icone: "x", ordre: 0 },
-  { genre: "onglet", id: "c-2", titre: "Tri des tickets Zendesk", icone: "x", ordre: 0 },
+  { genre: "onglet", id: "c-2", titre: "Tri des tickets du helpdesk", icone: "x", ordre: 0 },
 ];
 
 test("requête vide : tout, par groupes dans un ordre fixe (onglets d'abord)", () => {
@@ -47,7 +47,7 @@ test("requête vide : tout, par groupes dans un ordre fixe (onglets d'abord)", (
 });
 
 test("requête : lettres dans l'ordre sans casse ni accents ; groupe le mieux trouvé d'abord", () => {
-  const r = S.elementsAller("zendesk", sources());
+  const r = S.elementsAller("helpdesk", sources());
   const ids = r.map((e) => e.id);
   assert.deepEqual([...ids].sort(), ["conversation:c-2", "onglet:c-2", "sousAgent:sa-1"]);
   assert.ok(ids.indexOf("sousAgent:sa-1") > ids.indexOf("conversation:c-2"), "trouvé dans le titre avant trouvé dans le détail");
@@ -63,7 +63,7 @@ test("requête : lettres dans l'ordre sans casse ni accents ; groupe le mieux tr
 test("extrait d'une conversation : mots surlignés sans casse ni accents (positions dans l'extrait)", () => {
   assert.deepEqual(S.marquesExtrait("… la facture de l'Été …", "ete"), [18, 19, 20]);
   assert.deepEqual(S.marquesExtrait("l’ordre", "l'ordre"), [0, 1, 2, 3, 4, 5, 6]);
-  assert.deepEqual(S.marquesExtrait("Zendesk puis zendesk", "ZENDESK"), [0, 1, 2, 3, 4, 5, 6, 13, 14, 15, 16, 17, 18, 19]);
+  assert.deepEqual(S.marquesExtrait("Facture puis facture", "FACTURE"), [0, 1, 2, 3, 4, 5, 6, 13, 14, 15, 16, 17, 18, 19]);
   assert.deepEqual(S.marquesExtrait("rien", "x"), []);
 });
 

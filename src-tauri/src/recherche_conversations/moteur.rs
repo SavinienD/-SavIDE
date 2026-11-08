@@ -411,7 +411,7 @@ mod tests {
         println!("première lecture (à froid) : {} conversations relues en {} ms", froid.relues, froid.duree_ms);
         let (_, nb, octets) = cache.taille();
         println!("en mémoire : {nb} messages, {} Ko (texte + forme pliée)", octets / 1024);
-        for q in ["banc", "facture", "zendesk", "erreur", "ok", "le", "mot-introuvable-xyz", "relance le banc"] {
+        for q in ["banc", "facture", "ticket", "erreur", "ok", "le", "mot-introuvable-xyz", "relance le banc"] {
             let r = cache.chercher(&base, q, 30).unwrap();
             println!("« {q} » : {} conversation(s){}, {} ms", r.resultats.len(), if r.tronque { " (limite)" } else { "" }, r.duree_ms);
             assert!(r.duree_ms < 500, "trop lent : {} ms", r.duree_ms);
