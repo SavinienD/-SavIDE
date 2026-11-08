@@ -8,6 +8,7 @@ import { AxeLogo } from "../axe/Logo";
 import { dateMajLisible, noterLancement, versionAppli } from "../lib/versionAppli"; // apropos
 import { RaccourcisSection } from "../axe/RaccourcisSection"; // raccourcis
 import { VoixSection } from "../axe/voix/VoixSection"; // voix
+import { NotificationsSection } from "./notifications/NotificationsSection";
 import { AppearanceSection } from "../axe/AppearanceSection"; // theme
 import { monacoThemeData } from "../axe/themeTargets"; // theme
 import {
@@ -83,7 +84,8 @@ type Section =
   | "service" // daemon
   | "connections" // remote
   | "shortcuts" // raccourcis
-  | "voice"; // voix
+  | "voice" // voix
+  | "notifications";
 
 export function SettingsPane({ workspacePath }: Props) {
   // parcours-collegue — section demandée avant le montage (« Connect a provider ») : avant, « About ».
@@ -1437,6 +1439,11 @@ export function SettingsPane({ workspacePath }: Props) {
           <span className="settings-pane__nav-label">Dictée vocale</span>
           <span className="settings-pane__nav-count" />
         </button>
+        <button type="button" className="settings-pane__nav-item" data-section="notifications" data-active={section === "notifications" ? "true" : "false"} onClick={() => setSection("notifications")}>
+          <Icon icon="solar:bell-linear" width={15} height={15} className="settings-pane__nav-icon" />
+          <span className="settings-pane__nav-label">Notifications</span>
+          <span className="settings-pane__nav-count" />
+        </button>
       </nav>
 
       <section className="settings-pane__main">
@@ -1532,6 +1539,8 @@ export function SettingsPane({ workspacePath }: Props) {
           <ServicePane /> /* daemon */
         ) : section === "shortcuts" ? (
           <RaccourcisSection /> /* raccourcis */
+        ) : section === "notifications" ? (
+          <NotificationsSection />
         ) : section === "voice" ? (
           <VoixSection workspacePath={workspacePath} /> /* voix */
         ) : section === "connections" ? (

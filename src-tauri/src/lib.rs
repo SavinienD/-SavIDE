@@ -636,6 +636,7 @@ pub fn run() {
             notifications::notifications_marquer_lu,
             notifications::notifications_vue,
             notifications::notifications_reglages,
+            notifications::notifications_essayer,
         ])
         .build(tauri::generate_context!())
         .expect("error while building SavIDE desktop")

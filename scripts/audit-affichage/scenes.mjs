@@ -446,6 +446,10 @@ export const SCENES = [
       "compte:.axe-tableau__carte[data-colonne='repos']=0"] },
   { id: "agents-tableau-repos", sim: { sessionsDemon: SESSIONS_TABLEAU(), notifications: NOTIFS_TABLEAU() }, stockage: () => ({ ...colonnes([ids(3)]), "axe:agents:vue": "tableau", "axe:agents:tous-dossiers": "1" }), agents: true,
     clics: [".axe-tableau__plier"], temoins: ["compte:.axe-tableau__carte[data-colonne='repos']=2", "sel:.axe-tableau__plier[aria-expanded='true']"] },
+  // Réglages > Notifications : sept cases, « Écouter », essai (message d'état).
+  { id: "reglages-notifications", sim: { notifications: NOTIFS_TABLEAU() }, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='notifications']", ".axe-notifs-reglages__bouton[data-action='essayer']"],
+    temoins: ["sel:.axe-notifs-reglages", "compte:.axe-notifs-reglages__case=7", "sel:.axe-notifs-reglages [role='status']"] },
   { id: "agents-archives", sim: { tour: "en_cours", sessionsDemon: SESSIONS_AGENTS() }, stockage: () => colonnes([ids(3)]), agents: true,
     clics: [".axe-agents__filters summary", ".axe-agents__filters input[data-filtre='archives']"],
     temoins: ["compte:.axe-agents__row[data-sous-agent='true']=12", "sel:.axe-agents__counts[data-running='3'][data-idle='5'][data-inactive='6']"] },

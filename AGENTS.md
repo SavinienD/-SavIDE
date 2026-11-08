@@ -351,7 +351,7 @@ Code map:
 │       ├── lib.rs
 │       ├── main.rs
 │       ├── models.rs
-│       ├── notifications.rs # centre des notifications : événements (cloche), états des sessions (vue Tableau), réglages, <données>/notifications.json ; une même fin signalée par plusieurs fenêtres n'est gardée qu'une fois
+│       ├── notifications.rs # centre des notifications : événements (cloche), états des sessions (vue Tableau), réglages, <données>/notifications.json ; une même fin signalée par plusieurs fenêtres n'est gardée qu'une fois ; notification du système (Windows : toast WinRT, clic = ouvrir ; macOS : osascript ; Linux : notify-send) seulement si aucune fenêtre focalisée n'affiche la conversation
 │       ├── offline.rs # v2-l6 — mode désynchronisé : miroir local + journal (<data>/offline/<connexion>) et IPC offline_* (prepare, list, read, write, create, delete, rename, journal, sync, resolve, forget)
 │       ├── platform.rs
 │       ├── providers.rs
@@ -447,6 +447,9 @@ Code map:
     │   ├── WindowControls.tsx
     │   ├── Workspace.tsx # dispositions « ide » et « chat » (freechat : même ChatPane, FreechatView)
     │   ├── notifications # notifications des agents
+    │   │   ├── NotificationsSection.tsx # Réglages > Notifications : événements, notification du système, son court, ne pas déranger, essai
+    │   │   ├── son.ts # son court synthétisé (WebAudio, aucun fichier), préparé au premier geste
+    │   │   ├── notifications.css
     │   │   ├── notificationsApi.ts # IPC notifications_* (src-tauri/src/notifications.rs), types, événements de l'état et de l'ouverture
     │   │   ├── suivi.ts # fins de tour repérées dans les événements du service (fini, attend votre réponse, échec), pur
     │   │   ├── ouvrir.ts # ouvreurs de conversation (espace affiché, puis secours de l'appli), pur

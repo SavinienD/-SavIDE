@@ -54,6 +54,8 @@ sha2 = { workspace = true } # micro-local
 [target.'cfg(windows)'.dependencies]
 webview2-com = "0.38"
 windows-core = "0.61"
+# Toasts de Windows (crate déjà présente via wry, même version ; fonctions en plus).
+windows = { version = "0.61", features = ["Data_Xml_Dom", "Foundation", "UI_Notifications"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6.4"

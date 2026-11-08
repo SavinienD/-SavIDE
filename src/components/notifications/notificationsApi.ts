@@ -79,6 +79,11 @@ export const notificationsApi = {
   effacerEtat: (sessionId: string) => invoke<void>("notifications_effacer_etat", { sessionId }),
   marquerLu: (cle?: string, sessionId?: string) =>
     invoke<void>("notifications_marquer_lu", { cle: cle ?? null, sessionId: sessionId ?? null }),
+  /** Réglages > Notifications : lus (sans argument) ou enregistrés. */
+  reglages: (reglages?: ReglagesNotif) =>
+    invoke<ReglagesNotif | null>("notifications_reglages", { reglages: reglages ?? null }).then((r) => ({ ...REGLAGES_DEFAUT, ...(r ?? reglages ?? {}) })),
+  /** Notification d'essai (montrée même si les notifications du système sont coupées). */
+  essayer: () => invoke<DecisionNotif | null>("notifications_essayer"),
   /** Conversation affichée par cette fenêtre (null : aucune). */
   vue: (sessionId: string | null) => invoke<void>("notifications_vue", { sessionId }),
   surEtat: (f: (etat: EtatCentre) => void): Promise<UnlistenFn> =>

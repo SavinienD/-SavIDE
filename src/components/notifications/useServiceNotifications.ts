@@ -1,12 +1,14 @@
 // Monté une fois par fenêtre (App.tsx) : suit les fins de tour dans les
-// événements du service et les signale au centre, ouvre la conversation d'une notification
+// événements du service et les signale au centre (qui décide de la notification du système),
+// joue le son court quand le centre le demande, ouvre la conversation d'une notification
 // cliquée, et fournit l'ouvreur de secours (écran d'accueil : aucun espace affiché).
 import { useEffect, useRef } from "react";
 import { agentsApi } from "../agents/agentsApi";
 import { LOCAL_CONNECTION } from "../settings/connectionsApi";
-import { notificationsApi } from "./notificationsApi";
+import { notificationsApi, type DecisionNotif, type SignalementNotif } from "./notificationsApi";
 import { appliquer, nouveauSuivi, semer, type ActionSuivi } from "./suivi";
 import { cheminPoste, cibleDe, fournirOuvreur, ouvrirCible } from "./ouvrir";
+import { armerSon, jouerSon } from "./son";
 
 type Secours = {
   /** Ouvre un dossier du poste sur une conversation. */
@@ -15,12 +17,31 @@ type Secours = {
   ouvrirLibre: (sessionId: string) => void;
 };
 
-function executer(actions: ActionSuivi[]) {
-  for (const action of actions) {
-    if (action.type === "effacer") void notificationsApi.effacerEtat(action.sessionId).catch(() => undefined);
-    else void notificationsApi.signaler(action.signalement).catch(() => undefined);
-  }
+type Dependances = {
+  signaler: (s: SignalementNotif) => Promise<DecisionNotif | null>;
+  effacer: (sessionId: string) => Promise<unknown>;
+  jouer: (genre: string) => void;
+};
+
+/** Exécute les actions du suivi ; seule la fenêtre dont l'appel est le premier (« nouveau »)
+ *  reçoit `son: true` du centre et joue le son. */
+export function executerActions(actions: ActionSuivi[], d: Dependances): Promise<void> {
+  const travaux = actions.map(async (action) => {
+    try {
+      if (action.type === "effacer") await d.effacer(action.sessionId);
+      else if ((await d.signaler(action.signalement))?.son) d.jouer(action.signalement.genre);
+    } catch {
+      /* centre indisponible (banc, démarrage) : rien à faire */
+    }
+  });
+  return Promise.all(travaux).then(() => undefined);
 }
+
+const DEPENDANCES: Dependances = {
+  signaler: notificationsApi.signaler,
+  effacer: notificationsApi.effacerEtat,
+  jouer: jouerSon,
+};
 
 export function useServiceNotifications(secours: Secours): void {
   const ref = useRef(secours);
@@ -28,6 +49,7 @@ export function useServiceNotifications(secours: Secours): void {
   useEffect(() => {
     let fini = false;
     const suivi = nouveauSuivi();
+    const desarmer = armerSon();
     void agentsApi
       .list(LOCAL_CONNECTION)
       .then((sessions) => {
@@ -35,7 +57,7 @@ export function useServiceNotifications(secours: Secours): void {
       })
       .catch(() => undefined);
     const arrets = [
-      agentsApi.onEvent((ev) => executer(appliquer(suivi, ev, Date.now()))),
+      agentsApi.onEvent((ev) => void executerActions(appliquer(suivi, ev, Date.now()), DEPENDANCES)),
       notificationsApi.surOuvrir((ev) => void ouvrirCible(cibleDe(ev))),
     ];
     const retirer = fournirOuvreur((cible) => {
@@ -47,6 +69,7 @@ export function useServiceNotifications(secours: Secours): void {
     }, 0);
     return () => {
       fini = true;
+      desarmer();
       retirer();
       for (const arret of arrets) void arret.then((f) => f()).catch(() => undefined);
     };

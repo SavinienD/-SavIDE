@@ -1,11 +1,19 @@
 //! Centre des notifications de l'appli.
 //!
-//! - Liste des événements récents (100 au plus), état de chaque session (attend votre réponse,
-//!   fini, échec ; lu ou non : vue « Tableau » de l'onglet Agents) et réglages, gardés dans
-//!   `<données>/notifications.json`.
+//! - Liste des événements récents (cloche de la barre du haut, 100 au plus), état de chaque
+//!   session (attend votre réponse, fini, échec ; lu ou non : vue « Tableau » de l'onglet Agents)
+//!   et réglages (Réglages > Notifications), gardés dans `<données>/notifications.json`.
 //! - Les fenêtres repèrent les fins de tour dans les événements du service
 //!   (`src/components/notifications/suivi.ts`) et les signalent ici. Plusieurs fenêtres signalent
-//!   la même fin avec la même clé : elle n'est gardée qu'une fois.
+//!   la même fin avec la même clé : elle n'est gardée, montrée et sonnée qu'une fois. L'événement
+//!   de fenêtre `ide-notification` des autres lots (contrat commun :
+//!   `src/components/notifications/contrat.ts`) arrive par le même chemin.
+//! - Notification du système seulement si aucune fenêtre qui a le focus n'affiche la
+//!   conversation : Windows = toast WinRT (clic = ouvrir la conversation), macOS = `osascript`
+//!   + rebond du Dock, Linux = `notify-send` (clic = ouvrir si le serveur le permet).
+//!
+//! Aucune dépendance ajoutée : le greffon officiel qui sait suivre les clics sur ordinateur
+//! (tauri-plugin-notification 2.6+) exige Tauri 2.12 ; nous sommes en 2.10.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -18,6 +26,8 @@ use tauri::{AppHandle, Emitter, Manager};
 
 /// État complet (événements, états des sessions, réglages, non-lus), émis à chaque changement.
 pub(crate) const EVENEMENT_ETAT: &str = "axe://notifications";
+/// Clic sur une notification du système : la fenêtre choisie ouvre la conversation.
+pub(crate) const EVENEMENT_OUVRIR: &str = "axe://notification-ouvrir";
 const MAX_EVENEMENTS: usize = 100;
 const MAX_ETATS: usize = 500;
 /// Genres qui décrivent l'état d'une session (les autres, « info », ne vont qu'à la cloche).
@@ -283,6 +293,10 @@ pub(crate) fn centre() -> &'static Centre {
     })
 }
 
+fn nom_appli(app: &AppHandle) -> String {
+    app.config().product_name.clone().unwrap_or_else(|| "SavIDE".into())
+}
+
 /// Une fenêtre qui a le focus affiche-t-elle cette session ?
 fn affichee(app: &AppHandle, session: Option<&str>) -> bool {
     let Some(session) = session.filter(|s| !s.is_empty()) else { return false };
@@ -296,6 +310,163 @@ fn publier(app: &AppHandle) {
     let _ = app.emit(EVENEMENT_ETAT, centre().etat());
 }
 
+/// Clic sur une notification : la fenêtre qui a le focus (sinon la principale) revient
+/// devant et ouvre la conversation.
+pub(crate) fn ouvrir(app: &AppHandle, ev: &Evenement) {
+    let fenetres = app.webview_windows();
+    let cible = fenetres
+        .values()
+        .find(|w| w.is_focused().unwrap_or(false))
+        .or_else(|| fenetres.get("main"))
+        .or_else(|| fenetres.values().next());
+    if let Some(w) = cible {
+        let _ = w.unminimize();
+        let _ = w.show();
+        let _ = w.set_focus();
+        let _ = app.emit_to(w.label(), EVENEMENT_OUVRIR, ev);
+    }
+}
+
+// ---- Notification du système -----------------------------------------------------------
+
+/// Texte sûr pour un document XML (toast de Windows) : caractères spéciaux échappés,
+/// caractères de contrôle retirés.
+pub(crate) fn echapper_xml(texte: &str) -> String {
+    let mut sortie = String::with_capacity(texte.len());
+    for c in texte.chars() {
+        match c {
+            '&' => sortie.push_str("&amp;"),
+            '<' => sortie.push_str("&lt;"),
+            '>' => sortie.push_str("&gt;"),
+            '"' => sortie.push_str("&quot;"),
+            '\'' => sortie.push_str("&apos;"),
+            '\n' | '\t' => sortie.push(' '),
+            c if (c as u32) < 0x20 => {}
+            c => sortie.push(c),
+        }
+    }
+    sortie
+}
+
+/// Contenu du toast : titre, texte, sans son (le son court est joué par la fenêtre).
+#[allow(dead_code)] // Windows seulement (et tests)
+pub(crate) fn xml_toast(titre: &str, texte: &str) -> String {
+    format!(
+        "<toast activationType=\"foreground\"><visual><binding template=\"ToastGeneric\"><text>{}</text><text>{}</text></binding></visual><audio silent=\"true\"/></toast>",
+        echapper_xml(titre),
+        echapper_xml(texte)
+    )
+}
+
+/// Chaîne AppleScript entre guillemets.
+#[allow(dead_code)] // macOS seulement (et tests)
+pub(crate) fn chaine_applescript(texte: &str) -> String {
+    let propre: String = texte.chars().map(|c| if c == '\n' || c == '\r' { ' ' } else { c }).collect();
+    format!("\"{}\"", propre.replace('\\', "\\\\").replace('"', "\\\""))
+}
+
+/// Arguments de `notify-send` (Linux) ; `action` : bouton « Ouvrir » et attente du clic.
+#[allow(dead_code)] // Linux seulement (et tests)
+pub(crate) fn arguments_notify_send(appli: &str, titre: &str, texte: &str, action: bool) -> Vec<String> {
+    let mut args = vec![format!("--app-name={appli}"), "--expire-time=10000".to_string()];
+    if action {
+        args.push("--action=default=Ouvrir".into());
+        args.push("--wait".into());
+    }
+    args.push("--".into());
+    args.push(titre.to_string());
+    args.push(texte.to_string());
+    args
+}
+
+fn montrer_systeme(app: &AppHandle, ev: &Evenement) {
+    let titre = if ev.titre.trim().is_empty() { nom_appli(app) } else { ev.titre.clone() };
+    #[cfg(windows)]
+    if let Err(err) = toast::montrer(app, &titre, &ev.texte, ev.clone()) {
+        tracing::warn!(error = %err, "notification du système impossible");
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let script = format!("display notification {} with title {}", chaine_applescript(&ev.texte), chaine_applescript(&titre));
+        let _ = crate::__nw_std("osascript").arg("-e").arg(script).stdin(std::process::Stdio::null()).spawn();
+        if let Some(w) = app.webview_windows().values().next() {
+            let _ = w.request_user_attention(Some(tauri::UserAttentionType::Informational));
+        }
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        let (app, ev, appli) = (app.clone(), ev.clone(), nom_appli(app));
+        std::thread::spawn(move || {
+            let lancer = |action: bool| {
+                crate::__nw_std("notify-send")
+                    .args(arguments_notify_send(&appli, &titre, &ev.texte, action))
+                    .stdin(std::process::Stdio::null())
+                    .output()
+            };
+            match lancer(true) {
+                Ok(sortie) if sortie.status.success() => {
+                    if String::from_utf8_lossy(&sortie.stdout).trim() == "default" {
+                        ouvrir(&app, &ev);
+                    }
+                }
+                // libnotify trop ancienne pour --action / --wait : notification simple.
+                Ok(_) => {
+                    let _ = lancer(false);
+                }
+                Err(_) => tracing::debug!("notify-send absent : pas de notification du système"),
+            }
+        });
+    }
+}
+
+#[cfg(windows)]
+mod toast {
+    use super::{verrou, Evenement};
+    use std::sync::{Mutex, OnceLock};
+    use tauri::AppHandle;
+    use windows::core::HSTRING;
+    use windows::Data::Xml::Dom::XmlDocument;
+    use windows::Foundation::TypedEventHandler;
+    use windows::UI::Notifications::{ToastNotification, ToastNotificationManager};
+
+    /// Identité de Windows PowerShell : celle des versions de développement (l'installeur NSIS
+    /// donne au raccourci du menu Démarrer l'identifiant de l'appli, que Windows exige).
+    const AUMID_POWERSHELL: &str = "{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe";
+
+    fn aumid(app: &AppHandle) -> String {
+        let dev = std::env::current_exe()
+            .ok()
+            .and_then(|exe| exe.parent().and_then(|d| d.file_name()).map(|n| n.to_string_lossy().to_lowercase()))
+            .is_some_and(|nom| nom == "debug" || nom == "release");
+        if dev { AUMID_POWERSHELL.to_string() } else { app.config().identifier.clone() }
+    }
+
+    /// Toasts gardés en vie : leur clic (Activated) n'arrive que tant que l'objet existe.
+    fn gardes() -> &'static Mutex<Vec<ToastNotification>> {
+        static GARDES: OnceLock<Mutex<Vec<ToastNotification>>> = OnceLock::new();
+        GARDES.get_or_init(|| Mutex::new(Vec::new()))
+    }
+
+    pub(super) fn montrer(app: &AppHandle, titre: &str, texte: &str, ev: Evenement) -> windows::core::Result<()> {
+        let document = XmlDocument::new()?;
+        document.LoadXml(&HSTRING::from(super::xml_toast(titre, texte)))?;
+        let toast = ToastNotification::CreateToastNotification(&document)?;
+        let app_clic = app.clone();
+        toast.Activated(&TypedEventHandler::new(move |_, _| {
+            super::ouvrir(&app_clic, &ev);
+            Ok(())
+        }))?;
+        ToastNotificationManager::CreateToastNotifierWithId(&HSTRING::from(aumid(app)))?.Show(&toast)?;
+        let mut gardes = verrou(gardes());
+        gardes.push(toast);
+        let n = gardes.len();
+        if n > 20 {
+            gardes.drain(..n - 20);
+        }
+        Ok(())
+    }
+}
+
 // ---- Commandes ---------------------------------------------------------------------------
 
 #[tauri::command]
@@ -303,13 +474,17 @@ pub(crate) async fn notifications_lister() -> Result<Value, String> {
     Ok(centre().etat())
 }
 
-/// Une fin de tour : gardée une fois (même clé signalée par plusieurs fenêtres).
+/// Une fin de tour (ou un `ide-notification`) : gardée une fois, notification du système et son
+/// selon les réglages ; la fenêtre dont l'appel rend `son: true` joue le son court.
 #[tauri::command]
 pub(crate) async fn notifications_signaler(app: AppHandle, signalement: Signalement) -> Result<Decision, String> {
     let vue = affichee(&app, signalement.evenement.session_id.as_deref());
-    let (decision, _) = centre().signaler(signalement, maintenant_ms(), vue, false);
+    let (decision, ev) = centre().signaler(signalement, maintenant_ms(), vue, false);
     if decision.nouveau {
         publier(&app);
+        if decision.systeme {
+            montrer_systeme(&app, &ev);
+        }
     }
     Ok(decision)
 }
@@ -349,6 +524,27 @@ pub(crate) async fn notifications_reglages(app: AppHandle, reglages: Option<Regl
         publier(&app);
     }
     Ok(centre().reglages())
+}
+
+/// Réglages > Notifications > « Essayer » : une notification du système et le son.
+#[tauri::command]
+pub(crate) async fn notifications_essayer(app: AppHandle) -> Result<Decision, String> {
+    let maintenant = maintenant_ms();
+    let evenement = Evenement {
+        cle: format!("essai:{maintenant}"),
+        genre: "info".into(),
+        titre: nom_appli(&app),
+        texte: "Les notifications fonctionnent.".into(),
+        ..Default::default()
+    };
+    let (decision, ev) = centre().signaler(Signalement { evenement, alerter: true }, maintenant, false, true);
+    if decision.nouveau {
+        publier(&app);
+        if decision.systeme {
+            montrer_systeme(&app, &ev);
+        }
+    }
+    Ok(decision)
 }
 
 #[cfg(test)]
@@ -469,5 +665,17 @@ mod tests {
         c.noter_vue("main", None);
         assert_eq!(c.vue_de("main"), None);
         assert_eq!(c.vue_de("axecode-window-2").as_deref(), Some("s2"));
+    }
+
+    #[test]
+    fn contenus_systeme_surs() {
+        let xml = xml_toast("A & B <fin>", "« guillemets » \"x\" 'y'\u{7}\nligne");
+        assert!(xml.contains("<text>A &amp; B &lt;fin&gt;</text>"), "{xml}");
+        assert!(xml.contains("&quot;x&quot; &apos;y&apos; ligne"), "{xml}");
+        assert!(xml.contains("<audio silent=\"true\"/>"));
+        assert_eq!(chaine_applescript("dit \"oui\" \\ fin\n"), "\"dit \\\"oui\\\" \\\\ fin \"");
+        let args = arguments_notify_send("SavIDE", "-titre", "texte", true);
+        assert_eq!(args, ["--app-name=SavIDE", "--expire-time=10000", "--action=default=Ouvrir", "--wait", "--", "-titre", "texte"]);
+        assert!(!arguments_notify_send("SavIDE", "t", "x", false).iter().any(|a| a == "--wait"));
     }
 }

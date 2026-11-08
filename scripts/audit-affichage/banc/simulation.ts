@@ -379,6 +379,7 @@ export function installerSimulation(scene: Scene): void {
     notifications_marquer_lu: () => null,
     notifications_vue: () => null,
     notifications_reglages: (a: any) => a?.reglages ?? (scene.notifications as any)?.reglages ?? null,
+    notifications_essayer: () => ({ nouveau: true, systeme: true, son: false }),
     list_workspace_entries_command: (a) => {
       const dossier = a.relativePath ?? a.input?.relativePath ?? "";
       const liste = D.entrees(dossier);
