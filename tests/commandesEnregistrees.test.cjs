@@ -1,5 +1,5 @@
 "use strict";
-// Commandes et prompts enregistrés (src/components/agents-cli/commandesEnregistrees.ts).
+// Commandes et prompts enregistrés (src/components/agents-cli/stockageCommandes.ts).
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const Module = require("node:module");
@@ -18,7 +18,7 @@ function charger(rel) {
   m._compile(js, p);
   return m.exports;
 }
-const C = charger("../src/components/agents-cli/commandesEnregistrees.ts");
+const C = charger("../src/components/agents-cli/stockageCommandes.ts");
 const memoire = (init = {}) => {
   const d = { ...init };
   return { getItem: (k) => (k in d ? d[k] : null), setItem: (k, v) => { d[k] = String(v); }, d };

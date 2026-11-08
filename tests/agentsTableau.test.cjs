@@ -14,7 +14,7 @@ Module._extensions[".ts"] = (module, filename) => {
   }).outputText;
   module._compile(javascript, filename);
 };
-const T = require(path.resolve(__dirname, "../src/components/agents/agentsTableau.ts"));
+const T = require(path.resolve(__dirname, "../src/components/agents/tableauAgents.ts"));
 const s = (id, status, updatedAtMs = 1) => ({ id, status, updatedAtMs });
 
 test("colonne : statut réel d'abord, puis l'état du centre (lu ou non)", () => {

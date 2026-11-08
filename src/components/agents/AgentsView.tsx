@@ -13,7 +13,7 @@ import { majSessionsEnCours, sessionsEnCours } from "../../lib/toursActifs";
 import { archive, compter, dansLeDossier, statutsEffectifs } from "./agentsStatut";
 // Vue « Tableau », portée « ce dossier / tous les dossiers », ouverture partout.
 import { AgentsTableau } from "./AgentsTableau";
-import { CLE_PORTEE, CLE_VUE, demandeAttention, lireVue } from "./agentsTableau";
+import { CLE_PORTEE, CLE_VUE, demandeAttention, lireVue } from "./tableauAgents";
 import { useCentreNotifications } from "../notifications/store";
 import { ouvrirCible } from "../notifications/ouvrir";
 import "./agents.css";

@@ -1,7 +1,7 @@
-// Vue « Tableau » de l'onglet Agents (colonnes par état ; pur : agentsTableau.ts).
+// Vue « Tableau » de l'onglet Agents (colonnes par état ; pur : tableauAgents.ts).
 import { useMemo, useState } from "react";
 import { STATUS_LABEL, type SessionStatus } from "./agentsApi";
-import { COLONNES_TABLEAU, depuisQuand, nomDossier, repartir, type EtatTableau } from "./agentsTableau";
+import { COLONNES_TABLEAU, depuisQuand, nomDossier, repartir, type EtatTableau } from "./tableauAgents";
 
 export type CarteSession = {
   id: string;

@@ -17,7 +17,7 @@ import {
   type CommandeEnregistree,
   type GenreCommande,
   type Variables,
-} from "./commandesEnregistrees";
+} from "./stockageCommandes";
 import "./agents-cli.css";
 
 /** Liste enregistrée, relue quand elle change (cette fenêtre ou une autre). */

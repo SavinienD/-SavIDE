@@ -7,7 +7,7 @@ import { Icon } from "@iconify/react";
 import { notificationsApi, type EvenementNotif } from "./notificationsApi";
 import { useCentreNotifications } from "./store";
 import { cibleDe, ouvrirCible } from "./ouvrir";
-import { depuisQuand, nomDossier } from "../agents/agentsTableau";
+import { depuisQuand, nomDossier } from "../agents/tableauAgents";
 import "./notifications.css";
 
 const LIBELLE_GENRE: Record<string, string> = {

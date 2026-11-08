@@ -4,7 +4,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { morceaux } from "./flou";
-import { chercherReglages, signalerReglage } from "./rechercheReglages";
+import { chercherReglages, signalerReglage } from "./moteurRechercheReglages";
 import "./palette.css";
 
 type Props = {

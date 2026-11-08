@@ -9,7 +9,7 @@ import { conversationTitle, displayPath, folderName, relativeTime, samePath } fr
 import { getActiveConnection } from "../settings/connectionsApi";
 import { demanderSectionReglages } from "../../lib/sectionReglages";
 import { SECTIONS_REGLAGES } from "./indexReglages";
-import { allerAuReglage, tousLesReglages } from "./rechercheReglages";
+import { allerAuReglage, tousLesReglages } from "./moteurRechercheReglages";
 import { Palette, type ElementPalette } from "./Palette";
 import {
   listerConversations,

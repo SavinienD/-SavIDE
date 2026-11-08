@@ -39,7 +39,7 @@ import "./volets/volets.css"; // e6
 import { cloudConnectionFromPath, cloudRpc } from "../lib/ipc"; // v2-l2.3
 import { preferenceModeleEspace } from "../lib/modelesEspace"; // parcours-collegue
 import { demanderSectionReglages } from "../lib/sectionReglages"; // parcours-collegue
-import { definirFichierActif } from "./agents-cli/commandesEnregistrees"; // commandes enregistrées
+import { definirFichierActif } from "./agents-cli/stockageCommandes"; // commandes enregistrées
 import {
   CloudOfflineError,
   getCloudStatus,

@@ -21,7 +21,7 @@ Module._extensions[".ts"] = (module, filename) => {
   module._compile(javascript, filename);
 };
 const racine = path.resolve(__dirname, "..");
-const RR = require(path.join(racine, "src/components/palette/rechercheReglages.ts"));
+const RR = require(path.join(racine, "src/components/palette/moteurRechercheReglages.ts"));
 const lire = (p) => fs.readFileSync(path.join(racine, p), "utf8");
 const ids = (r) => r.map((s) => `${s.section.id}:${s.reglages.map((x) => x.reglage.titre).join("|")}`);
 

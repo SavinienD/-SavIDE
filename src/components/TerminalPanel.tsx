@@ -33,7 +33,7 @@ import { RechercheTerminal, lignesTerminal } from "./agents-cli/RechercheTermina
 import { cheminsDeposes, entreesGlissees, glisseDepuisExplorateur, texteComplet } from "./agents-cli/outilsTerminal";
 import { copierTexte } from "./chat/PreCopiable";
 import { BoutonCommandesTerminal } from "./agents-cli/CommandesEnregistrees";
-import { donneesCollage, type GenreCommande } from "./agents-cli/commandesEnregistrees";
+import { donneesCollage, type GenreCommande } from "./agents-cli/stockageCommandes";
 import { dansTerminal, fournirActions } from "../axe/raccourcis";
 import { estWindows } from "../lib/plateforme";
 

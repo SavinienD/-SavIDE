@@ -438,7 +438,7 @@ Code map:
     │   │   ├── RemoteConversations.tsx # remote — sessions d'une connexion distante : liste, création (modèles cloud proposés), fil depuis sessions.tree (erreurs de tour visibles), changement de modèle, envoi, arrêt
     │   │   ├── SessionTree.tsx # /tree : arbre du journal, revenir à un point, fork (par connexion)
     │   │   ├── agents.css
-    │   │   ├── AgentsTableau.tsx / agentsTableau.ts # Vue « Tableau » : colonnes Attend votre réponse / Travaille / Fini, non lu / Échec / Au repos (bascule Arbre / Tableau mémorisée, portée ce dossier / tous les dossiers)
+    │   │   ├── AgentsTableau.tsx / tableauAgents.ts # Vue « Tableau » : colonnes Attend votre réponse / Travaille / Fini, non lu / Échec / Au repos (bascule Arbre / Tableau mémorisée, portée ce dossier / tous les dossiers)
     │   │   ├── agentsApi.ts # wrappers daemon_call / daemon_sessions / axe://daemon, routage par connexion ; serviceAgentsApi (agents.list/spawn/status/stop/result en cloud)
     │   │   └── remoteItems.ts # remote — modèles proposés pour une session distante (axe-cloud d'abord, mémorisés par connexion), fil affichable (messages + erreurs), explications lisibles des erreurs
     │   ├── cloud # cloud — mode cloud (connexion Google, onglets Agent / Atelier / Terminal)
@@ -482,7 +482,7 @@ Code map:
     │   │   ├── PaletteAller.tsx / sourcesAller.ts # Ctrl+K : onglets, conversations, dossiers, sous-agents, terminaux, Réglages, texte des conversations (tests/paletteAller.test.cjs)
     │   │   ├── PaletteAccueil.tsx # Ctrl+K sur l'accueil (accroche dans App.tsx)
     │   │   ├── indexReglages.ts # sections des Réglages (mêmes data-section que SettingsPane ; édition locale : sans Service ni Appareils)
-    │   │   ├── RechercheReglages.tsx / rechercheReglages.ts # recherche dans les Réglages : champ en haut du volet, index des réglages (+ raccourcis), signalement (tests/rechercheReglages.test.cjs)
+    │   │   ├── RechercheReglages.tsx / moteurRechercheReglages.ts # recherche dans les Réglages : champ en haut du volet, index des réglages (+ raccourcis), signalement (tests/rechercheReglages.test.cjs)
     │   │   ├── etatGit.ts / useEtatGit.ts / explorateur.css # couleurs git de l'explorateur (fichiers et dossiers) (tests/explorateurGit.test.cjs)
     │   │   ├── rechercheDossier.ts # « Rechercher dans ce dossier » : dossier gardé pour le volet de recherche
     │   │   ├── ouvrirAvec.ts / actionsAide.ts / AideAppli.tsx # éditeurs du poste, actions de Ctrl+K, bloc Aide de Réglages > À propos (tests/ouvrirAvec.test.cjs)
@@ -492,7 +492,7 @@ Code map:
     │   │   ├── NouvelAgentMenu.tsx / MenuFlottant.tsx / ActionsTerminal.tsx # menus de la barre des terminaux
     │   │   ├── etatAgent.ts # état travaille / attend / fini (BEL, OSC 9, OSC 777, invites), notification ide-notification
     │   │   ├── outilsTerminal.ts / RechercheTerminal.tsx # recherche (Ctrl+F), copie de la sortie, fichier glissé
-    │   │   ├── commandesEnregistrees.ts / CommandesEnregistrees.tsx # commandes et prompts enregistrés (terminal, chat, Réglages)
+    │   │   ├── stockageCommandes.ts / CommandesEnregistrees.tsx # commandes et prompts enregistrés (terminal, chat, Réglages)
     │   │   └── agents-cli.css
     │   ├── GitPanel.tsx # onglets Dépôt / PR / Issues ; Rédiger (IA), compteurs, fetch, amend, forcer, abandon, Réparer avec l'IA
     │   ├── pr # gitApi.ts, forgeApi.ts, consignes.ts (prompts + consignes pour l'agent), redaction.ts (appel unique), versAgent.ts (texte mis dans la saisie de la conversation), PrOnglet.tsx, IssuesOnglet.tsx, pr.css
