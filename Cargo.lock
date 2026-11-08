@@ -146,6 +146,7 @@ dependencies = [
  "base64 0.22.1",
  "directories",
  "futures-util",
+ "gtk",
  "notify",
  "objc2",
  "objc2-app-kit",
@@ -167,9 +168,12 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "url",
+ "webkit2gtk",
  "webview2-com",
  "whisper-rs",
+ "windows",
  "windows-core 0.61.2",
+ "wry",
  "zip 9.0.5",
 ]
 
