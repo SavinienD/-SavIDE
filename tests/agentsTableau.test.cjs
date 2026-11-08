@@ -48,7 +48,7 @@ test("attention, durées, dossier, vue mémorisée", () => {
   assert.equal(T.depuisQuand(m - 5 * 60_000, m), "il y a 5 min");
   assert.equal(T.depuisQuand(m - 3 * 3_600_000, m), "il y a 3 h");
   assert.equal(T.depuisQuand(m - 26 * 3_600_000, m), "hier");
-  assert.equal(T.nomDossier("\\\\?\\C:\\Users\\Savinien\\Documents\\prime agent\\"), "prime agent");
+  assert.equal(T.nomDossier("\\\\?\\C:\\Users\\alice\\Documents\\projet\\"), "projet");
   assert.equal(T.lireVue({ getItem: () => "tableau" }), "tableau");
   assert.equal(T.lireVue({ getItem: () => null }), "arbre");
   assert.equal(T.lireVue({ getItem: () => { throw new Error("x"); } }), "arbre");

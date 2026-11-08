@@ -18,7 +18,7 @@ Module._extensions[".ts"] = (module, filename) => {
 const S = require(path.resolve(__dirname, "../src/components/notifications/suivi.ts"));
 const O = require(path.resolve(__dirname, "../src/components/notifications/ouvrir.ts"));
 
-const ws = "\\\\?\\C:\\Users\\Savinien\\Documents\\prime agent";
+const ws = "\\\\?\\C:\\Users\\alice\\Documents\\projet";
 const meta = (id, status, extra = {}) => ({ id, name: `conv ${id}`, workspaceId: ws, status, updatedAtMs: 1000, ...extra });
 const statut = (id, status, extra = {}) => ({ event: "status", sessionId: id, data: meta(id, status, extra) });
 const user = (id, text) => ({ event: "entry", sessionId: id, data: { kind: "message", message: { role: "user", parts: [{ type: "text", text }] } } });
@@ -111,5 +111,5 @@ test("ouvreurs : priorité de l'espace, secours de l'appli, chemin du poste", ()
   assert.equal(O.ouvrirCible({ sessionId: "d" }), false);
   assert.deepEqual(vus, [["espace", "a"], ["secours", "b"], ["secours", "c"]]);
   assert.equal(O.cibleDe({}), null);
-  assert.equal(O.cheminPoste(ws), "C:\\Users\\Savinien\\Documents\\prime agent");
+  assert.equal(O.cheminPoste(ws), "C:\\Users\\alice\\Documents\\projet");
 });
