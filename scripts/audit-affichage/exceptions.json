@@ -172,6 +172,12 @@
       "selecteur": ".terminal-tab__close",
       "situation": "/revue-depuis-git$",
       "raison": "Scène revue-depuis-git : la vue « Changements » (voile modal) couvre le volet bas ; le banc vérifie la zone de clic de 20 px (::after) par elementFromPoint, qui tombe alors sur le voile. Bouton Fermer du terminal inchangé par la revue."
+    },
+    {
+      "regle": "cible-petite",
+      "selecteur": ".tab__close",
+      "situation": "/revue-apercu-note$",
+      "raison": "Scène revue-apercu-note : le tiroir des notes a un voile modal ; le banc vérifie la zone de clic élargie du bouton Fermer de l'onglet par elementFromPoint, qui tombe alors sur le voile. Bouton de l'onglet inchangé par la revue."
     }
   ]
 }

@@ -21,7 +21,8 @@ export const SCENES_REVUE = [
     temoins: ["sel:.revue-vue", "appel:revue_liste"] },
   // Diff en ligne, notes masquées (choix gardés dans le stockage local).
   { id: "revue-en-ligne", sim: { revue: "simple" }, stockage: () => ({ "revue:en-ligne": "1", "revue:notes-visibles": "0" }), touches: OUVRIR,
-    temoins: ["sel:.revue-segments button[data-actif='true']:last-child", "absent:.revue-notes", "sel:.revue-diff__monaco .monaco-diff-editor"] },
+    // Sous 700 px de diff, Monaco passe seul en ligne et les deux boutons se masquent : témoin en grande fenêtre.
+    temoins: ["si>1000:sel:.revue-segments button[data-actif='true']:last-child", "absent:.revue-notes", "sel:.revue-diff__monaco .monaco-diff-editor"] },
   // Alt+N : note sur le bloc courant, Ctrl+Entrée n'est pas tapé (bouton), puis envoi en un message (file du service).
   { id: "revue-noter-envoyer", sim: { revue: "simple" }, touches: [...OUVRIR, "Alt+KeyN"],
     taper: [{ sel: ".revue-note--brouillon .revue-note__saisie", texte: "Renomme cette fonction en titreAbrege." }],
@@ -39,7 +40,7 @@ export const SCENES_REVUE = [
 
 // Aperçu Markdown (RV3) : texte choisi (triple clic sur le titre), « Noter » : tiroir des notes avec le brouillon.
 SCENES_REVUE.push(
-  { id: "revue-apercu-note", sim: { fichierQcm: true }, ouvrirFichier: "qcm.md", taper: [{ sel: ".editor-md-preview h1", texte: "" }],
+  { id: "revue-apercu-note", sim: { fichierQcm: true }, ouvrirFichier: "qcm.md", clics: [".editor-preview-toggle"], taper: [{ sel: ".editor-md-preview h1", texte: "" }],
     cliquer: [".revue-apercu-noter"], pauseClics: 600,
     temoins: ["sel:.revue-tiroir .revue-note--brouillon .revue-note__saisie", "sel:.revue-tiroir .revue-note__extrait"] },
 );

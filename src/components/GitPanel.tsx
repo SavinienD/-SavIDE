@@ -873,8 +873,8 @@ export function GitPanel({
               )}
             </span>
             {!isCloud && (
-              <button type="button" className="git-panel__section-link" data-revue="ouvrir" style={{ marginLeft: "auto", whiteSpace: "nowrap" }} onClick={() => ouvrirRevue({ dossier: workspacePath })} title={infoBulle("Voir les changements", "revueChangements")}>
-                Voir les changements
+              <button type="button" className="git-panel__head-btn" data-revue="ouvrir" style={{ marginLeft: "auto" }} onClick={() => ouvrirRevue({ dossier: workspacePath })} title={infoBulle("Voir les changements", "revueChangements")} aria-label="Voir les changements">
+                <Icon icon="solar:document-text-linear" width={14} height={14} />
               </button>
             )}
             {totalChanges > 0 && (

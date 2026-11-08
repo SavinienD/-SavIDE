@@ -487,13 +487,13 @@ export function VueRevue({ dossier, fichier, onFermer, ongletInitial }: Props) {
                       </button>
                       <span className="revue-espace" />
                       {groupe === "non-indexe" ? (
-                        <button type="button" className="revue-bouton" disabled={!peutAgir} onClick={() => void agir("indexer")} title={`Indexer ${cible}`}>
+                        <button type="button" className="revue-bouton" disabled={!peutAgir} onClick={() => void agir("indexer")} title={`Indexer ${cible}`} aria-label={surSelectionLignes ? "Indexer la sélection" : "Indexer le bloc"}>
                           <Icon icon="solar:add-square-linear" width={14} height={14} />
                           <span>{surSelectionLignes ? "Indexer la sélection" : "Indexer le bloc"}</span>
                         </button>
                       ) : null}
                       {groupe === "indexe" ? (
-                        <button type="button" className="revue-bouton" disabled={!peutAgir} onClick={() => void agir("desindexer")} title={`Retirer ${cible} de l'index`}>
+                        <button type="button" className="revue-bouton" disabled={!peutAgir} onClick={() => void agir("desindexer")} title={`Retirer ${cible} de l'index`} aria-label={surSelectionLignes ? "Désindexer la sélection" : "Désindexer le bloc"}>
                           <Icon icon="solar:minus-square-linear" width={14} height={14} />
                           <span>{surSelectionLignes ? "Désindexer la sélection" : "Désindexer le bloc"}</span>
                         </button>
@@ -504,6 +504,7 @@ export function VueRevue({ dossier, fichier, onFermer, ongletInitial }: Props) {
                           className="revue-bouton"
                           data-arme={annulerArme ? "true" : "false"}
                           disabled={!peutAgir}
+                          aria-label={annulerArme ? "Confirmer l'annulation" : `Annuler ${cible}`}
                           onBlur={() => setAnnulerArme(false)}
                           onClick={() => {
                             if (!annulerArme) return setAnnulerArme(true);
@@ -515,7 +516,7 @@ export function VueRevue({ dossier, fichier, onFermer, ongletInitial }: Props) {
                           <span>{annulerArme ? "Confirmer l'annulation" : "Annuler"}</span>
                         </button>
                       ) : null}
-                      <button type="button" className="revue-bouton" disabled={!diff || diff.binaire || diff.tropGros} onClick={noter} title={infoBulle("Noter les lignes choisies", "revueNoter")}>
+                      <button type="button" className="revue-bouton" disabled={!diff || diff.binaire || diff.tropGros} onClick={noter} title={infoBulle("Noter les lignes choisies", "revueNoter")} aria-label="Noter">
                         <Icon icon="solar:pen-linear" width={14} height={14} />
                         <span>Noter</span>
                       </button>

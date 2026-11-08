@@ -360,6 +360,7 @@
 
 /* Diff */
 .revue-diff {
+  container: revue-diff / inline-size;
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -388,7 +389,7 @@
 }
 .revue-diff__nom {
   flex: 0 1 auto;
-  min-width: 0;
+  min-width: 4em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -604,14 +605,15 @@
   border-radius: var(--r-small);
 }
 
-/* Fenêtre étroite (zoom, petit écran) : les notes passent par-dessus le diff. */
-@container revue (max-width: 960px) {
+/* Fenêtre moyenne ou étroite (zoom, petit écran) : les notes passent par-dessus le diff. */
+@container revue (max-width: 1199px) {
   .revue-corps[data-notes="true"] {
     grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);
   }
+  /* Sous les deux barres du diff : le tiroir ne couvre que le texte (jamais les boutons). */
   .revue-corps[data-notes="true"] > .revue-notes {
     position: absolute;
-    top: 0;
+    top: 72px;
     right: 0;
     bottom: 0;
     width: min(300px, 70%);
@@ -644,13 +646,13 @@
 }
 
 /* Tiroir des notes (note prise dans l'aperçu Markdown) */
+.revue-voile--tiroir {
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.25);
+}
 .revue-tiroir {
-  position: fixed;
-  top: 48px;
-  right: 16px;
-  bottom: 16px;
-  z-index: 300;
-  width: min(340px, calc(100vw - 32px));
+  flex: 0 0 auto;
+  width: min(340px, 100%);
   display: flex;
   flex-direction: column;
   border: 1px solid var(--line-strong);
@@ -728,6 +730,7 @@
   grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
 }
 .revue-conflits__fichier {
+  container: revue-conflit / inline-size;
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -816,4 +819,32 @@
   margin-left: 8px;
   color: var(--text-3);
   font-weight: 400;
+}
+
+/* Diff étroit : on garde le nom, les compteurs et les actions (icônes seules). Sous 700 px,
+   Monaco montre de toute façon le diff en ligne : le choix « côte à côte » se masque. */
+@container revue-diff (max-width: 700px) {
+  .revue-diff__dossier,
+  .revue-diff__groupe,
+  .revue-diff__tete .revue-segments {
+    display: none;
+  }
+}
+@container revue-diff (max-width: 600px) {
+  .revue-diff__barre .revue-bouton > span {
+    display: none;
+  }
+  .revue-diff__barre {
+    gap: 4px;
+  }
+}
+@container revue-conflit (max-width: 640px) {
+  .revue-conflits__aide {
+    display: none;
+  }
+}
+@container revue-conflit (max-width: 480px) {
+  .revue-conflits__prendre {
+    display: none;
+  }
 }

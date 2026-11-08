@@ -45,7 +45,8 @@ function TiroirNotes({ dossier, brouillon, onFinBrouillon, onFermer, onVoir }: {
     [],
   );
   return (
-    <div className="revue-tiroir" role="dialog" aria-label="Notes de relecture">
+    <div className="revue-voile revue-voile--tiroir">
+    <div className="revue-tiroir" role="dialog" aria-modal="true" aria-label="Notes de relecture">
       <div className="revue-tiroir__barre">
         <button type="button" className="revue-lien" onClick={onVoir}>
           Voir les changements
@@ -56,6 +57,7 @@ function TiroirNotes({ dossier, brouillon, onFinBrouillon, onFermer, onVoir }: {
         </button>
       </div>
       <PanneauNotes dossier={dossier} notes={notes} brouillon={brouillon} onFinBrouillon={onFinBrouillon} />
+    </div>
     </div>
   );
 }
