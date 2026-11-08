@@ -58,6 +58,7 @@ import {
 import { RemotePanel } from "./RemotePanel";
 import { SearchPane } from "./SearchPane";
 import { AgentsView } from "./agents/AgentsView"; // agents
+import { HoteRevue } from "./revue/HoteRevue"; // revue des changements
 import { SessionTree } from "./agents/SessionTree"; // agents
 import { SessionJournal } from "./agents/SessionJournal"; // sub-m
 // remote
@@ -3655,6 +3656,7 @@ export function Workspace({
   return (
     <div className="workspace">
       {noticeEl}
+      <HoteRevue workspacePath={workspacePath} />
       {/* e6 — les volets detaches vivent ici, dans la fenetre de l'application. */}
       <VoletsFlottants
         volets={volets}

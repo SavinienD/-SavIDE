@@ -5,6 +5,7 @@ import { mockIPC, mockWindows, mockConvertFileSrc } from "@tauri-apps/api/mocks"
 import { emit } from "@tauri-apps/api/event";
 import * as D from "./donnees";
 import { simulationCollegue } from "./collegue";
+import { simulationRevue } from "./revue"; // revue des changements
 
 export type Scene = {
   /** ordre-dossiers — open_workspace ouvre le dossier demandé (et non l'espace du banc). */
@@ -167,6 +168,7 @@ export function installerSimulation(scene: Scene): void {
         }
       : { providers: [], modelOverrides: {}, kinds: [] };
   const h: Record<string, (a: any, brut: any) => unknown> = {
+    ...simulationRevue(scene), // revue des changements
     // Scène « maj-badge » : une version disponible (badge discret, installation sur clic seulement).
     updater_check: () =>
       scene.majDispo

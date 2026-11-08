@@ -346,6 +346,8 @@ Code map:
 │       ├── freechat.rs # freechat — conversations libres : espace partagé <data>/scratch côté IDE, IPC freechat_index/open/relocate, synchro service -> store (conversations libres créées sur le web / la Vue Agents), renommage/suppression répercutés
 │       ├── custom_providers.rs # providers — instances configurables (providers.json + provider-keys.json), IPC provider_*, modelOverrides, détection Ollama/LM Studio
 │       ├── git.rs
+│       ├── diff.rs # revue des changements — fichiers modifiés (HEAD ou branche de base), textes du diff, indexation d'un bloc ou de lignes (patch partiel + git apply --cached)
+│       ├── conflits.rs # revue des changements — conflits : versions base / nôtre / leur, marquer résolu, continuer, abandonner
 │       ├── harness.rs # harness — IPC harness_* (CRUD, promote/demote, refinements, rollback, import brain, refine start/status), couche harness par tour
 │       ├── harness_backup.rs # cleanup — sauvegarde périodique du harness (config harness-backup.json, IPC harness_backup_*)
 │       ├── lib.rs
@@ -415,6 +417,11 @@ Code map:
     │   ├── FileTree.tsx
     │   ├── TerminalPanel.tsx # multi-onglets PTY : Ctrl+Tab, renommage, PowerShell/WSL et scrollback texte local
     │   ├── GitPanel.tsx
+    │   ├── revue # vue « Changements » (Ctrl+Maj+D) : diff Monaco, notes de relecture envoyées à l'agent, indexation partielle, conflits à 3 volets
+    │   │   ├── HoteRevue.tsx / VueRevue.tsx / ListeFichiers.tsx / DiffMonaco.tsx / PanneauNotes.tsx / ChoixConversation.tsx
+    │   │   ├── VueConflits.tsx / MonacoSimple.tsx / NoteApercu.tsx (crochet de l'aperçu Markdown)
+    │   │   ├── revueApi.ts / notes.ts / envoi.ts / selectionDiff.ts / blocsConflit.ts / apercuNotes.ts / infoBulle.ts (modules purs testés)
+    │   │   └── revue.css
     │   ├── RemotePanel.tsx
     │   ├── SearchPane.tsx
     │   ├── SettingsPane.tsx

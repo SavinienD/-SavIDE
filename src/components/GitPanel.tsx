@@ -10,6 +10,8 @@ import {
 import { createPortal } from "react-dom";
 import { Icon } from "@iconify/react";
 import { api, cloudConnectionFromPath } from "../lib/ipc";
+import { ouvrirRevue } from "./revue/HoteRevue"; // revue des changements
+import { infoBulle } from "./revue/infoBulle";
 import type {
   GitBranch,
   GitPullRequestOutput,
@@ -870,6 +872,11 @@ export function GitPanel({
                 <span className="git-panel__count">{totalChanges}</span>
               )}
             </span>
+            {!isCloud && (
+              <button type="button" className="git-panel__section-link" data-revue="ouvrir" style={{ marginLeft: "auto", whiteSpace: "nowrap" }} onClick={() => ouvrirRevue({ dossier: workspacePath })} title={infoBulle("Voir les changements", "revueChangements")}>
+                Voir les changements
+              </button>
+            )}
             {totalChanges > 0 && (
               <button
                 type="button"
