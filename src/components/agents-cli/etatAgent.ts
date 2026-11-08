@@ -104,7 +104,7 @@ export function libelleEtat(s: Suivi): string {
 
 export type NotificationIde = { genre: "fini" | "attente" | "echec" | "info"; titre: string; texte: string; dossier?: string };
 
-/** Détail de l'événement « ide-notification » (contrat commun aux lots). */
+/** Détail de l'événement « ide-notification » (contrat commun aux écrans). */
 export function notificationAgent(nom: string, dossier: string, s: Suivi, message?: string | null): NotificationIde {
   if (s.etat === "attend") return { genre: "attente", titre: `${nom} attend`, texte: message || "L'agent attend une réponse.", dossier };
   if (s.etat === "fini") return { genre: "fini", titre: `${nom} a fini`, texte: "Le processus s'est terminé.", dossier };

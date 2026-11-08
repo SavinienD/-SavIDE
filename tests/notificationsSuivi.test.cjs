@@ -76,7 +76,7 @@ test("résultat d'un sous-agent (message entre sessions) : le parent alerte à s
 test("parent dont un sous-agent travaille encore : fin sans alerte ; sous-agent marqué", () => {
   const suivi = S.nouveauSuivi();
   S.semer(suivi, [meta("p", "idle"), meta("sa", "running", { parentId: "p" })]);
-  const [s] = signalements(jouer(suivi, [user("p", "Lance les lots"), statut("p", "running"), statut("p", "idle")]));
+  const [s] = signalements(jouer(suivi, [user("p", "Lance les tests"), statut("p", "running"), statut("p", "idle")]));
   assert.equal(s.alerter, false);
   const [fin] = signalements(jouer(suivi, [statut("sa", "idle", { parentId: "p" })]));
   assert.equal(fin.sousAgent, true, "le sous-agent semé au démarrage a un tour ouvert");

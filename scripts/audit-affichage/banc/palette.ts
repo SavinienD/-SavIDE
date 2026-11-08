@@ -1,6 +1,6 @@
 // Simulations du banc d'affichage : Ctrl+P (palette_fichiers), Ctrl+K
-// (conversations de tous les dossiers, recherche dans leur texte). Les autres commandes du
-// lot (explorateur, éditeurs) s'ajoutent ici.
+// (conversations de tous les dossiers, recherche dans leur texte). Les autres commandes
+// (explorateur, éditeurs) s'ajoutent ici.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as D from "./donnees";
 
