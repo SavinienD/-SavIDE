@@ -177,6 +177,10 @@ Code map:
 │   │   ├── build.rs # webui — ré-embarque web/dist quand il change
 │   │   ├── src
 │   │   │   ├── auth.rs # remote — remote-auth.json : mots de passe argon2, jetons SHA-256, CLI set-password/token/auth
+│   │   │   ├── automatisations.rs # automatisations — prompts planifiés : <données>/automatisations.json, RPC automatisations.*, planificateur (tic 10 s, rattrapage, jamais deux exécutions), garde le service en vie
+│   │   │   ├── automatisations_horaire.rs # horaires (tous les jours, jours de la semaine, toutes les N heures, cron) -> prochaine exécution, en clair
+│   │   │   ├── automatisations_execution.rs # une exécution : conversation (nouvelle ou la même), suivi, bilan lu dans le journal
+│   │   │   ├── automatisations_tests.rs # tests avec une horloge simulée
 │   │   │   ├── cli.rs # serve [--listen host:port --allow-host h]/status/shutdown/set-password/token partagés
 │   │   │   ├── client.rs # DaemonClient (pipe + connect_ws distant), ensure_daemon, lancement détaché
 │   │   │   ├── brain_rpc.rs # v2-l2.4 — RPC skills.*/harness.* : cerveau commun (skills + harnais) de l'espace du service, réglages skill-settings.json
