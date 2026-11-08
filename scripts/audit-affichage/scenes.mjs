@@ -884,4 +884,17 @@ export const SCENES = [
     cliquer: ".terminal-tabs__actions [data-action='terminaux-ouverts']",
     temoins: ["compte:.acli-menu--terminaux .acli-menu__ligne=3", "clic:.acli-menu--terminaux .acli-menu__ligne[data-terminal='terminal-2'] [data-action='aller']",
       "sel:.acli-menu--terminaux [data-action='tout-arreter']"] },
+  // Commandes et prompts enregistrés : Réglages > Commandes (exemples du premier lancement), menu de la
+  // barre des terminaux, bouton du compositeur du chat.
+  { id: "commandes-reglages", sim: {}, stockage: () => colonnes([ids(1)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='commandes']"],
+    temoins: ["compte:.acli-commandes .acli-commande=2", "sel:.acli-commande[data-genre='prompt'] textarea", "clic:[data-action='ajouter-commande']",
+      "clic:.acli-commande[data-commande='exemple-git'] [data-action='supprimer-commande']"] },
+  { id: "commandes-terminal", sim: { cloud: false }, stockage: () => colonnes([ids(1)]), terminal: true,
+    cliquer: ".terminal-tabs__actions [data-action='commandes-terminal']",
+    temoins: ["clic:.acli-menu--commandes [data-commande='exemple-git']", "sel:.acli-menu--commandes [data-commande='exemple-relire'][aria-disabled='true']",
+      "clic:.acli-menu--commandes [data-action='gerer-commandes']"] },
+  { id: "commandes-chat", sim: {}, stockage: () => colonnes([ids(1)]),
+    cliquer: [".composer [data-action='commandes-chat']", ".acli-menu--commandes [data-commande='exemple-git']"],
+    temoins: ["valeur:git diff --stat", "absent:.acli-menu--commandes"] },
 ];

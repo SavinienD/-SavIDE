@@ -30,6 +30,8 @@ import { BoutonPlusActions, BoutonTerminauxOuverts, type LigneTerminal } from ".
 import { RechercheTerminal, lignesTerminal } from "./agents-cli/RechercheTerminal";
 import { cheminsDeposes, entreesGlissees, glisseDepuisExplorateur, texteComplet } from "./agents-cli/outilsTerminal";
 import { copierTexte } from "./chat/PreCopiable";
+import { BoutonCommandesTerminal } from "./agents-cli/CommandesEnregistrees";
+import { donneesCollage, type GenreCommande } from "./agents-cli/commandesEnregistrees";
 import { dansTerminal, fournirActions } from "../axe/raccourcis";
 import { estWindows } from "../lib/plateforme";
 
@@ -117,8 +119,8 @@ type Disposable = {
   dispose: () => void;
 };
 
-/** Ce que le panneau peut faire d'un terminal affiché (recherche, copie, arrêt). */
-type ApiSurface = { terminal: Terminal; arreter: () => void };
+/** Ce que le panneau peut faire d'un terminal affiché (recherche, copie, écriture, arrêt). */
+type ApiSurface = { terminal: Terminal; arreter: () => void; ecrire: (donnees: string) => boolean };
 
 // Ctrl+F (registre des raccourcis, modifiable) : le panneau dont le terminal a le focus ouvre
 // sa recherche ; ailleurs la touche continue son chemin.
@@ -224,6 +226,18 @@ export function TerminalPanel({
     const terminal = surfaces.current.get(shownId)?.terminal;
     if (!terminal) return;
     void copierTexte(texteComplet(lignesTerminal(terminal))).then((ok) => avertir(ok ? "Sortie copiée" : "Copie impossible"));
+  }, [avertir, shownId]);
+
+  // Commande enregistrée : collée dans le terminal affiché, puis exécutée (Entrée) ; un prompt
+  // est seulement collé (à valider soi-même, l'agent ne perd pas l'Entrée pendant le collage).
+  const envoyerAuTerminal = useCallback((texte: string, genre: GenreCommande) => {
+    const surface = surfaces.current.get(shownId);
+    const encadre = !!surface?.terminal.modes.bracketedPasteMode;
+    if (!surface || !surface.ecrire(donneesCollage(texte, encadre, genre === "commande"))) {
+      avertir("Aucun terminal en cours");
+      return;
+    }
+    surface.terminal.focus();
   }, [avertir, shownId]);
 
   const scinder = useCallback(() => {
@@ -409,6 +423,7 @@ export function TerminalPanel({
               for (const l of lignesGestionnaire) if (l.enCours) surfaces.current.get(l.id)?.arreter();
             }}
           />
+          <BoutonCommandesTerminal dossier={activeSession.agent?.dossier ?? workspacePath} onChoisir={envoyerAuTerminal} />
           <BoutonPlusActions
             scinde={!!vue}
             peutScinder={shownId !== GIT_TAB_ID}
@@ -721,6 +736,13 @@ function TerminalSurface({
       arreter: () => {
         const jeton = tokenRef.current;
         if (jeton) void api.killTerminal(session.id, jeton);
+      },
+      ecrire: (donnees) => {
+        const jeton = tokenRef.current;
+        if (!jeton) return false;
+        if (session.agent) suiviRef.current = surSaisie(suiviRef.current, Date.now());
+        void api.writeTerminal(session.id, jeton, donnees);
+        return true;
       },
     });
 

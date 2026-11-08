@@ -150,3 +150,17 @@
 
 /* Fichier glissé depuis l'explorateur au-dessus d'un terminal. */
 .acli-surface[data-depot="true"] { outline: 1px dashed var(--accent); outline-offset: -3px; }
+
+/* Réglages > Commandes : une carte par commande (genre, nom, supprimer ; texte dessous). */
+.acli-commande { display: flex; flex-direction: column; gap: 6px; padding: 8px; min-width: 0; border: 1px solid var(--line); border-radius: var(--r-med); background: var(--bg-1); }
+.acli-commande__tete { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.acli-commande select, .acli-commande input, .acli-commande textarea {
+  min-width: 0; box-sizing: border-box; padding: 4px 8px; border: 1px solid var(--line); border-radius: var(--r-small);
+  background: var(--bg-2); color: var(--text-0); font-size: var(--fs-sm);
+}
+.acli-commande select { flex: 0 1 auto; min-height: 26px; }
+.acli-commande input { flex: 1 1 auto; height: 26px; }
+.acli-commande textarea { width: 100%; min-height: 52px; resize: vertical; font-family: var(--font-mono); font-size: var(--fs-mono); }
+.acli-commande select:focus, .acli-commande input:focus, .acli-commande textarea:focus { outline: none; border-color: var(--accent); }
+.acli-commande .terminal-action { flex: 0 0 auto; }
+.acli-menu__item[aria-disabled="true"] { opacity: 0.5; }

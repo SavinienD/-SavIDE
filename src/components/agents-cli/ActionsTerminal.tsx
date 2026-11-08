@@ -129,7 +129,7 @@ export function BoutonPlusActions({
             <span className="acli-menu__libelle">Copier toute la sortie</span>
           </button>
           <button type="button" role="menuitem" className="acli-menu__item" data-action="scinder" disabled={!scinde && !peutScinder} onClick={agir(onScinder)}>
-            <Icon icon={scinde ? "solar:square-linear" : "solar:widget-2-linear"} width={13} height={13} />
+            <Icon icon={scinde ? "solar:window-frame-linear" : "solar:sidebar-minimalistic-linear"} width={13} height={13} />
             <span className="acli-menu__libelle">{scinde ? "Ne plus scinder" : "Scinder le terminal"}</span>
           </button>
         </MenuFlottant>
