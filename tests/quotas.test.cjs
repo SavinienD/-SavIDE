@@ -118,3 +118,15 @@ test("alertes déjà vues : gardées dans le stockage, 50 au plus", () => {
   assert.equal(vues.length, 50);
   assert.equal(vues[49], "k59");
 });
+
+test("alerte de quota : une seule fois même si l'heure de réinitialisation bouge de quelques secondes", () => {
+  const a = Q.alertesQuota(RAPPORT, 80, [], MAINTENANT);
+  assert.ok(a.length >= 1);
+  const vues = a.map((x) => x.cle);
+  const decale = JSON.parse(JSON.stringify(RAPPORT));
+  for (const p of decale.providers ?? []) for (const w of p.windows ?? []) {
+    if (typeof w.resetsAtMs === "number") w.resetsAtMs += 37_000;
+    if (w.resetsAt) w.resetsAt = new Date(Date.parse(w.resetsAt) + 37_000).toISOString();
+  }
+  for (let i = 0; i < 5; i++) assert.equal(Q.alertesQuota(decale, 80, vues, MAINTENANT + i * 300_000).length, 0);
+});

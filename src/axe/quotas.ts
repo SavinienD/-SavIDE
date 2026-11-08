@@ -195,8 +195,13 @@ export function alertesQuota(
     for (const w of p.windows) {
       if (w.utilization < seuil) continue;
       const fin = finFenetre(w);
-      const cle = `${p.provider}|${w.id}|${fin ?? "?"}`;
-      if (vues.has(cle)) continue;
+      // L'heure de réinitialisation renvoyée par le fournisseur bouge de quelques secondes d'une
+      // lecture à l'autre (toutes les 5 min) : la clé la garde à l'heure près, et une clé voisine
+      // (± 2 h, même compte, même fenêtre) vaut « déjà signalée ». Sinon l'alerte repart en boucle.
+      const base = `${p.provider}|${p.account ?? ""}|${w.id}|`;
+      const heure = fin ? Math.round(fin / HEURE_MS) : null;
+      const cle = `${base}${heure ?? "?"}`;
+      if (vues.has(cle) || dejaSignalee(vues, base, heure)) continue;
       const reinit = fin ? `, réinitialisation à ${heureReinitialisation(fin, maintenant)}` : "";
       const compte = p.account ? ` (${p.account})` : "";
       alertes.push({
@@ -207,6 +212,18 @@ export function alertesQuota(
     }
   }
   return alertes;
+}
+
+const HEURE_MS = 3_600_000;
+
+/** Même compte et même fenêtre déjà signalés pour une réinitialisation à ± 2 h près. */
+function dejaSignalee(vues: ReadonlySet<string>, base: string, heure: number | null): boolean {
+  for (const v of vues) {
+    if (!v.startsWith(base)) continue;
+    const h = Number(v.slice(base.length));
+    if (heure === null || !Number.isFinite(h) || Math.abs(h - heure) <= 2) return true;
+  }
+  return false;
 }
 
 export function alertesVues(stockage: Stockage | null | undefined): string[] {
