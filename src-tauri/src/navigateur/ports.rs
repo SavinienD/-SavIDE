@@ -248,10 +248,10 @@ mod systeme {
 #[cfg(target_os = "macos")]
 mod systeme {
     use super::*;
-    use std::process::{Command, Stdio};
+    use std::process::Stdio;
 
     fn lsof(arguments: &[&str]) -> String {
-        Command::new("lsof")
+        crate::__nw_std("lsof")
             .args(arguments)
             .stdin(Stdio::null())
             .stderr(Stdio::null())

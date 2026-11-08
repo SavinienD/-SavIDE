@@ -74,7 +74,7 @@ pub(crate) fn normaliser(saisie: &str) -> Result<String, String> {
     }
     let bas = s.to_ascii_lowercase();
     if bas.starts_with("http://") || bas.starts_with("https://") {
-        return Url::parse(s).map(|u| u.to_string()).map_err(|_| format!("Adresse invalide : {s}"));
+        return Url::parse(s).map(|u| u.to_string()).map_err(|_| format!("Adresse invalide : {s}"));
     }
     // « localhost:3000 » ressemble à un schéma (« localhost: ») : c'est un hôte et un port.
     let schema = s.split_once(':').map(|(avant, _)| avant).filter(|avant| {
@@ -87,7 +87,7 @@ pub(crate) fn normaliser(saisie: &str) -> Result<String, String> {
         let port_suit = apres.chars().next().is_some_and(|c| c.is_ascii_digit());
         if !port_suit {
             return Err(format!(
-                "Adresse refusée ({schema}:) : le navigateur intégré n'ouvre que les adresses http et https."
+                "Adresse refusée ({schema}:) : le navigateur intégré n'ouvre que les adresses http et https."
             ));
         }
     }
@@ -99,7 +99,7 @@ pub(crate) fn normaliser(saisie: &str) -> Result<String, String> {
         return Ok(format!("{RECHERCHE}{}", encoder_recherche(s)));
     }
     let schema = if hote_local(hote) { "http" } else { "https" };
-    Url::parse(&format!("{schema}://{s}")).map(|u| u.to_string()).map_err(|_| format!("Adresse invalide : {s}"))
+    Url::parse(&format!("{schema}://{s}")).map(|u| u.to_string()).map_err(|_| format!("Adresse invalide : {s}"))
 }
 
 /// Adresse locale d'un port ouvert (liste « Ports »).

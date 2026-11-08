@@ -29,7 +29,7 @@ const FONCTIONS: [&str; 6] = ["lire", "cliquer", "remplir", "touche", "trouver",
 /// La valeur rendue est toujours une chaîne JSON ; une exception devient `{erreur}`.
 pub(crate) fn appel(fonction: &str, arguments: &[Value]) -> Result<String, String> {
     if !FONCTIONS.contains(&fonction) {
-        return Err(format!("fonction de page inconnue : {fonction}"));
+        return Err(format!("fonction de page inconnue : {fonction}"));
     }
     let args: Vec<String> = arguments.iter().map(Value::to_string).collect();
     Ok(format!(

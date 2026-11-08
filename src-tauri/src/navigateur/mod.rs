@@ -115,7 +115,7 @@ pub(crate) async fn evaluer(app: &AppHandle, fenetre: &str, script: String, dela
     tokio::time::timeout(delai, rx)
         .await
         .map_err(|_| "la page ne répond pas (délai dépassé)".to_string())?
-        .map_err(|_| "la page a changé pendant la lecture : réessayez".to_string())
+        .map_err(|_| "la page a changé pendant la lecture : réessayez".to_string())
 }
 
 /// Crée la vue si besoin (cachée tant que l'onglet ne l'a pas placée).
@@ -215,7 +215,7 @@ pub(crate) async fn navigateur_action(app: AppHandle, window: Window, action: St
                 }
                 Ok(())
             }
-            autre => Err(format!("action inconnue : {autre}")),
+            autre => Err(format!("action inconnue : {autre}")),
         })
         .unwrap_or_else(|| Err("le navigateur intégré n'est pas ouvert".into()))
     })

@@ -10,7 +10,7 @@ use tauri::AppHandle;
 /// Message rendu quand la capture n'existe pas sur ce système.
 #[cfg(not(any(windows, target_os = "linux")))]
 pub(crate) const CAPTURE_INDISPONIBLE: &str =
-    "capture de la page indisponible sous ce système pour l'instant : utilisez lire() pour connaître la page";
+    "capture de la page indisponible sous ce système pour l'instant : utilisez lire() pour connaître la page";
 
 /// Touche connue du protocole des outils de développement : (key, code, code virtuel, texte).
 #[cfg_attr(not(windows), allow(dead_code))]
@@ -137,7 +137,7 @@ fn png_de_surface(surface: &gtk::cairo::Surface) -> Result<Vec<u8>, String> {
     let image = gtk::cairo::ImageSurface::try_from(surface.clone()).map_err(|_| "capture illisible".to_string())?;
     let (largeur, hauteur) = (image.width(), image.height());
     if largeur <= 0 || hauteur <= 0 {
-        return Err("capture vide (la vue est cachée ?)".into());
+        return Err("capture vide (la vue est cachée ?)".into());
     }
     let pixbuf = gtk::gdk::pixbuf_get_from_surface(surface, 0, 0, largeur, hauteur)
         .ok_or_else(|| "capture illisible".to_string())?;

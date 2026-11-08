@@ -15,7 +15,7 @@ export function NavigateurReglages() {
       <header>
         <h2 title="Navigateur">Navigateur</h2>
         <p className="axe-appearance__hint">
-          Onglet Navigateur de l'IDE : votre appli web à côté de l'agent. Les téléchargements vont dans le dossier Téléchargements.
+          Onglet Navigateur de l'IDE : votre appli web à côté de l'agent. Les téléchargements vont dans le dossier Téléchargements.
         </p>
       </header>
       <div className="axe-appearance__block" role="radiogroup" aria-label="Liens du chat et du terminal">
@@ -35,7 +35,7 @@ export function NavigateurReglages() {
             <span className="nav-reglages__libelle">{m.libelle}</span>
           </label>
         ))}
-        <p className="axe-appearance__hint">Maj + clic sur un lien : l'autre navigateur.</p>
+        <p className="axe-appearance__hint">Maj + clic sur un lien : l'autre navigateur.</p>
       </div>
     </div>
   );

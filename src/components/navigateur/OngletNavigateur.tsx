@@ -82,7 +82,7 @@ export function OngletNavigateur({ workspacePath, actif, conversationId, demande
         if (!t.fini) return;
         const nom = t.fichier.split(/[\\/]/).pop() || t.fichier;
         if (t.ok) {
-          setAvis({ genre: "info", texte: `Téléchargé dans Téléchargements : ${nom}` });
+          setAvis({ genre: "info", texte: `Téléchargé dans Téléchargements : ${nom}` });
           notifier("info", "Téléchargement terminé", nom, workspacePath);
         } else {
           setAvis({ genre: "erreur", texte: `Téléchargement interrompu${nom ? ` : ${nom}` : ""}` });
@@ -101,7 +101,7 @@ export function OngletNavigateur({ workspacePath, actif, conversationId, demande
   }, [etat.url, edition]);
 
   useEffect(() => {
-    if (etat.refus) setAvis({ genre: "erreur", texte: `Lien non ouvert dans le navigateur intégré : ${etat.refus}` });
+    if (etat.refus) setAvis({ genre: "erreur", texte: `Lien non ouvert dans le navigateur intégré : ${etat.refus}` });
   }, [etat.refus]);
 
   // Zoom de la page rendu à une vue recréée.
@@ -222,7 +222,7 @@ export function OngletNavigateur({ workspacePath, actif, conversationId, demande
     try {
       setEtat(await navigateurApi.design(!etat.design));
     } catch (e) {
-      setAvis({ genre: "erreur", texte: `Choisir un élément : ${String(e)}` });
+      setAvis({ genre: "erreur", texte: `Choisir un élément : ${String(e)}` });
     }
   };
 
@@ -235,7 +235,7 @@ export function OngletNavigateur({ workspacePath, actif, conversationId, demande
     }
     try {
       await navigator.clipboard.writeText(texte);
-      setAvis({ genre: "info", texte: "Conversation fermée : texte copié, collez-le dans la saisie." });
+      setAvis({ genre: "info", texte: "Conversation fermée : texte copié, collez-le dans la saisie." });
     } catch {
       setAvis({ genre: "erreur", texte: "Conversation fermée et presse-papiers indisponible." });
     }
@@ -316,8 +316,8 @@ export function OngletNavigateur({ workspacePath, actif, conversationId, demande
           <button type="button" className="nav__btn" onClick={() => changerZoom(-1)} title="Zoom arrière" aria-label="Zoom arrière">
             <Icon icon="solar:minus-circle-linear" width={14} height={14} />
           </button>
-          <button type="button" className="nav__btn nav__btn--valeur" onClick={() => changerZoom(0)} title="Zoom à 100 %" aria-label={`Zoom ${Math.round(zoom * 100)} %, revenir à 100 %`}>
-            {Math.round(zoom * 100)} %
+          <button type="button" className="nav__btn nav__btn--valeur" onClick={() => changerZoom(0)} title="Zoom à 100 %" aria-label={`Zoom ${Math.round(zoom * 100)} %, revenir à 100 %`}>
+            {`${Math.round(zoom * 100)}\u00a0%`}
           </button>
           <button type="button" className="nav__btn" onClick={() => changerZoom(1)} title="Zoom avant" aria-label="Zoom avant">
             <Icon icon="solar:add-circle-linear" width={14} height={14} />

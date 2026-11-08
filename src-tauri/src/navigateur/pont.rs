@@ -30,7 +30,7 @@ const FICHIER: &str = "navigateur-pont.json";
 /// Taille maximale d'une requête ou d'une réponse (une page lue tient largement dedans).
 const MAX_LIGNE: u64 = 4 * 1024 * 1024;
 
-pub(crate) const INDISPONIBLE: &str = "le navigateur intégré ne répond pas : il faut l'appli ouverte sur ce poste \
+pub(crate) const INDISPONIBLE: &str = "le navigateur intégré ne répond pas\u{a0}: il faut l'appli ouverte sur ce poste \
 (une session dans un espace distant n'y a pas accès)";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -211,13 +211,13 @@ pub(crate) fn demarrer_pont(app: &AppHandle) {
 }
 
 fn chaine<'a>(params: &'a Value, cle: &str) -> Result<&'a str, String> {
-    params.get(cle).and_then(Value::as_str).filter(|s| !s.trim().is_empty()).ok_or_else(|| format!("paramètre « {cle} » manquant"))
+    params.get(cle).and_then(Value::as_str).filter(|s| !s.trim().is_empty()).ok_or_else(|| format!("paramètre « {cle} » manquant"))
 }
 
 /// Appelle une fonction de la bibliothèque de la page et rend sa valeur décodée.
 async fn dans_la_page(app: &AppHandle, fenetre: &str, fonction: &str, arguments: Vec<Value>) -> Result<Value, String> {
     if !etat::lire(fenetre).ouvert {
-        return Err("le navigateur intégré n'est pas ouvert : appelez d'abord navigateur.ouvrir(url)".into());
+        return Err("le navigateur intégré n'est pas ouvert : appelez d'abord navigateur.ouvrir(url)".into());
     }
     let script = page::appel(fonction, &arguments)?;
     page::decoder(&super::evaluer(app, fenetre, script, Duration::from_secs(15)).await?)
@@ -286,16 +286,16 @@ async fn traiter(app: &AppHandle, methode: &str, espace: &str, params: Value) ->
                 return Err("chemin de capture absolu attendu".into());
             }
             if !etat::lire(&fenetre).ouvert {
-                return Err("le navigateur intégré n'est pas ouvert : appelez d'abord navigateur.ouvrir(url)".into());
+                return Err("le navigateur intégré n'est pas ouvert : appelez d'abord navigateur.ouvrir(url)".into());
             }
             let png = capture::png(app, &fenetre).await?;
             if let Some(parent) = chemin.parent() {
                 std::fs::create_dir_all(parent).map_err(texte)?;
             }
-            std::fs::write(&chemin, &png).map_err(|e| format!("{} : {e}", chemin.display()))?;
+            std::fs::write(&chemin, &png).map_err(|e| format!("{} : {e}", chemin.display()))?;
             Ok(json!({"chemin": chemin.display().to_string(), "octets": png.len()}))
         }
-        autre => Err(format!("méthode inconnue du navigateur intégré : {autre}")),
+        autre => Err(format!("méthode inconnue du navigateur intégré : {autre}")),
     }
 }
 

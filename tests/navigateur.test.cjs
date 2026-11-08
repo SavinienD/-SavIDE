@@ -83,7 +83,8 @@ const element = {
 };
 
 test("Design Mode : texte pour la conversation", () => {
-  const t = design.texteElement(element);
+  // Espaces insécables de la typographie française (« : », « » ») lues comme des espaces.
+  const t = design.texteElement(element).replace(/[\u00a0\u202f]/g, " ");
   assert.ok(t.startsWith("Élément choisi dans le navigateur (http://localhost:5173/) :\n"));
   assert.ok(t.includes("- Sélecteur : `main > button.primaire`"));
   assert.ok(t.includes("- Taille : 120 × 32 px"));

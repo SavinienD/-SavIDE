@@ -14,7 +14,6 @@ const SANS_INTERET: Record<string, string[]> = {
   margin: ["0px"],
   padding: ["0px"],
   "background-color": ["rgba(0, 0, 0, 0)", "transparent"],
-  border: ["0px none", "0px none rgb(0, 0, 0)", "none"],
   "border-radius": ["0px"],
   gap: ["normal"],
   "flex-direction": ["row"],
@@ -33,6 +32,8 @@ export function stylesUtiles(styles: Record<string, string>): [string, string][]
     const v = (styles[nom] ?? "").trim();
     if (!v) continue;
     if (SANS_INTERET[nom]?.some((d) => v === d || v.startsWith(`${d} `))) continue;
+    // Bordure absente : largeur nulle (« 0px … ») ou style « none » seul.
+    if (nom === "border" && (/^0px\b/.test(v) || /^none$/i.test(v))) continue;
     sortie.push([nom, v]);
   }
   return sortie;
@@ -47,13 +48,13 @@ function bloc(code: string): string {
 
 /** Texte prêt pour la saisie du chat (l'utilisateur ajoute sa demande ensuite). */
 export function texteElement(e: ElementChoisi): string {
-  const lignes = [`Élément choisi dans le navigateur${e.url ? ` (${e.url})` : ""} :`];
-  if (e.selecteur) lignes.push(`- Sélecteur : \`${e.selecteur.replace(/`/g, "'")}\``);
-  lignes.push(`- Taille : ${Math.round(e.largeur)} × ${Math.round(e.hauteur)} px, position ${Math.round(e.x)}, ${Math.round(e.y)}`);
+  const lignes = [`Élément choisi dans le navigateur${e.url ? ` (${e.url})` : ""} :`];
+  if (e.selecteur) lignes.push(`- Sélecteur : \`${e.selecteur.replace(/`/g, "'")}\``);
+  lignes.push(`- Taille : ${Math.round(e.largeur)} × ${Math.round(e.hauteur)} px, position ${Math.round(e.x)}, ${Math.round(e.y)}`);
   const texte = e.texte.trim();
-  if (texte) lignes.push(`- Texte : « ${texte} »`);
+  if (texte) lignes.push(`- Texte : « ${texte} »`);
   const styles = stylesUtiles(e.styles);
-  if (styles.length) lignes.push(`- Styles : ${styles.map(([n, v]) => `${n}: ${v}`).join(" ; ")}`);
+  if (styles.length) lignes.push(`- Styles : ${styles.map(([n, v]) => `${n}: ${v}`).join(" ; ")}`);
   if (e.html.trim()) lignes.push("", bloc(e.html.trim()));
   return lignes.join("\n") + "\n\n";
 }
