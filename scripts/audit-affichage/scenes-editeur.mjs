@@ -32,4 +32,14 @@ export const SCENES_EDITEUR = [
     temoins: ["sel:.editor-monaco-layer .marge-git--modif", "sel:.editor-monaco-layer .marge-git--ajout", "sel:.editor-monaco-layer .marge-git--suppr", "appel:editeur_fichier_head"] },
   { id: "editeur-marge-inchange", ...EDITEUR, ouvrirFichier: "notes.md",
     temoins: ["appel:editeur_fichier_head", "absent:.editor-monaco-layer .marge-git", "sel:.editor-monaco-layer .monaco-editor"] },
+  // ED1c — clic droit sur un onglet de fichier : « Fermer tous les fichiers » (Ctrl+Maj+W) et
+  // « Rouvrir l'onglet fermé » (Ctrl+Alt+O, grisé tant que rien n'a été fermé).
+  { id: "editeur-menu-onglet", ...EDITEUR, ouvrirFichier: "app.ts", clicDroit: ".editor-col .tab[data-onglet-chemin='app.ts']",
+    temoins: ["clic:.menu-onglet-fichier [data-action='fermer-tous']", "sel:.menu-onglet-fichier [data-action='rouvrir']:disabled"] },
+  { id: "editeur-fermer-tous", ...EDITEUR, ouvrirFichier: "app.ts", clics: [".tree-row[data-entry-path='notes.md']"],
+    clicDroit: ".editor-col .tab[data-onglet-chemin='app.ts']", cliquer: [".menu-onglet-fichier [data-action='fermer-tous']"],
+    temoins: ["absent:.editor-col .tab[data-onglet-chemin]", "sel:.editor-empty"] },
+  { id: "editeur-rouvrir", ...EDITEUR, ouvrirFichier: "app.ts", clics: [".editor-col .tab[data-onglet-chemin='app.ts'] .tab__close"],
+    touches: ["Control+Alt+o"],
+    temoins: ["sel:.editor-col .tab[data-onglet-chemin='app.ts'][data-active='true']"] },
 ];

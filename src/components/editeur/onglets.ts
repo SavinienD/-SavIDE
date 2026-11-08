@@ -39,3 +39,41 @@ export function doitSauverAvantFermeture(
 ): boolean {
   return Boolean(onglet && onglet.dirty && !onglet.external && mode !== "desactivee");
 }
+
+/** Pile des onglets fermés (le plus récent à la fin) : sans doublon, bornée à `max`. */
+export function noterFermeture(pile: readonly string[], chemin: string, max = 30): string[] {
+  const suite = pile.filter((c) => c !== chemin);
+  suite.push(chemin);
+  return suite.slice(Math.max(0, suite.length - max));
+}
+
+/** Dernier onglet fermé qui n'est pas déjà rouvert ; la pile perd cette entrée (et celles déjà ouvertes). */
+export function reprendreFermeture(
+  pile: readonly string[],
+  ouverts: readonly string[],
+): { chemin: string | null; pile: string[] } {
+  const suite = pile.slice();
+  while (suite.length) {
+    const chemin = suite.pop() as string;
+    if (!ouverts.includes(chemin)) return { chemin, pile: suite };
+  }
+  return { chemin: null, pile: suite };
+}
+
+/**
+ * « Fermer tous les fichiers » : les onglets modifiés restent ouverts si la sauvegarde
+ * automatique est désactivée (rien n'est perdu sans le vouloir) ; sinon tout se ferme
+ * (chaque onglet modifié est enregistré avant).
+ */
+export function partagerFermetureTous<T extends { dirty: boolean; external?: boolean }>(
+  onglets: readonly T[],
+  mode: SauvegardeAuto,
+): { garder: T[]; fermer: T[] } {
+  const garder: T[] = [];
+  const fermer: T[] = [];
+  for (const o of onglets) {
+    if (o.dirty && !o.external && mode === "desactivee") garder.push(o);
+    else fermer.push(o);
+  }
+  return { garder, fermer };
+}

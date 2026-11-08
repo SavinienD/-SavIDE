@@ -142,7 +142,8 @@ import { apprendreDuMessage } from "../axe/voix/vocabulaireAuto"; // voix-vocabu
 import { noterConversation } from "../lib/gardienPage";
 import { garderSeulement } from "./chat/vuesConversations"; // mémoire
 import { appliquerEnregistrement } from "./editeur/onglets";
-import { sauverAvantFermeture } from "./editeur/fermeture";
+import { cheminARouvrir, fermerTousLesFichiers, memoriserFermeture, peutRouvrir, sauverAvantFermeture } from "./editeur/fermeture";
+import { EntreesMenuOnglet } from "./editeur/MenuOnglet";
 
 type Props = {
   bootstrap: WorkspaceBootstrap;
@@ -1395,6 +1396,7 @@ export function Workspace({
     const tabCount = tabsRef.current.length;
     if (index < 0 || index >= tabCount) return;
     sauverAvantFermeture(workspacePathRef.current, tabsRef.current[index]);
+    memoriserFermeture(workspacePathRef.current, tabsRef.current[index]);
 
     setTabs((prev) => {
       if (index < 0 || index >= prev.length) return prev;
@@ -1427,6 +1429,18 @@ export function Workspace({
     }
     if (activeTabIndex >= 0) closeTab(activeTabIndex);
   }, [activeTabIndex, closeRemote, closeSettings, closeTab, remoteActive, settingsActive]);
+
+  // « Fermer tous les fichiers » / « Rouvrir l'onglet fermé » (src/components/editeur/fermeture.ts).
+  const fermerTousFichiers = useCallback(() => {
+    const { garder, message } = fermerTousLesFichiers(workspacePathRef.current, tabsRef.current);
+    setTabs(garder);
+    setActiveTabIndex(garder.length - 1);
+    if (message) pushNotice("info", message);
+  }, [pushNotice]);
+  const rouvrirOngletFerme = useCallback(() => {
+    const chemin = cheminARouvrir(workspacePathRef.current, tabsRef.current.map((t) => t.relativePath));
+    if (chemin) openChatFile(chemin);
+  }, [openChatFile]);
 
   const handleTreeEntryRenamed = useCallback(
     (oldRelativePath: string, entry: WorkspaceEntry) => {
@@ -2913,6 +2927,8 @@ export function Workspace({
   const actionsRaccourcisRef = useRef<Parameters<typeof fournirActions>[0]>({});
   actionsRaccourcisRef.current = {
     fermerOnglet: () => closeActiveEditorTab(),
+    fermerTousFichiers: () => fermerTousFichiers(),
+    rouvrirOnglet: () => rouvrirOngletFerme(),
     terminal: () => toggleTerminalRef.current(),
     enregistrer: () => {
       if (settingsActive) return;
@@ -3613,6 +3629,12 @@ export function Workspace({
                 {it.label}
               </button>
             ))}
+            <EntreesMenuOnglet
+              onFermerTous={fermerTousFichiers}
+              onRouvrir={rouvrirOngletFerme}
+              peutRouvrir={peutRouvrir(workspacePath, tabs.map((t) => t.relativePath))}
+              fermer={() => setMenuOnglet(null)}
+            />
           </div>
         );
       })() : null}

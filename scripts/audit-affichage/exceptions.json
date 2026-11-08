@@ -24,6 +24,18 @@
     },
     {
       "regle": "chevauchement",
+      "selecteur": ".menu-onglet-fichier",
+      "situation": "/editeur-menu-onglet$",
+      "raison": "Éditeur : menu du clic droit sur un onglet de fichier, ouvert sous le pointeur ; il flotte au-dessus de l'onglet (comme tout menu contextuel) et se ferme par Échap ou un clic à côté."
+    },
+    {
+      "regle": "cible-petite",
+      "selecteur": ".tab__close",
+      "situation": "/editeur-menu-onglet$",
+      "raison": "Éditeur : croix « Fermer l'onglet » (18 px, zone de clic de 20 px par ::after) visible parce que le pointeur est resté sur l'onglet après le clic droit ; défaut déjà connu (voir les scènes harnais-*), à reprendre à part."
+    },
+    {
+      "regle": "chevauchement",
       "selecteur": ".chat-body__bas",
       "raison": "Bouton flottant ↓ (aller en bas du chat) : il flotte volontairement au-dessus des messages quand on n'est plus en bas, et disparaît dès qu'on y revient."
     },
