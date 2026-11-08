@@ -4,7 +4,7 @@
 // l'interface, qui est traduit. « attendus » : textes de NOS données (pas de
 // l'interface) qui doivent rester affichés (règle texte-disparu).
 import { WS_BANC as WS } from "./constantes.mjs";
-import { scenesGit } from "./scenesGit.mjs"; // panneau Git, PR, issues
+import { scenesForge, scenesGit } from "./scenesGit.mjs"; // panneau Git, PR, issues
 
 const ids = (n, depart = 0) => Array.from({ length: n }, (_, i) => `c-${String(depart + i + 1).padStart(3, "0")}`);
 const recents25 = () => Array.from({ length: 25 }, (_, i) => ({ path: `C:\\Users\\utilisateur\\Documents\\Clients\\client-${String(i + 1).padStart(2, "0")}`, name: `client-${String(i + 1).padStart(2, "0")}`, lastOpenedMs: 1_790_000_000_000 - i * 3_600_000 }));
@@ -824,4 +824,5 @@ export const SCENES = [
   { id: "outils-repl-modules", ...REGISTRE(".axe-repl__modules"),
     temoins: ["absent:.axe-registre", "sel:.axe-repl__case input[type='checkbox']", "compte:.axe-repl__module=3"] },
   ...scenesGit({ colonnes, ids }), // panneau Git
+  ...scenesForge({ colonnes, ids }),
 ];

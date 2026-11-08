@@ -291,5 +291,10 @@
   "fichier": "src/components/GitPanel.tsx",
   "terme": "--force-with-lease|\\(fetch\\)",
   "raison": "option de git push et commande Git rappelée entre parenthèses, comme « Valider (commit) »"
+ },
+ {
+  "fichier": "src/components/pr/PrOnglet.tsx",
+  "terme": "gh auth login",
+  "raison": "commande de GitHub CLI à taper dans un terminal"
  }
 ]

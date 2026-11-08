@@ -14,10 +14,11 @@ import { gitApi, libelleOperation, titreAbandon, type GitEtat } from "./pr/gitAp
 import { consigneHook } from "./pr/consignes";
 import { redigerCommit } from "./pr/redaction";
 import { envoyerALAgent } from "./pr/versAgent";
+import { PrOnglet } from "./pr/PrOnglet";
+import { IssuesOnglet } from "./pr/IssuesOnglet";
 import "./pr/pr.css";
 import type {
   GitBranch,
-  GitPullRequestOutput,
   GitRepositorySnapshot,
   GitStatusFile,
   GitWorktree,
@@ -68,6 +69,8 @@ type Notice = {
   // Repère stable de la notice (banc, tests) : jamais affiché.
   cle?: string;
 };
+
+type VueGit = "depot" | "pr" | "issues";
 
 type RemoveTarget = {
   wt: GitWorktree;
@@ -143,12 +146,8 @@ export function GitPanel({
   const [newBranchName, setNewBranchName] = useState("");
   const [newBranchBase, setNewBranchBase] = useState("");
 
-  // Pull-request composer (modal)
-  const [prOpen, setPrOpen] = useState(false);
-  const [prTitle, setPrTitle] = useState("");
-  const [prBody, setPrBody] = useState("");
-  const [prTarget, setPrTarget] = useState("");
-  const [prResult, setPrResult] = useState<GitPullRequestOutput | null>(null);
+  // Vue du panneau : dépôt (modifications, worktrees, branches), PR ou issues de la forge.
+  const [vue, setVue] = useState<VueGit>("depot");
 
   // Refs for stale-callback guards across awaits / debounced timers.
   const workspacePathRef = useRef(workspacePath);
@@ -186,11 +185,7 @@ export function GitPanel({
     setCreateBranchOpen(false);
     setNewBranchName("");
     setNewBranchBase("");
-    setPrOpen(false);
-    setPrTitle("");
-    setPrBody("");
-    setPrTarget("");
-    setPrResult(null);
+    setVue("depot");
   }, [workspacePath]);
 
   // ---- Notification plumbing ------------------------------------------
@@ -275,7 +270,6 @@ export function GitPanel({
       setNewBranchBase((prev) =>
         prev ? prev : next.currentBranch ?? fallbackBase,
       );
-      setPrTarget((prev) => (prev ? prev : fallbackBase));
     } catch (err) {
       if (workspacePathRef.current !== ws || seq !== requestSeqRef.current) {
         return;
@@ -788,54 +782,16 @@ export function GitPanel({
     );
   }, [renameBranchTarget, runAction, workspacePath]);
 
-  const handleCreatePr = useCallback(() => {
-    const title = prTitle.trim();
-    const target = prTarget.trim();
-    if (!title) {
-      showNotice({ kind: "error", text: "Saisissez un titre de PR." });
-      return;
-    }
-    if (!target) {
-      showNotice({ kind: "error", text: "Saisissez une branche cible." });
-      return;
-    }
-    void runAction(
-      "create-pr",
-      () => api.gitCreatePullRequest(workspacePath, title, prBody.trim(), target),
-      (result) => {
-        setPrResult(result);
-        setPrTitle("");
-        setPrBody("");
-        setPrOpen(false);
-        return { kind: "success", text: result.message };
-      },
-    );
-  }, [prBody, prTarget, prTitle, runAction, showNotice, workspacePath]);
-
-  const handleOpenPrUrl = useCallback(() => {
-    if (!prResult?.url) return;
-    void api.openExternalUrl(prResult.url).catch((err) => {
-      showNotice({
-        kind: "error",
-        sticky: true,
-        text: `Impossible d'ouvrir ${prResult.url} : ${stringifyError(err)}`,
+  const ouvrirUrl = useCallback(
+    (url: string) => {
+      // Adresses venues de la forge : seulement des pages web.
+      if (!/^https?:\/\//i.test(url)) return;
+      void api.openExternalUrl(url).catch((err) => {
+        showNotice({ kind: "error", sticky: true, text: `Impossible d'ouvrir ${url} : ${stringifyError(err)}` });
       });
-    });
-  }, [prResult, showNotice]);
-
-  const handleDismissPrResult = useCallback(() => {
-    setPrResult(null);
-  }, []);
-
-  const handleOpenGhInstall = useCallback(() => {
-    void api.openExternalUrl("https://cli.github.com").catch((err) => {
-      showNotice({
-        kind: "error",
-        sticky: true,
-        text: stringifyError(err),
-      });
-    });
-  }, [showNotice]);
+    },
+    [showNotice],
+  );
 
   // ---- Derived data ----------------------------------------------------
 
@@ -1133,7 +1089,49 @@ export function GitPanel({
         </div>
       )}
 
-      <div className="git-panel__body">
+      {!isCloud && (
+        <div
+          className="git-panel__sub-tabs git-pr__onglets"
+          role="tablist"
+          aria-label="Vues du panneau Git"
+          onKeyDown={(e) => {
+            if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+            e.preventDefault();
+            const ordre: VueGit[] = ["depot", "pr", "issues"];
+            const i = ordre.indexOf(vue);
+            const suivante = ordre[(i + (e.key === "ArrowRight" ? 1 : ordre.length - 1)) % ordre.length];
+            setVue(suivante);
+            document.getElementById(`git-onglet-${suivante}`)?.focus();
+          }}
+        >
+          {(
+            [
+              ["depot", "Dépôt"],
+              ["pr", "PR"],
+              ["issues", "Issues"],
+            ] as const
+          ).map(([cle, libelle]) => (
+            <button
+              key={cle}
+              id={`git-onglet-${cle}`}
+              type="button"
+              role="tab"
+              className="git-panel__sub-tab"
+              data-vue={cle}
+              data-active={vue === cle ? "true" : "false"}
+              aria-selected={vue === cle}
+              aria-controls={`git-vue-${cle}`}
+              tabIndex={vue === cle ? 0 : -1}
+              onClick={() => setVue(cle)}
+            >
+              {libelle}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {vue === "depot" || isCloud ? (
+      <div className="git-panel__body" role={isCloud ? undefined : "tabpanel"} id="git-vue-depot" aria-labelledby={isCloud ? undefined : "git-onglet-depot"}>
         {/* CHANGES + COMMIT --------------------------------------------- */}
         <section className="git-panel__section">
           <div className="git-panel__section-head">
@@ -1398,79 +1396,31 @@ export function GitPanel({
           )}
         </section>
 
-        {/* PULL REQUEST ----------------------------------------------- */}
-        <section className="git-panel__section">
-          <div className="git-panel__section-head">
-            <span className="git-panel__section-title">
-              <span>Pull Request</span>
-            </span>
-            <span className="git-panel__section-actions">
-              <button
-                type="button"
-                className="git-panel__head-btn"
-                disabled={!snapshot.ghAvailable}
-                onClick={() => setPrOpen(true)}
-                title={
-                  snapshot.ghAvailable
-                    ? "Rédiger une pull request"
-                    : "Installez GitHub CLI (gh) pour créer des PR"
-                }
-              >
-                <Icon
-                  icon="solar:add-square-linear"
-                  width={15}
-                  height={15}
-                />
-              </button>
-            </span>
-          </div>
-
-          {!snapshot.ghAvailable ? (
-            <div className="git-panel__empty">
-              SavIDE utilise l'outil officiel{" "}
-              <button
-                type="button"
-                className="git-panel__link"
-                onClick={handleOpenGhInstall}
-              >
-                GitHub CLI
-              </button>{" "}
-              pour ouvrir les PR. Installez <code>gh</code> puis rouvrez ce panneau pour
-              activer le formulaire.
-            </div>
-          ) : prResult ? (
-            <div className="git-panel__pr">
-              <div className="git-panel__pr-head">
-                <span className="git-panel__pr-label">
-                  Pull request ouverte
-                </span>
-                <button
-                  type="button"
-                  className="git-panel__head-btn"
-                  onClick={handleDismissPrResult}
-                  title="Ignorer"
-                >
-                  <Icon icon="solar:close-circle-linear" width={13} height={13} />
-                </button>
-              </div>
-              <div className="git-panel__pr-url" title={prResult.url}>
-                {prResult.url}
-              </div>
-              <button
-                type="button"
-                className="git-panel__action git-panel__action--inline"
-                onClick={handleOpenPrUrl}
-              >
-                <span>Ouvrir dans le navigateur</span>
-              </button>
-            </div>
-          ) : (
-            <div className="git-panel__empty">
-              Rédigez une PR avec un titre, une description et une branche cible.
-            </div>
-          )}
-        </section>
       </div>
+      ) : vue === "pr" ? (
+        <div className="git-panel__body" role="tabpanel" id="git-vue-pr" aria-labelledby="git-onglet-pr">
+          <PrOnglet
+            workspacePath={workspacePath}
+            actif={active && vue === "pr"}
+            branches={localBranches.map((b) => b.name)}
+            brancheCourante={snapshot.currentBranch ?? null}
+            branchePrincipale={snapshot.mainBranch ?? null}
+            notifier={showNotice}
+            ouvrirUrl={ouvrirUrl}
+          />
+        </div>
+      ) : (
+        <div className="git-panel__body" role="tabpanel" id="git-vue-issues" aria-labelledby="git-onglet-issues">
+          <IssuesOnglet
+            workspacePath={workspacePath}
+            actif={active && vue === "issues"}
+            branches={localBranches.map((b) => b.name)}
+            branchePrincipale={snapshot.mainBranch ?? null}
+            notifier={showNotice}
+            ouvrirUrl={ouvrirUrl}
+          />
+        </div>
+      )}
 
       {/* Dialogs (portaled to document.body) ----------------------------- */}
 
@@ -1559,53 +1509,6 @@ export function GitPanel({
               </option>
             ))}
           </select>
-        </DialogField>
-      </GitDialog>
-
-      <GitDialog
-        open={prOpen}
-        onClose={() => setPrOpen(false)}
-        title="Ouvrir une pull request"
-        description={
-          snapshot.currentBranch
-            ? `De ${snapshot.currentBranch} vers la branche cible.`
-            : "Rédiger une pull request depuis cet arbre de travail."
-        }
-        primaryLabel="Ouvrir la PR"
-        primaryDisabled={!prTitle.trim() || !prTarget.trim()}
-        primaryBusy={busyKey === "create-pr"}
-        onPrimary={handleCreatePr}
-      >
-        <DialogField label="Titre" htmlFor="git-panel-pr-title">
-          <input
-            id="git-panel-pr-title"
-            type="text"
-            className="git-panel__dialog-input"
-            placeholder="Que change-t-elle ?"
-            value={prTitle}
-            onChange={(e) => setPrTitle(e.target.value)}
-            autoFocus
-          />
-        </DialogField>
-        <DialogField label="Description" htmlFor="git-panel-pr-body">
-          <textarea
-            id="git-panel-pr-body"
-            className="git-panel__dialog-textarea"
-            placeholder="Détails, contexte et captures (facultatif)."
-            rows={4}
-            value={prBody}
-            onChange={(e) => setPrBody(e.target.value)}
-          />
-        </DialogField>
-        <DialogField label="Branche cible" htmlFor="git-panel-pr-target">
-          <input
-            id="git-panel-pr-target"
-            type="text"
-            className="git-panel__dialog-input"
-            placeholder="main"
-            value={prTarget}
-            onChange={(e) => setPrTarget(e.target.value)}
-          />
         </DialogField>
       </GitDialog>
 

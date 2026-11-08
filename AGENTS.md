@@ -346,7 +346,8 @@ Code map:
 │       ├── daemon_client.rs # daemon — mode --daemon (service + REPL), attache IDE, IPC daemon_* (param connection), bridge chat -> sessions ; v2-l2.4c — cloud_connection_id/cloud_service_workspace (espace cloud -> chemin réel du service)
 │       ├── freechat.rs # freechat — conversations libres : espace partagé <data>/scratch côté IDE, IPC freechat_index/open/relocate, synchro service -> store (conversations libres créées sur le web / la Vue Agents), renommage/suppression répercutés
 │       ├── custom_providers.rs # providers — instances configurables (providers.json + provider-keys.json), IPC provider_*, modelOverrides, détection Ollama/LM Studio
-│       ├── git.rs
+│       ├── git.rs # + état de la branche (avance/retard, opération en cours), fetch, commit avec « modifier le dernier », poussée --force-with-lease, abandon fusion/rebase, hook qui refuse un commit
+│       ├── forges # rédaction IA (contexte.rs : diff tronqué, masque.rs : secrets masqués/exclus) ; forges GitHub et Forgejo/Gitea (detection.rs, jetons.rs forge-tokens.json, http.rs, api.rs, commandes.rs forge_*, tests.rs faux serveur)
 │       ├── harness.rs # harness — IPC harness_* (CRUD, promote/demote, refinements, rollback, import brain, refine start/status), couche harness par tour
 │       ├── harness_backup.rs # cleanup — sauvegarde périodique du harness (config harness-backup.json, IPC harness_backup_*)
 │       ├── ia_appel.rs # rlm186 — commande ia_appel_unique (appel unique au modèle depuis l'interface)
@@ -416,7 +417,8 @@ Code map:
     │   ├── EditorPane.tsx
     │   ├── FileTree.tsx
     │   ├── TerminalPanel.tsx # multi-onglets PTY : Ctrl+Tab, renommage, PowerShell/WSL et scrollback texte local
-    │   ├── GitPanel.tsx
+    │   ├── GitPanel.tsx # onglets Dépôt / PR / Issues ; Rédiger (IA), compteurs, fetch, amend, forcer, abandon, Réparer avec l'IA
+    │   ├── pr # gitApi.ts, forgeApi.ts, consignes.ts (prompts + consignes pour l'agent), redaction.ts (appel unique), versAgent.ts (texte mis dans la saisie de la conversation), PrOnglet.tsx, IssuesOnglet.tsx, pr.css
     │   ├── RemotePanel.tsx
     │   ├── SearchPane.tsx
     │   ├── SettingsPane.tsx
