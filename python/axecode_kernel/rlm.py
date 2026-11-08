@@ -11,6 +11,13 @@ leur envoyer une suite avec ``rlm.follow_up(handle, text)``, les lister avec
 ``rlm.list_subagents()`` et lire leur dernier résultat avec
 ``rlm.result(handle)``.
 
+Chaque rapport commence par le statut final de l'enfant : ``réussi``,
+``échoué``, ``bloqué`` ou ``arrêté`` (aussi dans ``result``/``wait``).
+``rlm.stop`` arrête un enfant, ``rlm.retry`` relance sa tâche dans un nouvel
+enfant. Avec ``spawn(..., worktree=True)``, l'enfant travaille dans son propre
+worktree git (branche ``sous-agent/<nom>``) : ``rlm.worktree``,
+``rlm.fusionner``, ``rlm.liberer``.
+
 Appels légers (Recursive Language Models) : ``rlm.query(texte)`` et
 ``rlm.query_lot(textes)`` font un seul échange avec le modèle, sans session
 ni outils : gardez un gros document dans une variable et faites-le lire
@@ -38,6 +45,11 @@ __all__ = [
     "wait",
     "query",
     "query_lot",
+    "stop",
+    "retry",
+    "worktree",
+    "fusionner",
+    "liberer",
 ]
 
 
@@ -61,20 +73,31 @@ def spawn(
     name: str | None = None,
     model: str | None = None,
     profile: str | None = None,
+    worktree: bool | str = False,
 ) -> SubAgentHandle:
     """Crée une session de sous-agent persistante et renvoie tout de suite sa poignée.
 
-    ``prompt``  – la description de la tâche (complète, autonome).
-    ``name``    – nom de session lisible, facultatif (unique parmi les frères et sœurs).
-    ``model``   – ``"fournisseur/modèle"`` à utiliser à la place, facultatif.
-    ``profile`` – identifiant d'un profil de sous-agent des Réglages ou du harnais, facultatif.
+    ``prompt``   – la description de la tâche (complète, autonome).
+    ``name``     – nom de session lisible, facultatif (unique parmi les frères et sœurs).
+    ``model``    – ``"fournisseur/modèle"`` à utiliser à la place, facultatif.
+    ``profile``  – identifiant d'un profil de sous-agent des Réglages ou du harnais, facultatif.
+    ``worktree`` – ``True`` (ou un nom) : si votre dossier est un dépôt git,
+                   l'enfant travaille dans son propre worktree, sur la branche
+                   ``sous-agent/<nom>``, rangé hors du dépôt
+                   (``<dossier parent du dépôt>/<dépôt>-sous-agents/<nom>``),
+                   parti de votre commit courant (vos modifications non
+                   validées ne le suivent pas). Ensuite : ``worktree()``,
+                   ``fusionner()``, ``liberer()``. Pas un dépôt git : erreur.
 
     Le résultat n'est PAS renvoyé ici : il arrive plus tard comme message de
-    pair venant de l'enfant. Le dict renvoyé peut porter un ``warning`` quand
-    le quota de l'abonnement est bas.
+    pair venant de l'enfant, qui commence par son statut (``STATUT: réussi``…).
+    Le dict renvoyé porte ``worktree`` et ``branche`` le cas échéant, et un
+    ``warning`` quand le quota de l'abonnement est bas.
     """
     if not isinstance(prompt, str) or not prompt.strip():
         raise ValueError("rlm.spawn : `prompt` doit être une chaîne non vide")
+    if not isinstance(worktree, (bool, str)):
+        raise TypeError("rlm.spawn : `worktree` doit valoir True, False ou un nom")
     payload: dict[str, Any] = {"prompt": prompt}
     if name:
         payload["name"] = name
@@ -82,6 +105,8 @@ def spawn(
         payload["model"] = model
     if profile:
         payload["profile"] = profile
+    if worktree:
+        payload["worktree"] = worktree.strip() if isinstance(worktree, str) else True
     reply = bridge.call("rlm.spawn", payload)
     handle = SubAgentHandle(reply)
     warning = reply.get("warning")
@@ -106,15 +131,24 @@ def list_subagents() -> list[dict[str, Any]]:
 
 
 def result(handle: SubAgentHandle | str | dict) -> dict[str, Any] | None:
-    """Renvoie le dernier résultat connu d'un sous-agent, sans l'attendre."""
+    """Renvoie le dernier résultat connu d'un sous-agent, sans l'attendre.
+
+    ``{"text", "statut", "fichiers", "error", "truncated", "ts", ...}`` :
+    ``statut`` parmi ``"réussi"``, ``"échoué"``, ``"bloqué"``, ``"arrêté"`` ;
+    ``fichiers`` = fichiers modifiés dans son worktree (vide sans worktree).
+    """
     return bridge.call("rlm.result", {"id": _session_id(handle)})
 
 
 def wait(handle: SubAgentHandle | str | dict, timeout: float | None = 600) -> dict[str, Any] | None:
     """Attend que le sous-agent finisse sa tâche en cours, ``timeout`` secondes
-    au plus (``None`` : sans limite). Renvoie son résultat, avec ``error`` vrai
-    quand la tâche s'est arrêtée sur une erreur, ou ``None`` quand le temps est
-    écoulé (le résultat arrive quand même plus tard comme message de pair).
+    au plus (``None`` : sans limite). Renvoie son résultat (voir ``result``),
+    ou ``None`` quand le temps est écoulé (le résultat arrive quand même plus
+    tard comme message de pair).
+
+    ``statut`` vaut ``"réussi"``, ``"échoué"``, ``"bloqué"`` ou ``"arrêté"`` :
+    l'enfant finit son rapport par une ligne ``STATUT: …`` (à défaut :
+    ``réussi`` sans erreur, ``échoué`` sur une erreur).
 
     Laissez de préférence le résultat arriver comme message de pair ;
     n'utilisez ``wait`` que si la suite de votre travail en dépend strictement
@@ -251,6 +285,70 @@ def query_lot(
     if coupees:
         print(f"[rlm] query_lot : {coupees} réponse(s) coupée(s) au plafond de sortie", file=sys.stderr)
     return ResultatsLot(valeurs, erreurs, usage)
+
+
+def stop(handle: SubAgentHandle | str | dict) -> dict[str, Any]:
+    """Arrête le tour en cours d'un sous-agent, comme le bouton Stop ; son statut devient ``"arrêté"``.
+
+    Rien ne change s'il ne travaillait pas (``etait_en_cours`` faux). La
+    session reste vivante : ``follow_up`` la relance, ``retry`` repart de zéro.
+    Son worktree éventuel est gardé tel quel.
+    """
+    return bridge.call("rlm.stop", {"id": _session_id(handle)}) or {}
+
+
+def retry(handle: SubAgentHandle | str | dict, note: str | None = None) -> SubAgentHandle:
+    """Relance la tâche dans un NOUVEL enfant : même brief, même modèle, même profil, plus le rapport de la tentative précédente et ``note``.
+
+    L'ancien enfant est d'abord arrêté s'il travaille encore ; il garde sa
+    session et son worktree (à comparer, fusionner ou libérer). Si l'ancien
+    avait un worktree, le nouveau en reçoit un neuf, parti de votre commit
+    courant. Renvoie la poignée du nouvel enfant (champ ``reprise_de``).
+    """
+    payload: dict[str, Any] = {"id": _session_id(handle)}
+    if note and note.strip():
+        payload["note"] = note.strip()
+    return SubAgentHandle(bridge.call("rlm.retry", payload))
+
+
+def worktree(handle: SubAgentHandle | str | dict) -> dict[str, Any]:
+    """Où en est le worktree d'un sous-agent lancé avec ``worktree=True``.
+
+    Renvoie ``{"chemin", "branche", "base", "fichiers", "diff_stat",
+    "commits", "existe", "en_cours"}`` : ``fichiers`` = fichiers modifiés
+    depuis la base (validés ou non, nouveaux compris), ``diff_stat`` = sortie
+    de ``git diff --stat``. Après ``liberer``, l'état est lu sur la branche.
+    """
+    return bridge.call("rlm.worktree", {"id": _session_id(handle)}) or {}
+
+
+def fusionner(handle: SubAgentHandle | str | dict) -> dict[str, Any]:
+    """Fusionne la branche du sous-agent dans votre branche courante (``git merge --no-ff``).
+
+    Son travail non validé est d'abord validé sur sa branche. Refusé tant
+    qu'il travaille encore (``wait`` ou ``stop`` d'abord). Sur un conflit, la
+    fusion est annulée et votre branche reste inchangée : la réponse porte
+    ``fusionne: False`` et ``conflits`` (liste des fichiers), et le message
+    est écrit sur stderr ; faites alors corriger l'enfant (``follow_up``)
+    puis fusionnez de nouveau. Succès : ``fusionne: True``, ``commit``,
+    ``fichiers``, ``diff_stat``.
+    """
+    reply = bridge.call("rlm.fusionner", {"id": _session_id(handle)}) or {}
+    if not reply.get("fusionne") and reply.get("message"):
+        print(f"[rlm] {reply['message']}", file=sys.stderr)
+    return reply
+
+
+def liberer(handle: SubAgentHandle | str | dict, garder_branche: bool = True) -> dict[str, Any]:
+    """Supprime le worktree d'un sous-agent (son travail non validé est d'abord validé sur sa branche).
+
+    ``garder_branche=False`` supprime aussi la branche, seulement si elle est
+    déjà fusionnée (sinon elle est gardée et le message le dit). Refusé tant
+    que l'enfant travaille. Ensuite, l'enfant n'a plus de dossier de travail :
+    ne lui envoyez plus de suite.
+    """
+    return bridge.call("rlm.liberer", {"id": _session_id(handle), "garder_branche": bool(garder_branche)}) or {}
+
 
 
 def _options(systeme: str | None, modele: str | None, plafond: int | None) -> dict[str, Any]:

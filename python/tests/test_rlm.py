@@ -70,3 +70,53 @@ def test_aides_completes():
     for f in (rlm.query, rlm.query_lot):
         assert f.__doc__ and len(f.__doc__) > 300, f.__name__
     assert {"query", "query_lot"} <= set(rlm.__all__)
+
+
+# ----- R2 à R6 : worktree, arrêt, reprise, statut, course -----------------------
+
+def test_spawn_avec_worktree(monkeypatch):
+    vus = _faux(monkeypatch, {"id": "s9", "session_name": "a", "worktree": "/p-sous-agents/a", "branche": "sous-agent/a"})
+    h = rlm.spawn("tâche", name="a", worktree=True)
+    assert h.id == "s9" and h["branche"] == "sous-agent/a"
+    assert vus == [("rlm.spawn", {"prompt": "tâche", "name": "a", "worktree": True})]
+    rlm.spawn("tâche", worktree="mon-essai")
+    assert vus[-1][1]["worktree"] == "mon-essai"
+    rlm.spawn("tâche")
+    assert "worktree" not in vus[-1][1]
+    with pytest.raises(TypeError):
+        rlm.spawn("tâche", worktree=3)
+
+
+def test_worktree_fusionner_liberer(monkeypatch, capsys):
+    reponses = {
+        "rlm.worktree": {"chemin": "/w", "branche": "sous-agent/a", "fichiers": ["a.txt"], "diff_stat": " a.txt | 2 +-"},
+        "rlm.fusionner": {"fusionne": False, "conflits": ["a.txt"], "message": "conflit sur 1 fichier(s) (a.txt) : fusion annulée"},
+        "rlm.liberer": {"libere": True, "branche_gardee": True, "message": "worktree supprimé"},
+    }
+    vus = _faux(monkeypatch, lambda m, p: reponses[m])
+    assert rlm.worktree({"id": "s9"})["fichiers"] == ["a.txt"]
+    r = rlm.fusionner("s9")
+    assert r["fusionne"] is False
+    assert "conflit" in capsys.readouterr().err
+    rlm.liberer("s9")
+    rlm.liberer("s9", garder_branche=False)
+    assert vus == [("rlm.worktree", {"id": "s9"}), ("rlm.fusionner", {"id": "s9"}),
+                   ("rlm.liberer", {"id": "s9", "garder_branche": True}),
+                   ("rlm.liberer", {"id": "s9", "garder_branche": False})]
+
+
+def test_stop_et_retry(monkeypatch):
+    vus = _faux(monkeypatch, lambda m, p: {"statut": "arrêté"} if m == "rlm.stop" else {"id": "s10", "session_name": "a-reprise"})
+    assert rlm.stop("s9")["statut"] == "arrêté"
+    h = rlm.retry({"id": "s9"}, note="utilise la v2 de l'API")
+    assert isinstance(h, rlm.SubAgentHandle) and h.id == "s10"
+    assert vus == [("rlm.stop", {"id": "s9"}), ("rlm.retry", {"id": "s9", "note": "utilise la v2 de l'API"})]
+    rlm.retry("s9")
+    assert vus[-1] == ("rlm.retry", {"id": "s9"})
+
+
+def test_aides_r2_r6():
+    for nom in ("stop", "retry", "worktree", "fusionner", "liberer"):
+        f = getattr(rlm, nom)
+        assert nom in rlm.__all__ and f.__doc__ and len(f.__doc__) > 120, nom
+    assert "worktree" in rlm.spawn.__doc__ and "STATUT" in rlm.wait.__doc__

@@ -380,7 +380,7 @@ async fn failed_sub_agent_tells_its_parent() {
     });
     let peer = peer.expect("no peer message from the sub-agent");
     assert!(
-        peer.starts_with("[sub-agent error] `kid` stopped on an error"),
+        peer.starts_with("STATUT: échoué — sous-agent `kid` arrêté sur une erreur"), // rlm186 : le statut d'abord
         "{peer}"
     );
     assert!(peer.contains("429"), "{peer}");

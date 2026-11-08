@@ -23,6 +23,7 @@ pub mod question;
 pub mod read;
 pub mod repl; // repl
 pub mod rlm; // rlm
+pub mod rlm_git; // rlm186 : worktrees git des sous-agents
 mod ripgrep;
 pub mod guet; // guet
 pub mod session_commands; // goal
