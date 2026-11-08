@@ -426,3 +426,36 @@ async fn la_verification_avant_lancement_saute_ou_lance() {
     assert!(x.session_id.is_some());
 }
 
+
+fn evenements(rx: &mut mpsc::UnboundedReceiver<String>, genre: &str) -> Vec<Value> {
+    let mut out = Vec::new();
+    while let Ok(ligne) = rx.try_recv() {
+        let v: Value = serde_json::from_str(&ligne).unwrap();
+        if v["event"] == json!("automatisations") && v["data"]["type"] == json!(genre) {
+            out.push(v["data"].clone());
+        }
+    }
+    out
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn la_fin_d_une_execution_est_annoncee_aux_ecrans() {
+    let mut b = banc(Arc::new(crate::stub::EchoFactory));
+    let a = creer(&b.d, &params(&b, json!({"type": "quotidien", "heure": "08:00"})), heure(9, 7, 0, 0)).unwrap();
+    let x = execution::lancer(&b.d, &a.id, Declencheur::Manuel, None, 0, heure(9, 7, 1, 0)).unwrap();
+    let session = x.session_id.clone().unwrap();
+    attendre_fin(&b.d, &session).await;
+    tic(&b.d, heure(9, 7, 2, 0));
+    let fins = evenements(&mut b.rx, "fin");
+    assert_eq!(fins.len(), 1, "{fins:?}");
+    assert_eq!(fins[0]["automatisation"]["nom"], json!("Rapport du matin"));
+    assert_eq!(fins[0]["automatisation"]["dossier"], json!(b.dossier.display().to_string()));
+    assert_eq!(fins[0]["execution"]["statut"], json!("reussie"));
+    assert_eq!(fins[0]["execution"]["resume"], json!("echo: Fais le point."));
+    assert_eq!(fins[0]["execution"]["sessionId"], json!(session));
+    // Un créneau manqué (rattrapage désactivé) est noté sans annonce de fin.
+    modifier(&b.d, &a.id, &json!({"rattrapage": false}), heure(9, 7, 3, 0)).unwrap();
+    tic(&b.d, heure(11, 10, 0, 0));
+    assert_eq!(auto(&b, &a.id).historique[0].statut, Statut::Manquee);
+    assert!(evenements(&mut b.rx, "fin").is_empty());
+}

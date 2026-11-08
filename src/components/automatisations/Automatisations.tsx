@@ -1,13 +1,16 @@
 // automatisations — montage global : raccourci Ctrl+Maj+L, événement d'ouverture
-// (`ide-ouvrir-automatisations`, pour la palette et la vue Agents) et l'écran lui-même.
+// (`ide-ouvrir-automatisations`, pour la palette et la vue Agents), notifications de fin et l'écran lui-même.
 // Monté par App.tsx sur l'accueil et dans un dossier.
 import { useEffect, useState } from "react";
 import { fournirActions, infoBulle } from "../../axe/raccourcis";
 import { OUVRIR_AUTOMATISATIONS } from "./automatisationsApi";
 import { EcranAutomatisations } from "./EcranAutomatisations";
+import { useNotificationsAutomatisations } from "./useNotificationsAutomatisations";
 
 export function AutomatisationsGlobal({ dossierCourant }: { dossierCourant?: string }) {
   const [ouvert, setOuvert] = useState(false);
+  // Fin d'une exécution -> notification (même écran fermé) ; au démarrage, celles faites appli fermée.
+  useNotificationsAutomatisations();
   useEffect(() => fournirActions({ automatisations: () => setOuvert((o) => !o) }), []);
   useEffect(() => {
     const ouvrir = () => setOuvert(true);
@@ -30,4 +33,5 @@ export function BoutonAutomatisations() {
     </button>
   );
 }
+
 

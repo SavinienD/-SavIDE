@@ -385,11 +385,13 @@ Code map:
     │   └── theme.ts # tons dérivés de --axe-bg par luminance, persistance
     ├── components
     │   ├── automatisations # automatisations — écran Automatisations (Ctrl+Maj+L) : prompts planifiés tenus par le service
-    │   │   ├── Automatisations.tsx # montage global (raccourci, événement ide-ouvrir-automatisations) + bouton de la vue Agents
+    │   │   ├── Automatisations.tsx # montage global (raccourci, événement ide-ouvrir-automatisations, notifications de fin) + bouton de la vue Agents
     │   │   ├── EcranAutomatisations.tsx # liste de tous les dossiers, historique (date, durée, statut, conversation), Lancer / Pause / Modifier / Supprimer
     │   │   ├── FormulaireAutomatisation.tsx # création guidée : horaire en clair et prochaines exécutions (aperçu du service)
     │   │   ├── automatisationsApi.ts # RPC automatisations.* sur la connexion active
     │   │   ├── horaires.ts # aides pures : formulaire de l'horaire, dates, durées, tri, erreurs en clair
+    │   │   ├── notifications.ts # fin d'exécution -> ide-notification ; au démarrage, un mot sur les exécutions faites appli fermée
+    │   │   ├── useNotificationsAutomatisations.ts # écoute de l'événement « automatisations » du service (monté avec l'écran)
     │   │   └── automatisations.css
     │   ├── agents # agents
     │   │   ├── AgentsView.tsx # Vue Agents : arbre des sessions running/idle/inactive, connexion active ou toutes les machines groupées, conversations libres (freechat), ouvrir, message, arrêt

@@ -9,7 +9,7 @@
 use std::{path::Path, sync::Arc, time::Duration};
 
 use axecode_core::{ChatMessage, CreateSessionRequest, JournalEntryKind, Part, Role, SessionError, SessionResult, SessionStatus};
-use serde_json::Value;
+use serde_json::{json, Value};
 
 use super::{etat, maintenant_local, message, signaler, Automatisation, Declencheur, Execution, Statut};
 use crate::daemon::{lock, Daemon};
@@ -223,7 +223,7 @@ fn maj(
     Some(sortie)
 }
 
-/// Clôt une exécution (statut, résumé).
+/// Clôt une exécution (statut, résumé) et prévient les écrans (`fin`).
 pub(crate) fn terminer(
     d: &Daemon,
     auto_id: &str,
@@ -233,7 +233,7 @@ pub(crate) fn terminer(
     session_id: Option<String>,
     maintenant_ms: i64,
 ) {
-    maj(d, auto_id, exec_id, |_, x| {
+    let fini = maj(d, auto_id, exec_id, |_, x| {
         x.statut = statut;
         x.fin_ms = Some(maintenant_ms);
         x.resume = Some(resume);
@@ -241,6 +241,13 @@ pub(crate) fn terminer(
             x.session_id = session_id;
         }
     });
+    if let Some((a, x)) = fini {
+        d.broadcast(
+            "automatisations",
+            None,
+            json!({"type": "fin", "automatisation": {"id": a.id, "nom": a.nom, "dossier": a.dossier}, "execution": x}),
+        );
+    }
 }
 
 /// Résumé sur une ligne, `max` caractères au plus.
