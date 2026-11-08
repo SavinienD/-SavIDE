@@ -148,3 +148,8 @@ def test_aides_r2_r6():
         f = getattr(rlm, nom)
         assert nom in rlm.__all__ and f.__doc__ and len(f.__doc__) > 120, nom
     assert "worktree" in rlm.spawn.__doc__ and "STATUT" in rlm.wait.__doc__
+
+
+def test_aide_de_list_subagents_cite_le_statut():
+    doc = rlm.list_subagents.__doc__
+    assert "``statut``" in doc and "last_result_ts" in doc and "arrêté" in doc

@@ -126,9 +126,13 @@ def follow_up(handle: SubAgentHandle | str | dict, text: str) -> dict[str, Any]:
 
 
 def list_subagents() -> list[dict[str, Any]]:
-    """Liste les sous-agents de cette session : ``id``, ``session_name``, ``status``, ``model``, ``last_result``.
+    """Liste les sous-agents de cette session : ``id``, ``session_name``, ``status``, ``statut``, ``model``, ``last_result_ts``.
 
-    ``status`` vaut ``"error"`` quand la dernière tâche s'est arrêtée sur une erreur.
+    ``status`` est l'état de la session (``"running"``, ``"idle"``,
+    ``"inactive"``, ou ``"error"`` quand la dernière tâche s'est arrêtée sur
+    une erreur). ``statut`` est le statut final de la dernière tâche finie
+    (``"réussi"``, ``"échoué"``, ``"bloqué"`` ou ``"arrêté"``) ; il manque
+    tant qu'aucune tâche n'a fini et pendant que le sous-agent travaille.
     """
     return list(bridge.call("rlm.list") or [])
 
