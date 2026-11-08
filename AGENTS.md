@@ -59,7 +59,7 @@ Code map:
 │   │   ├── files.py / shell.py / web.py / images.py / context.py / question.py / todo.py / skills.py / mcp.py / compact.py # modules préchargés
 │   │   ├── _documents.py # viewers — texte des xlsx/docx/pdf/pptx/odt/epub pour files.read (privé, non préchargé)
 │   │   └── rlm.py / messages.py / harness.py / refine.py / goal.py / heartbeat.py # modules E/D/F (brain)
-│   └── tests # pytest files + shell + documents
+│   └── tests # pytest files + shell + documents ; test_rlm.py / test_messages.py
 ├── web # webui — app web des conversations (Vite + React, npm run build:web -> web/dist, embarquée dans le service)
 │   ├── index.html / vite.config.ts / tsconfig.json
 │   ├── public # manifest.webmanifest, icon.svg, sw.js (PWA)
@@ -101,6 +101,7 @@ Code map:
 │   │   ├── Cargo.toml
 │   │   └── src
 │   │       ├── agent.rs
+│   │       ├── appel_unique.rs # appel unique au modèle (sans session, outils ni harnais) : rlm.query/query_lot, commande ia_appel_unique
 │   │       ├── agent
 │   │       │   ├── assistant_message.rs
 │   │       │   ├── cancel.rs
@@ -136,6 +137,8 @@ Code map:
 │   │       │   ├── compaction.rs # compaction (résumé ; variables du kernel gardées)
 │   │       │   └── settings.rs # repl-settings.json (modules, seuil, max_tokens, plafond)
 │   │       ├── rlm.rs # rlm — sous-agents persistants rlm.* + messagerie famille nucléaire messages.* (FamilyHost), garde-fou quota
+│   │       ├── rlm # suivi.rs : fiche de lancement, statut final (réussi/échoué/bloqué/arrêté), stop/retry, worktree/fusionner/liberer, comparer, diffusion « all »
+│   │       ├── rlm_git.rs # worktrees git des sous-agents (branche sous-agent/<nom>, hors du dépôt), état, fusion (annulée sur conflit), libération
 │   │       ├── session_commands.rs # goal — TurnHook /goal /autonomous (budgets + gate) /heartbeat /refine /compact
 │   │       ├── skill.rs
 │   │       ├── store.rs
@@ -348,6 +351,7 @@ Code map:
 │       ├── git.rs
 │       ├── harness.rs # harness — IPC harness_* (CRUD, promote/demote, refinements, rollback, import brain, refine start/status), couche harness par tour
 │       ├── harness_backup.rs # cleanup — sauvegarde périodique du harness (config harness-backup.json, IPC harness_backup_*)
+│       ├── ia_appel.rs # commande ia_appel_unique (appel unique au modèle depuis l'interface)
 │       ├── lib.rs
 │       ├── main.rs
 │       ├── models.rs
@@ -470,6 +474,7 @@ Code map:
     ├── lib
     │   ├── cloudOnline.ts # v2-l6 — état de joignabilité du service cloud, sondes 15→60 s, garde d'écriture hors ligne
     │   ├── cloudOffline.ts # v2-l6 (tranche 2) — copie locale (miroir) hors ligne : offline_* , état en attente, sync/conflits
+    │   ├── appelUnique.ts # appelUnique() : commande ia_appel_unique
     │   ├── fileIcon.ts
     │   ├── ipc.ts # IPC local + remote_* ; cloudRpc et routage skills.* en cloud (v2-l2.4) ; lectures/écritures via le miroir hors ligne ; conversations (list/load/rename) routées vers le service en cloud (v2-l7)
     │   ├── language.ts

@@ -9,6 +9,7 @@ l'historique.
 ``messages.send("fini, voir le rapport", receiver_role="parent")``
 ``messages.send("lance aussi les tests", receiver_role="child", receiver_name="tests")``
 ``messages.send("pour info : j'ai changé types.ts", receiver_role="sibling", receiver_name="ui")``
+``messages.send("stop : la cible a changé, voir README", receiver_role="all")``
 
 ``mode="new"`` (par défaut) lance une nouvelle tâche chez le destinataire s'il
 est inactif ; ``mode="follow_up"`` poursuit sa conversation en cours.
@@ -22,10 +23,10 @@ from axecode_kernel import bridge
 
 __all__ = ["send", "inbox", "family"]
 
-ReceiverRole = Literal["parent", "child", "sibling"]
+ReceiverRole = Literal["parent", "child", "sibling", "all"]
 Mode = Literal["new", "follow_up"]
 
-_ROLES = ("parent", "child", "sibling")
+_ROLES = ("parent", "child", "sibling", "all")
 _MODES = ("new", "follow_up")
 
 
@@ -37,12 +38,16 @@ def send(
 ) -> dict[str, Any]:
     """Envoie ``text`` à un membre de la famille proche.
 
-    ``receiver_role`` – ``"parent"`` (par défaut), ``"child"`` ou ``"sibling"``.
+    ``receiver_role`` – ``"parent"`` (par défaut), ``"child"``, ``"sibling"`` ou
+                        ``"all"`` : diffusion à TOUS vos enfants si vous en avez,
+                        sinon à tous vos frères et sœurs (les inactifs se
+                        réveillent pour le lire).
     ``receiver_name`` – obligatoire pour un enfant ou un frère/une sœur (nom ou
-                        identifiant de session) ; ignoré pour le parent.
+                        identifiant de session) ; ignoré pour le parent et ``"all"``.
     ``mode``          – ``"new"`` ou ``"follow_up"``.
 
-    Renvoie ``{"delivered_to": session_id, "message_id": ...}``.
+    Renvoie ``{"delivered_to": session_id, "message_id": ...}`` (pour ``"all"`` :
+    ``delivered_to`` est la liste des sessions et ``messages`` le détail).
     """
     if not isinstance(text, str) or not text.strip():
         raise ValueError("messages.send : `text` doit être une chaîne non vide")
@@ -50,7 +55,7 @@ def send(
         raise ValueError(f"messages.send : `receiver_role` doit valoir l'une de ces valeurs : {_ROLES}")
     if mode not in _MODES:
         raise ValueError(f"messages.send : `mode` doit valoir l'une de ces valeurs : {_MODES}")
-    if receiver_role != "parent" and not receiver_name:
+    if receiver_role in ("child", "sibling") and not receiver_name:
         raise ValueError("messages.send : `receiver_name` est obligatoire pour `child` et `sibling`")
     return bridge.call(
         "messages.send",

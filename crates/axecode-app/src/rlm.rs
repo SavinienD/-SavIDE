@@ -8,6 +8,9 @@
 //! * `messages.send` only reaches the parent, children and siblings.
 //! * Before fanning out more than [`FANOUT_GUARD`] children in one turn, the
 //!   provider quota is checked; a warning is returned, never an error.
+//! * [`suivi`] : worktree git par enfant, arrêt, nouvelle tentative,
+//!   statut final (réussi / échoué / bloqué / arrêté), diffusion à toute la
+//!   famille, comparaison des enfants d'une course de modèles.
 
 use std::{
     path::PathBuf,
@@ -20,9 +23,12 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use axecode_core::{
-    session::{CreateSessionRequest, PeerMessage, SessionHost, SessionMeta, SessionStatus},
+    session::{PeerMessage, SessionHost, SessionMeta, SessionStatus},
     ModelRef,
 };
+
+mod suivi;
+pub use suivi::{lire_statut, Fiche, ARRETE, BLOQUE, ECHOUE, REUSSI};
 
 /// Children spawned in one turn beyond which the quota guard runs.
 pub const FANOUT_GUARD: usize = 2;
@@ -60,6 +66,12 @@ pub struct SubagentResult {
     /// The task ended on an error (provider refusal, quota...).
     #[serde(default)]
     pub error: bool,
+    /// réussi / échoué / bloqué / arrêté.
+    #[serde(default)]
+    pub statut: Option<String>,
+    /// fichiers modifiés dans le worktree de l'enfant.
+    #[serde(default)]
+    pub fichiers: Vec<String>,
 }
 
 pub struct FamilyHost {
@@ -221,9 +233,19 @@ impl FamilyHost {
             "rlm.spawn" => self.spawn(params).await,
             "rlm.follow_up" => self.follow_up(params).await,
             "rlm.list" => self.list_children().await,
-            "rlm.result" => Ok(serde_json::to_value(self.read_result(req(params, "id")?)?)?),
+            "rlm.result" => {
+                let key = req(params, "id")?;
+                let id = self.resolve_child(key).await.map(|c| c.id).unwrap_or_else(|_| key.to_string());
+                Ok(serde_json::to_value(self.read_result(&id)?.map(suivi::completer))?)
+            }
             "rlm.wait" => self.wait(params).await,
             "rlm.quota" => Ok(self.current_quota().await.unwrap_or(Value::Null)),
+            "rlm.stop" => self.arreter(params).await,
+            "rlm.retry" => self.reprendre(params).await,
+            "rlm.worktree" => self.worktree_etat(params).await,
+            "rlm.fusionner" => self.fusionner(params).await,
+            "rlm.liberer" => self.liberer(params).await,
+            "rlm.comparer" => self.comparer(params).await,
             "messages.send" => self.send(params).await,
             "messages.inbox" => Ok(serde_json::to_value(
                 self.delivered.lock().map(|d| d.clone()).unwrap_or_default(),
@@ -277,6 +299,9 @@ impl FamilyHost {
     }
 
     fn read_result(&self, id: &str) -> Result<Option<SubagentResult>> {
+        if id.is_empty() || !id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+            return Ok(None);
+        }
         let path = self.results_dir().join(format!("{id}.json"));
         match std::fs::read_to_string(&path) {
             Ok(text) => Ok(Some(serde_json::from_str(&text)?)),
@@ -293,85 +318,16 @@ impl FamilyHost {
     }
 
     async fn spawn(&self, params: &Value) -> Result<Value> {
-        let prompt = req(params, "prompt")?.to_string();
-        let me = self.me().await?;
-        let (_, children, _) = self.family().await?;
-        let profile = match s(params, "profile") {
-            Some(key) => Some(
-                self.find_profile(key)
-                    .cloned()
-                    .ok_or_else(|| anyhow!("unknown sub-agent profile `{key}`"))?,
-            ),
-            None => None,
-        };
-        let model = match s(params, "model") {
-            Some(raw) => parse_model(raw).ok_or_else(|| anyhow!("model must be `provider/model`"))?,
-            None => profile
-                .as_ref()
-                .and_then(|p| p.model.clone())
-                // sub-m — default sub-agent model from the REPL settings.
-                .or_else(|| {
-                    crate::repl::ReplSettings::load(&self.data_dir)
-                        .subagent_default_model
-                        .as_deref()
-                        .and_then(|m| parse_model(m.trim()))
-                })
-                .unwrap_or_else(|| me.model.clone()),
-        };
-        let base = s(params, "name")
-            .map(str::to_string)
-            .or_else(|| profile.as_ref().map(|p| p.name.clone()))
-            .unwrap_or_else(|| "subagent".into());
-        let mut name = base.clone();
-        let mut n = 2;
-        while children.iter().any(|c| c.name == name) {
-            name = format!("{base}-{n}");
-            n += 1;
-        }
-
-        // Quota guard before fanning out (never blocking).
-        let spawned = {
-            let mut count = self.spawned_this_turn.lock().map_err(|_| anyhow!("poisoned"))?;
-            *count += 1;
-            *count
-        };
-        let mut warning = None;
-        if spawned > FANOUT_GUARD {
-            if let Some(quota) = self.current_quota().await {
-                if let Some(pct) = max_utilization(&quota) {
-                    if pct >= QUOTA_WARN_PERCENT {
-                        warning = Some(format!(
-                            "subscription quota at {pct:.0}% — {spawned} sub-agents spawned this turn; consider sequencing the rest unless the user asked for parallelism"
-                        ));
-                    }
-                }
-            }
-        }
-
-        let mut extra = format!(
-            "# Sub-agent\n\nYou are the sub-agent `{name}`, spawned by the session `{}`. Work autonomously on the task in the first user message. Your final answer is delivered to your parent automatically; use `messages.send(..., receiver_role=\"parent\")` only for intermediate questions or heads-ups. You stay alive after your task: your parent may send follow-ups.",
-            me.name
-        );
-        if let Some(profile) = &profile {
-            extra.push_str(&format!("\n\n# Profile: {}\n\n{}", profile.name, profile.prompt.trim()));
-        }
-        let child = self
-            .host
-            .create_session(CreateSessionRequest {
-                name: name.clone(),
-                workspace_id: me.workspace_id.clone(),
-                model,
-                parent_id: Some(me.id.clone()),
-                system_prompt_extra: Some(extra),
-                initial_message: Some(prompt),
-            })
-            .await
-            .map_err(|e| anyhow!("{e}"))?;
-        let mut out = json!({ "id": child.id, "session_name": child.name });
-        if let Some(w) = warning {
-            out["warning"] = json!(w);
-        }
-        Ok(out)
+        // lancement commun avec rlm.retry (worktree, statut, fiche) : voir suivi.rs.
+        self.lancer(suivi::Lancement {
+            brief: req(params, "prompt")?.to_string(),
+            nom: s(params, "name").map(str::to_string),
+            modele: s(params, "model").map(str::to_string),
+            profil: s(params, "profile").map(str::to_string),
+            worktree: suivi::option_worktree(params)?,
+            ..Default::default()
+        })
+        .await
     }
 
     async fn resolve_child(&self, key: &str) -> Result<SessionMeta> {
@@ -401,6 +357,9 @@ impl FamilyHost {
                     let mut v = session_json(c);
                     if let Ok(Some(r)) = self.read_result(&c.id) {
                         v["last_result_ts"] = json!(r.ts);
+                        if c.status != SessionStatus::Running {
+                            v["statut"] = json!(suivi::completer(r.clone()).statut);
+                        }
                         if r.error && c.status != SessionStatus::Running {
                             v["status"] = json!("error");
                         }
@@ -424,7 +383,7 @@ impl FamilyHost {
             } else if let Some(result) = self.read_result(&child.id)? {
                 let settled = seen_running || started.elapsed() > Duration::from_secs(3);
                 if result.ts >= start_ms || settled {
-                    return Ok(serde_json::to_value(result)?);
+                    return Ok(serde_json::to_value(suivi::completer(result))?);
                 }
             }
             if timeout.is_some_and(|t| started.elapsed() >= t) {
@@ -454,7 +413,12 @@ impl FamilyHost {
                     .find(|m| m.id == key || m.name == key)
                     .ok_or_else(|| anyhow!("no {role} named `{key}` (nuclear family only)"))?
             }
-            other => bail!("receiver_role must be parent, child or sibling (got `{other}`)"),
+            // diffusion : tous les enfants, sinon tous les frères et sœurs.
+            "all" => {
+                let body = if mode == "follow_up" { text.to_string() } else { format!("[new task] {text}") };
+                return self.broadcast(if children.is_empty() { siblings } else { children }, body).await;
+            }
+            other => bail!("receiver_role must be parent, child, sibling or all (got `{other}`)"),
         };
         let body = if mode == "follow_up" { text.to_string() } else { format!("[new task] {text}") };
         let id = self
@@ -495,37 +459,38 @@ impl FamilyHost {
         if text.is_empty() {
             return Ok(());
         }
+        // statut final (ligne `STATUT: …` de l'enfant, sinon réussi
+        // sans erreur) et fichiers modifiés dans son worktree.
+        let (lu, sans_statut) = suivi::lire_statut(text);
+        let statut = if error { suivi::ECHOUE } else { lu.unwrap_or(suivi::REUSSI) };
+        let text = if error { text.to_string() } else { sans_statut };
+        let fichiers = self.fichiers_de(&me.id).await;
         let truncated = text.chars().count() > RESULT_MAX_CHARS;
         let text: String = text.chars().take(RESULT_MAX_CHARS).collect();
-        let result = SubagentResult {
+        self.write_result(&SubagentResult {
             id: me.id.clone(),
             session_name: me.name.clone(),
             text: text.clone(),
             ts: now_ms(),
             truncated,
             error,
-        };
-        std::fs::create_dir_all(self.results_dir())?;
-        std::fs::write(
-            self.results_dir().join(format!("{}.json", me.id)),
-            serde_json::to_vec_pretty(&result)?,
-        )?;
-        let body = if error {
-            format!(
-                "[sub-agent error] `{}` stopped on an error:\n\n{text}",
-                me.name
-            )
-        } else {
-            format!(
-                "[sub-agent result] `{}` finished its task{}:\n\n{text}",
-                me.name,
-                if truncated { " (truncated)" } else { "" }
-            )
-        };
+            statut: Some(statut.into()),
+            fichiers: fichiers.clone(),
+        })?;
+        let body = suivi::message_parent(&me.name, statut, error, truncated, &fichiers, &text);
         self.host
             .post_peer_message(&me.id, &parent_id, body)
             .await
             .map_err(|e| anyhow!("{e}"))?;
+        Ok(())
+    }
+
+    fn write_result(&self, result: &SubagentResult) -> Result<()> {
+        std::fs::create_dir_all(self.results_dir())?;
+        std::fs::write(
+            self.results_dir().join(format!("{}.json", result.id)),
+            serde_json::to_vec_pretty(result)?,
+        )?;
         Ok(())
     }
 }

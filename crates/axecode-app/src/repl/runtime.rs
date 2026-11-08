@@ -169,6 +169,11 @@ impl HostHandler for RuntimeHost {
             return axecode_harness::host::dispatch(&shared.harness, method, &params)
                 .map_err(|e| e.to_string());
         }
+        // appel unique au modèle (rlm.query, rlm.query_lot).
+        if crate::appel_unique::handles(method) {
+            let model = shared.meta().model;
+            return crate::appel_unique::host_call(shared.deps.providers.as_ref(), &shared.data_dir, &model, method, &params).await;
+        }
         if FamilyHost::handles(method) {
             return shared.family.dispatch(method, &params).await.map_err(|e| e.to_string());
         }
