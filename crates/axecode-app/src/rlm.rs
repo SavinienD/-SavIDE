@@ -246,6 +246,7 @@ impl FamilyHost {
             "rlm.worktree" => self.worktree_etat(params).await,
             "rlm.fusionner" => self.fusionner(params).await,
             "rlm.liberer" => self.liberer(params).await,
+            "rlm.comparer" => self.comparer(params).await,
             "messages.send" => self.send(params).await,
             "messages.inbox" => Ok(serde_json::to_value(
                 self.delivered.lock().map(|d| d.clone()).unwrap_or_default(),

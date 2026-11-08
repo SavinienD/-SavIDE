@@ -414,6 +414,62 @@ impl FamilyHost {
         let nom = child.name.clone();
         bloquant(move || rlm_git::liberer(&wt, &nom, garder)).await
     }
+
+    /// `rlm.comparer` : une ligne par enfant (statut, durée, fichiers, diff --stat).
+    pub(super) async fn comparer(&self, params: &Value) -> Result<Value> {
+        let cles: Vec<String> = params
+            .get("ids")
+            .and_then(Value::as_array)
+            .ok_or_else(|| anyhow!("`ids` doit être une liste de sous-agents"))?
+            .iter()
+            .filter_map(|v| v.as_str().map(str::to_string))
+            .collect();
+        let mut lignes = Vec::new();
+        for cle in cles {
+            let child = self.resolve_child(&cle).await?;
+            let fiche = self.lire_fiche(&child.id);
+            let resultat = self.read_result(&child.id)?.map(completer);
+            let en_cours = child.status == SessionStatus::Running;
+            let statut = if en_cours {
+                "en cours".to_string()
+            } else {
+                resultat.as_ref().and_then(|r| r.statut.clone()).unwrap_or_else(|| "sans résultat".into())
+            };
+            let debut = fiche.as_ref().map_or(child.created_at_ms, |f| f.cree_ms);
+            let fin = match (&resultat, en_cours) {
+                (Some(r), false) if r.ts >= debut => r.ts,
+                _ => now_ms(),
+            };
+            let (fichiers, stat, branche) = match fiche.as_ref().and_then(|f| f.worktree.clone()) {
+                Some(wt) => {
+                    let branche = wt.branche.clone();
+                    let etat = bloquant(move || rlm_git::etat(&wt)).await.unwrap_or(Value::Null);
+                    let fichiers: Vec<String> = serde_json::from_value(etat["fichiers"].clone()).unwrap_or_default();
+                    (fichiers, etat["diff_stat"].as_str().unwrap_or_default().to_string(), Some(branche))
+                }
+                None => (Vec::new(), String::new(), None),
+            };
+            let resume = stat
+                .lines()
+                .rev()
+                .find(|l| l.contains("changed"))
+                .unwrap_or_default()
+                .trim()
+                .to_string();
+            lignes.push(json!({
+                "id": child.id,
+                "session_name": child.name,
+                "modele": fiche.as_ref().map_or_else(|| format!("{}/{}", child.model.provider, child.model.name), |f| f.modele.clone()),
+                "statut": statut,
+                "duree_s": (fin - debut).max(0) / 1000,
+                "fichiers": fichiers,
+                "diff_stat": resume,
+                "diff_stat_complet": stat,
+                "branche": branche,
+            }));
+        }
+        Ok(Value::Array(lignes))
+    }
 }
 
 impl FamilyHost {
@@ -686,5 +742,29 @@ mod tests {
             .await
             .unwrap_err();
         assert!(err.to_string().contains("aucun enfant"), "{err}");
+    }
+
+    #[tokio::test]
+    async fn comparer_une_course() {
+        let b = banc();
+        let parent = famille(&b, "parent");
+        for (nom, modele) in [("course-claude", "anthropic/claude"), ("course-gpt", "openai/gpt")] {
+            parent
+                .dispatch("rlm.spawn", &json!({"prompt": "corrige", "name": nom, "model": modele, "worktree": true}))
+                .await
+                .unwrap();
+        }
+        let dossier = b.depot.parent().unwrap().join("projet-sous-agents").join("course-claude");
+        std::fs::write(dossier.join("a.txt"), "deux\n").unwrap();
+        famille(&b, "enfant1").on_turn_finished("Fait.\nSTATUT: réussi").await.unwrap();
+        b.hote.fin("enfant1");
+        let t = parent.dispatch("rlm.comparer", &json!({"ids": ["course-claude", "enfant2"]})).await.unwrap();
+        assert_eq!(t[0]["statut"], "réussi", "{t}");
+        assert_eq!(t[0]["modele"], "anthropic/claude");
+        assert_eq!(t[0]["fichiers"], json!(["a.txt"]));
+        assert!(t[0]["diff_stat"].as_str().unwrap().contains("1 file changed"), "{t}");
+        assert_eq!((t[1]["statut"].as_str(), t[1]["modele"].as_str()), (Some("en cours"), Some("openai/gpt")));
+        assert_eq!(t[1]["fichiers"], json!([]));
+        assert!(t[0]["duree_s"].as_i64().unwrap() >= 0);
     }
 }

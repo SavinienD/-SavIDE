@@ -59,7 +59,7 @@ Code map:
 │   │   ├── files.py / shell.py / web.py / images.py / context.py / question.py / todo.py / skills.py / mcp.py / compact.py # modules préchargés
 │   │   ├── _documents.py # viewers — texte des xlsx/docx/pdf/pptx/odt/epub pour files.read (privé, non préchargé)
 │   │   └── rlm.py / messages.py / harness.py / refine.py / goal.py / heartbeat.py # modules E/D/F (brain)
-│   └── tests # pytest files + shell + documents
+│   └── tests # pytest files + shell + documents ; test_rlm.py / test_messages.py (rlm186)
 ├── web # webui — app web des conversations (Vite + React, npm run build:web -> web/dist, embarquée dans le service)
 │   ├── index.html / vite.config.ts / tsconfig.json
 │   ├── public # manifest.webmanifest, icon.svg, sw.js (PWA)
@@ -137,6 +137,8 @@ Code map:
 │   │       │   ├── compaction.rs # compaction (résumé ; variables du kernel gardées)
 │   │       │   └── settings.rs # repl-settings.json (modules, seuil, max_tokens, plafond)
 │   │       ├── rlm.rs # rlm — sous-agents persistants rlm.* + messagerie famille nucléaire messages.* (FamilyHost), garde-fou quota
+│   │       ├── rlm # rlm186 — suivi.rs : fiche de lancement, statut final (réussi/échoué/bloqué/arrêté), stop/retry, worktree/fusionner/liberer, comparer, diffusion « all »
+│   │       ├── rlm_git.rs # rlm186 — worktrees git des sous-agents (branche sous-agent/<nom>, hors du dépôt), état, fusion (annulée sur conflit), libération
 │   │       ├── session_commands.rs # goal — TurnHook /goal /autonomous (budgets + gate) /heartbeat /refine /compact
 │   │       ├── skill.rs
 │   │       ├── store.rs

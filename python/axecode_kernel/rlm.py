@@ -16,7 +16,8 @@ Chaque rapport commence par le statut final de l'enfant : ``réussi``,
 ``rlm.stop`` arrête un enfant, ``rlm.retry`` relance sa tâche dans un nouvel
 enfant. Avec ``spawn(..., worktree=True)``, l'enfant travaille dans son propre
 worktree git (branche ``sous-agent/<nom>``) : ``rlm.worktree``,
-``rlm.fusionner``, ``rlm.liberer``.
+``rlm.fusionner``, ``rlm.liberer``. ``rlm.course`` lance la même tâche sur
+plusieurs modèles, ``rlm.comparer`` aide à garder la meilleure version.
 
 Appels légers (Recursive Language Models) : ``rlm.query(texte)`` et
 ``rlm.query_lot(textes)`` font un seul échange avec le modèle, sans session
@@ -50,6 +51,8 @@ __all__ = [
     "worktree",
     "fusionner",
     "liberer",
+    "course",
+    "comparer",
 ]
 
 
@@ -349,6 +352,65 @@ def liberer(handle: SubAgentHandle | str | dict, garder_branche: bool = True) ->
     """
     return bridge.call("rlm.liberer", {"id": _session_id(handle), "garder_branche": bool(garder_branche)}) or {}
 
+
+def course(
+    prompt: str,
+    modeles: list[str],
+    worktree: bool | str = True,
+    name: str | None = None,
+) -> list[SubAgentHandle]:
+    """Lance la même tâche sur plusieurs modèles (un enfant par modèle, chacun dans son worktree) ; renvoie leurs poignées.
+
+    ``modeles`` – liste de ``"fournisseur/modèle"``.
+    ``name``    – préfixe des noms (``"course"`` par défaut) : ``course-<modèle>``.
+    Comparez ensuite avec ``comparer(poignees)``, fusionnez la meilleure
+    version avec ``fusionner`` et libérez les autres avec ``liberer``.
+    """
+    modeles = [m for m in (modeles or []) if isinstance(m, str) and m.strip()]
+    if not modeles:
+        raise ValueError("rlm.course : `modeles` doit contenir au moins un \"fournisseur/modèle\"")
+    base = (name or "course").strip() or "course"
+    poignees = []
+    for m in modeles:
+        court = "".join(c if c.isalnum() or c in "._-" else "-" for c in m.split("/", 1)[-1]).strip("-.") or "modele"
+        poignees.append(spawn(prompt, name=f"{base}-{court}", model=m.strip(), worktree=worktree))
+    return poignees
+
+
+class Comparaison(list):
+    """Lignes de ``comparer`` (dicts), affichées en tableau Markdown."""
+
+    def __repr__(self) -> str:
+        lignes = ["| sous-agent | modèle | statut | durée | fichiers | diff --stat |",
+                  "|---|---|---|---|---|---|"]
+        for r in self:
+            lignes.append("| {} | {} | {} | {} | {} | {} |".format(
+                r.get("session_name", ""), r.get("modele", ""), r.get("statut", ""),
+                _duree(r.get("duree_s") or 0), len(r.get("fichiers") or []), r.get("diff_stat") or "—"))
+        return "\n".join(lignes)
+
+    __str__ = __repr__
+
+
+def comparer(poignees: list[SubAgentHandle | str | dict]) -> list[dict[str, Any]]:
+    """Compare des sous-agents (par ex. ceux d'une ``course``) : un tableau statut, durée, fichiers modifiés, diff --stat.
+
+    Chaque ligne est un dict ``{"session_name", "modele", "statut", "duree_s",
+    "fichiers", "diff_stat", "diff_stat_complet", "branche", "id"}`` ;
+    l'affichage de la liste est un tableau Markdown. Le statut vaut
+    ``"en cours"`` tant que l'enfant travaille.
+    """
+    ids = [_session_id(p) for p in poignees]
+    return Comparaison(bridge.call("rlm.comparer", {"ids": ids}) or [])
+
+
+def _duree(secondes: int) -> str:
+    s = int(secondes)
+    if s < 60:
+        return f"{s} s"
+    if s < 3600:
+        return f"{s // 60} min {s % 60:02d} s" if s % 60 else f"{s // 60} min"
+    return f"{s // 3600} h {(s % 3600) // 60:02d} min"
 
 
 def _options(systeme: str | None, modele: str | None, plafond: int | None) -> dict[str, Any]:

@@ -115,8 +115,36 @@ def test_stop_et_retry(monkeypatch):
     assert vus[-1] == ("rlm.retry", {"id": "s9"})
 
 
+def test_course_et_comparer(monkeypatch):
+    n = iter(range(100))
+
+    def reponse(m, p):
+        if m == "rlm.spawn":
+            return {"id": f"s{next(n)}", "session_name": p["name"]}
+        return [
+            {"session_name": "course-claude", "modele": "anthropic/claude", "statut": "réussi", "duree_s": 75,
+             "fichiers": ["a.rs", "b.rs"], "diff_stat": "2 files changed, 10 insertions(+)"},
+            {"session_name": "course-gpt", "modele": "openai/gpt", "statut": "en cours", "duree_s": 3725,
+             "fichiers": [], "diff_stat": ""},
+        ]
+
+    vus = _faux(monkeypatch, reponse)
+    hs = rlm.course("corrige le bug", modeles=["anthropic/claude", "openai/gpt"])
+    assert [h.id for h in hs] == ["s0", "s1"]
+    assert vus[0] == ("rlm.spawn", {"prompt": "corrige le bug", "name": "course-claude", "model": "anthropic/claude", "worktree": True})
+    assert vus[1][1]["name"] == "course-gpt" and vus[1][1]["model"] == "openai/gpt"
+    t = rlm.comparer(hs)
+    assert vus[-1] == ("rlm.comparer", {"ids": ["s0", "s1"]})
+    assert t[0]["statut"] == "réussi"
+    texte = repr(t)
+    assert "| course-claude | anthropic/claude | réussi | 1 min 15 s | 2 | 2 files changed" in texte, texte
+    assert "1 h 02 min" in texte
+    with pytest.raises(ValueError):
+        rlm.course("x", modeles=[])
+
+
 def test_aides_r2_r6():
-    for nom in ("stop", "retry", "worktree", "fusionner", "liberer"):
+    for nom in ("stop", "retry", "worktree", "fusionner", "liberer", "course", "comparer"):
         f = getattr(rlm, nom)
         assert nom in rlm.__all__ and f.__doc__ and len(f.__doc__) > 120, nom
     assert "worktree" in rlm.spawn.__doc__ and "STATUT" in rlm.wait.__doc__
