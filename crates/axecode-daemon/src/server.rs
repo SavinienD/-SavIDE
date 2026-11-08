@@ -179,6 +179,8 @@ impl Daemon {
             m if m.starts_with("agents.") => crate::agents_rpc::dispatch(self, m, &params),
             // file-demon — file d'attente des messages, par session
             m if m.starts_with("queue.") => crate::queue_rpc::dispatch(self, m, &params),
+            // délai d'endormissement des conversations (Réglages > Service)
+            m if m.starts_with("sommeil.") => crate::sommeil::dispatch(self, m, &params),
             // voix — dictée vocale : Whisper de la machine, nettoyage IA optionnel
             m if m.starts_with("voice.") => crate::voice_rpc::dispatch(self, m, &params).await,
             m if m.starts_with("term.") => {

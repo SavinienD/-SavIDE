@@ -292,6 +292,18 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
     }
   };
 
+  // « Endormir » une conversation inactive : son noyau Python s'arrête (mémoire libérée).
+  const endormir = async () => {
+    if (!selected) return;
+    try {
+      await agentsApi.unload(selected.id, selected.conn);
+      setStatus("Endormie : son noyau Python est arrêté ; il repartira au message suivant.");
+      void load();
+    } catch (e) {
+      setError(String(e));
+    }
+  };
+
   const stop = async () => {
     if (!selected) return;
     try {
@@ -362,7 +374,7 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
       {/* agents-ui - entete compacte pour la barre laterale etroite */}
       <header className="axe-agents__head axe-agents__head--compact">
         <span className="axe-agents__counts" data-running={counts.running} data-idle={counts.idle} data-inactive={counts.inactive}
-          title={`${counts.running} en cours, ${counts.idle} inactif(s), ${counts.inactive} déchargé(s)${showArchived ? "" : " ; sous-agents terminés archivés (filtre « archivés »)"}`}>
+          title={`${counts.running} en cours, ${counts.idle} inactif(s), ${counts.inactive} endormi(s)${showArchived ? "" : " ; sous-agents terminés archivés (filtre « archivés »)"}`}>
           <span className="axe-agents__dot" data-status="running" /> {counts.running}
           <span className="axe-agents__dot" data-status="idle" /> {counts.idle}
           <span className="axe-agents__dot" data-status="inactive" /> {counts.inactive}
@@ -443,6 +455,16 @@ export function AgentsView({ workspacePath, onOpenConversation, onOpenFreeConver
                   <option key={m.value} value={m.value}>{m.label}</option>
                 ))}
               </select>
+            ) : null}
+            {selected.status === "idle" ? (
+              <button
+                type="button"
+                data-action="endormir"
+                title="Arrête son noyau Python pour libérer la mémoire ; il repart au message suivant. Les variables sont reprises, sauf les fichiers ouverts, les connexions et les processus lancés."
+                onClick={() => void endormir()}
+              >
+                Endormir
+              </button>
             ) : null}
             {selected.status === "running" ? (
               <button type="button" onClick={() => void stop()}>

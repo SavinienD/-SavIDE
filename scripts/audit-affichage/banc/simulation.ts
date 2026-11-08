@@ -254,6 +254,12 @@ export function installerSimulation(scene: Scene): void {
           return { running: true, version: "0.1.57", sessions: { total: 12, running: 2, idle: 10, inactive: 0 } };
         case "agents.list":
           return { agents: [] };
+        // délai d'endormissement des conversations (Réglages > Service).
+        case "sommeil.get":
+        case "sommeil.set":
+          return { conversationsMinutes: a.params?.conversationsMinutes ?? null, defautMinutes: 30 };
+        case "sessions.unload":
+          return { ok: true };
         // harnais d'un espace distant lu depuis le poste (Réglages > Harnais).
         case "harness.list":
           return [];

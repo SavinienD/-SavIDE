@@ -59,7 +59,7 @@ Code map:
 │   │   ├── files.py / shell.py / web.py / images.py / context.py / question.py / todo.py / skills.py / mcp.py / compact.py # modules préchargés
 │   │   ├── _documents.py # viewers — texte des xlsx/docx/pdf/pptx/odt/epub pour files.read (privé, non préchargé)
 │   │   └── rlm.py / messages.py / harness.py / refine.py / goal.py / heartbeat.py # modules E/D/F (brain)
-│   └── tests # pytest files + shell + documents
+│   └── tests # pytest files + shell + documents ; test_sommeil.py : un nouveau noyau reprend les variables de l'instantané
 ├── web # webui — app web des conversations (Vite + React, npm run build:web -> web/dist, embarquée dans le service)
 │   ├── index.html / vite.config.ts / tsconfig.json
 │   ├── public # manifest.webmanifest, icon.svg, sw.js (PWA)
@@ -191,6 +191,7 @@ Code map:
 │   │   │   ├── migrate.rs # import SQLite -> JSONL
 │   │   │   ├── protocol.rs # JSON-lines, lock daemon.json, méthodes
 │   │   │   ├── scratch.rs # freechat — dossiers privés des conversations libres (<data>/scratch/<id>), détection is_scratch
+│   │   │   ├── sommeil.rs # délai d'endormissement des conversations (sommeil.json, RPC sommeil.get/set ; 0 = jamais)
 │   │   │   ├── server.rs # socket, dispatch, arrêt auto, SessionHost
 │   │   │   ├── sessions.rs # create/ensure/fork/set_model/send/stop, relocate (freechat)
 │   │   │   ├── stub.rs # EchoRuntime
@@ -200,7 +201,7 @@ Code map:
 │   │   │   │   ├── mod.rs # assets embarqués (rust-embed web/dist), login cookie, CSP, CSRF, /api/*, méthodes webui.sessions/revoke
 │   │   │   │   └── session.rs # sessions navigateur (web-sessions.json, SHA-256), limitation des tentatives
 │   │   │   └── worker.rs # workers supervisés, snapshots (le kernel REPL les restaure lui-même), relance
-│   │   └── tests/daemon.rs + tests/remote.rs
+│   │   └── tests/daemon.rs + tests/remote.rs + tests/sommeil.rs (délai réglable, « jamais »)
 │   ├── axecode-repl # repl — process kernel, exec, RPC inverse, KernelSnapshot
 │   │   ├── Cargo.toml
 │   │   ├── src
@@ -449,6 +450,7 @@ Code map:
     │   ├── notifications # notifications des agents
     │   │   ├── Cloche.tsx # cloche de la barre du haut : événements récents, non-lus, « Tout marquer lu », clic = ouvrir (badge de l'icône : notifications.rs)
     │   │   ├── contrat.ts # CONTRAT COMMUN « ide-notification » (CustomEvent des autres écrans) : documentation, notifier(), écoute
+    │   │   ├── SommeilSection.tsx # Réglages > Service : endormir une conversation inactive après N min (RPC sommeil.*)
     │   │   ├── NotificationsSection.tsx # Réglages > Notifications : événements, notification du système, son court, ne pas déranger, essai
     │   │   ├── son.ts # son court synthétisé (WebAudio, aucun fichier), préparé au premier geste
     │   │   ├── notifications.css

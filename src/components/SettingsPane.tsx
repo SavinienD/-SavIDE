@@ -9,6 +9,7 @@ import { dateMajLisible, noterLancement, versionAppli } from "../lib/versionAppl
 import { RaccourcisSection } from "../axe/RaccourcisSection"; // raccourcis
 import { VoixSection } from "../axe/voix/VoixSection"; // voix
 import { NotificationsSection } from "./notifications/NotificationsSection";
+import { SommeilSection } from "./notifications/SommeilSection";
 import { AppearanceSection } from "../axe/AppearanceSection"; // theme
 import { monacoThemeData } from "../axe/themeTargets"; // theme
 import {
@@ -1536,7 +1537,7 @@ export function SettingsPane({ workspacePath }: Props) {
         ) : section === "repl" ? (
           <><ReplToolsPane workspacePath={workspacePath} />{EDITION_LOCALE ? null : <RegistrePane />}</> /* repl + e4 (le registre demande le serveur : absent de l'édition locale) */
         ) : section === "service" ? (
-          <ServicePane /> /* daemon */
+          <><ServicePane /><SommeilSection /></> /* daemon + conversations inactives */
         ) : section === "shortcuts" ? (
           <RaccourcisSection /> /* raccourcis */
         ) : section === "notifications" ? (
