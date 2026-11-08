@@ -635,7 +635,8 @@ mod tests {
         );
         assert!(corps.ends_with("J'ai corrigé a.txt."), "ligne de statut retirée du rapport : {corps}");
         for methode in ["rlm.result", "rlm.wait"] {
-            let r = parent.dispatch(methode, &json!({"id": "fix", "timeout_ms": 2000})).await.unwrap();
+            // wait : un résultat antérieur à l'appel n'est rendu qu'après 3 s (tâche « réglée »).
+            let r = parent.dispatch(methode, &json!({"id": "fix", "timeout_ms": 8000})).await.unwrap();
             assert_eq!((r["statut"].as_str(), r["fichiers"].clone()), (Some("bloqué"), json!(["a.txt"])), "{methode} {r}");
         }
         assert_eq!(parent.dispatch("rlm.list", &json!({})).await.unwrap()[0]["statut"], "bloqué");
