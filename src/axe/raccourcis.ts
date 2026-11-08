@@ -54,6 +54,7 @@ export type RaccourciId =
   | "fermerMolette"
   | "deplacerColonne"
   | "rechercherMac"
+  | "rechercheTerminal" // agents en ligne de commande : recherche dans le terminal
   | "dossierRecent";
 
 type Touche = {
@@ -102,6 +103,8 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "rechercherMac", categorie: "Onglets", libelle: "Rechercher dans les fichiers (hors éditeur et terminal)", combinaison: "Ctrl + F", touche: { ctrl: true, touches: ["f"] }, macSeulement: true, horsEditeur: true },
   { id: "rechercheFichiers", categorie: "Onglets", libelle: "Rechercher dans les fichiers", combinaison: "Ctrl + Maj + F", touche: { ctrl: true, shift: true, touches: ["f"] } },
   { id: "terminal", categorie: "Panneaux", libelle: "Afficher / masquer le terminal", combinaison: "Ctrl + J", touche: { ctrl: true, touches: ["j"] } },
+  // Ctrl+F dans le terminal (focus dans xterm) ; ailleurs la touche garde son rôle (rechercherMac, horsEditeur).
+  { id: "rechercheTerminal", categorie: "Panneaux", libelle: "Rechercher dans le terminal (quand il a le focus)", combinaison: "Ctrl + F", touche: { ctrl: true, touches: ["code:KeyF"] } },
   { id: "focusExplorateur", categorie: "Panneaux", libelle: "Aller à l'explorateur de fichiers", combinaison: "Ctrl + Maj + E", touche: { ctrl: true, shift: true, touches: ["e", "code:KeyE"] } },
   { id: "focusChat", categorie: "Panneaux", libelle: "Aller à la zone de saisie du chat", combinaison: "Ctrl + Maj + T", touche: { ctrl: true, shift: true, touches: ["t", "code:KeyT"] } },
   { id: "settings", categorie: "Panneaux", libelle: "Ouvrir les Réglages", combinaison: "Ctrl + ,", touche: { ctrl: true, touches: [",", "code:Comma"] } },

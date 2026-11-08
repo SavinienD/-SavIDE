@@ -15,7 +15,7 @@ import {
 import "@xterm/xterm/css/xterm.css";
 import { api } from "../lib/ipc";
 import { GitPanel, GitMark } from "./GitPanel"; // git-onglet
-import { GIT_TAB_ID, cycleTab, isExecutablePathTitle, resolveActiveTab } from "./terminalTabs"; // terminal-onglets
+import { GIT_TAB_ID, cycleTab, isExecutablePathTitle, resolveActiveTab, vueScindee, type PaireScindee } from "./terminalTabs"; // terminal-onglets
 import { onThemeChange } from "../axe/theme"; // theme
 import { xtermTheme } from "../axe/themeTargets"; // theme
 import { MONO_BASE_PX } from "../axe/zoom"; // zoom — taille fixe (e19 : le reglage ne concerne que le chat et les documents)
@@ -26,6 +26,12 @@ import {
   compilerInvites, emettreNotification, libelleEtat, messageOsc777, messageOsc9, notificationAgent,
   suiviInitial, surFin, surHorloge, surSaisie, surSignal, surSortie, type EtatAgent, type Suivi, type Transition,
 } from "./agents-cli/etatAgent";
+import { BoutonPlusActions, BoutonTerminauxOuverts, type LigneTerminal } from "./agents-cli/ActionsTerminal";
+import { RechercheTerminal, lignesTerminal } from "./agents-cli/RechercheTerminal";
+import { cheminsDeposes, entreesGlissees, glisseDepuisExplorateur, texteComplet } from "./agents-cli/outilsTerminal";
+import { copierTexte } from "./chat/PreCopiable";
+import { dansTerminal, fournirActions } from "../axe/raccourcis";
+import { estWindows } from "../lib/plateforme";
 
 type TerminalStatus = "idle" | "starting" | "running" | "exited" | "error";
 
@@ -111,6 +117,33 @@ type Disposable = {
   dispose: () => void;
 };
 
+/** Ce que le panneau peut faire d'un terminal affiché (recherche, copie, arrêt). */
+type ApiSurface = { terminal: Terminal; arreter: () => void };
+
+// Ctrl+F (registre des raccourcis, modifiable) : le panneau dont le terminal a le focus ouvre
+// sa recherche ; ailleurs la touche continue son chemin.
+const ouvreursRecherche = new Set<(cible: EventTarget | null) => boolean>();
+let rechercheInstallee = false;
+function installerRechercheTerminal() {
+  if (rechercheInstallee) return;
+  rechercheInstallee = true;
+  fournirActions({
+    rechercheTerminal: (e) => {
+      if (!dansTerminal(e.target)) return false;
+      for (const ouvrir of ouvreursRecherche) if (ouvrir(e.target)) return true;
+      return false;
+    },
+  });
+}
+
+const LIBELLES_STATUT: Record<TerminalStatus, string> = {
+  idle: "Pas lancé",
+  starting: "Démarre",
+  running: "En cours",
+  exited: "Terminé",
+  error: "Erreur",
+};
+
 export function TerminalPanel({
   active,
   fullHeight,
@@ -137,6 +170,12 @@ export function TerminalPanel({
     return () => { alive = false; window.clearInterval(id); };
   }, [workspacePath]);
   const nextSessionIndex = useRef(1 + Math.max(0, ...loadTerminalSessions(workspacePath).map((session) => session.index)));
+  // Recherche, terminal scindé, terminaux affichés (pour copier, chercher, arrêter).
+  const panneauRef = useRef<HTMLElement | null>(null);
+  const surfaces = useRef(new Map<string, ApiSurface>());
+  const [recherche, setRecherche] = useState(false);
+  const [paire, setPaire] = useState<PaireScindee | null>(null);
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     try { localStorage.setItem(terminalStorageKey(workspacePath), JSON.stringify(sessions.map(({ id, status, etat, etatLibelle, relance, reprendre, enPause, ...session }) => session))); } catch { /* storage can be disabled/full */ }
@@ -161,6 +200,52 @@ export function TerminalPanel({
   const shownId = resolveActiveTab(activeId, sessions.map((session) => session.id));
   const activeSession =
     sessions.find((session) => session.id === shownId) ?? sessions[0];
+  const vue = vueScindee(paire, shownId, sessions.map((session) => session.id));
+
+  useEffect(() => {
+    installerRechercheTerminal();
+    const ouvrir = (cible: EventTarget | null) => {
+      if (!active || !panneauRef.current?.contains(cible as Node | null)) return false;
+      setRecherche(true);
+      return true;
+    };
+    ouvreursRecherche.add(ouvrir);
+    return () => {
+      ouvreursRecherche.delete(ouvrir);
+    };
+  }, [active]);
+
+  const avertir = useCallback((texte: string) => {
+    setNotice(texte);
+    window.setTimeout(() => setNotice((n) => (n === texte ? "" : n)), 2500);
+  }, []);
+
+  const copierToutLaSortie = useCallback(() => {
+    const terminal = surfaces.current.get(shownId)?.terminal;
+    if (!terminal) return;
+    void copierTexte(texteComplet(lignesTerminal(terminal))).then((ok) => avertir(ok ? "Sortie copiée" : "Copie impossible"));
+  }, [avertir, shownId]);
+
+  const scinder = useCallback(() => {
+    if (vue) {
+      setPaire(null);
+      return;
+    }
+    if (shownId === GIT_TAB_ID) return;
+    const session = createSession(nextSessionIndex.current++);
+    setSessions((prev) => [...prev, session]);
+    setPaire({ gauche: shownId, droite: session.id });
+    setActiveId(session.id);
+  }, [shownId, vue]);
+
+  const lignesGestionnaire: LigneTerminal[] = sessions.map((s) => ({
+    id: s.id,
+    titre: s.customTitle ?? s.title,
+    agent: !!s.agent,
+    etat: s.agent ? s.etatLibelle ?? (s.enPause ? "Arrêté" : LIBELLES_STATUT[s.status]) : LIBELLES_STATUT[s.status],
+    enCours: s.status === "running" || s.status === "starting",
+    actif: s.id === shownId,
+  }));
 
   const patchSession = useCallback(
     (id: string, patch: Partial<TerminalSession>) => {
@@ -231,7 +316,7 @@ export function TerminalPanel({
   if (!activeSession) return null;
 
   return (
-    <section className="terminal-panel">
+    <section className="terminal-panel" ref={panneauRef}>
       <div className="terminal-tabs">
         <div className="terminal-tabs__list">
           <div
@@ -316,6 +401,21 @@ export function TerminalPanel({
         </div>
         <div className="terminal-tabs__actions">
           <BoutonNouvelAgent workspacePath={workspacePath} onLancer={addAgentSession} />
+          <BoutonTerminauxOuverts
+            lignes={lignesGestionnaire}
+            onAller={(id) => setActiveId(id)}
+            onArreter={(id) => surfaces.current.get(id)?.arreter()}
+            onToutArreter={() => {
+              for (const l of lignesGestionnaire) if (l.enCours) surfaces.current.get(l.id)?.arreter();
+            }}
+          />
+          <BoutonPlusActions
+            scinde={!!vue}
+            peutScinder={shownId !== GIT_TAB_ID}
+            onRechercher={() => setRecherche(true)}
+            onCopierTout={copierToutLaSortie}
+            onScinder={scinder}
+          />
           <button
             type="button"
             className="terminal-action"
@@ -365,7 +465,11 @@ export function TerminalPanel({
         </div>
       </div>
 
-      <div className="terminal-views">
+      <div className="terminal-views" data-scinde={vue ? "true" : "false"}>
+        {recherche && !gitActive ? (
+          <RechercheTerminal key={shownId} terminal={surfaces.current.get(shownId)?.terminal ?? null} onFermer={() => setRecherche(false)} />
+        ) : null}
+        {notice ? <div className="acli-notice" role="status">{notice}</div> : null}
         {gitActive ? (
           <div className="terminal-viewport terminal-viewport--git" data-active="true">
             <GitPanel workspacePath={workspacePath} active={active} hasStreamingConversation={false} onSwitchWorkspace={async () => undefined} />
@@ -375,7 +479,16 @@ export function TerminalPanel({
           <TerminalSurface
             key={`${session.id}:${session.relance ?? 0}`}
             session={session}
-            active={active && session.id === shownId}
+            active={active && (session.id === shownId || session.id === vue?.gauche || session.id === vue?.droite)}
+            focus={active && session.id === shownId}
+            cote={vue ? (session.id === vue.gauche ? "gauche" : session.id === vue.droite ? "droite" : undefined) : undefined}
+            onFocusSurface={() => {
+              if (vue && session.id !== shownId) setActiveId(session.id);
+            }}
+            onApi={(api) => {
+              if (api) surfaces.current.set(session.id, api);
+              else surfaces.current.delete(session.id);
+            }}
             workspacePath={workspacePath}
             onStatus={(status) => patchSession(session.id, { status })}
             onTitle={(title) => patchSession(session.id, { title })}
@@ -398,9 +511,18 @@ function TerminalSurface({
   onEtat,
   onRelancer,
   onOpenTerminalPath,
+  focus,
+  cote,
+  onFocusSurface,
+  onApi,
 }: {
   session: TerminalSession;
   active: boolean;
+  /** Ce terminal prend le focus (le second d'un terminal scindé ne le prend pas). */
+  focus: boolean;
+  cote?: "gauche" | "droite";
+  onFocusSurface: () => void;
+  onApi: (api: ApiSurface | null) => void;
   workspacePath: string;
   onStatus: (status: TerminalStatus) => void;
   onTitle: (title: string) => void;
@@ -430,6 +552,11 @@ function TerminalSurface({
   const onEtatRef = useRef(onEtat);
   onEtatRef.current = onEtat;
   const horlogeRef = useRef<number | null>(null);
+  const focusRef = useRef(focus);
+  focusRef.current = focus;
+  const onApiRef = useRef(onApi);
+  onApiRef.current = onApi;
+  const [depot, setDepot] = useState(false);
 
   const fitTerminal = useCallback(() => {
     const terminal = terminalRef.current;
@@ -589,6 +716,13 @@ function TerminalSurface({
 
     terminalRef.current = terminal;
     fitRef.current = fit;
+    onApiRef.current({
+      terminal,
+      arreter: () => {
+        const jeton = tokenRef.current;
+        if (jeton) void api.killTerminal(session.id, jeton);
+      },
+    });
 
     // Agent : chaque transition est publiée ; une attente ou une fin prévient l'IDE si
     // l'onglet n'est pas sous les yeux (événement « ide-notification »).
@@ -734,7 +868,7 @@ function TerminalSurface({
           .then(() => {
             if (disposedRef.current || tokenRef.current !== token) return;
             onStatus("running");
-            if (active) terminal.focus();
+            if (focusRef.current) terminal.focus();
           })
           .catch((err) => {
             if (disposedRef.current) return;
@@ -764,10 +898,10 @@ function TerminalSurface({
       // Retour depuis l'onglet Git (display:none) : redessiner tout l'ecran.
       const terminal = terminalRef.current;
       if (terminal) terminal.refresh(0, Math.max(0, terminal.rows - 1));
-      terminal?.focus();
+      if (focusRef.current) terminal?.focus();
     });
     return () => cancelAnimationFrame(id);
-  }, [active, fitTerminal]);
+  }, [active, focus, fitTerminal]);
 
   // theme — follow the background colour picked in Settings > Apparence.
   useEffect(
@@ -808,6 +942,7 @@ function TerminalSurface({
       webglRef.current = null;
       persistTerminalBuffer(workspacePath, session.id);
       terminalBuffers.delete(terminalBufferKey(workspacePath, session.id));
+      onApiRef.current(null);
       terminalRef.current?.dispose();
       terminalRef.current = null;
       fitRef.current = null;
@@ -827,6 +962,28 @@ function TerminalSurface({
       data-active={active ? "true" : "false"}
       data-arrete={arrete ? "true" : "false"}
       data-agent={session.agent?.cli}
+      data-cote={cote}
+      data-depot={depot ? "true" : undefined}
+      onFocus={onFocusSurface}
+      // Fichier glissé depuis l'explorateur : son chemin, entre guillemets, tapé dans le terminal.
+      onDragOver={(event) => {
+        if (!glisseDepuisExplorateur(event.dataTransfer)) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "copy";
+        setDepot(true);
+      }}
+      onDragLeave={() => setDepot(false)}
+      onDrop={(event) => {
+        setDepot(false);
+        if (!glisseDepuisExplorateur(event.dataTransfer)) return;
+        event.preventDefault();
+        const entrees = entreesGlissees(event.dataTransfer);
+        const jeton = tokenRef.current;
+        if (!entrees.length || !jeton) return;
+        const wsl = estWindows() && !session.agent && session.shell === "bash";
+        void api.writeTerminal(session.id, jeton, cheminsDeposes(entrees, session.agent ?? null, wsl));
+        terminalRef.current?.focus();
+      }}
     >
       {/* No global onMouseDown focus -- it would steal the mouse selection. Click on the
           empty area still focuses thanks to xterm's own handlers. */}

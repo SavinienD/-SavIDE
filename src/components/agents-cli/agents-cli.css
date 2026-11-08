@@ -118,3 +118,35 @@
 /* Volet des Réglages très étroit (≈ 170 px à 800 px) : les pastilles passent sous le nom. */
 .acli-agent__resume { flex-wrap: wrap; row-gap: 2px; }
 .acli-agent__nom { flex: 1 0 auto; max-width: calc(100% - 14px); }
+
+/* Recherche dans le terminal (Ctrl+F) : en haut à droite de la vue, au-dessus d'xterm. */
+.acli-recherche {
+  position: absolute; top: 6px; right: 14px; z-index: 5; display: flex; align-items: center; gap: 4px;
+  max-width: calc(100% - 28px); padding: 3px 4px 3px 6px; box-sizing: border-box;
+  border: 1px solid var(--line-strong); border-radius: var(--r-med); background: var(--bg-3);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3); font-size: var(--fs-xs);
+}
+.acli-recherche input {
+  flex: 1 1 140px; min-width: 60px; width: 180px; height: 22px; padding: 0 6px; box-sizing: border-box;
+  border: 1px solid var(--line); border-radius: var(--r-small); background: var(--bg-2); color: var(--text-0);
+  font-family: var(--font-mono); font-size: var(--fs-mono-sm);
+}
+.acli-recherche input:focus { outline: none; border-color: var(--accent); }
+.acli-recherche__compte { flex: 0 1 auto; min-width: 0; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acli-recherche .terminal-action:disabled { opacity: 0.4; cursor: default; }
+.acli-recherche .terminal-action[aria-pressed="true"] { color: var(--text-0); background: var(--bg-4); }
+.acli-recherche__casse { font-size: 10px; font-weight: 600; }
+
+/* Message bref (« Sortie copiée »). */
+.acli-notice {
+  position: absolute; top: 6px; left: 50%; transform: translateX(-50%); z-index: 6; padding: 3px 10px;
+  border: 1px solid var(--line-strong); border-radius: var(--r-pill); background: var(--bg-3); color: var(--text-1);
+  font-size: var(--fs-xs); white-space: nowrap; pointer-events: none;
+}
+
+/* Terminal scindé : deux terminaux côte à côte, séparés d'un filet. */
+.terminal-views[data-scinde="true"] .terminal-viewport[data-cote="gauche"] { right: 50%; border-right: 1px solid var(--line-strong); }
+.terminal-views[data-scinde="true"] .terminal-viewport[data-cote="droite"] { left: 50%; }
+
+/* Fichier glissé depuis l'explorateur au-dessus d'un terminal. */
+.acli-surface[data-depot="true"] { outline: 1px dashed var(--accent); outline-offset: -3px; }

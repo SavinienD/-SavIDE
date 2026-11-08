@@ -22,3 +22,11 @@ export function cycleTab(activeId: string, sessionIds: string[], direction: 1 | 
   const current = Math.max(0, order.indexOf(resolveActiveTab(activeId, sessionIds)));
   return order[(current + direction + order.length) % order.length];
 }
+
+/** Terminal scindé : les deux terminaux affichés côte à côte quand l'un des deux est actif
+ *  (sinon, ou si l'un a été fermé, vue simple). */
+export type PaireScindee = { gauche: string; droite: string };
+export function vueScindee(paire: PaireScindee | null, actif: string, sessionIds: string[]): PaireScindee | null {
+  if (!paire || !sessionIds.includes(paire.gauche) || !sessionIds.includes(paire.droite)) return null;
+  return actif === paire.gauche || actif === paire.droite ? paire : null;
+}
