@@ -1,4 +1,4 @@
-//! Worktrees (lot 186) : une tâche = un worktree prêt à l'emploi.
+//! Worktrees : une tâche = un worktree prêt à l'emploi.
 //! - config : fichier de projet `worktrees.toml` (+ scripts d'`orca.yaml`) ;
 //! - partage : node_modules, .env… partagés (lien, jonction) ou copiés ;
 //! - depot : petits appels à git ;

@@ -16,7 +16,7 @@ import type { TacheWorktree, TerminalDefaut } from "./worktreesApi";
 import { EVENEMENT_OUVRIR_WORKTREES, dossierLocal, type DemandeOuverture } from "./evenements";
 import "./worktrees.css";
 
-/** Contrat commun des lots 186 : le lot « agents » affiche ces notifications. */
+/** Contrat commun : le suivi des agents affiche ces notifications. */
 function notifier(t: TacheWorktree): void {
   window.dispatchEvent(
     new CustomEvent("ide-notification", {
