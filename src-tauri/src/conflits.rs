@@ -148,7 +148,7 @@ pub(crate) fn a_des_marqueurs(texte: &str) -> bool {
     })
 }
 
-pub(crate) const MARQUEURS_RESTANTS: &str = "Il reste des marqueurs de conflit (<<<<<<< ou >>>>>>>) : choisissez une version pour chaque bloc, ou corrigez le résultat.";
+pub(crate) const MARQUEURS_RESTANTS: &str = "Il reste des marqueurs de conflit (<<<<<<< ou >>>>>>>) : choisissez une version pour chaque bloc, ou corrigez le résultat.";
 
 /// Écrit le résultat (s'il est donné) et, si demandé, marque le fichier résolu (`git add`).
 /// `supprimer` : le fichier est retiré (conflit « supprimé d'un côté »).
@@ -196,12 +196,12 @@ pub(crate) fn action(dossier: &str, quoi: &str) -> Result<String> {
             let restants = git_ok(&depot.racine, &["diff", "--name-only", "--diff-filter=U"])?.texte();
             let n = restants.lines().filter(|l| !l.trim().is_empty()).count();
             if n > 0 {
-                anyhow::bail!("Il reste {n} fichier{} en conflit : marquez-les résolus d'abord.", if n > 1 { "s" } else { "" });
+                anyhow::bail!("Il reste {n} fichier{} en conflit : marquez-les résolus d'abord.", if n > 1 { "s" } else { "" });
             }
             git(&depot.racine, &[commande, "--continue"], None, &env)?
         }
         "abandonner" => git(&depot.racine, &[commande, "--abort"], None, &env)?,
-        autre => anyhow::bail!("action inconnue : {autre}"),
+        autre => anyhow::bail!("action inconnue : {autre}"),
     };
     if !sortie.ok {
         let detail = sortie.stderr.trim();
@@ -210,9 +210,9 @@ pub(crate) fn action(dossier: &str, quoi: &str) -> Result<String> {
     }
     let encore = operation(&depot);
     Ok(match (quoi, op.as_str(), encore.is_some()) {
-        ("abandonner", "fusion", _) => "Fusion abandonnée : le dépôt est revenu à l'état d'avant.".into(),
-        ("abandonner", _, _) => "Opération abandonnée : le dépôt est revenu à l'état d'avant.".into(),
-        (_, _, true) => "Étape suivante : de nouveaux conflits sont à résoudre.".into(),
+        ("abandonner", "fusion", _) => "Fusion abandonnée : le dépôt est revenu à l'état d'avant.".into(),
+        ("abandonner", _, _) => "Opération abandonnée : le dépôt est revenu à l'état d'avant.".into(),
+        (_, _, true) => "Étape suivante : de nouveaux conflits sont à résoudre.".into(),
         (_, "fusion", false) => "Fusion terminée.".into(),
         _ => "Opération terminée.".into(),
     })

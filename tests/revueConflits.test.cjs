@@ -76,7 +76,7 @@ test("message pour l'agent : chaque bloc avec les deux versions", () => {
   const msg = B.messageConflits("Fusion de « autre » dans « main »", [
     { chemin: "src/a.ts", code: "UU", texte: TEXTE },
     { chemin: "img.png", code: "UU", texte: null },
-  ], "main", "autre", (f) => (f.endsWith(".ts") ? "typescript" : ""));
+  ], "main", "autre", (f) => (f.endsWith(".ts") ? "typescript" : "")).replace(/\u00a0/g, " ");
   assert.match(msg, /^Fusion de « autre » dans « main » : 2 fichiers en conflit\./);
   assert.match(msg, /1\. src\/a\.ts:2-7 \(bloc 1 sur 2\)\nNotre version \(main\) :\n```typescript\nnous 1\nnous 2\n```\nLa leur \(autre\) :\n```typescript\neux 1\n```/);
   assert.match(msg, /3\. img\.png : conflit sur le fichier entier \(code git UU\)\./);

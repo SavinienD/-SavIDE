@@ -42,13 +42,13 @@ export function libelleCode(code: string): string {
 export function titreOperation(e: Pick<EtatConflits, "operation" | "nous" | "eux">): string {
   switch (e.operation) {
     case "fusion":
-      return `Fusion de « ${e.eux} » dans « ${e.nous} »`;
+      return `Fusion de « ${e.eux} » dans « ${e.nous} »`;
     case "rebase":
-      return `Rebasage sur « ${e.nous} »`;
+      return `Rebasage sur « ${e.nous} »`;
     case "cherry-pick":
-      return `Report du commit « ${e.eux} »`;
+      return `Report de « ${e.eux} »`;
     case "revert":
-      return `Annulation du commit « ${e.eux} »`;
+      return `Annulation de « ${e.eux} »`;
     default:
       return "Conflits";
   }
@@ -59,7 +59,7 @@ function dansSaisie(e: KeyboardEvent): boolean {
   return Boolean(el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)));
 }
 
-export function VueConflits({ dossier, onFini }: { dossier: string; onFini: (message: string | null) => void }) {
+export function VueConflits({ dossier, fichier, onFini }: { dossier: string; fichier?: string | null; onFini: (message: string | null) => void }) {
   const [etat, setEtat] = useState<EtatConflits | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [choix, setChoix] = useState<string | null>(null);
@@ -77,13 +77,18 @@ export function VueConflits({ dossier, onFini }: { dossier: string; onFini: (mes
       const e = await conflitsApi.etat(dossier);
       setEtat(e);
       setErreur(null);
-      setChoix((c) => (c && e.fichiers.some((f) => f.chemin === c) ? c : e.fichiers[0]?.chemin ?? null));
+      setChoix((c) => {
+        if (c && e.fichiers.some((f) => f.chemin === c)) return c;
+        // Fichier en conflit cliqué dans la liste des changements : on l'ouvre d'abord.
+        if (fichier && e.fichiers.some((f) => f.chemin === fichier)) return fichier;
+        return e.fichiers[0]?.chemin ?? null;
+      });
       return e;
     } catch (err) {
       setErreur(texteErreur(err));
       return null;
     }
-  }, [dossier]);
+  }, [dossier, fichier]);
   useEffect(() => {
     void charger();
   }, [charger]);
@@ -214,11 +219,11 @@ export function VueConflits({ dossier, onFini }: { dossier: string; onFini: (mes
         }),
       );
       await envoyerDansConversation(dossier, conversation.cible, messageConflits(titreOperation(etat), fichiers, etat.nous, etat.eux, langageFence));
-      const texte = `Conflits envoyés dans « ${conversation.titre} »`;
+      const texte = `Conflits envoyés dans « ${conversation.titre} »`;
       setAvis({ genre: "ok", texte });
       notifier("info", "Conflits envoyés à l'agent", texte, dossier, conversation.cible);
     } catch (err) {
-      setAvis({ genre: "erreur", texte: `Envoi impossible : ${texteErreur(err)}` });
+      setAvis({ genre: "erreur", texte: `Envoi impossible : ${texteErreur(err)}` });
     } finally {
       setOccupe(false);
     }
@@ -277,7 +282,7 @@ export function VueConflits({ dossier, onFini }: { dossier: string; onFini: (mes
           disabled={occupe || !etat.operation}
           onBlur={() => setAbandonArme(false)}
           onClick={() => (abandonArme ? void terminer("abandonner") : setAbandonArme(true))}
-          title={abandonArme ? "Cliquer encore : le dépôt revient à l'état d'avant" : "Abandonner l'opération"}
+          title={abandonArme ? "Cliquer encore : le dépôt revient à l'état d'avant" : "Abandonner l'opération"}
         >
           {abandonArme ? "Confirmer l'abandon" : "Abandonner"}
         </button>
@@ -312,9 +317,9 @@ export function VueConflits({ dossier, onFini }: { dossier: string; onFini: (mes
 
         <section className="revue-conflits__fichier" aria-label="Résolution du fichier">
           {!choix || !detail ? (
-            <p className="revue-diff__message">{reste ? "Chargement du fichier…" : "Plus rien à résoudre : cliquez sur « Continuer »."}</p>
+            <p className="revue-diff__message">{reste ? "Chargement du fichier…" : "Plus rien à résoudre : cliquez sur « Continuer »."}</p>
           ) : detail.binaire ? (
-            <p className="revue-diff__message">Fichier binaire : résolvez-le dans un terminal (git checkout --ours ou --theirs), ou demandez à l'agent.</p>
+            <p className="revue-diff__message">Fichier binaire : choisissez la version à garder dans un terminal, ou demandez à l'agent.</p>
           ) : unCoteAbsent ? (
             <div className="revue-conflits__absent">
               <p className="revue-diff__message">
@@ -378,7 +383,7 @@ export function VueConflits({ dossier, onFini }: { dossier: string; onFini: (mes
                 <span className="revue-conflits__aide">{blocs.length ? "Choisissez une version pour chaque bloc, ou modifiez le résultat." : "Plus aucun marqueur dans ce fichier."}</span>
                 <span className="revue-espace" />
                 <button type="button" className="revue-bouton" disabled={occupe} onClick={() => void resoudre({ marquer: false })}>Enregistrer</button>
-                <button type="button" className="revue-bouton revue-bouton--principal" data-action="marquer-resolu" disabled={occupe || blocs.length > 0} onClick={() => void resoudre({ marquer: true })} title={blocs.length ? "Il reste des blocs en conflit" : "Écrire le résultat et le marquer résolu (git add)"}>
+                <button type="button" className="revue-bouton revue-bouton--principal" data-action="marquer-resolu" disabled={occupe || blocs.length > 0} onClick={() => void resoudre({ marquer: true })} title={blocs.length ? "Il reste des blocs en conflit" : "Écrire le résultat et le marquer résolu"}>
                   Marquer résolu
                 </button>
               </div>

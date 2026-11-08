@@ -67,7 +67,8 @@ test("UN message : fichier:lignes, extrait, note, dans l'ordre", () => {
   m.ajouter("D", note());
   m.ajouter("D", note({ fichier: "old.rs", debut: 40, fin: 40, cote: "ancien", extrait: "fn f() {}", texte: "Garde cette fonction." }));
   m.ajouter("D", note({ fichier: "docs/guide.md", debut: 8, fin: 9, cote: "apercu", extrait: "Installer\nLancer", texte: "Ajoute un exemple." }));
-  const msg = N.messageNotes(m.notes("D"), (f) => (f.endsWith(".ts") ? "typescript" : f.endsWith(".rs") ? "rust" : ""));
+  // Espaces insécables de la typographie française (scripts/francisation) lues comme des espaces.
+  const msg = N.messageNotes(m.notes("D"), (f) => (f.endsWith(".ts") ? "typescript" : f.endsWith(".rs") ? "rust" : "")).replace(/\u00a0/g, " ");
   assert.match(msg, /^3 notes de relecture/);
   assert.match(msg, /1\. src\/app\.ts:12-14\n```typescript\nconst a = 1;\nconst b = 2;\n```\nNote : Renomme a en total\./);
   assert.match(msg, /2\. old\.rs:40 \(avant la modification\)\n```rust\nfn f\(\) \{\}\n```\nNote : Garde cette fonction\./);
@@ -78,7 +79,7 @@ test("UN message : fichier:lignes, extrait, note, dans l'ordre", () => {
 test("extrait avec des accents graves : clôture plus longue ; extrait trop long coupé", () => {
   const m = new N.MagasinNotes(null);
   m.ajouter("D", note({ extrait: "const s = ```x```;" }));
-  assert.match(N.messageNotes(m.notes("D")), /````\nconst s = ```x```;\n````/);
+  assert.match(N.messageNotes(m.notes("D")).replace(/\u00a0/g, " "), /````\nconst s = ```x```;\n````/);
   const long = Array.from({ length: 100 }, (_, i) => `ligne ${i}`).join("\n");
   const n = m.ajouter("D", note({ extrait: long }));
   assert.equal(n.extrait.split("\n").length, N.EXTRAIT_MAX_LIGNES + 1);

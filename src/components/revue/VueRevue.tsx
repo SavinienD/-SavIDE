@@ -89,6 +89,7 @@ export function VueRevue({ dossier, fichier, onFermer, ongletInitial }: Props) {
   const [avis, setAvis] = useState<Avis | null>(null);
   const [occupe, setOccupe] = useState(false);
   const [annulerArme, setAnnulerArme] = useState(false);
+  const [conflitChoisi, setConflitChoisi] = useState<string | null>(null);
   const apiRef = useRef<DiffApi | null>(null);
   const vueRef = useRef<HTMLDivElement | null>(null);
   const allerApres = useRef<{ cote: Cote; ligne: number } | null>(null);
@@ -189,6 +190,7 @@ export function VueRevue({ dossier, fichier, onFermer, ongletInitial }: Props) {
 
   const choisirFichier = useCallback((f: FichierRevue) => {
     if (f.groupe === "conflit") {
+      setConflitChoisi(f.chemin);
       setOnglet("conflits");
       return;
     }
@@ -416,6 +418,7 @@ export function VueRevue({ dossier, fichier, onFermer, ongletInitial }: Props) {
             <div className="revue-corps__conflits">
               <VueConflits
                 dossier={dossier}
+                fichier={conflitChoisi}
                 onFini={(message) => {
                   setOnglet("changements");
                   if (message) setAvis({ genre: "ok", texte: message });

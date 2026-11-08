@@ -101,14 +101,14 @@ export function messageConflits(
   langage: (fichier: string) => string = () => "",
 ): string {
   const parties: string[] = [
-    `${titre} : ${fichiers.length} fichier${fichiers.length > 1 ? "s" : ""} en conflit. Résous ces conflits directement dans les fichiers (garde ce qui doit l'être des deux côtés et enlève les marqueurs), marque chaque fichier résolu avec git add, puis dis-moi ce que tu as choisi. Ne termine pas l'opération : je relirai avant de continuer.`,
+    `${titre} : ${fichiers.length} fichier${fichiers.length > 1 ? "s" : ""} en conflit. Résous ces conflits directement dans les fichiers (garde ce qui doit l'être des deux côtés et enlève les marqueurs), marque chaque fichier comme résolu dans git, puis dis-moi ce que tu as choisi. Ne termine pas l'opération : je relirai avant de continuer.`,
   ];
   let n = 0;
   for (const f of fichiers) {
     const blocs = f.texte ? blocsDeConflit(f.texte) : [];
     if (!blocs.length) {
       n += 1;
-      parties.push(`${n}. ${f.chemin} : conflit sur le fichier entier (code git ${f.code}).`);
+      parties.push(`${n}. ${f.chemin} : conflit sur le fichier entier (code git ${f.code}).`);
       continue;
     }
     blocs.forEach((b, i) => {
@@ -118,9 +118,9 @@ export function messageConflits(
       parties.push(
         [
           `${n}. ${f.chemin}:${b.debut}-${b.fin} (bloc ${i + 1} sur ${blocs.length})`,
-          `Notre version (${nomNous}) :`,
+          `Notre version (${nomNous}) :`,
           `${c}${l}\n${b.nous.join("\n")}\n${c}`,
-          `La leur (${nomEux}) :`,
+          `La leur (${nomEux}) :`,
           `${c}${l}\n${b.eux.join("\n")}\n${c}`,
         ].join("\n"),
       );
