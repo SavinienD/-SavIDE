@@ -1,0 +1,17 @@
+/* reprise de Claude Code, Codex, Cursor, VS Code et validation des actions. */
+
+/* Réglages > Harnais : consignes du dossier. */
+.axe-interop__consignes { min-width: 0; max-width: 100%; font-size: calc(12px * var(--text-scale, 1)); color: var(--text-1); }
+.axe-interop__consignes > summary { min-width: 0; cursor: pointer; padding: 4px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-interop__consignes > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-small); }
+.axe-interop__consignes-liste { list-style: none; margin: 4px 0 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px;
+  border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-1); }
+.axe-interop__consignes-liste li { display: flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; min-width: 0; }
+.axe-interop__consignes-liste code { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-0); }
+.axe-interop__consignes-liste span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); }
+.axe-interop__consignes-liste li[data-etat="lu"] span,
+.axe-interop__consignes-liste li[data-etat="tronque"] span { color: var(--text-1); }
+.axe-interop__consignes-liste li[data-etat="tronque"] span,
+.axe-interop__consignes-liste li[data-etat="plafond"] span,
+.axe-interop__consignes-liste li[data-etat="illisible"] span { color: var(--accent); }
+

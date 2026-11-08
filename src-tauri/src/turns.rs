@@ -1596,9 +1596,8 @@ pub(super) fn configurable_tool_catalog(workspace_root: &Path) -> Vec<ToolDescri
 pub(super) fn system_prompt_for_workspace(workspace_root: &Path, base: &str) -> Result<String> {
     let mut sections = vec![format!("# Shell environment\n\n{}", shell_system_prompt())];
 
-    if let Some(instructions) =
-        read_workspace_prompt_file(workspace_root, WORKSPACE_INSTRUCTIONS_FILE)?
-    {
+    // AGENTS.md puis CLAUDE.md et .claude/CLAUDE.md, sous un plafond commun.
+    if let Some(instructions) = axecode_harness::consignes::texte(workspace_root) {
         sections.push(format!(
             "# Workspace instructions\n\nThe following instructions come from the current workspace and should be treated as the project source of truth.\n\n{instructions}"
         ));

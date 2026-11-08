@@ -132,6 +132,7 @@ mod import_dossier; // import
 mod git;
 mod harness; // harness
 mod harness_backup; // cleanup
+mod interop;
 mod models;
 mod offline; // v2-l6
 mod platform;
@@ -382,6 +383,7 @@ pub fn run() {
             voix::voix_annuler,
             voix::voix_etat,
             catalogue::catalogue_modeles,
+            interop::interop_consignes,
             comptes::list_provider_accounts,
             comptes::disconnect_provider_account,
             voix::voix_ouvrir_reglages_micro,

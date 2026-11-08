@@ -211,6 +211,7 @@ Code map:
 │   ├── axecode-harness # harness — Continual Harness
 │   │   ├── Cargo.toml
 │   │   └── src
+│   │       ├── consignes.rs # consignes du dossier : AGENTS.md, CLAUDE.md, .claude/CLAUDE.md (ordre, plafond commun, état)
 │   │       ├── host.rs # host calls harness.* / refine.history|rollback, archivage des plans
 │   │       ├── import.rs # import du kit brain
 │   │       ├── inject.rs # couche injectée par tour (notes, mémoires, skills, sous-agents, plans)
@@ -347,6 +348,7 @@ Code map:
 │       ├── custom_providers.rs # providers — instances configurables (providers.json + provider-keys.json), IPC provider_*, modelOverrides, détection Ollama/LM Studio
 │       ├── git.rs
 │       ├── harness.rs # harness — IPC harness_* (CRUD, promote/demote, refinements, rollback, import brain, refine start/status), couche harness par tour
+│       ├── interop.rs # IPC interop_* : consignes, skills (Claude Code, Codex, adresse), import MCP
 │       ├── harness_backup.rs # cleanup — sauvegarde périodique du harness (config harness-backup.json, IPC harness_backup_*)
 │       ├── lib.rs
 │       ├── main.rs

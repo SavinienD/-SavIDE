@@ -27,8 +27,9 @@ const DESIGN_SYSTEM_FILE_NAME: &str = "design.md";
 const DESIGN_SYSTEM_TEMPLATE: &str =
     "This is the design system of our project :\n\n'Paste design system here'";
 const CLAUDE_FILE_NAME: &str = "claude.md";
-const CLAUDE_FILE_TEMPLATE: &str =
-    "Note: SavIDE does not use this CLAUDE.md file as its reference instructions. Use AGENTS.md instead.\n";
+// CLAUDE.md est lu comme AGENTS.md (axecode_harness::consignes) : un nouveau
+// fichier part vide (l'ancien avis « does not use this CLAUDE.md » y est ignoré).
+const CLAUDE_FILE_TEMPLATE: &str = "";
 const IGNORED_DIRS: &[&str] = &[
     ".git",
     ".history",
@@ -1512,6 +1513,8 @@ mod tests {
         let contents = fs::read_to_string(root.join(entry.relative_path)).expect("read file");
 
         assert_eq!(contents, CLAUDE_FILE_TEMPLATE);
+        // CLAUDE.md est lu par l'agent : plus d'avis « does not use » dedans.
+        assert!(!contents.contains("does not use"));
 
         fs::remove_dir_all(root).ok();
     }
