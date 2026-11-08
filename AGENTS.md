@@ -363,6 +363,7 @@ Code map:
 │       ├── turns.rs # v2-l2.4c — send_message force le pont REPL en cloud (agent sur le service)
 │       ├── updater.rs
 │       ├── viewers.rs # viewers — viewer_read_bytes (plages, ArrayBuffer brut), viewer_zip_list/read/extract, viewer_sqlite_tables/rows (lecture seule, query_only)
+│       ├── editeur.rs # editeur_fichier_head (contenu à HEAD par git cat-file --filters, délai 10 s, 20 Mo) ; editeur_image_markdown (image collée/déposée -> images/ à côté du .md)
 │       ├── workflow.rs
 │       └── workspace.rs
 └── src
@@ -411,7 +412,15 @@ Code map:
 │   │   └── repl.css
     │   ├── NouvelleConversation.tsx # e13 — champ de création d'une conversation (le nom est exigé)
     │   ├── ConversationList.tsx
-    │   ├── EditorPane.tsx
+    │   ├── EditorPane.tsx # onglets de fichiers + Monaco ; sauvegarde auto, marge Git, Markdown côte à côte, images du .md, avant / après
+    │   ├── editeur # éditeur de fichiers
+    │   │   ├── reglagesEditeur.ts / ReglagesEditeurBloc.tsx # Réglages > Éditeur : sauvegarde automatique (désactivée / après 1 s / en quittant l'onglet), retour à la ligne, minimap
+    │   │   ├── sauvegardeAuto.ts / onglets.ts / fermeture.ts / MenuOnglet.tsx # planificateur d'enregistrement ; « Fermer tous les fichiers » (Ctrl+Maj+W), « Rouvrir l'onglet fermé » (Ctrl+Alt+O)
+    │   │   ├── margeGit.ts / useMargeGit.ts # marques de la marge par rapport à HEAD (diff de Myers) ; useFichierHead
+    │   │   ├── modeMarkdown.ts / rehypeAncresLignes.ts / defilementSynchro.ts / useDefilementSynchro.ts # .md : source / côte à côte / aperçu, ancres data-ligne, défilement synchronisé
+    │   │   ├── imagesMarkdown.ts / useImagesMarkdown.ts # image collée ou déposée dans un .md -> images/ + lien ; images relatives de l'aperçu
+    │   │   ├── imageAvantApres.ts # type d'image, cadre commun et glissière de la comparaison avant / après
+    │   │   └── editeur.css
     │   ├── FileTree.tsx
     │   ├── TerminalPanel.tsx # multi-onglets PTY : Ctrl+Tab, renommage, PowerShell/WSL et scrollback texte local
     │   ├── GitPanel.tsx
@@ -436,6 +445,9 @@ Code map:
     │   │   ├── EpubViewer.tsx # epub : chapitres du spine, images intégrées
     │   │   ├── MediaViewer.tsx # audio/vidéo natifs (protocole asset, lecture par plages)
     │   │   ├── ImageZoom.tsx / SvgViewer.tsx # images zoomables (ajuster, 1:1, Ctrl+molette), SVG aperçu + code
+    │   │   ├── ImageAvantApres.tsx # image modifiée : avant (dernier commit) / après, glissière ou côte à côte
+    │   │   ├── MermaidViewer.tsx # .mmd / .mermaid : diagramme par-dessus le code (zoom au clic)
+    │   │   ├── triFiltre.ts # tableaux : tri par colonne (nombres, textes, vides à la fin) et filtre des lignes
     │   │   ├── JsonViewer.tsx / NotebookViewer.tsx # arbre JSON repliable, rendu ipynb (cellules + sorties)
     │   │   ├── SqliteViewer.tsx / ZipViewer.tsx / FontViewer.tsx # tables SQLite, contenu zip + extraction, aperçu de police
     │   │   ├── FallbackViewer.tsx / HexViewer.tsx # repli : texte paginé (gros fichiers) ou vue hexadécimale virtualisée, lecture par plages

@@ -1,4 +1,4 @@
-// Réglages de l'éditeur de fichiers (Réglages > Apparence > Éditeur) :
+// Réglages de l'éditeur de fichiers (Réglages > Éditeur) :
 // sauvegarde automatique, retour à la ligne, minimap. Gardés sur ce poste (localStorage),
 // lus par chaque colonne d'éditeur et suivis en direct (autre fenêtre comprise).
 
