@@ -1,4 +1,4 @@
-//! Worktrees git des sous-agents (rlm186). Un sous-agent peut travailler dans
+//! Worktrees git des sous-agents. Un sous-agent peut travailler dans
 //! son propre worktree, sur la branche `sous-agent/<nom>`, rangé HORS du dépôt :
 //! `<dossier parent du dépôt>/<nom du dépôt>-sous-agents/<nom>`. Le parent lit
 //! son état ([`etat`]), fusionne sa branche ([`fusionner`]) puis le libère

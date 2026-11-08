@@ -1,5 +1,5 @@
 pub mod agent;
-pub mod appel_unique; // rlm186 : appel unique au modèle, sans session ni outils
+pub mod appel_unique; // appel unique au modèle, sans session ni outils
 pub mod bash;
 pub mod compact;
 pub mod dossiers; // dossiers renommés ou déplacés
@@ -23,7 +23,7 @@ pub mod question;
 pub mod read;
 pub mod repl; // repl
 pub mod rlm; // rlm
-pub mod rlm_git; // rlm186 : worktrees git des sous-agents
+pub mod rlm_git; // worktrees git des sous-agents
 mod ripgrep;
 pub mod guet; // guet
 pub mod session_commands; // goal

@@ -1,4 +1,4 @@
-// rlm186 — commande `ia_appel_unique` : un appel unique au modèle depuis
+// commande `ia_appel_unique` : un appel unique au modèle depuis
 // l'interface (sans session, sans outils, sans harnais), avec les comptes et
 // les clés configurés dans l'appli (même résolution des fournisseurs que les
 // conversations : registre de l'appli + fournisseurs déclarés).

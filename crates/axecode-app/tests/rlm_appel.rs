@@ -1,4 +1,4 @@
-//! rlm186 — `rlm.query` et `rlm.query_lot` de bout en bout : vrai noyau Python,
+//! `rlm.query` et `rlm.query_lot` de bout en bout : vrai noyau Python,
 //! fournisseur scripté (aucun appel réseau). Ignoré sans Python avec IPython
 //! (voir AXECODE_PYTHON).
 

@@ -1,4 +1,4 @@
-//! rlm186 — suivi des sous-agents : fiche de lancement (brief, modèle,
+//! suivi des sous-agents : fiche de lancement (brief, modèle,
 //! worktree), statut final (réussi / échoué / bloqué / arrêté), worktree git
 //! par enfant, arrêt, nouvelle tentative et comparaison (course de modèles).
 
@@ -119,7 +119,7 @@ pub(super) fn message_parent(nom: &str, statut: &str, erreur: bool, tronque: boo
     format!("{tete} :\n\n{texte}")
 }
 
-/// Statut d'un résultat écrit avant rlm186 (sans `statut`).
+/// Statut d'un résultat écrit avant l'ajout du statut (sans `statut`).
 pub(super) fn completer(mut r: SubagentResult) -> SubagentResult {
     if r.statut.is_none() {
         r.statut = Some(if r.error { ECHOUE } else { REUSSI }.into());

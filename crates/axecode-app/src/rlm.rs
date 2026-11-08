@@ -8,7 +8,7 @@
 //! * `messages.send` only reaches the parent, children and siblings.
 //! * Before fanning out more than [`FANOUT_GUARD`] children in one turn, the
 //!   provider quota is checked; a warning is returned, never an error.
-//! * rlm186 ([`suivi`]) : worktree git par enfant, arrêt, nouvelle tentative,
+//! * [`suivi`] : worktree git par enfant, arrêt, nouvelle tentative,
 //!   statut final (réussi / échoué / bloqué / arrêté), diffusion à toute la
 //!   famille, comparaison des enfants d'une course de modèles.
 
@@ -27,7 +27,7 @@ use axecode_core::{
     ModelRef,
 };
 
-mod suivi; // rlm186
+mod suivi;
 pub use suivi::{lire_statut, Fiche, ARRETE, BLOQUE, ECHOUE, REUSSI};
 
 /// Children spawned in one turn beyond which the quota guard runs.
@@ -66,10 +66,10 @@ pub struct SubagentResult {
     /// The task ended on an error (provider refusal, quota...).
     #[serde(default)]
     pub error: bool,
-    /// rlm186 — réussi / échoué / bloqué / arrêté.
+    /// réussi / échoué / bloqué / arrêté.
     #[serde(default)]
     pub statut: Option<String>,
-    /// rlm186 — fichiers modifiés dans le worktree de l'enfant.
+    /// fichiers modifiés dans le worktree de l'enfant.
     #[serde(default)]
     pub fichiers: Vec<String>,
 }
@@ -240,7 +240,6 @@ impl FamilyHost {
             }
             "rlm.wait" => self.wait(params).await,
             "rlm.quota" => Ok(self.current_quota().await.unwrap_or(Value::Null)),
-            // rlm186
             "rlm.stop" => self.arreter(params).await,
             "rlm.retry" => self.reprendre(params).await,
             "rlm.worktree" => self.worktree_etat(params).await,
@@ -319,7 +318,7 @@ impl FamilyHost {
     }
 
     async fn spawn(&self, params: &Value) -> Result<Value> {
-        // rlm186 — lancement commun avec rlm.retry (worktree, statut, fiche) : voir suivi.rs.
+        // lancement commun avec rlm.retry (worktree, statut, fiche) : voir suivi.rs.
         self.lancer(suivi::Lancement {
             brief: req(params, "prompt")?.to_string(),
             nom: s(params, "name").map(str::to_string),
@@ -414,7 +413,7 @@ impl FamilyHost {
                     .find(|m| m.id == key || m.name == key)
                     .ok_or_else(|| anyhow!("no {role} named `{key}` (nuclear family only)"))?
             }
-            // rlm186 — diffusion : tous les enfants, sinon tous les frères et sœurs.
+            // diffusion : tous les enfants, sinon tous les frères et sœurs.
             "all" => {
                 let body = if mode == "follow_up" { text.to_string() } else { format!("[new task] {text}") };
                 return self.broadcast(if children.is_empty() { siblings } else { children }, body).await;
@@ -460,7 +459,7 @@ impl FamilyHost {
         if text.is_empty() {
             return Ok(());
         }
-        // rlm186 — statut final (ligne `STATUT: …` de l'enfant, sinon réussi
+        // statut final (ligne `STATUT: …` de l'enfant, sinon réussi
         // sans erreur) et fichiers modifiés dans son worktree.
         let (lu, sans_statut) = suivi::lire_statut(text);
         let statut = if error { suivi::ECHOUE } else { lu.unwrap_or(suivi::REUSSI) };
