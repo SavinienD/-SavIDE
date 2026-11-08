@@ -31,8 +31,8 @@
     {
       "regle": "cible-petite",
       "selecteur": ".tab__close",
-      "situation": "/editeur-menu-onglet$",
-      "raison": "Éditeur : croix « Fermer l'onglet » (18 px, zone de clic de 20 px par ::after) visible parce que le pointeur est resté sur l'onglet après le clic droit ; défaut déjà connu (voir les scènes harnais-*), à reprendre à part."
+      "situation": "/editeur-(menu-onglet|mermaid-zoom)$",
+      "raison": "Éditeur : croix « Fermer l'onglet » (18 px, zone de clic de 20 px par ::after) mesurée pendant qu'un menu (clic droit sur l'onglet) ou la fenêtre agrandie d'un diagramme Mermaid la recouvre en partie ; défaut déjà connu (voir les scènes harnais-*), à reprendre à part."
     },
     {
       "regle": "chevauchement",

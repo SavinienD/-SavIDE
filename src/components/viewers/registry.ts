@@ -22,7 +22,8 @@ export type ViewerKind =
   | "sqlite"
   | "zip"
   | "font"
-  | "epub";
+  | "epub"
+  | "mermaid";
 
 export type OverlaySpec = {
   /** Toggle label when the preview is hidden. */
@@ -98,6 +99,12 @@ register(["sqlite", "sqlite3", "db", "db3", "s3db", "sl3"], binary("sqlite"));
 register(["zip", "jar", "war", "ear", "apk", "aab", "nupkg", "vsix", "xpi", "whl"], binary("zip"));
 register(["ttf", "otf", "woff", "woff2"], binary("font"));
 register(["epub"], binary("epub"));
+// diagrammes Mermaid : rendu par-dessus le code, affiché à l'ouverture.
+register(["mmd", "mermaid"], {
+  kind: "mermaid",
+  fromFile: false,
+  overlay: { previewLabel: "Diagramme", sourceLabel: "Code", previewByDefault: true, icon: "solar:diagram-up-linear" },
+});
 
 export function fileExtension(path: string): string {
   const name = path.split(/[\\/]/).pop() ?? path;

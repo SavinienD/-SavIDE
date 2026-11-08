@@ -1250,3 +1250,26 @@
   -webkit-user-select: text;
   cursor: text;
 }
+
+/* visionneuse Mermaid (.mmd) : le diagramme centré, réduit à la largeur du volet
+   (clic : plein écran avec zoom). La fenêtre agrandie passe au-dessus de la barre d'onglets. */
+.xv-mermaid {
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 24px;
+}
+.xv-mermaid .mermaid-diagram {
+  margin: 0 auto;
+  max-width: 100%;
+}
+/* Le SVG de Mermaid a width="100%" et sa largeur naturelle en max-width : il se réduit au
+   volet sans jamais s'agrandir. */
+.xv-mermaid .mermaid-diagram__svg {
+  min-width: 0;
+}
+.xv-mermaid .mermaid-diagram__svg svg {
+  height: auto;
+}
+.xv-layer:has(.mermaid-zoom) {
+  z-index: 1000;
+}

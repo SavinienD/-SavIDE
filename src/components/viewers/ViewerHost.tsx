@@ -23,6 +23,7 @@ const JsonViewer = lazy(() => import("./JsonViewer"));
 const NotebookViewer = lazy(() => import("./NotebookViewer"));
 const SvgViewer = lazy(() => import("./SvgViewer"));
 const FallbackViewer = lazy(() => import("./FallbackViewer"));
+const MermaidViewer = lazy(() => import("./MermaidViewer"));
 
 /** Hex / paged-text view for files no other viewer (nor Monaco) can show. */
 export function FallbackHost({ doc }: { doc: FileDocument }) {
@@ -111,6 +112,8 @@ function renderViewer({ spec, doc, text, onOpenFile }: Props) {
       return <NotebookViewer {...file} text={text} onOpenFile={onOpenFile} />;
     case "svg":
       return <SvgViewer {...file} text={text} />;
+    case "mermaid":
+      return <MermaidViewer text={text ?? ""} />;
     case "legacy-office": {
       const ext = fileExtension(doc.name);
       return (

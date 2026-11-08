@@ -59,4 +59,9 @@ export const SCENES_EDITEUR = [
     temoins: ["appel:editeur_image_markdown", "(images/capture-ecran.png)", "sel:.editor-col .tab[data-active='true'] .tab__dirty"] },
   { id: "editeur-md-image-apercu", ...EDITEUR, ouvrirFichier: "notes.md", clics: [".md-actions [data-mode-md='cote']"],
     temoins: ["sel:.editor-md-preview img[src*='renvois.png']", "absent:.editor-md-preview img[src='images/renvois.png']"] },
+  // ED3a — fichier Mermaid (.mmd) : diagramme rendu par-dessus le code ; clic = plein écran avec zoom.
+  { id: "editeur-mermaid", ...EDITEUR, ouvrirFichier: "flux.mmd",
+    temoins: ["sel:.xv-mermaid .mermaid-diagram[data-state='ready'] svg", "sel:.editor-preview-toggle[data-active='true']"] },
+  { id: "editeur-mermaid-zoom", ...EDITEUR, ouvrirFichier: "flux.mmd", clics: [".xv-mermaid .mermaid-diagram[data-state='ready']"],
+    temoins: ["sel:.mermaid-zoom[role='dialog'] .mermaid-zoom__svg svg", "clic:.mermaid-zoom__toolbar button"] },
 ];
