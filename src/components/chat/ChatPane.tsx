@@ -112,6 +112,7 @@ import { bornerVues, toucherVue } from "./vuesConversations"; // mémoire
 import type { AgentEvent } from "../../types";
 import { libelleStop } from "./arretForce"; // stop-force
 import { agentsApi } from "../agents/agentsApi"; // sub-n
+import { BandeauReprise } from "../../axe/reprise/BandeauReprise"; // reprise après une limite d'abonnement
 import { estWindows, formaterTexte, modPrincipal } from "../../lib/plateforme";
 
 type Attachment = {
@@ -3810,6 +3811,7 @@ export function ChatPane({
           ↓
         </button>
       ) : null}
+      {!viewingSubAgent && <BandeauReprise conversationId={conversationId} />}
       {!viewingSubAgent && queuedPrompts.length > 0 && fileEnPause(conversationId) ? (
         <div className="chat-file-pause" data-testid="file-en-pause">
           <span title="File d'attente en pause après l'arrêt">File en pause</span>
