@@ -474,5 +474,6 @@ Code map:
     │   ├── ipc.ts # IPC local + remote_* ; cloudRpc et routage skills.* en cloud (v2-l2.4) ; lectures/écritures via le miroir hors ligne ; conversations (list/load/rename) routées vers le service en cloud (v2-l7)
     │   ├── language.ts
     │   ├── models.ts
+    │   ├── qrcode.ts # QR code fabriqué localement (SVG, sans réseau) pour l'appairage du téléphone
     │   ├── recents.ts
     │   └── tools.ts

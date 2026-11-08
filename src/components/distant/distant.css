@@ -1,0 +1,30 @@
+/* Accès à distance : styles du panneau (appairage). */
+
+/* Appairage dans une colonne étroite (éditeur à 800 ou 1024 px) : le code, le QR et le lien
+   passent à la ligne au lieu de faire défiler le panneau (grille à 3 colonnes avant). */
+.remote-panel .remote-panel__pairing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+.remote-panel .remote-panel__pairing-copy {
+  flex: 1 1 220px;
+}
+/* Lien d'appairage : cible d'au moins 24 px de haut, même sur une seule ligne. */
+.remote-panel .remote-panel__pairing-copy > a {
+  display: inline-block;
+  padding: 4px 0;
+}
+
+/* Titres sur une ligne dans une colonne étroite (texte agrandi) : « … » et infobulle. */
+.remote-panel .remote-panel__head-text,
+.remote-panel .remote-panel__block-head > div {
+  min-width: 0;
+}
+.remote-panel .remote-panel__head-text h1,
+.remote-panel .remote-panel__block-head h2 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
