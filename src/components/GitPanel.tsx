@@ -17,6 +17,8 @@ import { envoyerALAgent } from "./pr/versAgent";
 import { PrOnglet } from "./pr/PrOnglet";
 import { IssuesOnglet } from "./pr/IssuesOnglet";
 import "./pr/pr.css";
+import { infoBulle } from "../axe/raccourcis"; // worktrees
+import { dossierLocal, ouvrirWorktrees } from "./worktrees/evenements"; // worktrees
 import type {
   GitBranch,
   GitRepositorySnapshot,
@@ -1275,6 +1277,19 @@ export function GitPanel({
               )}
             </span>
             <span className="git-panel__section-actions">
+              {dossierLocal(workspacePath) ? (
+                // worktrees : une tâche = un worktree (branche, dossier, scripts du projet)
+                <button
+                  type="button"
+                  className="git-panel__head-btn"
+                  data-action="nouveau-worktree"
+                  onClick={() => ouvrirWorktrees("nouveau", workspacePath)}
+                  title={infoBulle("Nouveau worktree", "nouveauWorktree")}
+                  aria-label="Nouveau worktree"
+                >
+                  <Icon icon="solar:branching-paths-up-linear" width={15} height={15} />
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="git-panel__head-btn"

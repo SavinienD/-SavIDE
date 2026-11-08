@@ -19,6 +19,7 @@ import { GIT_TAB_ID, cycleTab, isExecutablePathTitle, resolveActiveTab } from ".
 import { onThemeChange } from "../axe/theme"; // theme
 import { xtermTheme } from "../axe/themeTargets"; // theme
 import { MONO_BASE_PX } from "../axe/zoom"; // zoom — taille fixe (e19 : le reglage ne concerne que le chat et les documents)
+import { prendreCommandeDepart } from "./worktrees/terminauxDepart"; // worktrees
 import type { TerminalDataPayload, TerminalExitPayload } from "../types";
 
 type TerminalStatus = "idle" | "starting" | "running" | "exited" | "error";
@@ -601,6 +602,9 @@ function TerminalSurface({
           .then(() => {
             if (disposedRef.current || tokenRef.current !== token) return;
             onStatus("running");
+            // worktrees : commande de l'onglet ([[terminaux]] de worktrees.toml), une seule fois.
+            const depart = prendreCommandeDepart(workspacePath, session.id);
+            if (depart) void api.writeTerminal(session.id, token, `${depart}\r`);
             if (active) terminal.focus();
           })
           .catch((err) => {

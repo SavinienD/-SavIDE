@@ -3,6 +3,16 @@
   "exceptions": [
     {
       "regle": "chevauchement",
+      "selecteur": ".wt-taches",
+      "raison": "Worktrees : cartes des tâches de fond (création, suppression d'un worktree). Elles flottent sous la barre de titre, au-dessus de l'interface, comme une notification ; une tâche réussie se retire seule, les autres par « Fermer »."
+    },
+    {
+      "regle": "chevauchement",
+      "selecteur": ".wt-menu",
+      "raison": "Worktrees : menu d'une ligne ou d'un dépôt de la liste Worktrees, ouvert par un clic : il flotte au-dessus de la liste (comme tout menu déroulant) et se ferme par Échap ou un clic à côté."
+    },
+    {
+      "regle": "chevauchement",
       "selecteur": ".chat-body__bas",
       "situation": "/(copier-code|copie-selection-code)$",
       "raison": "Scène copier-code : le fil est remonté jusqu'au bloc de code, le bouton flottant « Aller en bas » apparaît donc au-dessus du contenu, comme prévu."

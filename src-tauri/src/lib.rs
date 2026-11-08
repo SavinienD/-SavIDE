@@ -168,6 +168,7 @@ mod viewers; // viewers
 mod workflow;
 mod workspace;
 mod dossiers; // dossiers renommés ou déplacés
+mod worktrees; // worktrees : une tâche = un worktree prêt à l'emploi
 
 use context::*;
 use models::*;
@@ -640,6 +641,18 @@ pub fn run() {
             forges::commandes::forge_issues,
             forges::commandes::forge_journal,
             forges::commandes::forge_creer_pr,
+            worktrees::worktrees_config, // worktrees
+            worktrees::worktrees_config_creer,
+            worktrees::worktree_creer,
+            worktrees::worktrees_taches,
+            worktrees::worktree_tache_annuler,
+            worktrees::worktree_tache_reprendre,
+            worktrees::worktree_tache_oublier,
+            worktrees::worktree_tache_sortie,
+            worktrees::worktrees_lister,
+            worktrees::worktree_supprimer,
+            worktrees::worktrees_nettoyage,
+            worktrees::worktrees_prune,
             updater::updater_check,
             updater::updater_download_and_install,
             updater::updater_restart,

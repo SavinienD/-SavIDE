@@ -7,6 +7,7 @@ import * as D from "./donnees";
 import { simulationCollegue } from "./collegue";
 import { simulationGit } from "./git"; // panneau Git, PR, issues
 import { simulationQuotas } from "./quotas"; // quotas
+import { simulationWorktrees } from "./worktrees"; // worktrees
 
 export type Scene = {
   /** ordre-dossiers — open_workspace ouvre le dossier demandé (et non l'espace du banc). */
@@ -555,6 +556,7 @@ export function installerSimulation(scene: Scene): void {
   if (scene.collegue) Object.assign(h, simulationCollegue(scene, { ...h }));
   // Quotas : plusieurs comptes avec quota, jauge du contexte (scènes quotas-*, jauge-*, reprise-*).
   if (scene.quotas) Object.assign(h, simulationQuotas(scene, { ...h }));
+  if (scene.worktrees) Object.assign(h, simulationWorktrees(scene)); // worktrees
   mockWindows("main");
   mockConvertFileSrc("windows");
   mockIPC(
