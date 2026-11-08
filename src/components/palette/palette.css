@@ -312,3 +312,41 @@
   outline-offset: 2px;
   border-radius: var(--r-small);
 }
+
+/* Lot palette (P5) — Réglages > À propos : Aide (journaux, relance en administrateur). */
+.aide-appli {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+  min-width: 0;
+}
+.aide-appli__titre {
+  margin: 0;
+  color: var(--text-0);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aide-appli__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.aide-appli__actions .settings-pane__btn {
+  max-width: 100%;
+}
+.aide-appli__actions .settings-pane__btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aide-appli__message {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  overflow-wrap: anywhere;
+}

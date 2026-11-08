@@ -169,6 +169,7 @@ mod dossiers; // dossiers renommés ou déplacés
 mod palette; // lot palette : Ctrl+P, Ctrl+K, explorateur
 mod recherche_conversations; // lot palette : Ctrl+K, recherche dans l'historique
 mod explorateur_git; // lot palette : couleurs git de l'explorateur, recherche dans un dossier
+mod ouvrir_avec; // lot palette : « Ouvrir dans… », journaux, administrateur
 
 use context::*;
 use models::*;
@@ -367,6 +368,8 @@ pub fn run() {
                 } else {
                     let _ = app.emit(TERMINAL_OPEN_EVENT_NAME, ());
                 }
+            } else {
+                ouvrir_avec::evenement_menu(event.id().as_ref()); // lot palette : menu Aide
             }
         })
         .manage(state)
@@ -517,6 +520,10 @@ pub fn run() {
             recherche_conversations::palette_recherche_conversations,
             explorateur_git::explorateur_git,
             explorateur_git::palette_recherche_dossier,
+            ouvrir_avec::editeurs_detectes,
+            ouvrir_avec::ouvrir_dans_editeur,
+            ouvrir_avec::ouvrir_dossier_journaux,
+            ouvrir_avec::relancer_administrateur,
             workspace::open_cloud_workspace, // v2-l2.3
             workspace::open_new_window,
             workspace::reset_window_title,

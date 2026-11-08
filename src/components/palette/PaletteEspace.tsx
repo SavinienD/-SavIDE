@@ -9,6 +9,8 @@ import { PaletteAller, type ContexteAller } from "./PaletteAller";
 import { PaletteFichiers } from "./PaletteFichiers";
 import { noterFichierRecent } from "./recents";
 import { EVENEMENT_RECHERCHE_DOSSIER } from "./rechercheDossier";
+import { actionsAide, actionsEditeurs } from "./actionsAide";
+import { editeursDetectes, ouvrableLocalement, type Editeur } from "./ouvrirAvec";
 
 type Props = {
   workspacePath: string;
@@ -35,6 +37,15 @@ type Ouverte = null | "fichiers" | "aller";
 
 export function PaletteEspace(props: Props) {
   const [ouverte, setOuverte] = useState<Ouverte>(null);
+  // Éditeurs du poste (« Ouvrir dans VS Code »…), cherchés une fois.
+  const [editeurs, setEditeurs] = useState<Editeur[]>([]);
+  useEffect(() => {
+    let vivant = true;
+    if (ouvrableLocalement(props.workspacePath)) void editeursDetectes().then((e) => vivant && setEditeurs(e));
+    return () => {
+      vivant = false;
+    };
+  }, [props.workspacePath]);
   const propsRef = useRef(props);
   propsRef.current = props;
   // Ctrl+Entrée : fichier à passer dans la colonne voisine dès que l'éditeur l'a rangé.
@@ -99,6 +110,10 @@ export function PaletteEspace(props: Props) {
       ouvrirLibre: props.ouvrirLibre,
       ouvrirReglages: props.ouvrirReglages,
       afficherTerminal: props.afficherTerminal,
+      actions: [
+        ...(props.layout === "ide" ? actionsEditeurs(editeurs, props.workspacePath, props.fichierActif ?? null) : []),
+        ...actionsAide(),
+      ],
     }),
     // Lu à l'ouverture de la palette : pas besoin de suivre chaque rendu de l'espace.
     // eslint-disable-next-line react-hooks/exhaustive-deps

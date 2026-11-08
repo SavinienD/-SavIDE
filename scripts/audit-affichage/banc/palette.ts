@@ -73,5 +73,14 @@ export function simulationPalette(scene: Record<string, unknown>): Record<string
         ],
       };
     },
+    // Lot palette (P5) — éditeurs trouvés sur le poste, journaux, relance en administrateur.
+    editeurs_detectes: () => (scene.sansEditeur ? [] : [
+      { id: "vscode", nom: "VS Code", dossier: true },
+      { id: "cursor", nom: "Cursor", dossier: true },
+      { id: "zed", nom: "Zed", dossier: true },
+    ]),
+    ouvrir_dans_editeur: () => null,
+    ouvrir_dossier_journaux: () => "C:\\Users\\utilisateur\\AppData\\Local\\savide\\savide\\data\\logs",
+    relancer_administrateur: () => null,
   };
 }

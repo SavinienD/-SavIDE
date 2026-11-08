@@ -29,6 +29,7 @@ import { useEtatGit } from "./palette/useEtatGit"; // lot palette : couleurs git
 import { etatDe, LIBELLES_GIT, type CarteGit } from "./palette/etatGit";
 import { demanderRechercheDossier } from "./palette/rechercheDossier"; // lot palette : « Rechercher dans ce dossier »
 import "./palette/explorateur.css";
+import { editeursDetectes, ouvrableLocalement, ouvrirDansEditeur, positionCurseur, type Editeur } from "./palette/ouvrirAvec"; // lot palette : « Ouvrir dans… »
 
 // explorateur — système du poste (raccourcis Cmd sur macOS, séparateur « \ » sous Windows).
 const EST_MAC = estMac();
@@ -166,6 +167,15 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
     useState<string | null>(null);
   const [dragPreview, setDragPreview] = useState<DragPreviewState | null>(null);
   const carteGit = useEtatGit(workspacePath, refreshToken, localRefreshToken); // lot palette
+  // lot palette — « Ouvrir dans VS Code / Cursor / Zed… » (éditeurs trouvés sur le poste).
+  const [editeurs, setEditeurs] = useState<Editeur[]>([]);
+  useEffect(() => {
+    let vivant = true;
+    if (ouvrableLocalement(workspacePath)) void editeursDetectes().then((e) => vivant && setEditeurs(e));
+    return () => {
+      vivant = false;
+    };
+  }, [workspacePath]);
   const expandedRef = useRef(expanded);
   const workspacePathRef = useRef(workspacePath);
   const bodyRef = useRef<HTMLDivElement | null>(null);
@@ -1395,6 +1405,14 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
           onPaste={() => void pasteInto(menu.entry)}
           onDelete={() => void deleteEntries(menu.entry)}
           onSearchFolder={menu.entry?.kind === "directory" ? () => { const e = menu.entry; closeMenu(); if (e) demanderRechercheDossier(e.relativePath); } : undefined}
+          editeurs={editeurs.filter((ed) => ed.dossier || menu.entry?.kind === "file").slice(0, 3)}
+          onOpenIn={(id) => {
+            const e = menu.entry;
+            closeMenu();
+            // Fichier ouvert dans l'éditeur : à la ligne du curseur.
+            const p = e?.kind === "file" ? positionCurseur(e.relativePath) : null;
+            void ouvrirDansEditeur(id, workspacePath, e?.relativePath, p?.ligne, p?.colonne).catch((err) => setActionError(errorText(err)));
+          }}
           onRefresh={() => {
             closeMenu();
             refresh();
@@ -1872,6 +1890,8 @@ function TreeContextMenu({
   onDelete,
   onRefresh,
   onSearchFolder,
+  editeurs = [],
+  onOpenIn,
 }: {
   menu: ContextMenuState;
   hasClipboard: boolean;
@@ -1890,6 +1910,9 @@ function TreeContextMenu({
   onRefresh: () => void;
   /** lot palette — volet de recherche limité à ce dossier. */
   onSearchFolder?: () => void;
+  /** lot palette — éditeurs du poste proposés (« Ouvrir dans … »). */
+  editeurs?: Editeur[];
+  onOpenIn?: (editeur: string) => void;
 }) {
   const entry = menu.entry;
 
@@ -1918,6 +1941,10 @@ function TreeContextMenu({
       {onSearchFolder && (
         <MenuItem icon="solar:magnifer-linear" label="Rechercher dans ce dossier" onClick={onSearchFolder} />
       )}
+      {onOpenIn &&
+        editeurs.map((ed) => (
+          <MenuItem key={ed.id} icon="solar:code-square-linear" label={`Ouvrir dans ${ed.nom}`} onClick={() => onOpenIn(ed.id)} />
+        ))}
       <MenuItem icon="solar:document-add-linear" label="Nouveau fichier" onClick={onNewFile} />
       <MenuItem
         icon="solar:add-folder-linear"

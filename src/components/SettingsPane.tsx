@@ -45,6 +45,7 @@ import { PythonSkillPreview, isPySkillEnabled } from "./settings/PythonSkillPrev
 import { ComptesSupplementaires } from "./settings/ComptesSupplementaires";
 import { MenuHarnais, usePartageHarnais } from "./settings/HarnaisPartage";
 import { RechercheReglages } from "./palette/RechercheReglages"; // lot palette : recherche dans les Réglages
+import { AideAppli } from "./palette/AideAppli"; // lot palette : Aide (journaux, administrateur)
 type SkillKindFilter = "all" | "recipe" | "python";
 import { sanitizeOpenRouterName, type ModelEntry } from "../lib/models";
 import type {
@@ -1658,6 +1659,7 @@ function AboutSection() {
           <span>www.axe-international.com</span>
         </a>
       </div>
+      <AideAppli /> {/* lot palette */}
     </div>
   );
 }

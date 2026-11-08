@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { fournirActions } from "../../axe/raccourcis";
 import { PaletteAller, type ContexteAller } from "./PaletteAller";
+import { actionsAide } from "./actionsAide";
 
 type Props = {
   ouvrirDossier: (chemin: string, conversationId?: string) => unknown;
@@ -13,6 +14,6 @@ type Props = {
 export function PaletteAccueil({ ouvrirDossier, ouvrirLibre }: Props) {
   const [ouverte, setOuverte] = useState(false);
   useEffect(() => fournirActions({ allerA: () => setOuverte(true), ouvrirFichier: () => undefined }), []);
-  const contexte = useMemo<ContexteAller>(() => ({ ouvrirDossier, ouvrirLibre }), [ouvrirDossier, ouvrirLibre]);
+  const contexte = useMemo<ContexteAller>(() => ({ ouvrirDossier, ouvrirLibre, actions: actionsAide() }), [ouvrirDossier, ouvrirLibre]);
   return ouverte ? <PaletteAller contexte={contexte} onFermer={() => setOuverte(false)} /> : null;
 }

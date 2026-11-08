@@ -872,4 +872,16 @@ export const SCENES = [
   { id: "explorateur-recherche-dossier", stockage: () => colonnes([ids(1)]), explorateur: { clicDroit: "src", menu: "Rechercher dans ce dossier" },
     touchesFin: ["p", "a", "l", "e", "t", "t", "e"],
     temoins: ["sel:.search-pane__dossier", "Dans src", "appel:palette_recherche_dossier", "sel:.search-result__file[title='src/Workspace.tsx']"] },
+  // Lot palette (P5) — « Ouvrir dans… » VS Code, Cursor, Zed (simulés) au clic droit et dans Ctrl+K ;
+  // Aide dans Réglages > À propos (journaux ; sous Windows, relancer en administrateur).
+  { id: "explorateur-ouvrir-dans", stockage: () => colonnes([ids(1)]), explorateur: { clicDroit: "README.md", menu: "Ouvrir dans VS Code" },
+    temoins: ["appel:ouvrir_dans_editeur", "absent:.tree-menu"] },
+  { id: "explorateur-menu-editeurs", stockage: () => colonnes([ids(1)]), explorateur: { clicDroit: "src" },
+    temoins: ["Ouvrir dans VS Code", "Ouvrir dans Zed", "Rechercher dans ce dossier"] },
+  { id: "palette-aller-editeur", stockage: () => colonnes([ids(1)]), touches: ["Control+k"],
+    taper: [{ sel: ".palette__champ input", texte: "dossier dans cursor", ajouter: true }], touchesFin: ["Enter"],
+    temoins: ["appel:ouvrir_dans_editeur", "absent:.palette"] },
+  { id: "reglages-aide", stockage: () => colonnes([ids(1)]), reglages: true, clics: [".settings-pane__nav-item[data-section='about']"],
+    cliquer: [".aide-appli [data-action='ouvrir-journaux']"],
+    temoins: ["appel:ouvrir_dossier_journaux", "sel:.aide-appli__message"] },
 ];
