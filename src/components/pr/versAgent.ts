@@ -87,7 +87,8 @@ function livrer(c: Compositeur, texte: string): void {
     zone.setSelectionRange(zone.value.length, zone.value.length);
   }
   c.inserer(texte);
-  el?.focus();
+  // Sans faire défiler les colonnes : la saisie est toujours visible en bas.
+  el?.focus({ preventScroll: true });
 }
 
 function notifier(titre: string, texte: string): void {

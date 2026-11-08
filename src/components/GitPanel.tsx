@@ -11,7 +11,7 @@ import { createPortal } from "react-dom";
 import { Icon } from "@iconify/react";
 import { api, cloudConnectionFromPath } from "../lib/ipc";
 import { gitApi, libelleOperation, titreAbandon, type GitEtat } from "./pr/gitApi";
-import { consigneHook } from "./pr/consignes";
+import { consigneHook, sansAnsi } from "./pr/consignes";
 import { redigerCommit } from "./pr/redaction";
 import { envoyerALAgent } from "./pr/versAgent";
 import { PrOnglet } from "./pr/PrOnglet";
@@ -451,7 +451,7 @@ export function GitPanel({
           kind: "error",
           sticky: true,
           text: result.message,
-          details: result.sortie,
+          details: result.sortie ? sansAnsi(result.sortie) : null,
           actions: crochet
             ? [
                 {

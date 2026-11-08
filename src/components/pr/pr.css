@@ -16,6 +16,15 @@
   }
 }
 
+/* Notice : les boutons (Détails, Réparer avec l'IA…) passent sous le texte quand le
+   panneau est étroit, le texte garde sa largeur. */
+.git-panel .git-panel__notice {
+  flex-wrap: wrap;
+}
+.git-panel .git-panel__notice-text {
+  flex: 1 1 180px;
+}
+
 /* Croix de la notice : cible de 22 px comme les autres boutons du panneau
    (sélecteur à deux classes : styles.css est chargé après ce fichier). */
 .git-panel .git-panel__notice-close {
@@ -98,7 +107,9 @@
 }
 
 .git-pr__sortie {
-  flex: 0 0 auto;
+  /* Volet bas peu haut : la sortie rétrécit et défile plutôt que de pousser le reste. */
+  flex: 0 1 auto;
+  min-height: 0;
   max-height: 160px;
   overflow: auto;
   margin: 0;

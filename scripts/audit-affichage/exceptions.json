@@ -166,6 +166,24 @@
       "regle": "chevauchement",
       "selecteur": ".settings-pane__tool-credential-field",
       "raison": "Champ de clé API (ApiKeyField) : les boutons Afficher / Copier sont posés dans le champ, à droite, exprès (padding-right de 64 px réservé au texte)."
+    },
+    {
+      "regle": "cible-petite",
+      "selecteur": ".terminal-tab__rename, .terminal-tab__close",
+      "situation": "/git-(forcer|abandon)$",
+      "raison": "Dialogue du panneau Git ouvert (poussée forcée, abandon) : le fond du dialogue couvre la page, la mesure de la zone de clic élargie des petits boutons des onglets du terminal tombe donc sur ce fond. Hors dialogue, ces boutons passent."
+    },
+    {
+      "regle": "texte-coupe",
+      "selecteur": ".composer__overlay-inner",
+      "situation": "/git-(hook-reparer|pr-check-agent|pr-commentaires-agent|issues-ouvrir)$",
+      "raison": "Consigne longue mise dans la saisie par le panneau Git : la saisie défile et son calque de mise en forme suit ce défilement (rogné exprès, ChatPane syncOverlayScroll), rien n'est perdu."
+    },
+    {
+      "regle": "hors-conteneur",
+      "selecteur": ".onglets-chat__titre",
+      "situation": "/git-issues-ouvrir$",
+      "raison": "Scène git-issues-ouvrir : le banc ouvre le worktree avec toutes les conversations simulées de l'espace (un vrai worktree neuf n'en a qu'une) ; la saisie qui reçoit le texte de l'issue prend le focus (ChatPane, comme pour la dictée) et la zone des colonnes défile jusqu'à elle."
     }
   ]
 }
