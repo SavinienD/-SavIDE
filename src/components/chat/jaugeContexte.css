@@ -1,0 +1,29 @@
+/* Jauge du contexte et minuteur du cache de l'en-tête du chat (JaugeContexte.tsx).
+   La jauge garde sa largeur (le titre se réduit avec « … ») ; l'en-tête sert de conteneur pour la
+   réduire dans une colonne étroite : sans barre, puis masquée. */
+.chat-head { container: chat-tete / inline-size; }
+.jauge-contexte {
+  display: inline-flex; align-items: center; gap: 6px; flex: none; margin-left: auto;
+  color: var(--text-3); font-family: var(--font-ui); font-size: var(--fs-xs); font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.chat-links + .jauge-contexte { margin-left: 0; }
+.jauge-contexte + .chat-head__dot { margin-left: 0; }
+.jauge-contexte__jauge, .jauge-contexte__cache {
+  display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 4px; border-radius: var(--r-med);
+}
+.jauge-contexte__jauge:focus-visible, .jauge-contexte__cache:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.jauge-contexte__barre { position: relative; width: 36px; height: 4px; border-radius: var(--r-pill); background: var(--bg-4); }
+.jauge-contexte__barre > span { position: absolute; inset: 0 auto 0 0; border-radius: var(--r-pill); background: var(--text-3); }
+.jauge-contexte__barre > i { position: absolute; top: -2px; width: 1px; height: 8px; background: var(--text-2); }
+.jauge-contexte__jauge[data-ton="warn"] { color: #f5a623; }
+.jauge-contexte__jauge[data-ton="warn"] .jauge-contexte__barre > span { background: #f5a623; }
+.jauge-contexte__jauge[data-ton="danger"] { color: var(--danger); }
+.jauge-contexte__jauge[data-ton="danger"] .jauge-contexte__barre > span { background: var(--danger); }
+.jauge-contexte__cache[data-expire="true"] { opacity: 0.7; }
+@container chat-tete (max-width: 300px) {
+  .jauge-contexte__barre { display: none; }
+}
+@container chat-tete (max-width: 180px) {
+  .jauge-contexte { display: none; }
+}

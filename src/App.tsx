@@ -9,6 +9,7 @@ import { DossierIntrouvable } from "./components/DossierIntrouvable";
 import { ecouterOuvertureDossier } from "./components/pr/versAgent"; // panneau Git : « Travailler dessus » (issue)
 import { ecouterRaccourcis, fournirActions, numeroTouche, versionRaccourcis } from "./axe/raccourcis";
 import { samePath } from "./components/freechat/freechatApi";
+import { demarrerRepriseAuto } from "./axe/reprise/surveillanceReprise"; // reprise après une limite d'abonnement
 import { api } from "./lib/ipc";
 import { freechatApi } from "./components/freechat/freechatApi"; // freechat
 import { CloudLogin } from "./components/cloud/CloudLogin"; // cloud
@@ -177,6 +178,9 @@ export default function App() {
   useEffect(() => {
     if (state.kind === "welcome") libererOrdre();
   }, [state.kind]);
+
+  // Reprise automatique des conversations arrêtées par une limite d'abonnement.
+  useEffect(() => demarrerRepriseAuto(), []);
 
   // freechat — free conversation view.
   const openFreeChat = useCallback(

@@ -1,0 +1,18 @@
+/* Bandeau de reprise automatique (BandeauReprise.tsx), au-dessus du compositeur : une ligne par
+   reprise (texte complet au survol), pour ne pas pousser le compositeur dans une fenêtre basse. */
+.bandeau-reprise {
+  display: flex; flex-direction: column; gap: 2px; margin: 4px 12px; padding: 3px 8px;
+  border: 1px solid var(--line); border-radius: var(--r-card); background: var(--bg-2);
+  color: var(--text-1); font-size: var(--fs-xs);
+}
+.bandeau-reprise__ligne { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.bandeau-reprise__ligne > svg { flex: none; color: var(--accent); }
+.bandeau-reprise__ligne[data-enfant="true"] { color: var(--text-2); }
+.bandeau-reprise__ligne[data-enfant="true"] > svg { color: var(--text-3); }
+.bandeau-reprise__texte { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bandeau-reprise__annuler {
+  flex: none; min-height: 22px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-small);
+  background: transparent; color: var(--text-1); font-size: var(--fs-xs); cursor: pointer;
+}
+.bandeau-reprise__annuler:hover { background: var(--bg-3); color: var(--text-0); }
+.bandeau-reprise__annuler:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }

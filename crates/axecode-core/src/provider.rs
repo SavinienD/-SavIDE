@@ -140,4 +140,9 @@ pub trait Provider: Send + Sync {
     fn capabilities(&self, model: &ModelRef) -> Option<ModelCapabilities>;
     async fn estimate_tokens(&self, request: ProviderRequest) -> Result<TokenEstimate>;
     async fn stream(&self, request: ProviderRequest) -> Result<ProviderStream>;
+    /// Durée de vie (s) du cache de prompt posé pour `model` (5 min ou 1 h), lue après un
+    /// appel ; `None` : pas de cache explicite (minuteur du cache de l'en-tête du chat).
+    fn prompt_cache_ttl_secs(&self, _model: &ModelRef) -> Option<u32> {
+        None
+    }
 }

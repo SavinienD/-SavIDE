@@ -135,6 +135,7 @@ Code map:
 │   │       │   ├── prompt.rs # prompt de base REPL + catalogue des modules actifs
 │   │       │   ├── output.rs # troncature des sorties + résumé
 │   │       │   ├── compaction.rs # compaction (résumé ; variables du kernel gardées)
+│   │       │   ├── dernier_appel.rs # dernier appel au modèle par session (jetons, fenêtre, seuil de compactage, cache de prompt)
 │   │       │   └── settings.rs # repl-settings.json (modules, seuil, max_tokens, plafond)
 │   │       ├── rlm.rs # rlm — sous-agents persistants rlm.* + messagerie famille nucléaire messages.* (FamilyHost), garde-fou quota
 │   │       ├── rlm # suivi.rs : fiche de lancement, statut final (réussi/échoué/bloqué/arrêté), stop/retry, worktree/fusionner/liberer, comparer, diffusion « all »
@@ -184,6 +185,7 @@ Code map:
 │   │   │   ├── client.rs # DaemonClient (pipe + connect_ws distant), ensure_daemon, lancement détaché
 │   │   │   ├── brain_rpc.rs # v2-l2.4 — RPC skills.*/harness.* : cerveau commun (skills + harnais) de l'espace du service, réglages skill-settings.json
 │   │   │   ├── daemon.rs # état, clients, broadcast
+│   │   │   ├── contexte_rpc.rs # RPC sessions.context : jauge du contexte et minuteur du cache de l'en-tête du chat
 │   │   │   ├── journal.rs # JSONL append-only + arbre + fork
 │   │   │   ├── share_rpc.rs # v2-l4 — RPC share.* : espace commun (Git), publication/suppression
 │   │   │   ├── term_rpc.rs # v2-l3 — RPC term.* : terminaux PTY du service
@@ -359,7 +361,7 @@ Code map:
 │       ├── offline.rs # v2-l6 — mode désynchronisé : miroir local + journal (<data>/offline/<connexion>) et IPC offline_* (prepare, list, read, write, create, delete, rename, journal, sync, resolve, forget)
 │       ├── platform.rs
 │       ├── providers.rs
-│       ├── quota.rs # providers — IPC provider_quota (usage OAuth Anthropic + historique d'épuisement)
+│       ├── quota.rs # providers — IPC provider_quota : quotas de tous les comptes Claude (oauth/usage) et ChatGPT (wham/usage), historique d'épuisement, tests avec un faux serveur
 │       ├── remote.rs
 │       ├── repl_settings.rs # repl — IPC repl_settings_get/save, repl_catalog
 │       ├── state.rs
@@ -380,7 +382,12 @@ Code map:
     │   ├── AppearanceSection.tsx # Settings > Apparence (color picker de fond)
     │   ├── CustomProvidersPanel.tsx # Settings > Providers : instances configurables
     │   ├── HarnessBackupSection.tsx # Settings > Harness : sauvegarde périodique
-    │   ├── QuotaIndicator.tsx # quota d'abonnement dans la barre de titre
+    │   ├── QuotaIndicator.tsx # quotas des abonnements dans la barre de titre : vue compacte, détail par compte, % utilisé ou restant, alerte au seuil (ide-notification)
+    │   ├── quotas.ts / quotas.css # logique et styles de l'indicateur (réglages, alertes, heure de réinitialisation)
+    │   ├── reprise # reprise automatique après une limite d'abonnement
+    │   │   ├── repriseAuto.ts # détection de la limite, heure de reprise (quotas), file des reprises, garde-fou
+    │   │   ├── surveillanceReprise.ts # surveillance (événements du service local), relance sessions.send à l'heure dite
+    │   │   └── BandeauReprise.tsx / reprise.css # bandeau « reprise automatique à HH:MM » annulable, au-dessus du compositeur
     │   ├── providers.ts # types + IPC provider_*, entrées du sélecteur de modèles
     │   ├── theme.css # accent orange + styles des composants
     │   └── theme.ts # tons dérivés de --axe-bg par luminance, persistance
@@ -457,6 +464,7 @@ Code map:
     │   └── chat
     │       ├── AIThinkingBlock.tsx
     │       ├── ChatPane.tsx
+    │       ├── JaugeContexte.tsx / jaugeContexteDonnees.ts / jaugeContexte.css # jauge du contexte et minuteur du cache (en-tête du chat)
     │       ├── actionsConversation.ts # e17a — callbacks du chat liés explicitement à un fil
     │       ├── DotmSquare2.tsx
     │       ├── DotmSquare5.tsx

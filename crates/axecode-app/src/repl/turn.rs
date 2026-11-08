@@ -264,6 +264,7 @@ async fn run_inner(
         provider_request.effort = meta.model.effort;
         provider_request.max_output_tokens = max_output_tokens;
 
+        let debut_appel_ms = now_ms();
         let (assistant, usage, reason) = match stream_once(provider.as_ref(), provider_request, &sink).await {
             Ok(done) => done,
             Err(StreamFailure::Cancelled) => return Err(SessionError::Cancelled),
@@ -294,6 +295,19 @@ async fn run_inner(
         };
         retried_after_overflow = false;
         add_usage(&mut usage_total, &usage);
+        // Jauge du contexte et minuteur du cache de l'en-tête du chat (dernier appel).
+        let appel = super::dernier_appel::noter_appel(
+            &meta.id,
+            &meta.model,
+            &usage,
+            caps.as_ref(),
+            settings.compaction_threshold,
+            max_output_tokens,
+            provider.prompt_cache_ttl_secs(&meta.model),
+            debut_appel_ms,
+            now_ms(),
+        );
+        sink.emit(json!({"type": "contexte", "appel": appel})).await;
         let billed = usage.input_tokens + usage.cache_read_tokens + usage.cache_creation_tokens;
         *lock(&shared.last_input_tokens) = billed;
         if billed > 0 {

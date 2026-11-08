@@ -279,6 +279,12 @@ impl Provider for AnthropicProvider {
         &self.config.provider_id
     }
 
+    /// Cache posé à chaque requête : 1 h quand `cache_ttl` le demande (et n'a pas été refusé
+    /// depuis), sinon 5 min.
+    fn prompt_cache_ttl_secs(&self, _model: &ModelRef) -> Option<u32> {
+        Some(if self.cache_ttl().is_some() { 3_600 } else { 300 })
+    }
+
     fn capabilities(&self, model: &ModelRef) -> Option<ModelCapabilities> {
         if model.provider != self.config.provider_id {
             return None;
@@ -1464,6 +1470,11 @@ mod tests {
             .unwrap()
             .iter()
             .all(|block| block["cache_control"].get("ttl").is_none()));
+        // Minuteur du cache de l'en-tête du chat : même durée que le cache posé.
+        let model = ModelRef::new("anthropic", "claude-test");
+        assert_eq!(metered().prompt_cache_ttl_secs(&model), Some(3_600));
+        assert_eq!(other.prompt_cache_ttl_secs(&model), Some(300));
+        assert_eq!(oauth.prompt_cache_ttl_secs(&model), Some(300));
         assert!(is_cache_ttl_rejection(
             "invalid_request_error: system.0.cache_control.ttl: Extra inputs are not permitted"
         ));

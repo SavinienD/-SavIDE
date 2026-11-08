@@ -27,6 +27,7 @@ pub mod brain_rpc; // v2-l2.4
 pub mod agents_rpc; // v2-l7c
 pub mod voice_rpc; // voix
 pub mod commandes_rpc; // commandes
+pub mod contexte_rpc; // jauge du contexte et minuteur du cache
 pub mod queue_rpc; // file-demon
 mod term_rpc; // v2-l3
  // v2-l2 confined remote filesystem/Git

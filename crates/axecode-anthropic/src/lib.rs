@@ -19,6 +19,8 @@ pub use auth::{exchange_oauth_code_into, load_auth_status};
 pub use client::{AnthropicConfig, AnthropicProvider};
 // providers
 pub use compat::{discover_models, fetch_oauth_usage};
+/// Quotas de l'abonnement (src-tauri quota.rs) : même user-agent que les autres lectures.
+pub use cli_version::api_key_user_agent;
 // catalogue of the native provider.
 pub use compat::{list_models, parse_listed_models, ListedModel};
 pub use model_info::{apply_known_window, MODEL_ID, MODEL_MAX_OUTPUT, MODEL_WINDOW};
