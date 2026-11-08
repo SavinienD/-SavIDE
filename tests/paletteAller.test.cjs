@@ -88,11 +88,20 @@ test("conversation à ouvrir : ici, sans dossier, ou dans son dossier", () => {
 test("sections des Réglages : toutes celles du volet, mêmes identifiants (data-section)", () => {
   const volet = lire("src/components/SettingsPane.tsx");
   const ids = [...volet.matchAll(/data-section="([a-z]+)"/g)].map((m) => m[1]);
+  // Boutons du volet écrits dans leur propre fichier (agents en ligne de commande, commandes enregistrées).
+  const autres = { agentsCli: "src/components/agents-cli/ReglagesAgentsCli.tsx", commandes: "src/components/agents-cli/CommandesEnregistrees.tsx" };
+  let libelles = volet;
+  for (const [id, f] of Object.entries(autres)) {
+    const code = lire(f);
+    assert.ok(code.includes(`data-section="${id}"`), `${id} absent de ${f}`);
+    ids.push(id);
+    libelles += code;
+  }
   assert.ok(ids.length >= 10);
   // Édition locale : Service et Appareils sont masqués dans le volet, donc pas proposés.
   assert.deepEqual(IR.SECTIONS_MASQUEES.sort(), ["connections", "service"]);
   assert.deepEqual(IR.SECTIONS_REGLAGES.map((s) => s.id).sort(), [...new Set(ids)].filter((id) => !IR.SECTIONS_MASQUEES.includes(id)).sort());
-  for (const s of IR.SECTIONS_REGLAGES) assert.ok(volet.includes(`>${s.titre}<`), `libellé « ${s.titre} » absent du volet`);
+  for (const s of IR.SECTIONS_REGLAGES) assert.ok(libelles.includes(`>${s.titre}<`), `libellé « ${s.titre} » absent du volet`);
 });
 
 test("Ctrl+K déclaré (une seule action), laissé à l'éditeur et au terminal", () => {

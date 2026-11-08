@@ -62,11 +62,16 @@ test("index honnête : chaque titre est affiché par le code de sa section", () 
     about: ["src/components/SettingsPane.tsx"],
     appearance: ["src/axe/AppearanceSection.tsx"],
     providers: ["src/components/SettingsPane.tsx", "src/axe/CustomProvidersPanel.tsx"],
-    mcp: ["src/components/SettingsPane.tsx"],
-    skills: ["src/components/SettingsPane.tsx"],
+    mcp: ["src/components/SettingsPane.tsx", "src/components/settings/ImportMcp.tsx"],
+    skills: ["src/components/SettingsPane.tsx", "src/components/settings/SkillsExternes.tsx"],
     harness: ["src/components/settings/HarnessPane.tsx", "src/axe/HarnessBackupSection.tsx"],
-    repl: ["src/components/settings/ReplToolsPane.tsx", "src/components/settings/ReplServicesSection.tsx"],
+    repl: ["src/components/settings/ReplToolsPane.tsx", "src/components/settings/ReplServicesSection.tsx", "src/components/settings/ValidationDefaut.tsx"],
     voice: ["src/axe/voix/VoixSection.tsx"],
+    editor: ["src/components/editeur/ReglagesEditeurBloc.tsx"],
+    agentsCli: ["src/components/agents-cli/ReglagesAgentsCli.tsx"],
+    commandes: ["src/components/agents-cli/CommandesEnregistrees.tsx"],
+    navigateur: ["src/components/navigateur/NavigateurReglages.tsx"],
+    notifications: ["src/components/notifications/NotificationsSection.tsx", "src/components/notifications/SommeilSection.tsx"],
   };
   for (const r of RR.REGLAGES) {
     const code = (fichiers[r.section] ?? []).map(lire).join("\n");

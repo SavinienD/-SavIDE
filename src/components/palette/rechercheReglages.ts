@@ -22,6 +22,11 @@ export const MOTS_SECTIONS: Record<string, string> = {
   connections: "appareils ssh distant",
   shortcuts: "clavier touches",
   voice: "voix micro whisper dictée",
+  editor: "éditeur sauvegarde enregistrer minimap retour ligne monaco",
+  agentsCli: "agents ligne de commande cli claude code codex gemini terminal",
+  commandes: "commandes prompts enregistrés favoris",
+  navigateur: "navigateur web liens page ports localhost",
+  notifications: "notifications alertes son cloche badge",
 };
 
 export const REGLAGES: ReglageConnu[] = [
@@ -51,6 +56,17 @@ export const REGLAGES: ReglageConnu[] = [
   { section: "voice", titre: "Mots appris", motsCles: "vocabulaire dictée" },
   { section: "voice", titre: "Vocabulaire", motsCles: "mots appris dictée" },
   { section: "voice", titre: "Options", motsCles: "dictée" },
+  { section: "editor", titre: "Sauvegarde automatique", motsCles: "enregistrer délai fichier" },
+  { section: "editor", titre: "Affichage du texte", motsCles: "retour à la ligne minimap" },
+  { section: "skills", titre: "Importer des skills", motsCles: "claude code codex reprise adresse git zip installer" },
+  { section: "mcp", titre: "Importer des serveurs MCP", motsCles: "claude code codex cursor vs code reprise" },
+  { section: "repl", titre: "Demander avant d'agir", motsCles: "valider autoriser refuser cellule accord" },
+  { section: "agentsCli", titre: "Agents en ligne de commande", motsCles: "claude code codex gemini cursor autonomie installer terminal" },
+  { section: "commandes", titre: "Commandes et prompts", motsCles: "enregistrés favoris terminal chat" },
+  { section: "navigateur", titre: "Liens du chat et du terminal", motsCles: "lien ouvrir navigateur système localhost" },
+  { section: "notifications", titre: "Événements", motsCles: "fini attente échec agent" },
+  { section: "notifications", titre: "Alertes", motsCles: "son notification système ne pas déranger badge cloche" },
+  { section: "notifications", titre: "Conversations inactives", motsCles: "endormir mémoire délai sommeil" },
 ];
 
 /** Index complet : réglages écrits ici + chaque raccourci du registre (section Raccourcis),
