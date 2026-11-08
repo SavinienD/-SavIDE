@@ -9,6 +9,7 @@ import { dateMajLisible, noterLancement, versionAppli } from "../lib/versionAppl
 import { RaccourcisSection } from "../axe/RaccourcisSection"; // raccourcis
 import { VoixSection } from "../axe/voix/VoixSection"; // voix
 import { AppearanceSection } from "../axe/AppearanceSection"; // theme
+import { ReglagesEditeurSection } from "./editeur/ReglagesEditeurBloc";
 import { monacoThemeData } from "../axe/themeTargets"; // theme
 import {
   loadTextScale,
@@ -75,6 +76,7 @@ type Props = {
 type Section =
   | "about"
   | "appearance" // theme
+  | "editor"
   | "providers"
   | "mcp"
   | "skills"
@@ -1285,6 +1287,17 @@ export function SettingsPane({ workspacePath }: Props) {
         <button
           type="button"
           className="settings-pane__nav-item"
+          data-section="editor"
+          data-active={section === "editor" ? "true" : "false"}
+          onClick={() => setSection("editor")}
+        >
+          <Icon icon="solar:document-text-linear" width={15} height={15} className="settings-pane__nav-icon" />
+          <span className="settings-pane__nav-label">Éditeur</span>
+          <span className="settings-pane__nav-count" />
+        </button>
+        <button
+          type="button"
+          className="settings-pane__nav-item"
           data-section="providers"
           data-active={section === "providers" ? "true" : "false"}
           onClick={() => setSection("providers")}
@@ -1444,6 +1457,8 @@ export function SettingsPane({ workspacePath }: Props) {
           <AboutSection />
         ) : section === "appearance" ? (
           <AppearanceSection /> /* theme */
+        ) : section === "editor" ? (
+          <ReglagesEditeurSection />
         ) : section === "providers" ? (
           <ProvidersSection
             openAiStatus={openAiStatus}

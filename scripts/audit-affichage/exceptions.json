@@ -34,6 +34,30 @@
     },
     {
       "regle": "chevauchement",
+      "selecteur": ".menu-onglet-fichier",
+      "situation": "/editeur-menu-onglet$",
+      "raison": "Éditeur : menu du clic droit sur un onglet de fichier, ouvert sous le pointeur ; il flotte au-dessus de l'onglet (comme tout menu contextuel) et se ferme par Échap ou un clic à côté."
+    },
+    {
+      "regle": "texte-coupe",
+      "selecteur": ".mermaid-diagram__svg, .mermaid-zoom__svg",
+      "situation": "libelles\\d+%/editeur-mermaid",
+      "raison": "Éditeur : textes d'un diagramme Mermaid (contenu du fichier .mmd), placés par Mermaid au rendu dans des cadres SVG de taille fixe ; le banc les allonge ensuite (libellés × 1,3), ce qui n'arrive pas dans l'appli (le diagramme est redessiné à chaque changement du texte)."
+    },
+    {
+      "regle": "defilement-horizontal",
+      "selecteur": ".xv-grid",
+      "situation": "/editeur-csv",
+      "raison": "Éditeur : grille d'un tableau (CSV, classeur) : le défilement horizontal est voulu quand les colonnes sont plus larges que le volet (en-têtes de lignes et de colonnes figés)."
+    },
+    {
+      "regle": "cible-petite",
+      "selecteur": ".tab__close",
+      "situation": "/editeur-(menu-onglet|mermaid-zoom)$",
+      "raison": "Éditeur : croix « Fermer l'onglet » (18 px, zone de clic de 20 px par ::after) mesurée pendant qu'un menu (clic droit sur l'onglet) ou la fenêtre agrandie d'un diagramme Mermaid la recouvre en partie ; défaut déjà connu (voir les scènes harnais-*), à reprendre à part."
+    },
+    {
+      "regle": "chevauchement",
       "selecteur": ".chat-body__bas",
       "raison": "Bouton flottant ↓ (aller en bas du chat) : il flotte volontairement au-dessus des messages quand on n'est plus en bas, et disparaît dès qu'on y revient."
     },

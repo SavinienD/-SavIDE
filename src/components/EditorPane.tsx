@@ -7,7 +7,7 @@ import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
 import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
 import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { Icon } from "@iconify/react";
 import { languageForPath } from "../lib/language";
 import { fileIcon } from "../lib/fileIcon";
@@ -28,6 +28,17 @@ import { FallbackHost, ViewerHost, usesFileViewer, viewerForPath } from "./viewe
 import { ZoomableImage } from "./viewers/ImageZoom"; // viewers
 import { OpenWithDefaultApp, ViewerError } from "./viewers/common"; // viewers
 import { NoteApercu } from "./revue/NoteApercu"; // notes de relecture sur l'aperçu
+import { ecouterReglagesEditeur, lireReglagesEditeur, optionsMonaco } from "./editeur/reglagesEditeur";
+import { PlanificateurSauvegarde } from "./editeur/sauvegardeAuto";
+import { useMargeGit } from "./editeur/useMargeGit";
+import { memoriserModeMarkdown, modeMarkdownMemorise, type ModeMarkdown } from "./editeur/modeMarkdown";
+import { useDefilementSynchro } from "./editeur/useDefilementSynchro";
+import { useImagesMarkdown } from "./editeur/useImagesMarkdown";
+import { dossierDe } from "./editeur/imagesMarkdown";
+import { useFichierHead } from "./editeur/useMargeGit";
+import { typeImageBase64 } from "./editeur/imageAvantApres";
+import { ImageAvantApres } from "./viewers/ImageAvantApres";
+import { cloudConnectionFromPath } from "../lib/ipc";
 
 if (!(globalThis as typeof globalThis & { MonacoEnvironment?: unknown }).MonacoEnvironment) {
   (
@@ -58,6 +69,8 @@ loader.config({ monaco: monacoNs });
 type Props = {
   tabs: EditorTab[];
   activeIndex: number;
+  /** dossier de l'espace (local ou axe-cloud://…). */
+  espace?: string;
   // v2-l6 (tranche 2) — fichiers modifies hors ligne, en attente de synchro.
   pendingPaths?: ReadonlySet<string>;
   onActivate: (index: number) => void;
@@ -67,7 +80,7 @@ type Props = {
   /** Appui gauche sur un onglet : glisser a la souris par evenements pointer. */
   onTabPointerDown?: (index: number, event: ReactPointerEvent<HTMLDivElement>) => void;
   onChange: (index: number, value: string) => void;
-  onSave: (index: number) => void;
+  onSave: (index: number) => void | Promise<void>;
   onOpenFile?: (path: string) => void;
   settingsOpen?: boolean;
   settingsActive?: boolean;
@@ -85,6 +98,7 @@ type Props = {
 export function EditorPane({
   tabs,
   activeIndex,
+  espace,
   pendingPaths,
   onActivate,
   onClose,
@@ -110,16 +124,16 @@ export function EditorPane({
     useRef<Monaco.editor.IEditorDecorationsCollection | null>(null);
   const onSaveRef = useRef(onSave);
   const [editorReadySeq, setEditorReadySeq] = useState(0);
+  // retour à la ligne, minimap, sauvegarde automatique (Réglages > Apparence).
+  const [reglagesEditeur, setReglagesEditeur] = useState(lireReglagesEditeur);
+  useEffect(() => ecouterReglagesEditeur(setReglagesEditeur), []);
   // zoom — text size picked in Settings > Apparence (only chars grow);
   // the wrapper re-applies Monaco's `options` prop on change.
   const [textScale, setTextScale] = useState<number>(() => loadTextScale());
   useEffect(() => onTextScaleChange(setTextScale), []);
-  // Per-tab toggle: `true` shows the rendered markdown preview instead of
-  // the Monaco editor. Keyed by `relativePath` so switching tabs preserves
-  // each file's view mode.
-  const [markdownPreview, setMarkdownPreview] = useState<
-    Record<string, boolean>
-  >({});
+  // affichage de chaque .md : source, côte à côte (source + aperçu) ou aperçu seul.
+  // Par onglet (`relativePath`), mémorisé par fichier (editeur/modeMarkdown.ts).
+  const [modesMarkdown, setModesMarkdown] = useState<Record<string, ModeMarkdown>>({});
   // Position of the custom right-click menu on the image viewer. `null`
   // means the menu is closed. We store viewport coordinates because the
   // menu is rendered with `position: fixed`.
@@ -138,11 +152,14 @@ export function EditorPane({
   const activeIsMarkdown = activeTab
     ? isMarkdownPath(activeTab.relativePath)
     : false;
-  const activePreview = activeTab
-    ? markdownPreview[activeTab.relativePath] ??
-      vueMemorisee(activeTab.doc.absolutePath) ?? // html
-      isPlanMarkdownPath(activeTab.relativePath)
-    : false;
+  const modeMd: ModeMarkdown =
+    activeTab && activeIsMarkdown
+      ? modesMarkdown[activeTab.relativePath] ??
+        modeMarkdownMemorise(activeTab.doc.absolutePath) ??
+        (isPlanMarkdownPath(activeTab.relativePath) ? "apercu" : "source")
+      : "source";
+  const activePreview = modeMd === "apercu";
+  const activeCote = modeMd === "cote";
   // viewers — route the tab by extension. File viewers (PDF, workbooks,
   // undecodable CSV) replace Monaco; overlay viewers (CSV table, HTML
   // preview) are toggled over the live buffer, Markdown-style.
@@ -182,16 +199,56 @@ export function EditorPane({
       !isPreviewableImagePath(activeTab.relativePath),
   );
 
-  const toggleMarkdownPreview = useCallback(() => {
-    if (!activeTab) return;
-    const path = activeTab.relativePath;
-    const absolu = activeTab.doc.absolutePath;
-    setMarkdownPreview((prev) => {
-      const rendu = !(prev[path] ?? vueMemorisee(absolu) ?? isPlanMarkdownPath(path));
-      memoriserVue(absolu, rendu); // html
-      return { ...prev, [path]: rendu };
-    });
-  }, [activeTab]);
+  // marques de changements dans la marge (par rapport au dernier commit).
+  useMargeGit(
+    editorRef.current,
+    showTextEditor ? activeTab : undefined,
+    editorReadySeq,
+    !(espace && cloudConnectionFromPath(espace)),
+  );
+
+  const changerModeMarkdown = useCallback(
+    (mode: ModeMarkdown) => {
+      if (!activeTab) return;
+      memoriserModeMarkdown(activeTab.doc.absolutePath, mode);
+      setModesMarkdown((prev) => ({ ...prev, [activeTab.relativePath]: mode }));
+    },
+    [activeTab],
+  );
+  const toggleMarkdownPreview = useCallback(
+    () => changerModeMarkdown(activePreview ? "source" : "apercu"),
+    [activePreview, changerModeMarkdown],
+  );
+  // image collée ou déposée dans un .md : enregistrée dans images/, lien inséré.
+  useImagesMarkdown(editorRef.current, showTextEditor ? activeTab : undefined, espace, editorReadySeq);
+  const espaceLocal = !(espace && cloudConnectionFromPath(espace));
+  // image modifiée depuis le dernier commit : bouton « Avant / après ».
+  const imageActive = Boolean(activeTab && !activeTab.external && isPreviewableImagePath(activeTab.relativePath));
+  const headImage = useFichierHead(
+    espaceLocal && imageActive && activeTab ? activeTab.doc.absolutePath : null,
+    activeTab?.doc.lastModifiedMs ?? null,
+  );
+  const imageModifiee = Boolean(headImage && headImage.etat === "suivi" && headImage.modifie && headImage.base64);
+  const [avantApres, setAvantApres] = useState<Record<string, boolean>>({});
+  const comparerImage = Boolean(activeTab && imageModifiee && avantApres[activeTab.relativePath]);
+  const imageAvant = useMemo(
+    () => (headImage?.base64 && activeTab ? `data:${typeImageBase64(headImage.base64, activeTab.doc.name)};base64,${headImage.base64}` : ""),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [headImage?.base64, activeTab?.doc.name],
+  );
+  // barre d'onglets étroite : boutons Markdown réduits à leur icône (info-bulle).
+  const ongletsRef = useRef<HTMLDivElement | null>(null);
+  const [largeurOnglets, setLargeurOnglets] = useState(1000);
+  useEffect(() => {
+    const el = ongletsRef.current;
+    if (!el) return;
+    const observateur = new ResizeObserver(() => setLargeurOnglets(el.clientWidth));
+    observateur.observe(el);
+    return () => observateur.disconnect();
+  }, []);
+  // côte à côte : défilement synchronisé de l'éditeur et de l'aperçu.
+  const [apercuMd, setApercuMd] = useState<HTMLDivElement | null>(null);
+  useDefilementSynchro(editorRef.current, apercuMd, activeCote && showTextEditor, activeTab?.buffer ?? "", editorReadySeq);
 
   const handleOpenFileLink = useCallback(
     (path: string) => {
@@ -215,6 +272,12 @@ export function EditorPane({
       monaco.editor.setTheme(AXE_MONACO_THEME);
     });
 
+    // l'éditeur perd le focus (clic ailleurs, fenêtre quittée) : « en quittant l'onglet ».
+    editor.onDidBlurEditorWidget(() => {
+      const chemin = currentPathRef.current;
+      if (chemin) planificateurRef.current?.quitte(chemin);
+    });
+
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       const path = currentPathRef.current;
       if (!path) return;
@@ -233,6 +296,40 @@ export function EditorPane({
   onSaveRef.current = onSave;
   currentPathRef.current = activeTab?.relativePath ?? null;
 
+  // sauvegarde automatique : un planificateur par colonne d'éditeur.
+  const planificateurRef = useRef<PlanificateurSauvegarde | null>(null);
+  if (!planificateurRef.current) {
+    planificateurRef.current = new PlanificateurSauvegarde(
+      () => lireReglagesEditeur().sauvegardeAuto,
+      async (chemin) => {
+        const i = tabsRef.current.findIndex((t) => t.relativePath === chemin);
+        const onglet = tabsRef.current[i];
+        if (!onglet || !onglet.dirty || onglet.external) return;
+        await onSaveRef.current(i);
+      },
+    );
+  }
+  useEffect(() => () => planificateurRef.current?.vider(), []);
+  const cheminActif = activeTab?.relativePath ?? null;
+  const texteModifie = activeTab?.dirty ? activeTab.buffer : null;
+  useEffect(() => {
+    if (cheminActif && texteModifie !== null) planificateurRef.current?.modifie(cheminActif);
+  }, [cheminActif, texteModifie]);
+  const cheminPrecedentRef = useRef<string | null>(null);
+  useEffect(() => {
+    const avant = cheminPrecedentRef.current;
+    cheminPrecedentRef.current = cheminActif;
+    if (avant && avant !== cheminActif) planificateurRef.current?.quitte(avant);
+  }, [cheminActif]);
+  useEffect(() => {
+    const quitter = () => {
+      const chemin = currentPathRef.current;
+      if (chemin) planificateurRef.current?.quitte(chemin);
+    };
+    window.addEventListener("blur", quitter);
+    return () => window.removeEventListener("blur", quitter);
+  }, []);
+
   useEffect(() => {
     if (!showTextEditor || activePreview) return;
     const editor = editorRef.current;
@@ -248,9 +345,9 @@ export function EditorPane({
       return;
     }
     if (!activeIsMarkdown || !activePreview) return;
-    setMarkdownPreview((prev) => ({
+    setModesMarkdown((prev) => ({
       ...prev,
-      [revealTarget.relativePath]: false,
+      [revealTarget.relativePath]: "source",
     }));
   }, [
     activeIsMarkdown,
@@ -398,7 +495,7 @@ export function EditorPane({
 
   return (
     <div className="editor-col">
-      <div className="tabs">
+      <div className="tabs" ref={ongletsRef}>
         {tabs.map((tab, index) => (
           <div
             key={tab.relativePath}
@@ -499,10 +596,27 @@ export function EditorPane({
         )}
         <div className="tabs__spacer" />
         {activeIsMarkdown && (
+          // « Côte à côte » (source + aperçu) à côté de la bascule Aperçu / Source.
+          <div className="md-actions">
+          <button
+            type="button"
+            className="tab-action md-actions__cote"
+            data-mode-md="cote"
+            data-active={activeCote ? "true" : "false"}
+            aria-pressed={activeCote}
+            aria-label="Côte à côte"
+            onClick={() => changerModeMarkdown(activeCote ? "source" : "cote")}
+            title={activeCote ? "Revenir à la source seule" : "Source et aperçu côte à côte"}
+          >
+            <Icon icon="solar:sidebar-code-linear" width={13} height={13} />
+            {largeurOnglets >= 460 ? <span>Côte à côte</span> : null}
+          </button>
           <button
             type="button"
             className="tab-action editor-preview-toggle"
+            data-mode-md="apercu"
             data-active={activePreview ? "true" : "false"}
+            aria-label={activePreview ? "Source" : "Aperçu"}
             onClick={toggleMarkdownPreview}
             title={
               activePreview
@@ -519,7 +633,23 @@ export function EditorPane({
               width={13}
               height={13}
             />
-            <span>{activePreview ? "Source" : "Aperçu"}</span>
+            {largeurOnglets >= 330 ? <span>{activePreview ? "Source" : "Aperçu"}</span> : null}
+          </button>
+          </div>
+        )}
+        {imageModifiee && activeTab && (
+          // comparaison avec le dernier commit
+          <button
+            type="button"
+            className="tab-action editor-preview-toggle"
+            data-action="avant-apres"
+            data-active={comparerImage ? "true" : "false"}
+            aria-pressed={comparerImage}
+            onClick={() => setAvantApres((prev) => ({ ...prev, [activeTab.relativePath]: !comparerImage }))}
+            title={comparerImage ? "Afficher l'image seule" : "Comparer avec la dernière version validée (commit)"}
+          >
+            <Icon icon="solar:square-transfer-horizontal-linear" width={13} height={13} />
+            <span>Avant / après</span>
           </button>
         )}
         {overlaySpec && showTextEditor && (
@@ -582,6 +712,14 @@ export function EditorPane({
                 setImageMenu({ x: event.clientX, y: event.clientY });
               }}
             >
+              {comparerImage && imageAvant ? (
+                <ImageAvantApres
+                  key={activeTab.relativePath}
+                  avant={imageAvant}
+                  apres={imagePreviewSrc(activeTab.doc)}
+                  nom={activeTab.doc.name}
+                />
+              ) : (
               <ZoomableImage
                 key={activeTab.relativePath}
                 src={imagePreviewSrc(activeTab.doc)}
@@ -602,6 +740,7 @@ export function EditorPane({
                   </ViewerError>
                 }
               />
+              )}
               {imageMenu && (
                 <ImageContextMenu
                   x={imageMenu.x}
@@ -630,8 +769,14 @@ export function EditorPane({
               data-preview={
                 (activeIsMarkdown && activePreview) || activeOverlay ? "true" : "false"
               }
+              data-mode={activeIsMarkdown ? modeMd : undefined}
             >
-              <div className="editor-monaco-layer">
+              <div
+                className="editor-monaco-layer"
+                data-minimap={reglagesEditeur.minimap ? "true" : "false"}
+                data-retour-ligne={reglagesEditeur.retourLigne ? "true" : "false"}
+                data-depot-markdown={activeIsMarkdown && !readOnlyEditor && !activePreview ? activeTab.relativePath : undefined}
+              >
                 <Editor
                   key={activeTab.relativePath}
                   height="100%"
@@ -646,13 +791,12 @@ export function EditorPane({
                       '"Geist Mono", ui-monospace, "SF Mono", Menlo, monospace',
                     fontSize: Math.max(1, Math.round(MONO_BASE_PX * textScale)),
                     lineHeight: Math.max(1, Math.round(MONO_LINE_BASE_PX * textScale)),
-                    minimap: { enabled: false },
                     scrollBeyondLastLine: false,
                     smoothScrolling: true,
                     renderLineHighlight: "line",
                     padding: { top: 14, bottom: 14 },
                     tabSize: 2,
-                    wordWrap: "off",
+                    ...optionsMonaco(reglagesEditeur),
                     scrollbar: {
                       verticalScrollbarSize: 10,
                       horizontalScrollbarSize: 10,
@@ -662,13 +806,15 @@ export function EditorPane({
                   }}
                 />
               </div>
-              {activeIsMarkdown && activePreview && (
-                <div className="editor-md-preview" tabIndex={-1} onKeyDown={readOnlyEditor ? undefined : toucheApercu}>
+              {activeIsMarkdown && (activePreview || activeCote) && (
+                <div className="editor-md-preview" ref={setApercuMd} tabIndex={-1} onKeyDown={readOnlyEditor ? undefined : toucheApercu}>
                   {activeTab.external ? null : <NoteApercu fichier={activeTab.relativePath} source={activeTab.buffer} />}
                   <Markdown
                     text={activeTab.buffer}
                     onOpenFile={handleOpenFileLink}
                     onToggleTask={readOnlyEditor ? undefined : basculerCaseApercu}
+                    lignesSource
+                    dossierImages={espaceLocal ? dossierDe(activeTab.doc.absolutePath) : undefined}
                   />
                 </div>
               )}

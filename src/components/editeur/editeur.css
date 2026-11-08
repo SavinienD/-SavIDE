@@ -1,0 +1,111 @@
+/* Réglages de l'éditeur (Réglages > Éditeur) et éléments de l'éditeur. */
+
+.axe-editeur-reglages h2,
+.axe-editeur-reglages h3,
+.axe-editeur-reglages__case > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.axe-editeur-reglages select {
+  align-self: flex-start;
+  height: 28px;
+  max-width: 100%;
+  padding: 0 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-small);
+  background: var(--bg-2);
+  color: var(--text-0);
+  font: inherit;
+  font-size: var(--fs-sm);
+}
+.axe-editeur-reglages select:focus-visible,
+.axe-editeur-reglages__case input:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+.axe-editeur-reglages__case {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  min-width: 0;
+  max-width: 320px;
+  color: var(--text-1);
+  cursor: pointer;
+}
+.axe-editeur-reglages__case input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Marques de changements dans la marge (par rapport au dernier commit). */
+.monaco-editor .marge-git {
+  margin-left: 3px;
+  width: 3px !important;
+  border-radius: 1px;
+}
+.monaco-editor .marge-git--ajout {
+  background: var(--ok, #22c55e);
+}
+.monaco-editor .marge-git--modif {
+  background: #6aa1ff;
+}
+.monaco-editor .marge-git--suppr {
+  background: transparent;
+}
+.monaco-editor .marge-git--suppr::after {
+  content: "";
+  position: absolute;
+  left: -1px;
+  bottom: -4px;
+  border-left: 5px solid var(--danger, #f5737f);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+.monaco-editor .marge-git--suppr.marge-git--haut::after {
+  bottom: auto;
+  top: -4px;
+}
+
+/* Markdown : boutons « Côte à côte » et « Aperçu / Source » (collés à droite de la barre d'onglets),
+   source à gauche et aperçu à droite en mode côte à côte. */
+.md-actions {
+  position: sticky;
+  right: 0;
+  z-index: 8;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  margin-left: auto;
+  background: var(--bg-1);
+  box-shadow: -8px 0 12px var(--bg-1);
+}
+.md-actions .tab-action {
+  margin: 0 4px;
+}
+.md-actions .tab-action:last-child {
+  margin-right: 8px;
+}
+.md-actions .editor-preview-toggle {
+  position: static;
+  margin-left: 4px;
+  box-shadow: none;
+}
+.md-actions .tab-action:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+.editor-text-stack[data-mode="cote"] .editor-monaco-layer {
+  right: 50%;
+}
+.editor-text-stack[data-mode="cote"] .editor-md-preview {
+  left: 50%;
+  padding: 20px 24px 32px;
+  border-left: 1px solid var(--line);
+}

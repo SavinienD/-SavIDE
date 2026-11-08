@@ -137,6 +137,8 @@
 }
 .xv-search input {
   width: 170px;
+  height: 22px; /* cible de 22 px */
+  padding: 0;
   border: 0;
   outline: none;
   background: transparent;
@@ -151,6 +153,10 @@
 }
 .xv-search button {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px; /* cible de 22 px */
+  min-height: 22px;
   padding: 3px;
   border-radius: 50%;
   background: transparent;
@@ -1249,4 +1255,192 @@
   user-select: text;
   -webkit-user-select: text;
   cursor: text;
+}
+
+/* visionneuse Mermaid (.mmd) : le diagramme centré, réduit à la largeur du volet
+   (clic : plein écran avec zoom). La fenêtre agrandie passe au-dessus de la barre d'onglets. */
+.xv-mermaid {
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 24px;
+}
+.xv-mermaid .mermaid-diagram {
+  margin: 0 auto;
+  max-width: 100%;
+}
+/* Le SVG de Mermaid a width="100%" et sa largeur naturelle en max-width : il se réduit au
+   volet sans jamais s'agrandir. */
+.xv-mermaid .mermaid-diagram__svg {
+  min-width: 0;
+}
+.xv-mermaid .mermaid-diagram__svg svg {
+  height: auto;
+}
+.xv-layer:has(.mermaid-zoom) {
+  z-index: 1000;
+}
+
+/* tableaux : tri par colonne (en-têtes cliquables) et filtre des lignes trouvées. */
+.xv-grid__tri {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.xv-grid__tri:hover {
+  color: var(--text-0);
+  background: var(--bg-3);
+}
+.xv-grid__tri:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+.xv-grid__colhead[data-tri] {
+  color: var(--text-0);
+}
+.xv-search button[data-active="true"] {
+  color: var(--accent);
+  background: var(--bg-3);
+}
+
+/* image : avant (dernier commit) / après (fichier actuel), glissière ou côte à côte. */
+.xv-avap {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+.xv-avap__modes {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.xv-avap__modes .xv-btn:focus-visible,
+.xv-avap__curseur:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+.xv-avap__scene {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  overflow: hidden;
+}
+.xv-avap__cadre,
+.xv-avap__fond {
+  position: relative;
+  flex: 0 0 auto;
+  background-color: #fff;
+  background-image: linear-gradient(45deg, #e4e4e7 25%, transparent 25%),
+    linear-gradient(-45deg, #e4e4e7 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e4e4e7 75%),
+    linear-gradient(-45deg, transparent 75%, #e4e4e7 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  border: 1px solid var(--line);
+}
+.xv-avap__cadre {
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+}
+.xv-avap__cadre img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.xv-avap__trait {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--accent);
+  pointer-events: none;
+}
+.xv-avap__etiquette {
+  position: absolute;
+  top: 6px;
+  padding: 2px 6px;
+  border-radius: var(--r-small);
+  background: var(--bg-1);
+  color: var(--text-1);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.xv-avap__etiquette[data-cote="avant"] {
+  left: 6px;
+}
+.xv-avap__etiquette[data-cote="apres"] {
+  right: 6px;
+}
+.xv-avap__curseur {
+  flex: 0 0 auto;
+  max-width: 100%;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.xv-avap__cote {
+  flex: 1 1 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  overflow: auto;
+}
+.xv-avap__panneau {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+}
+.xv-avap__fond {
+  display: grid;
+  place-items: center;
+  max-width: 100%;
+  min-height: 0;
+}
+.xv-avap__fond img {
+  display: block;
+  max-width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+}
+.xv-avap__panneau figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+.xv-avap__panneau figcaption span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

@@ -144,6 +144,10 @@ import { loadUiZoom } from "../axe/zoom";
 import { apprendreDuMessage } from "../axe/voix/vocabulaireAuto"; // voix-vocabulaire
 import { noterConversation } from "../lib/gardienPage";
 import { garderSeulement } from "./chat/vuesConversations"; // mémoire
+import { appliquerEnregistrement } from "./editeur/onglets";
+import { cheminARouvrir, fermerTousLesFichiers, memoriserFermeture, peutRouvrir, sauverAvantFermeture } from "./editeur/fermeture";
+import { EntreesMenuOnglet } from "./editeur/MenuOnglet";
+import { DEPOT_MARKDOWN_EVENT } from "./editeur/useImagesMarkdown";
 
 type Props = {
   bootstrap: WorkspaceBootstrap;
@@ -1395,6 +1399,8 @@ export function Workspace({
   const closeTab = useCallback((index: number) => {
     const tabCount = tabsRef.current.length;
     if (index < 0 || index >= tabCount) return;
+    sauverAvantFermeture(workspacePathRef.current, tabsRef.current[index]);
+    memoriserFermeture(workspacePathRef.current, tabsRef.current[index]);
 
     setTabs((prev) => {
       if (index < 0 || index >= prev.length) return prev;
@@ -1427,6 +1433,18 @@ export function Workspace({
     }
     if (activeTabIndex >= 0) closeTab(activeTabIndex);
   }, [activeTabIndex, closeRemote, closeSettings, closeTab, remoteActive, settingsActive]);
+
+  // « Fermer tous les fichiers » / « Rouvrir l'onglet fermé » (src/components/editeur/fermeture.ts).
+  const fermerTousFichiers = useCallback(() => {
+    const { garder, message } = fermerTousLesFichiers(workspacePathRef.current, tabsRef.current);
+    setTabs(garder);
+    setActiveTabIndex(garder.length - 1);
+    if (message) pushNotice("info", message);
+  }, [pushNotice]);
+  const rouvrirOngletFerme = useCallback(() => {
+    const chemin = cheminARouvrir(workspacePathRef.current, tabsRef.current.map((t) => t.relativePath));
+    if (chemin) openChatFile(chemin);
+  }, [openChatFile]);
 
   const handleTreeEntryRenamed = useCallback(
     (oldRelativePath: string, entry: WorkspaceEntry) => {
@@ -1510,17 +1528,8 @@ export function Workspace({
           tab.relativePath,
           tab.buffer,
         );
-        setTabs((prev) => {
-          const next = prev.slice();
-          if (!next[index]) return prev;
-          next[index] = {
-            ...next[index],
-            doc: updated,
-            buffer: updated.content ?? next[index].buffer,
-            dirty: false,
-          };
-          return next;
-        });
+        // par chemin, et la frappe faite pendant l'écriture est gardée.
+        setTabs((prev) => appliquerEnregistrement(prev, tab.relativePath, tab.buffer, updated));
       } catch (err) {
         console.error(err);
         // v2-l6 — hors ligne : message court au lieu de l'erreur brute.
@@ -2022,6 +2031,14 @@ export function Workspace({
             const paths = event.payload.paths ?? [];
             if (surHarnais) {
               window.dispatchEvent(new CustomEvent("axecode:depot-harnais", { detail: { paths } }));
+              return;
+            }
+            // images déposées sur l'éditeur d'un .md : ajoutées au Markdown (images/).
+            const cibleMd = position
+              ? [...document.querySelectorAll<HTMLElement>("[data-depot-markdown]")].find((el) => dansRect(position, el.getBoundingClientRect()))
+              : undefined;
+            if (cibleMd && position && paths.length) {
+              window.dispatchEvent(new CustomEvent(DEPOT_MARKDOWN_EVENT, { detail: { chemin: cibleMd.dataset.depotMarkdown, paths, x: position.x, y: position.y } }));
               return;
             }
             if (!paths.length) {
@@ -2922,6 +2939,8 @@ export function Workspace({
   const actionsRaccourcisRef = useRef<Parameters<typeof fournirActions>[0]>({});
   actionsRaccourcisRef.current = {
     fermerOnglet: () => closeActiveEditorTab(),
+    fermerTousFichiers: () => fermerTousFichiers(),
+    rouvrirOnglet: () => rouvrirOngletFerme(),
     terminal: () => toggleTerminalRef.current(),
     enregistrer: () => {
       if (settingsActive) return;
@@ -3495,6 +3514,7 @@ export function Workspace({
               <EditorPane
                 tabs={onglets}
                 activeIndex={actifIci}
+                espace={workspacePath}
                 pendingPaths={offlineView.dirtyPaths}
                 onActivate={(i) => { setActifsColonnes((m) => ({ ...m, [col]: onglets[i]?.relativePath })); activateFileTab(indexGlobal(onglets[i])); }}
                 onClose={(i) => closeTab(indexGlobal(onglets[i]))}
@@ -3623,6 +3643,12 @@ export function Workspace({
                 {it.label}
               </button>
             ))}
+            <EntreesMenuOnglet
+              onFermerTous={fermerTousFichiers}
+              onRouvrir={rouvrirOngletFerme}
+              peutRouvrir={peutRouvrir(workspacePath, tabs.map((t) => t.relativePath))}
+              fermer={() => setMenuOnglet(null)}
+            />
           </div>
         );
       })() : null}

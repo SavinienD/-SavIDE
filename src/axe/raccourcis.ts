@@ -27,6 +27,8 @@ import { estMac, estWindows, formaterRaccourci, modPrincipal } from "../lib/plat
 export type RaccourciId =
   | "nouvelleConversation"
   | "fermerOnglet"
+  | "fermerTousFichiers"
+  | "rouvrirOnglet"
   | "ongletSuivant"
   | "ongletPrecedent"
   | "conversationSuivante"
@@ -103,6 +105,9 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "colonneChat", categorie: "Conversations", libelle: "Mettre la conversation dans une nouvelle colonne", combinaison: "Ctrl + \\", touche: { ctrl: true, touches: ["\\", "code:Backslash", "code:IntlBackslash"], physique: "Backslash" } },
 
   { id: "fermerOnglet", categorie: "Onglets", libelle: "Fermer l'onglet actif (fichier, Réglages, À distance)", combinaison: "Ctrl + W", touche: { ctrl: true, touches: ["w"] }, windowsSeulement: true },
+  // Ctrl+Maj+T (habituel) est pris par « Aller à la saisie du chat » ; Ctrl+Alt+T ouvre un terminal sous Linux.
+  { id: "fermerTousFichiers", categorie: "Onglets", libelle: "Fermer tous les fichiers (un fichier modifié reste ouvert si la sauvegarde automatique est désactivée)", combinaison: "Ctrl + Maj + W", touche: { ctrl: true, shift: true, touches: ["w"] } },
+  { id: "rouvrirOnglet", categorie: "Onglets", libelle: "Rouvrir le dernier fichier fermé", combinaison: "Ctrl + Alt + O", touche: { ctrl: true, alt: true, touches: ["o", "code:KeyO"] } },
   { id: "ongletSuivant", categorie: "Onglets", libelle: "Onglet de fichier suivant", combinaison: "Ctrl + Page suiv.", touche: { ctrl: true, touches: ["pagedown"] } },
   { id: "ongletPrecedent", categorie: "Onglets", libelle: "Onglet de fichier précédent", combinaison: "Ctrl + Page préc.", touche: { ctrl: true, touches: ["pageup"] } },
   { id: "enregistrer", categorie: "Onglets", libelle: "Enregistrer le fichier", combinaison: "Ctrl + S", touche: { ctrl: true, touches: ["s"] } },
