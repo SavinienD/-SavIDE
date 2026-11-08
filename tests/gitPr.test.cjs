@@ -21,7 +21,7 @@ const C = Object.fromEntries(Object.entries(brut).map(([k, f]) => [k, typeof f =
 
 const ctx = (extra = {}) => ({
   genre: "commit",
-  branche: "night186-git",
+  branche: "feature-x",
   base: null,
   fichiers: [
     { chemin: "src/a.rs", ajouts: 3, suppressions: 1, statut: "modifié" },
@@ -53,7 +53,7 @@ test("prompt du commit : diff coupé et fichiers non envoyés annoncés", () => 
 
 test("prompt de la PR : branche, base, commits de la branche", () => {
   const p = C.promptPr(ctx({ genre: "pr", base: "main", commitsBranche: ["ajoute b", "change a"] }));
-  assert.match(p, /branche night186-git vers main/);
+  assert.match(p, /branche feature-x vers main/);
   assert.match(p, /- ajoute b\n- change a/);
   assert.match(p, /Première ligne : le titre seul/);
 });
