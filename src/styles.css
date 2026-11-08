@@ -1688,6 +1688,7 @@ textarea {
   color: var(--text-3);
 }
 .search-pane__clear {
+  flex: none; /* lot palette : garde ses 20 px quand la barre latérale est étroite */
   width: 20px;
   height: 20px;
   display: inline-flex;
