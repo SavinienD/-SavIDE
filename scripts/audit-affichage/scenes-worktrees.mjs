@@ -46,4 +46,10 @@ SCENES_WORKTREES.push(
   { id: "worktrees-suppression", ...LISTE,
     clics: [...LISTE.clics, `${LIGNE(2)} .wt-ligne__case input`, `${LIGNE(3)} .wt-ligne__case input`, ".wt-selection [data-action='supprimer-choix']"],
     temoins: ["sel:.wt-confirmation", "compte:.wt-confirmation__liste li=2", "sel:.wt-confirmation .wt-confirmation__alerte", "clic:.wt-confirmation [data-action='valider']", "sel:.wt-confirmation .wt-commandes"] },
+  // W4 — nettoyage : fusionnés, introuvables, anciens, taille ; suppression groupée après confirmation.
+  { id: "worktrees-nettoyage", ...LISTE, clics: [...LISTE.clics, ".wt-liste__tete [data-action='nettoyer']"],
+    temoins: ["sel:.wt-nettoyage", "compte:.wt-nettoyage__ligne=4", "sel:.wt-filtre[data-filtre='tous'][aria-pressed='true']",
+      "clic:.wt-nettoyage [data-action='oublier-introuvables']", "clic:.wt-nettoyage [data-action='valider']", "appel:worktrees_nettoyage"] },
+  { id: "worktrees-nettoyage-anciens", ...LISTE, clics: [...LISTE.clics, ".wt-liste__tete [data-action='nettoyer']", ".wt-filtre[data-filtre='anciens']"],
+    temoins: ["compte:.wt-nettoyage__ligne=1", "sel:.wt-filtre[data-filtre='anciens'][aria-pressed='true']"] },
 );

@@ -2,11 +2,13 @@
 //! - config : fichier de projet `worktrees.toml` (+ scripts d'`orca.yaml`) ;
 //! - partage : node_modules, .env… partagés (lien, jonction) ou copiés ;
 //! - depot : petits appels à git ;
-//! - taches : création / suppression en arrière-plan ; script : scripts dans un terminal.
+//! - taches : création / suppression en arrière-plan ; script : scripts dans un terminal ;
+//! - nettoyage : fusionnés, introuvables, anciens, taille.
 //! git.rs (panneau Git) n'est pas modifié : rien n'en dépend ici.
 
 mod config;
 mod depot;
+mod nettoyage;
 mod partage;
 mod script;
 mod taches;
@@ -395,4 +397,18 @@ pub(crate) async fn worktree_supprimer(
         Ok(taches::lancer(hote, tache))
     })
     .await
+}
+
+// ---------------------------------------------------------------------------
+// Nettoyage (W4) : fusionnés, introuvables, anciens, taille ; prune.
+
+#[tauri::command]
+pub(crate) async fn worktrees_nettoyage(input: nettoyage::NettoyageInput) -> Result<Vec<nettoyage::InfoNettoyage>, String> {
+    en_fond(move || Ok(nettoyage::examiner(&input.depots, &input.bases))).await
+}
+
+/// `git worktree prune` : oublie les worktrees dont le dossier a disparu.
+#[tauri::command]
+pub(crate) async fn worktrees_prune(input: DepotInput) -> Result<usize, String> {
+    en_fond(move || nettoyage::oublier_introuvables(&input.depot)).await
 }

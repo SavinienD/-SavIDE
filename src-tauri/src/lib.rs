@@ -635,6 +635,8 @@ pub fn run() {
             worktrees::worktree_tache_sortie,
             worktrees::worktrees_lister,
             worktrees::worktree_supprimer,
+            worktrees::worktrees_nettoyage,
+            worktrees::worktrees_prune,
             updater::updater_check,
             updater::updater_download_and_install,
             updater::updater_restart,

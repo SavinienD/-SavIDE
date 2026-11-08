@@ -128,10 +128,27 @@ test("liste : dossier principal, puis épinglés, puis par nom", () => {
   assert.deepEqual(L.ordonnerWorktrees(liste, ["/d/z"]).map((x) => x.nom), ["depot", "zeta", "alpha", "beta"]);
 });
 
-test("accroches W3 : onglet et panneau Worktrees, commandes", () => {
+test("nettoyage : filtres fusionnés, introuvables, anciens", () => {
+  const j = 86_400_000;
+  const t = 1_800_000_000_000;
+  const infos = [
+    { dossier: "a", introuvable: false, fusionne: true, activiteMs: t - 2 * j },
+    { dossier: "b", introuvable: true, fusionne: false, activiteMs: null },
+    { dossier: "c", introuvable: false, fusionne: false, activiteMs: t - 45 * j },
+    { dossier: "d", introuvable: false, fusionne: false, activiteMs: t - 3_600_000 },
+  ];
+  assert.deepEqual(L.filtrerNettoyage(infos, "tous", 30, t).map((i) => i.dossier), ["b", "a", "c", "d"]);
+  assert.deepEqual(L.filtrerNettoyage(infos, "fusionnes", 30, t).map((i) => i.dossier), ["a"]);
+  assert.deepEqual(L.filtrerNettoyage(infos, "introuvables", 30, t).map((i) => i.dossier), ["b"]);
+  assert.deepEqual(L.filtrerNettoyage(infos, "anciens", 30, t).map((i) => i.dossier), ["c"]);
+  assert.deepEqual(L.filtrerNettoyage(infos, "anciens", 1, t).map((i) => i.dossier), ["a", "c"]);
+});
+
+test("accroches W3 / W4 : onglet et panneau Worktrees, nettoyage, commandes", () => {
   const ws = lire("src/components/Workspace.tsx");
   assert.match(ws, /<OngletWorktrees dossier=\{workspacePath\} actif=\{bottomTab === "worktrees"\}/);
   assert.match(ws, /<PanneauWorktrees dossier=\{workspacePath\} actif=\{bottomTab === "worktrees"\}/);
+  assert.match(lire("src/components/worktrees/WorktreesRacine.tsx"), /<NettoyageWorktrees chemins=\{nettoyage\}/);
   const lib = lire("src-tauri/src/lib.rs");
-  for (const c of ["worktrees_lister", "worktree_supprimer"]) assert.ok(lib.includes(`worktrees::${c}`), c);
+  for (const c of ["worktrees_lister", "worktree_supprimer", "worktrees_nettoyage", "worktrees_prune"]) assert.ok(lib.includes(`worktrees::${c}`), c);
 });

@@ -7,6 +7,8 @@ import { api } from "../../lib/ipc";
 import { fournirActions } from "../../axe/raccourcis";
 import { installerMagasin, instantaneTaches, lanceeIci, noterLanceeIci, surChangement } from "./magasin";
 import { NouveauWorktree } from "./NouveauWorktree";
+import { NettoyageWorktrees } from "./NettoyageWorktrees";
+import { loadRecents } from "../../lib/recents";
 import { TachesWorktrees } from "./TachesWorktrees";
 import { preparerTerminaux } from "./terminauxDepart";
 import { memeChemin } from "./logique";
@@ -36,6 +38,7 @@ export function WorktreesRacine({
   onAfficherTerminal: () => void;
 }) {
   const [depart, setDepart] = useState<string | null>(null);
+  const [nettoyage, setNettoyage] = useState<string[] | null>(null);
   const dossierRef = useRef(dossier);
   dossierRef.current = dossier;
   /** Terminaux à ouvrir avec chaque worktree créé ici (accord compris). */
@@ -47,10 +50,14 @@ export function WorktreesRacine({
   useEffect(() => {
     const ouvrir = (e: Event) => {
       const d = (e as CustomEvent<DemandeOuverture>).detail ?? {};
-      if ((d.vue ?? "nouveau") === "nouveau") {
-        const cible = d.depot || dossierRef.current;
-        if (dossierLocal(cible)) setDepart(cible);
+      if (d.vue === "nettoyage") {
+        // Un dépôt donné, sinon ceux du dossier ouvert et des dossiers récents.
+        const chemins = d.depot ? [d.depot] : [dossierRef.current, ...loadRecents().map((r) => r.path)];
+        setNettoyage(chemins.filter(dossierLocal));
+        return;
       }
+      const cible = d.depot || dossierRef.current;
+      if (dossierLocal(cible)) setDepart(cible);
     };
     window.addEventListener(EVENEMENT_OUVRIR_WORKTREES, ouvrir);
     return () => window.removeEventListener(EVENEMENT_OUVRIR_WORKTREES, ouvrir);
@@ -119,6 +126,7 @@ export function WorktreesRacine({
   return (
     <>
       {depart ? <NouveauWorktree depart={depart} onFermer={() => setDepart(null)} onLancee={lancee} /> : null}
+      {nettoyage ? <NettoyageWorktrees chemins={nettoyage} dossierOuvert={dossier} onFermer={() => setNettoyage(null)} /> : null}
       <TachesWorktrees dossierCourant={dossier} onOuvrir={(t) => void ouvrir(t)} />
     </>
   );

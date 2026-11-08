@@ -228,3 +228,23 @@ export function etapesAffichees(t: TacheEtapes): { cle: string; libelle: string;
     return { cle: e, libelle: libelles[e] ?? e, etat };
   });
 }
+
+// ---------------------------------------------------------------------------
+// Nettoyage
+
+export type FiltreNettoyage = "tous" | "fusionnes" | "introuvables" | "anciens";
+type InfoTri = { introuvable: boolean; fusionne: boolean; activiteMs: number | null };
+
+/** Worktrees d'un filtre : introuvables, puis fusionnés, puis les moins actifs d'abord. */
+export function filtrerNettoyage<T extends InfoTri>(infos: T[], filtre: FiltreNettoyage, jours: number, maintenant: number): T[] {
+  const garde = (i: T) =>
+    filtre === "tous"
+      ? true
+      : filtre === "fusionnes"
+        ? i.fusionne
+        : filtre === "introuvables"
+          ? i.introuvable
+          : !i.introuvable && joursDepuis(i.activiteMs, maintenant) >= jours;
+  const rang = (i: T) => (i.introuvable ? 0 : i.fusionne ? 1 : 2);
+  return infos.filter(garde).sort((a, b) => rang(a) - rang(b) || (a.activiteMs ?? 0) - (b.activiteMs ?? 0));
+}

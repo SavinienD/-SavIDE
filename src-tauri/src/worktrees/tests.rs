@@ -607,3 +607,33 @@ fn principal_et_verrouille_refuses() {
     assert!(taches::preparer_suppression(&suppression(&r, &w)).unwrap_err().contains("verrouillé"));
     assert!(taches::preparer_suppression(&suppression(&r, Path::new("/pas/un/worktree"))).is_err());
 }
+
+// ---------------------------------------------------------------------------
+// W4 : nettoyage (fusionnés, introuvables, anciens, taille).
+
+use super::nettoyage;
+
+#[test]
+fn nettoyage_fusionnes_introuvables_et_taille() {
+    let r = depot_test("nettoyage");
+    let a = worktree_test(&r, "fusionnee");
+    commit_test(&a, "a.txt", "fini");
+    git_test(&r, &["merge", "-q", "--ff-only", "fusionnee"]);
+    commit_test(&r, "apres.txt", "main continue");
+    let b = worktree_test(&r, "disparue");
+    fs::remove_dir_all(&b).unwrap();
+    let c = worktree_test(&r, "grosse");
+    fs::write(c.join("gros.bin"), vec![0u8; 20_000]).unwrap();
+    let infos = nettoyage::examiner(&[r.display().to_string()], &HashMap::new());
+    assert_eq!(infos.len(), 3, "le dossier principal n'est pas proposé");
+    let par = |b: &str| infos.iter().find(|i| i.branche.as_deref() == Some(b)).unwrap();
+    assert!(par("fusionnee").fusionne && !par("fusionnee").introuvable);
+    assert!(par("disparue").introuvable && par("disparue").octets.is_none());
+    assert!(!par("grosse").fusionne, "même commit que la base : pas « fusionnée »");
+    assert!(par("grosse").octets.unwrap() >= 20_000);
+    assert_eq!(par("grosse").modifies, Some(1));
+    assert!(par("grosse").activite_ms.is_some());
+    assert_eq!(nettoyage::oublier_introuvables(&r.display().to_string()).unwrap(), 1);
+    assert!(depot::lister(&r).unwrap().iter().all(|w| w.branche.as_deref() != Some("disparue")));
+    assert_eq!(nettoyage::oublier_introuvables(&r.display().to_string()).unwrap(), 0);
+}

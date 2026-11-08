@@ -583,3 +583,109 @@
   flex: none;
   color: var(--danger);
 }
+
+/* Écran de nettoyage. */
+.wt-filtres {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.wt-filtre {
+  height: 24px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--bg-1);
+  color: var(--text-2);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.wt-filtre[aria-pressed="true"] {
+  background: var(--bg-4);
+  color: var(--text-0);
+}
+.wt-filtres__jours {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+.wt-filtres__jours .git-panel__dialog-select {
+  width: auto;
+  height: 24px;
+}
+.wt-nettoyage__liste {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: min(52vh, 420px);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  font-size: var(--fs-xs);
+}
+.wt-nettoyage__vide {
+  padding: 10px 4px;
+  color: var(--text-3);
+}
+.wt-nettoyage__ligne {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto 92px 72px;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 4px;
+  border-radius: var(--r-med);
+}
+.wt-nettoyage__ligne:hover {
+  background: var(--bg-1);
+}
+.wt-nettoyage__nom {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.wt-nettoyage__nom > span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wt-nettoyage__etat {
+  display: inline-flex;
+  gap: 4px;
+}
+.wt-nettoyage__activite,
+.wt-nettoyage__taille {
+  color: var(--text-2);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wt-nettoyage__pied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+.wt-nettoyage__message {
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+}
+@media (max-width: 640px) {
+  .wt-nettoyage__ligne {
+    grid-template-columns: 22px minmax(0, 1fr) auto 72px;
+  }
+  .wt-nettoyage__activite {
+    display: none;
+  }
+}
