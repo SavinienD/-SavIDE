@@ -8,6 +8,7 @@ import { entreeFichier, versColonneVoisine } from "./ouvertureFichier";
 import { PaletteAller, type ContexteAller } from "./PaletteAller";
 import { PaletteFichiers } from "./PaletteFichiers";
 import { noterFichierRecent } from "./recents";
+import { EVENEMENT_RECHERCHE_DOSSIER } from "./rechercheDossier";
 
 type Props = {
   workspacePath: string;
@@ -26,6 +27,8 @@ type Props = {
   ouvrirLibre?: (conversationId?: string) => unknown;
   ouvrirReglages?: () => unknown;
   afficherTerminal?: () => unknown;
+  /** Ouvre le volet de recherche (« Rechercher dans ce dossier » de l'explorateur). */
+  ouvrirRecherche?: () => unknown;
 };
 
 type Ouverte = null | "fichiers" | "aller";
@@ -53,6 +56,13 @@ export function PaletteEspace(props: Props) {
       }),
     [],
   );
+
+  // « Rechercher dans ce dossier » (clic droit dans l'explorateur) : le volet de recherche s'ouvre.
+  useEffect(() => {
+    const ouvrir = () => void propsRef.current.ouvrirRecherche?.();
+    window.addEventListener(EVENEMENT_RECHERCHE_DOSSIER, ouvrir);
+    return () => window.removeEventListener(EVENEMENT_RECHERCHE_DOSSIER, ouvrir);
+  }, []);
 
   const deplacerSiRange = useCallback(() => {
     const attente = enAttente.current;

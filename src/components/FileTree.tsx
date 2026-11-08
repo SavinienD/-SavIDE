@@ -25,6 +25,10 @@ import {
   type TriExplorateur,
 } from "../lib/arbreFichiers";
 import { estMac, estWindows } from "../lib/plateforme";
+import { useEtatGit } from "./palette/useEtatGit"; // lot palette : couleurs git de l'explorateur
+import { etatDe, LIBELLES_GIT, type CarteGit } from "./palette/etatGit";
+import { demanderRechercheDossier } from "./palette/rechercheDossier"; // lot palette : « Rechercher dans ce dossier »
+import "./palette/explorateur.css";
 
 // explorateur — système du poste (raccourcis Cmd sur macOS, séparateur « \ » sous Windows).
 const EST_MAC = estMac();
@@ -161,6 +165,7 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
   const [internalDropHoverRelative, setInternalDropHoverRelative] =
     useState<string | null>(null);
   const [dragPreview, setDragPreview] = useState<DragPreviewState | null>(null);
+  const carteGit = useEtatGit(workspacePath, refreshToken, localRefreshToken); // lot palette
   const expandedRef = useRef(expanded);
   const workspacePathRef = useRef(workspacePath);
   const bodyRef = useRef<HTMLDivElement | null>(null);
@@ -466,7 +471,7 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
       }
       setActionError(null);
       const width = 196;
-      const height = entry ? 470 : 138;
+      const height = entry ? 540 : 170;
       const x =
         typeof window === "undefined"
           ? event.clientX
@@ -1301,6 +1306,18 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
       onDrop={(event) => void handleRootDrop(event)}
       onContextMenu={(event) => {
         if ((event.target as Element).closest(".tree-row")) return;
+        // lot palette — clavier (touche Menu, Maj+F10) : menu de la ligne sélectionnée.
+        if (event.button !== 2 && selectedEntry) {
+          const ligne = Array.from(bodyRef.current?.querySelectorAll<HTMLElement>(".tree-row[data-entry-path]") ?? []).find(
+            (el) => el.dataset.entryPath === selectedEntry.relativePath,
+          );
+          const r = ligne?.getBoundingClientRect();
+          if (r) {
+            event.preventDefault();
+            setMenu({ x: Math.max(8, Math.min(r.left + 24, window.innerWidth - 204)), y: Math.max(8, Math.min(r.bottom, window.innerHeight - 548)), entry: selectedEntry });
+            return;
+          }
+        }
         openContextMenu(event, null);
       }}
       onMouseDown={() => bodyRef.current?.focus()}
@@ -1350,6 +1367,7 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
           dropHoverRelative={
             effectiveDropActive ? internalDropHoverRelative : null
           }
+          git={carteGit}
         />
       ))}
       {!roots.length && !rootCreate && !rootError && (
@@ -1376,6 +1394,7 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
           onCopyRelativePath={() => void copyEntryPaths(menu.entry, "relative")}
           onPaste={() => void pasteInto(menu.entry)}
           onDelete={() => void deleteEntries(menu.entry)}
+          onSearchFolder={menu.entry?.kind === "directory" ? () => { const e = menu.entry; closeMenu(); if (e) demanderRechercheDossier(e.relativePath); } : undefined}
           onRefresh={() => {
             closeMenu();
             refresh();
@@ -1431,6 +1450,8 @@ type NodeProps = {
   dropTargetRelative: string | null;
   dropHoverRelative: string | null;
   tri: TriExplorateur;
+  /** lot palette — état git du dossier (couleurs). */
+  git: CarteGit | null;
 };
 
 const TreeNode = memo(function TreeNode({
@@ -1457,8 +1478,10 @@ const TreeNode = memo(function TreeNode({
   dropTargetRelative,
   dropHoverRelative,
   tri,
+  git,
 }: NodeProps) {
   const isDir = entry.kind === "directory";
+  const etatGit = etatDe(git, entry.relativePath, isDir); // lot palette
   const state = expanded[entry.relativePath];
   const open = Boolean(state?.expanded);
   const childCreate =
@@ -1517,6 +1540,7 @@ const TreeNode = memo(function TreeNode({
           data-drop-path={isDir ? entry.relativePath : undefined}
           data-entry-path={entry.relativePath}
           data-entry-kind={entry.kind}
+          data-git={etatGit ?? undefined}
           style={{ paddingLeft: 8 + depth * 14 }}
           onClick={handleClick}
           onContextMenu={(event) => onContextMenu(event, entry)}
@@ -1547,6 +1571,11 @@ const TreeNode = memo(function TreeNode({
             <EntryIcon entry={entry} open={open} iconName={iconName} />
           </span>
           <span className="tree-row__name">{entry.name}</span>
+          {etatGit && LIBELLES_GIT[etatGit].lettre ? (
+            <span className="tree-row__git" title={LIBELLES_GIT[etatGit].titre} aria-label={LIBELLES_GIT[etatGit].titre}>
+              {isDir ? "•" : LIBELLES_GIT[etatGit].lettre}
+            </span>
+          ) : null}
         </div>
       )}
       {isDir && open && (
@@ -1615,6 +1644,7 @@ const TreeNode = memo(function TreeNode({
               onCancelEdit={onCancelEdit}
               dropTargetRelative={dropTargetRelative}
               dropHoverRelative={dropHoverRelative}
+              git={git}
             />
           ))}
         </>
@@ -1841,6 +1871,7 @@ function TreeContextMenu({
   onPaste,
   onDelete,
   onRefresh,
+  onSearchFolder,
 }: {
   menu: ContextMenuState;
   hasClipboard: boolean;
@@ -1857,6 +1888,8 @@ function TreeContextMenu({
   onPaste: () => void;
   onDelete: () => void;
   onRefresh: () => void;
+  /** lot palette — volet de recherche limité à ce dossier. */
+  onSearchFolder?: () => void;
 }) {
   const entry = menu.entry;
 
@@ -1881,6 +1914,9 @@ function TreeContextMenu({
           label="Ouvrir avec…"
           onClick={onOpenWith}
         />
+      )}
+      {onSearchFolder && (
+        <MenuItem icon="solar:magnifer-linear" label="Rechercher dans ce dossier" onClick={onSearchFolder} />
       )}
       <MenuItem icon="solar:document-add-linear" label="Nouveau fichier" onClick={onNewFile} />
       <MenuItem

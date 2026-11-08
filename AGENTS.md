@@ -355,6 +355,7 @@ Code map:
 │       ├── palette.rs # lot palette — palette_fichiers (Ctrl+P : rg --files, .gitignore respecté, repli sur la liste interne)
 │       ├── recherche_conversations.rs # lot palette — IPC palette_conversations / palette_recherche_conversations (Ctrl+K)
 │       ├── recherche_conversations/moteur.rs # moteur pur : texte des messages en mémoire, relu si la conversation change ; extrait autour du mot
+│       ├── explorateur_git.rs # lot palette — IPC explorateur_git (git status : modifié, nouveau, ignoré, conflit) et palette_recherche_dossier (recherche limitée à un sous-dossier)
 │       ├── platform.rs
 │       ├── providers.rs
 │       ├── quota.rs # providers — IPC provider_quota (usage OAuth Anthropic + historique d'épuisement)
@@ -426,6 +427,8 @@ Code map:
     │   │   ├── PaletteAccueil.tsx # Ctrl+K sur l'accueil (accroche dans App.tsx)
     │   │   ├── indexReglages.ts # sections des Réglages (mêmes data-section que SettingsPane ; édition locale : sans Service ni Appareils)
     │   │   ├── RechercheReglages.tsx / rechercheReglages.ts # recherche dans les Réglages : champ en haut du volet, index des réglages (+ raccourcis), signalement (tests/rechercheReglages.test.cjs)
+    │   │   ├── etatGit.ts / useEtatGit.ts / explorateur.css # couleurs git de l'explorateur (fichiers et dossiers) (tests/explorateurGit.test.cjs)
+    │   │   ├── rechercheDossier.ts # « Rechercher dans ce dossier » : dossier gardé pour le volet de recherche
     │   ├── TerminalPanel.tsx # multi-onglets PTY : Ctrl+Tab, renommage, PowerShell/WSL et scrollback texte local
     │   ├── GitPanel.tsx
     │   ├── RemotePanel.tsx

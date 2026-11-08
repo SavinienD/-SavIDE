@@ -1,0 +1,68 @@
+/* Lot palette (P4) — couleurs git de l'explorateur (repères de VS Code, teintes du thème :
+   plus foncées sur un fond clair). Une lettre à droite double la couleur. */
+.tree-row[data-git="modifie"] .tree-row__name,
+.tree-row[data-git="modifie"] .tree-row__git {
+  color: var(--warn, #f4c95d);
+}
+.tree-row[data-git="nouveau"] .tree-row__name,
+.tree-row[data-git="nouveau"] .tree-row__git {
+  color: var(--diff-add-fg, #86efac);
+}
+.tree-row[data-git="conflit"] .tree-row__name,
+.tree-row[data-git="conflit"] .tree-row__git {
+  color: var(--danger, #f5737f);
+}
+.tree-row[data-git="ignore"] .tree-row__name {
+  color: var(--text-3);
+}
+.tree-row[data-git="ignore"] .tree-row__icon {
+  opacity: 0.55;
+}
+.tree-row__git {
+  flex: none;
+  min-width: 16px;
+  padding: 0 4px 0 8px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Lot palette (P4) — volet de recherche limité à un dossier (clic droit dans l'explorateur). */
+.search-pane__dossier {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: calc(100% - 16px);
+  height: 24px;
+  margin: 0 8px 4px;
+  padding: 0 2px 0 8px;
+  border-radius: var(--r-pill);
+  background: var(--bg-3);
+  color: var(--text-1);
+  font-size: var(--fs-xs);
+  align-self: flex-start;
+}
+.search-pane__dossier-nom {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.search-pane__dossier button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.search-pane__dossier button:hover {
+  color: var(--text-0);
+}

@@ -863,4 +863,13 @@ export const SCENES = [
   { id: "palette-aller-reglage-precis", stockage: () => colonnes([ids(1)]), touches: ["Control+k"],
     taper: [{ sel: ".palette__champ input", texte: "compactage auto", ajouter: true }], touchesFin: ["Enter"],
     temoins: ["absent:.palette", "sel:.settings-pane__nav-item[data-section='repl'][data-active='true']"] },
+  // Lot palette (P4) — explorateur : couleurs git (modifié, nouveau, ignoré, en conflit) sur les
+  // fichiers et les dossiers ; clic droit « Rechercher dans ce dossier » (volet limité au dossier).
+  { id: "explorateur-git", stockage: () => colonnes([ids(1)]), explorateur: { clic: "src" },
+    temoins: ["sel:.tree-row[data-entry-path='src'][data-git='conflit'] .tree-row__git", "sel:.tree-row[data-entry-path='src/Workspace.tsx'][data-git='modifie']",
+      "sel:.tree-row[data-entry-path='src/stream.ts'][data-git='nouveau']", "sel:.tree-row[data-entry-path='README.md'][data-git='modifie']",
+      "sel:.tree-row[data-entry-path='web'][data-git='ignore']", "sel:.tree-row[data-entry-path='scripts'][data-git='nouveau']", "appel:explorateur_git"] },
+  { id: "explorateur-recherche-dossier", stockage: () => colonnes([ids(1)]), explorateur: { clicDroit: "src", menu: "Rechercher dans ce dossier" },
+    touchesFin: ["p", "a", "l", "e", "t", "t", "e"],
+    temoins: ["sel:.search-pane__dossier", "Dans src", "appel:palette_recherche_dossier", "sel:.search-result__file[title='src/Workspace.tsx']"] },
 ];

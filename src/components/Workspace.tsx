@@ -3658,7 +3658,7 @@ export function Workspace({
     <div className="workspace">
       {noticeEl}
       <PaletteEspace workspacePath={workspacePath} layout={layout} fichierActif={activeFilePath} openFile={openFile} disposition={dispositionFichiers} setDisposition={setDispositionFichiers}
-        ongletsChat={ongletsChat} ongletsFichiers={tabs} conversationActive={activeConv.id} choisirConversation={selectConversation} ouvrirDossier={onOpenFolder} ouvrirLibre={(id) => id && onOpenFreeChat?.(id)} ouvrirReglages={openSettings} afficherTerminal={showTerminal} /> {/* lot palette */}
+        ongletsChat={ongletsChat} ongletsFichiers={tabs} conversationActive={activeConv.id} choisirConversation={selectConversation} ouvrirDossier={onOpenFolder} ouvrirLibre={(id) => id && onOpenFreeChat?.(id)} ouvrirReglages={openSettings} afficherTerminal={showTerminal} ouvrirRecherche={() => setFileSearchOpen(true)} /> {/* lot palette */}
       {/* e6 — les volets detaches vivent ici, dans la fenetre de l'application. */}
       <VoletsFlottants
         volets={volets}

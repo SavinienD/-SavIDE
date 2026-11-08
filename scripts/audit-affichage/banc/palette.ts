@@ -8,7 +8,7 @@ const RACINE_LIBRE = "C:\\Users\\utilisateur\\AppData\\Local\\savide\\data\\libr
 const MARTIN = "C:\\Users\\utilisateur\\Documents\\Clients\\cabinet-martin";
 
 const FICHIERS = [
-  "Cargo.toml", "package.json", "README.md", "RAPPORT-AXECODE.md",
+  "Cargo.toml", "package.json", "README.md", "RAPPORT.md",
   "un-nom-de-fichier-vraiment-tres-long-pour-voir-le-debordement.md",
   "crates/axecode-app/src/repl/runtime.rs", "crates/axecode-app/src/workspace.rs",
   "docs/palette.md", "scripts/audit-affichage/lancer.mjs", "scripts/audit-affichage/scenes.mjs",
@@ -42,6 +42,34 @@ export function simulationPalette(scene: Record<string, unknown>): Record<string
             extrait: `… Je relance le ${q} sur les quatre largeurs et les trois mises à l'échelle, puis je compare les captures avec celles de la veille …` },
           { conversationId: "m-001", dossier: MARTIN, titre: "Postes du cabinet Martin : import FIC", majMs: D.T0 - 5_000_000, role: "user", messages: 1,
             extrait: `Peux-tu vérifier le ${q} du cabinet avant l'import ?` },
+        ],
+      };
+    },
+    // Lot palette (P4) — couleurs git de l'explorateur et recherche limitée à un dossier.
+    explorateur_git: () => ({
+      depot: true,
+      fichiers: [
+        { chemin: "src/Workspace.tsx", etat: "modifie" },
+        { chemin: "src/stream.ts", etat: "nouveau" },
+        { chemin: "src/colonnes.ts", etat: "conflit" },
+        { chemin: "README.md", etat: "modifie" },
+        { chemin: "scripts/", etat: "nouveau" },
+        { chemin: "web/", etat: "ignore" },
+      ],
+    }),
+    palette_recherche_dossier: (a: any) => {
+      const dossier = String(a?.dossier ?? "");
+      const q = String(a?.query ?? "");
+      const ligne = (n: number, texte: string) => ({ lineNumber: n, columnStart: 7, columnEnd: 7 + q.length, lineText: texte, matchStart: 6, matchEnd: 6 + q.length });
+      return {
+        query: q,
+        filesScanned: 6,
+        totalMatches: 2,
+        files: [
+          { name: "Workspace.tsx", relativePath: `${dossier}/Workspace.tsx`, absolutePath: `${D.WS}\\${dossier}\\Workspace.tsx`, pathMatch: false, matchCount: 1,
+            matches: [ligne(12, `const ${q} = ouvrirPalette(espace);`)] },
+          { name: "stream.ts", relativePath: `${dossier}/stream.ts`, absolutePath: `${D.WS}\\${dossier}\\stream.ts`, pathMatch: false, matchCount: 1,
+            matches: [ligne(40, `export ${q} lireFlux();`)] },
         ],
       };
     },
