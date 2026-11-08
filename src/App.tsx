@@ -18,6 +18,7 @@ import { CLOUD_CONNECTION, cloudApi, saveMode, type CloudState } from "./compone
 import { LOCAL_CONNECTION, connectionsApi } from "./components/settings/connectionsApi"; // v2-l2.3
 import "./components/cloud/cloud.css"; // cloud
 import "./components/cloud/connected-screen.css"; // v2-l1
+import { AutomatisationsGlobal } from "./components/automatisations/Automatisations"; // automatisations
 import { EDITION_LOCALE } from "./lib/edition";
 import type { WorkspaceBootstrap } from "./types";
 import { invoke } from "@tauri-apps/api/core";
@@ -415,6 +416,7 @@ export default function App() {
         <div className="welcome__maj" style={{ position: "fixed", top: EDITION_LOCALE ? 12 : 52, right: isWindowsPlatform() ? 150 : 16, zIndex: 50 }}>
           <UpdateBadge />
         </div>
+        <AutomatisationsGlobal /> {/* automatisations — Ctrl+Maj+L */}
         {EDITION_LOCALE ? null : (
           <>
             <CloudLoginButton className="axc-btn" style={{ position: "fixed", top: 12, right: isWindowsPlatform() ? 150 : 16, zIndex: 50 }} />
@@ -444,6 +446,7 @@ export default function App() {
           }))
         }
       />
+      <AutomatisationsGlobal dossierCourant={state.bootstrap.workspace.path} /> {/* automatisations — Ctrl+Maj+L */}
     </>
   );
 }

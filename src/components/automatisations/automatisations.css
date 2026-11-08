@@ -1,0 +1,84 @@
+/* automatisations — écran Automatisations (prompts planifiés). Mêmes tons que la vue Agents. */
+.auto-ecran { position: fixed; inset: 0; z-index: 210; display: flex; align-items: center; justify-content: center; padding: 12px; background: rgba(0, 0, 0, 0.45); }
+.auto-ecran__panneau { display: flex; flex-direction: column; width: min(960px, 100%); height: min(760px, 100%); min-height: 0; border: 1px solid var(--line-strong); border-radius: var(--r-card); background: var(--bg-1); color: var(--text-1); font-size: calc(12px * var(--text-scale, 1)); box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35); outline: none; overflow: hidden; }
+.auto-ecran__tete { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line-strong); min-width: 0; }
+.auto-ecran__titre { margin: 0; min-width: 0; color: var(--text-0); font-size: calc(14px * var(--text-scale, 1)); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.auto-ecran__espace { flex: 1 1 auto; }
+.auto-ecran__fermer { min-width: 28px; font-size: calc(14px * var(--text-scale, 1)); line-height: 1; }
+.auto-ecran__corps { flex: 1 1 0; min-height: 0; overflow: auto; padding: 12px; }
+.auto-ecran__corps[data-vue="journal"] { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+.auto-ecran__pied { padding: 6px 12px; border-top: 1px solid var(--line-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.auto-journal { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
+
+.auto-muet { color: var(--text-2); font-size: calc(11px * var(--text-scale, 1)); }
+.auto-erreur { margin: 8px 12px 0; color: #f87171; }
+
+.auto-btn { flex: none; min-height: 24px; padding: 3px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-2); color: var(--text-1); font: inherit; font-size: calc(12px * var(--text-scale, 1)); white-space: nowrap; cursor: pointer; }
+.auto-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--text-0); }
+.auto-btn:focus-visible, .auto-jour:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.auto-btn:disabled { opacity: 0.5; cursor: default; }
+.auto-btn--primaire { border-color: var(--accent); background: var(--accent); color: #fff; }
+.auto-btn--primaire:hover:not(:disabled) { color: #fff; filter: brightness(1.08); }
+.auto-btn--danger[data-confirm="true"] { border-color: #f87171; color: #f87171; }
+
+.auto-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.auto-carte { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-0, var(--bg-1)); }
+.auto-carte[data-etat="pause"] { opacity: 0.8; }
+.auto-carte__tete { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.auto-carte__point { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #4ade80; align-self: center; }
+.auto-carte[data-etat="pause"] .auto-carte__point { background: var(--bg-4, var(--text-2)); border: 1px solid var(--text-2); }
+.auto-carte[data-etat="en_cours"] .auto-carte__point { background: var(--accent); }
+.auto-carte__nom { flex: 0 1 auto; min-width: 0; color: var(--text-0); font-size: calc(13px * var(--text-scale, 1)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.auto-carte__horaire { flex: 0 1 auto; min-width: 0; color: var(--text-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.auto-carte__infos { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0; color: var(--text-2); font-size: calc(11px * var(--text-scale, 1)); }
+.auto-carte__info { min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.auto-carte__actions { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.auto-statut { display: inline-block; max-width: 100%; padding: 1px 8px; border-radius: 999px; background: var(--bg-2); color: var(--text-1); font-size: calc(11px * var(--text-scale, 1)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.auto-statut[data-statut="reussie"] { background: rgba(74, 222, 128, 0.14); color: #4ade80; }
+.auto-statut[data-statut="echouee"] { background: rgba(248, 113, 113, 0.14); color: #f87171; }
+.auto-statut[data-statut="en_cours"], .auto-statut[data-statut="verification"] { background: var(--accent-soft); color: var(--accent); }
+
+.auto-historique { list-style: none; margin: 2px 0 0; padding: 6px 0 0; border-top: 1px solid var(--line-strong); display: flex; flex-direction: column; gap: 4px; }
+.auto-historique__vide { margin: 0; }
+.auto-exec { display: grid; grid-template-columns: auto auto auto minmax(0, 1fr) auto; align-items: center; gap: 10px; min-width: 0; min-height: 26px; }
+.auto-exec__date, .auto-exec__duree { color: var(--text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.auto-exec__resume { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-1); }
+
+.auto-vide { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; max-width: 560px; padding: 24px 8px; }
+.auto-vide p { margin: 0; }
+.auto-vide__titre { color: var(--text-0); font-size: calc(13px * var(--text-scale, 1)); }
+
+/* Formulaire : les champs défilent, les boutons (et l'erreur) restent visibles en bas. */
+.auto-ecran__corps[data-vue="formulaire"] { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+.auto-form { display: flex; flex-direction: column; flex: 1 1 0; min-height: 0; }
+.auto-form__champs { flex: 1 1 0; min-height: 0; overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+.auto-form__champs > * { max-width: 720px; }
+.auto-champ { display: flex; flex-direction: column; gap: 4px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.auto-champ__libelle { padding: 0; color: var(--text-0); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.auto-champ__ligne { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.auto-champ__ligne > input:not([type]), .auto-champ__ligne > #auto-dossier { flex: 1 1 220px; min-width: 0; }
+.auto-form input, .auto-form textarea, .auto-form select { min-height: 26px; padding: 3px 6px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-0, var(--bg-1)); color: var(--text-0); font: inherit; font-size: calc(12px * var(--text-scale, 1)); min-width: 0; }
+.auto-form textarea { resize: vertical; min-height: 84px; line-height: 1.4; }
+.auto-form input:focus-visible, .auto-form textarea:focus-visible, .auto-form select:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+.auto-form input[type="checkbox"], .auto-form input[type="radio"] { min-height: 0; width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.auto-horaire__heure { width: 110px; }
+.auto-horaire__cron { flex: 1 1 200px; font-family: var(--font-mono, monospace); }
+.auto-horaire__intervalle { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.auto-horaire__intervalle input { width: 64px; }
+.auto-jours { display: flex; flex-wrap: wrap; gap: 4px; }
+.auto-jour { width: 30px; height: 30px; padding: 0; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-2); color: var(--text-1); font: inherit; cursor: pointer; }
+.auto-jour[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.auto-apercu { margin: 0; color: var(--text-1); }
+.auto-apercu[data-erreur="true"] { color: #f87171; }
+.auto-choix { display: flex; align-items: center; gap: 8px; min-height: 24px; cursor: pointer; }
+.auto-choix > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.auto-form__actions { flex: none; display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--line-strong); }
+.auto-form__actions .auto-erreur { flex: 1 1 auto; min-width: 0; margin: 0; }
+
+
+/* Bouton d'entrée dans la vue Agents. */
+.auto-entree { align-self: stretch; min-height: 24px; padding: 3px 8px; border: 1px dashed var(--line-strong); border-radius: var(--r-small); background: none; color: var(--text-1); font: inherit; font-size: calc(11px * var(--text-scale, 1)); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.auto-entree:hover { border-color: var(--accent); color: var(--text-0); }
+.auto-entree:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
