@@ -36,3 +36,10 @@ export const SCENES_REVUE = [
     cliquer: [".revue-fichier[data-fichier='src-tauri/icons/icon.png'] .revue-fichier__principal"], pauseClics: 600,
     temoins: ["sel:.revue-diff__message", "absent:.revue-diff__monaco"] },
 ];
+
+// Aperçu Markdown (RV3) : texte choisi (triple clic sur le titre), « Noter » : tiroir des notes avec le brouillon.
+SCENES_REVUE.push(
+  { id: "revue-apercu-note", sim: { fichierQcm: true }, ouvrirFichier: "qcm.md", taper: [{ sel: ".editor-md-preview h1", texte: "" }],
+    cliquer: [".revue-apercu-noter"], pauseClics: 600,
+    temoins: ["sel:.revue-tiroir .revue-note--brouillon .revue-note__saisie", "sel:.revue-tiroir .revue-note__extrait"] },
+);
