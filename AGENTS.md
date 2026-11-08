@@ -366,8 +366,8 @@ Code map:
 │       ├── viewers.rs # viewers — viewer_read_bytes (plages, ArrayBuffer brut), viewer_zip_list/read/extract, viewer_sqlite_tables/rows (lecture seule, query_only)
 │       ├── workflow.rs
 │       ├── workspace.rs
-│       ├── worktrees.rs # worktrees — commandes worktrees_* : réglages du dépôt (worktrees.toml), création du fichier
-│       └── worktrees # config.rs (worktrees.toml + scripts d'orca.yaml, empreinte des commandes), depot.rs (appels git), partage.rs (liens, jonctions, copies, mesure), tests.rs
+│       ├── worktrees.rs # worktrees — commandes worktrees_* : réglages du dépôt (worktrees.toml), création en arrière-plan (tâches : annuler, reprendre, oublier, sortie du script)
+│       └── worktrees # config.rs (worktrees.toml + scripts d'orca.yaml, empreinte des commandes), depot.rs (appels git), partage.rs (liens, jonctions, copies, mesure), taches.rs (tâches de fond), script.rs (scripts dans un PTY), tests.rs
 └── src
     ├── App.tsx
     ├── main.tsx
@@ -447,6 +447,7 @@ Code map:
     │   ├── Welcome.tsx # freechat — écran d'accueil : « Nouvelle conversation » / « Ouvrir un dossier », conversations libres et dossiers récents
     │   ├── WindowControls.tsx
     │   ├── Workspace.tsx # dispositions « ide » et « chat » (freechat : même ChatPane, FreechatView)
+    │   ├── worktrees # worktrees — WorktreesRacine.tsx (monté par Workspace : « Nouveau worktree », cartes des tâches, ouverture avec conversation et terminaux), NouveauWorktree.tsx, TachesWorktrees.tsx, TerminalScript.tsx, Dialogue.tsx, logique.ts, magasin.ts, terminauxDepart.ts, evenements.ts, worktreesApi.ts, worktrees.css
     │   ├── freechat # freechat — mode conversation libre
     │   │   ├── FreechatView.tsx # vue plein écran : barre latérale (libres + par projet, recherche), chat centré, ouvrir un dossier pour la conversation
     │   │   ├── freechatApi.ts # IPC freechat_*, utilitaires (titres, chemins, dates relatives)

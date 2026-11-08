@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use super::{config, depot, partage};
+use super::{config, depot, partage, script};
 
 static COMPTEUR: AtomicUsize = AtomicUsize::new(0);
 
@@ -237,4 +237,233 @@ fn mesurer_ne_suit_pas_les_liens() {
     assert!(recent > 0 && !coupe);
     let (_, _, coupe) = partage::mesurer(&d, 2);
     assert!(coupe);
+}
+
+// ---------------------------------------------------------------------------
+// W1 : tâches de fond (création, script, reprise, annulation).
+
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
+
+use super::taches;
+
+#[derive(Default)]
+struct HoteTest {
+    publications: Mutex<Vec<taches::Tache>>,
+    sortie: Mutex<String>,
+    terminaux: Mutex<HashMap<String, taches::Joignable>>,
+}
+
+impl taches::Hote for HoteTest {
+    fn publier(&self, tache: &taches::Tache) {
+        self.publications.lock().unwrap().push(tache.clone());
+    }
+    fn sortie(&self, _id: &str, _debut: u64, texte: &str) {
+        self.sortie.lock().unwrap().push_str(texte);
+    }
+    fn terminal_ouvert(&self, session: &str, terminal: taches::Joignable) {
+        self.terminaux.lock().unwrap().insert(session.to_string(), terminal);
+    }
+    fn terminal_ferme(&self, session: &str, token: &str) {
+        let mut t = self.terminaux.lock().unwrap();
+        if t.get(session).map(|j| j.token == token).unwrap_or(false) {
+            t.remove(session);
+        }
+    }
+}
+
+fn tache(id: &str) -> taches::Tache {
+    taches::lister().into_iter().find(|t| t.id == id).expect("tâche inconnue")
+}
+
+fn attendre(id: &str, condition: impl Fn(&taches::Tache) -> bool) -> taches::Tache {
+    let debut = Instant::now();
+    loop {
+        let t = tache(id);
+        if condition(&t) {
+            return t;
+        }
+        assert!(debut.elapsed() < Duration::from_secs(60), "délai dépassé : {:?} {:?} {}", t.etat, t.etape, t.message);
+        std::thread::sleep(Duration::from_millis(50));
+    }
+}
+
+fn finie(id: &str) -> taches::Tache {
+    attendre(id, |t| t.etat != taches::Etat::EnCours)
+}
+
+fn demande(depot: &Path, branche: &str, lancer: bool, empreinte: Option<String>) -> taches::DemandeCreation {
+    taches::DemandeCreation {
+        depot: depot.display().to_string(),
+        titre: format!("Tâche {branche}"),
+        branche: branche.to_string(),
+        base: None,
+        lancer_script: lancer,
+        empreinte,
+    }
+}
+
+#[test]
+fn slug_et_dossier_libre() {
+    assert_eq!(taches::slug("Corriger le bug du panier !"), "corriger-le-bug-du-panier");
+    assert_eq!(taches::slug("Été 2026 : Œuvre à l'œil"), "ete-2026-oeuvre-a-l-oeil");
+    assert_eq!(taches::slug("feature/Login"), "feature-login");
+    assert_eq!(taches::slug("***"), "tache");
+    assert!(taches::slug(&"mot ".repeat(40)).len() <= 48);
+    let r = depot_test("libre");
+    let liste = depot::lister(&r).unwrap();
+    let premier = taches::chemin_libre(&r, "ma/tache", &liste).unwrap();
+    assert_eq!(premier, r.parent().unwrap().join("depot-worktrees").join("ma-tache"));
+    fs::create_dir_all(&premier).unwrap();
+    let second = taches::chemin_libre(&r, "ma/tache", &liste).unwrap();
+    assert_eq!(second.file_name().unwrap(), "ma-tache-2");
+}
+
+#[cfg(unix)]
+#[test]
+fn creation_complete_partage_et_script_visible() {
+    let r = depot_test("creation");
+    fs::create_dir_all(r.join("node_modules/paquet")).unwrap();
+    fs::write(r.join(".env"), "CLE=1").unwrap();
+    fs::write(
+        r.join("worktrees.toml"),
+        "[scripts]\ncreation = \"\"\"\necho prepare > fait.txt\necho \"branche=$WORKTREE_BRANCH\"\n\"\"\"\n[partage]\nliens = [\"node_modules\"]\ncopies = [\".env\"]\n",
+    )
+    .unwrap();
+    let cfg = config::lire(&r);
+    let hote = Arc::new(HoteTest::default());
+    let t = taches::preparer_creation(&demande(&r, "corriger-le-panier", true, cfg.empreinte.clone())).unwrap();
+    assert_eq!(t.etapes, vec![taches::Etape::Git, taches::Etape::Partage, taches::Etape::Script, taches::Etape::Fin]);
+    assert_eq!(t.base.as_deref(), Some("main"));
+    let id = taches::lancer(hote.clone(), t).id;
+    let t = finie(&id);
+    assert_eq!(t.etat, taches::Etat::Reussi, "{} {:?}", t.message, t.detail);
+    assert!(t.pret);
+    let dossier = PathBuf::from(&t.dossier);
+    assert!(depot::lister(&r).unwrap().iter().any(|w| depot::meme_chemin(&w.chemin, &dossier)));
+    assert_eq!(depot::branche_courante(&dossier).as_deref(), Some("corriger-le-panier"));
+    assert!(partage::est_lien(&dossier.join("node_modules")));
+    assert_eq!(fs::read_to_string(dossier.join(".env")).unwrap(), "CLE=1");
+    assert_eq!(fs::read_to_string(dossier.join("fait.txt")).unwrap().trim(), "prepare");
+    assert_eq!(t.script.as_ref().and_then(|s| s.code), Some(0));
+    assert!(hote.sortie.lock().unwrap().contains("branche=corriger-le-panier"));
+    assert!(taches::sortie(&id).unwrap().0.contains("branche=corriger-le-panier"));
+    assert!(hote.terminaux.lock().unwrap().is_empty(), "terminal du script rendu");
+    // Le worktree est utilisable dès la fin du partage (avant la fin du script).
+    let pubs = hote.publications.lock().unwrap();
+    let premier_pret = pubs.iter().position(|p| p.pret).unwrap();
+    assert!(pubs[premier_pret].etape == taches::Etape::Script);
+    assert_eq!(depot::fichiers_modifies(&dossier), Some(1), "seul fait.txt est nouveau (lien et .env ignorés)");
+    // « node_modules/ » ne cache pas un lien : le chemin est exclu une fois dans info/exclude.
+    let exclude = fs::read_to_string(r.join(".git/info/exclude")).unwrap();
+    assert_eq!(exclude.matches("\n/node_modules\n").count(), 1, "{exclude}");
+    assert!(partage::exclure(&r.join(".git"), &["node_modules".to_string()]).is_empty());
+}
+
+#[cfg(unix)]
+#[test]
+fn script_sans_accord_puis_accepte_et_relance() {
+    let r = depot_test("accord");
+    fs::write(r.join("worktrees.toml"), "[scripts]\ncreation = \"exit 3\"\n").unwrap();
+    let hote = Arc::new(HoteTest::default());
+    let id = taches::lancer(hote.clone(), taches::preparer_creation(&demande(&r, "accord", true, None)).unwrap()).id;
+    let t = finie(&id);
+    assert_eq!(t.etat, taches::Etat::Echec);
+    assert_eq!(t.raison.as_deref(), Some("empreinte"));
+    assert!(t.pret && PathBuf::from(&t.dossier).is_dir(), "le worktree reste");
+    // Accord donné : le script tourne et échoue (code 3) ; corrigé, il passe.
+    let empreinte = config::lire(&r).empreinte;
+    taches::reprendre(hote.clone(), &id, taches::Reprise { empreinte: empreinte.clone(), ..Default::default() }).unwrap();
+    let t = finie(&id);
+    assert_eq!(t.raison.as_deref(), Some("script"), "{}", t.message);
+    assert_eq!(t.script.as_ref().and_then(|s| s.code), Some(3));
+    fs::write(r.join("worktrees.toml"), "[scripts]\ncreation = \"true\"\n").unwrap();
+    assert!(taches::reprendre(hote.clone(), &id, taches::Reprise::default()).is_ok());
+    assert_eq!(finie(&id).raison.as_deref(), Some("empreinte"), "fichier modifié : nouvel accord demandé");
+    let empreinte = config::lire(&r).empreinte;
+    taches::reprendre(hote.clone(), &id, taches::Reprise { empreinte, ..Default::default() }).unwrap();
+    assert_eq!(finie(&id).etat, taches::Etat::Reussi);
+    assert!(taches::reprendre(hote, &id, taches::Reprise::default()).is_err(), "déjà finie");
+}
+
+#[cfg(unix)]
+#[test]
+fn arreter_le_script_garde_le_worktree() {
+    let r = depot_test("arret");
+    fs::write(r.join("worktrees.toml"), "[scripts]\ncreation = \"sleep 30\"\n").unwrap();
+    let hote = Arc::new(HoteTest::default());
+    let empreinte = config::lire(&r).empreinte;
+    let id = taches::lancer(hote.clone(), taches::preparer_creation(&demande(&r, "arret", true, empreinte)).unwrap()).id;
+    attendre(&id, |t| t.script.as_ref().map(|s| s.en_cours).unwrap_or(false));
+    let debut = Instant::now();
+    taches::annuler(&id).unwrap();
+    let t = finie(&id);
+    assert!(debut.elapsed() < Duration::from_secs(10));
+    assert_eq!(t.etat, taches::Etat::Annule);
+    assert!(t.message.contains("Préparation arrêtée"), "{}", t.message);
+    assert!(PathBuf::from(&t.dossier).is_dir());
+    assert!(taches::oublier(&id).is_ok());
+    assert!(taches::lister().iter().all(|x| x.id != id));
+}
+
+#[test]
+fn dossier_deja_la_jamais_efface() {
+    let r = depot_test("protege");
+    let hote = Arc::new(HoteTest::default());
+    let t = taches::preparer_creation(&demande(&r, "protege", false, None)).unwrap();
+    let dossier = PathBuf::from(&t.dossier);
+    fs::create_dir_all(&dossier).unwrap();
+    fs::write(dossier.join("a-moi.txt"), "précieux").unwrap();
+    let id = taches::lancer(hote, t).id;
+    let t = finie(&id);
+    assert_eq!(t.etat, taches::Etat::Echec);
+    assert_eq!(t.raison.as_deref(), Some("dossier"));
+    assert_eq!(fs::read_to_string(dossier.join("a-moi.txt")).unwrap(), "précieux");
+    assert!(!depot::branche_locale_existe(&r, "protege"));
+}
+
+#[test]
+fn branche_existante_reprise_et_branche_deja_ouverte_refusee() {
+    let r = depot_test("existante");
+    git_test(&r, &["branch", "deja"]);
+    let hote = Arc::new(HoteTest::default());
+    let t = taches::preparer_creation(&demande(&r, "deja", false, None)).unwrap();
+    assert_eq!(t.base, None);
+    let id = taches::lancer(hote, t).id;
+    let t = finie(&id);
+    assert_eq!(t.etat, taches::Etat::Reussi, "{:?}", t.detail);
+    assert_eq!(depot::branche_courante(Path::new(&t.dossier)).as_deref(), Some("deja"));
+    let refus = taches::preparer_creation(&demande(&r, "deja", false, None)).unwrap_err();
+    assert!(refus.contains("déjà ouverte"), "{refus}");
+    let refus = taches::preparer_creation(&demande(&r, "a..b", false, None)).unwrap_err();
+    assert!(refus.contains("invalide"), "{refus}");
+    let mut d = demande(&r, "nouvelle", false, None);
+    d.base = Some("introuvable".into());
+    assert!(taches::preparer_creation(&d).unwrap_err().contains("introuvable"));
+}
+
+#[test]
+fn texte_des_scripts() {
+    let q = "'";
+    let posix = script::texte_posix("npm ci\n\n# commentaire\necho 'a'\n");
+    assert!(posix.starts_with("set -e\n"));
+    assert!(posix.contains("\nnpm ci\n"));
+    let echappe = format!("{q}\\{q}{q}");
+    let attendu = format!("{q}echo {e}a{e}{q}", e = echappe);
+    assert!(posix.contains(&attendu), "{posix}");
+    assert!(!posix.contains("commentaire"));
+    let ps = script::texte_powershell("npm ci\necho 'a'");
+    assert!(ps.contains("$ErrorActionPreference = 'Stop'"));
+    let ligne = format!("Write-Host {q}> echo {q}{q}a{q}{q}{q} -ForegroundColor DarkGray");
+    assert!(ps.contains(&ligne), "{ps}");
+    assert!(ps.contains("npm ci\r\nif ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"));
+    assert!(ps.ends_with("exit 0\r\n"));
+    // -EncodedCommand : UTF-16LE puis base64 (« a » = 61 00).
+    assert_eq!(script::encoder_powershell("a"), "YQA=");
+    let mut attente = vec![0xC3];
+    assert_eq!(script::decouper_utf8(&mut attente), "");
+    attente.push(0xA9);
+    assert_eq!(script::decouper_utf8(&mut attente), "é");
+    assert!(attente.is_empty());
 }

@@ -627,6 +627,12 @@ pub fn run() {
             git::git_create_pull_request_command,
             worktrees::worktrees_config, // worktrees
             worktrees::worktrees_config_creer,
+            worktrees::worktree_creer,
+            worktrees::worktrees_taches,
+            worktrees::worktree_tache_annuler,
+            worktrees::worktree_tache_reprendre,
+            worktrees::worktree_tache_oublier,
+            worktrees::worktree_tache_sortie,
             updater::updater_check,
             updater::updater_download_and_install,
             updater::updater_restart,

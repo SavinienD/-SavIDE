@@ -25,6 +25,7 @@ import { NouvelleConversation } from "./NouvelleConversation"; // e13
 import { EditorPane } from "./EditorPane";
 import { SettingsPane } from "./SettingsPane";
 import { TerminalPanel } from "./TerminalPanel";
+import { WorktreesRacine } from "./worktrees/WorktreesRacine"; // worktrees
 import { CloudTerminalPanel } from "./cloud/CloudTerminalPanel"; // e8
 import { CLOUD_CONNECTION, cloudApi } from "./cloud/cloudApi"; // e15
 import { CloudLoginButton } from "./cloud/CloudLoginButton"; // connexion-google
@@ -3655,6 +3656,8 @@ export function Workspace({
   return (
     <div className="workspace">
       {noticeEl}
+      {/* worktrees — « Nouveau worktree », tâches de fond, ouverture du worktree créé */}
+      <WorktreesRacine dossier={workspacePath} onOuvrirDossier={(p, c) => onOpenFolder?.(p, c)} onFermerTerminaux={closeTerminalPanel} onAfficherTerminal={showTerminal} />
       {/* e6 — les volets detaches vivent ici, dans la fenetre de l'application. */}
       <VoletsFlottants
         volets={volets}

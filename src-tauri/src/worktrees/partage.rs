@@ -131,6 +131,48 @@ pub(crate) fn retirer_liens(worktree: &Path, chemins: &[String]) -> Vec<String> 
     retires
 }
 
+/// Les motifs « dossier/ » de .gitignore ne cachent pas un lien (git le voit
+/// comme un fichier) : le chemin est ajouté à `info/exclude` du dépôt (fichier
+/// local, jamais versionné), une fois. Renvoie les chemins ajoutés.
+pub(crate) fn exclure(admin_commun: &Path, chemins: &[String]) -> Vec<String> {
+    if chemins.is_empty() {
+        return Vec::new();
+    }
+    let fichier = admin_commun.join("info").join("exclude");
+    let existant = fs::read_to_string(&fichier).unwrap_or_default();
+    let deja: Vec<&str> = existant.lines().map(str::trim).collect();
+    let nouveaux: Vec<String> = chemins
+        .iter()
+        .map(|c| format!("/{c}"))
+        .filter(|motif| !deja.contains(&motif.as_str()))
+        .collect();
+    if nouveaux.is_empty() {
+        return Vec::new();
+    }
+    let entete = deja.contains(&ENTETE_EXCLUDE);
+    let mut texte = existant.clone();
+    if !texte.is_empty() && !texte.ends_with('\n') {
+        texte.push('\n');
+    }
+    if !entete {
+        texte.push_str(ENTETE_EXCLUDE);
+        texte.push('\n');
+    }
+    for motif in &nouveaux {
+        texte.push_str(motif);
+        texte.push('\n');
+    }
+    if let Some(parent) = fichier.parent() {
+        let _ = fs::create_dir_all(parent);
+    }
+    match fs::write(&fichier, texte) {
+        Ok(()) => nouveaux.into_iter().map(|m| m.trim_start_matches('/').to_string()).collect(),
+        Err(_) => Vec::new(),
+    }
+}
+
+const ENTETE_EXCLUDE: &str = "# worktrees : liens partagés (git voit un lien comme un fichier)";
+
 pub(crate) fn noter(admin: &Path, faits: &[Partage]) {
     let chemin = admin.join(FICHIER_SUIVI);
     let mut tous: Vec<Partage> = lire_suivi(admin);

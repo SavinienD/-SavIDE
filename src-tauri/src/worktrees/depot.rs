@@ -259,6 +259,7 @@ pub(crate) fn est_ignore(racine: &Path, relatif: &str) -> bool {
 }
 
 /// Vrai si git suit ce chemin (fichier ou dossier) dans la racine.
+#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) fn est_suivi(racine: &Path, relatif: &str) -> bool {
     git(racine, &["ls-files", "--error-unmatch", "--", relatif]).map(|s| s.ok).unwrap_or(false)
 }
