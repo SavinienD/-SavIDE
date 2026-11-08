@@ -187,9 +187,8 @@ export function ReglagesCommandes() {
       <header>
         <h2 title="Commandes et prompts enregistrés">Commandes et prompts</h2>
         <p className="axe-appearance__hint">
-          Réutilisables d'un clic. Barre des terminaux : une commande s'exécute, un prompt est collé
-          sans être validé. Chat : le texte est inséré dans la zone de saisie. Variables : {"{dossier}"}{" "}
-          (dossier ouvert) et {"{fichier}"} (fichier actif de l'éditeur, chemin relatif).
+          Terminal : une commande s'exécute, un prompt est collé. Chat : le texte est inséré.
+          Variables : {"{dossier}"} et {"{fichier}"} (fichier ouvert dans l'éditeur).
         </p>
       </header>
       <div className="acli-reglages__actions">

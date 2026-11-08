@@ -889,7 +889,7 @@ export const SCENES = [
   { id: "commandes-reglages", sim: {}, stockage: () => colonnes([ids(1)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='commandes']"],
     temoins: ["compte:.acli-commandes .acli-commande=2", "sel:.acli-commande[data-genre='prompt'] textarea", "clic:[data-action='ajouter-commande']",
-      "clic:.acli-commande[data-commande='exemple-git'] [data-action='supprimer-commande']"] },
+      "si>900:clic:.acli-commande[data-commande='exemple-git'] [data-action='supprimer-commande']", "compte:.acli-commande [data-action='supprimer-commande']=2"] },
   { id: "commandes-terminal", sim: { cloud: false }, stockage: () => colonnes([ids(1)]), terminal: true,
     cliquer: ".terminal-tabs__actions [data-action='commandes-terminal']",
     temoins: ["clic:.acli-menu--commandes [data-commande='exemple-git']", "sel:.acli-menu--commandes [data-commande='exemple-relire'][aria-disabled='true']",

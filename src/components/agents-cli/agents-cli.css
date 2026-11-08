@@ -164,3 +164,15 @@
 .acli-commande select:focus, .acli-commande input:focus, .acli-commande textarea:focus { outline: none; border-color: var(--accent); }
 .acli-commande .terminal-action { flex: 0 0 auto; }
 .acli-menu__item[aria-disabled="true"] { opacity: 0.5; }
+
+/* Volet des Réglages étroit (≈ 170 px à 800 px) : genre, nom et « Supprimer » passent à la ligne au lieu de sortir de la carte. */
+.acli-commande__tete { flex-wrap: wrap; row-gap: 4px; }
+.acli-commande select { max-width: 100%; }
+.acli-commande input { flex: 1 1 80px; }
+
+/* Barre des terminaux chargée (plusieurs onglets, texte agrandi) : l'onglet Git ne s'écrase plus
+   (sa branche restait lisible sur 8 px) et un titre long se coupe dans son onglet (sa croix
+   passait sous l'onglet suivant) ; la liste défile. Le dernier onglet garde 4 px avant le bord. */
+.terminal-tabs .terminal-tabs__list .terminal-tab[data-tab="git"] { flex-shrink: 0; }
+.terminal-tabs .terminal-tabs__list .terminal-tab .terminal-tab__label { flex: 0 1 auto; min-width: 0; }
+.terminal-tabs__list::after { content: ""; flex: 0 0 4px; }
