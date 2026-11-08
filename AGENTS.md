@@ -58,7 +58,8 @@ Code map:
 │   │   ├── bridge.py # RPC kernel→Rust bridge.call(method, params), images, file changes
 │   │   ├── files.py / shell.py / web.py / images.py / context.py / question.py / todo.py / skills.py / mcp.py / compact.py # modules préchargés
 │   │   ├── _documents.py # viewers — texte des xlsx/docx/pdf/pptx/odt/epub pour files.read (privé, non préchargé)
-│   │   └── rlm.py / messages.py / harness.py / refine.py / goal.py / heartbeat.py # modules E/D/F (brain)
+│   │   ├── rlm.py / messages.py / harness.py / refine.py / goal.py / heartbeat.py # modules E/D/F (brain)
+│   │   └── navigateur.py # lot 186 — ouvrir/lire(delta)/cliquer/remplir/touche/attendre/capture sur l'onglet Navigateur (host calls navigateur.*)
 │   └── tests # pytest files + shell + documents
 ├── web # webui — app web des conversations (Vite + React, npm run build:web -> web/dist, embarquée dans le service)
 │   ├── index.html / vite.config.ts / tsconfig.json
@@ -351,6 +352,7 @@ Code map:
 │       ├── lib.rs
 │       ├── main.rs
 │       ├── models.rs
+│       ├── navigateur # lot 186 — navigateur intégré : vue.rs (vue wry enfant, sans IPC Tauri ; Linux : gtk::Overlay), mod.rs (commandes navigateur_*), adresse.rs (http/https seulement), page.rs + page/agent.js + page/design.js (scripts évalués dans la page : lecture compacte, actions, Design Mode), ports.rs (ports du dossier : /proc, PEB sous Windows, lsof), pont.rs (pont local appli ↔ service pour le module REPL navigateur), capture.rs (PNG : WebView2 CDP, WebKitGTK), etat.rs, telechargements.rs
 │       ├── offline.rs # v2-l6 — mode désynchronisé : miroir local + journal (<data>/offline/<connexion>) et IPC offline_* (prepare, list, read, write, create, delete, rename, journal, sync, resolve, forget)
 │       ├── platform.rs
 │       ├── providers.rs
@@ -444,6 +446,7 @@ Code map:
     │   ├── Welcome.tsx # freechat — écran d'accueil : « Nouvelle conversation » / « Ouvrir un dossier », conversations libres et dossiers récents
     │   ├── WindowControls.tsx
     │   ├── Workspace.tsx # dispositions « ide » et « chat » (freechat : même ChatPane, FreechatView)
+    │   ├── navigateur # lot 186 — onglet Navigateur : OngletNavigateur.tsx (barre, accueil + ports, volet élément choisi), useOngletNavigateur.tsx (accroche du Workspace), navigateurApi.ts, liens.ts (liens du chat et du terminal), appareils.ts, recouvrement.ts, design.ts, versChat.ts, NavigateurReglages.tsx, navigateur.css
     │   ├── freechat # freechat — mode conversation libre
     │   │   ├── FreechatView.tsx # vue plein écran : barre latérale (libres + par projet, recherche), chat centré, ouvrir un dossier pour la conversation
     │   │   ├── freechatApi.ts # IPC freechat_*, utilitaires (titres, chemins, dates relatives)

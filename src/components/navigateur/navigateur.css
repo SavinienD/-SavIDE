@@ -1,0 +1,393 @@
+/* Lot 186 — onglet Navigateur : barre, page (vue native posée par l'appli sur .nav__page),
+   accueil (serveurs du dossier) et volet latéral (ports, élément choisi). Mêmes jetons que
+   l'éditeur ; rien ne passe au-dessus de la page : les volets sont à côté d'elle. */
+.nav {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-0);
+  color: var(--text-1);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  container: navigateur / inline-size;
+}
+.nav__barre {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-1);
+  min-width: 0;
+  overflow: hidden;
+}
+.nav__btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 26px;
+  min-width: 26px;
+  padding: 0 5px;
+  border: 0;
+  border-radius: var(--r-med);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.nav__btn:hover:not(:disabled) {
+  color: var(--text-0);
+  background: var(--bg-3);
+}
+.nav__btn[data-active="true"] {
+  color: var(--text-0);
+  background: var(--bg-4);
+}
+.nav__btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.nav__btn:focus-visible,
+.nav__bouton:focus-visible,
+.nav__champ:focus-visible {
+  outline: 2px solid var(--ring-1, var(--line-strong));
+  outline-offset: 1px;
+}
+.nav__btn--valeur {
+  min-width: 44px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+.nav__compte {
+  min-width: 14px;
+  padding: 0 4px;
+  border-radius: var(--r-pill);
+  background: var(--bg-3);
+  color: var(--text-0);
+  font-size: 10px;
+  line-height: 14px;
+}
+.nav__groupe {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 2px;
+  border-left: 1px solid var(--line-soft, var(--line));
+}
+.nav__adresse {
+  flex: 1 1 auto;
+  min-width: 80px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  margin: 0 4px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--bg-0);
+}
+.nav__adresse[data-chargement="true"] {
+  border-color: var(--line-strong, var(--line));
+}
+.nav__adresse-icone {
+  flex: 0 0 auto;
+  color: var(--text-3, var(--text-2));
+}
+.nav__champ {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text-0);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  outline: none;
+}
+.nav__avis {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 2px 6px 2px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-1);
+  color: var(--text-1);
+}
+.nav__avis[data-genre="erreur"] {
+  color: var(--danger, #e5484d);
+}
+.nav__avis-texte {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav__corps {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+}
+.nav__place {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-canvas, var(--bg-0));
+}
+.nav__page {
+  position: absolute;
+  inset: 0;
+}
+.nav__accueil {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  padding: 32px 16px;
+}
+.nav__accueil-bloc {
+  width: 100%;
+  max-width: 520px;
+  min-width: 0;
+}
+.nav__accueil-titre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+  color: var(--text-0);
+  font-size: var(--fs-base, 14px);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nav__accueil-texte {
+  margin: 0 0 18px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+.nav__volet {
+  flex: 0 0 auto;
+  width: min(320px, 45%);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--line);
+  background: var(--bg-1);
+}
+.nav__volet-tete {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 4px 0 10px;
+  border-bottom: 1px solid var(--line-soft, var(--line));
+}
+.nav__accueil .nav__volet-tete {
+  padding: 0 0 0 2px;
+}
+.nav__volet-titre {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-0);
+  font-weight: 600;
+}
+.nav__volet-pied {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--line-soft, var(--line));
+}
+.nav__bouton {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  min-width: 28px;
+  justify-content: center;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-med);
+  background: var(--bg-2);
+  color: var(--text-0);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.nav__bouton:hover {
+  background: var(--bg-3);
+}
+.nav__bouton--principal {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.nav__bouton--principal > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nav__vide {
+  margin: 12px 10px;
+  color: var(--text-2);
+}
+.nav--autre {
+  align-items: center;
+  justify-content: center;
+}
+.nav__ports {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  overflow: auto;
+}
+.nav__port {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+}
+.nav__port + .nav__port {
+  border-top: 1px solid var(--line-soft, var(--line));
+}
+.nav__port-nom {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.nav__port-nom code {
+  color: var(--text-0);
+  font-family: var(--font-mono);
+}
+.nav__port-processus {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-2);
+}
+.nav__element {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 10px;
+}
+.nav__ligne {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 22px;
+}
+.nav__ligne > span {
+  flex: 0 0 96px;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav__ligne > code {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-0);
+  font-family: var(--font-mono);
+}
+.nav__html {
+  margin: 8px 0 0;
+  padding: 8px;
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--line-soft, var(--line));
+  border-radius: var(--r-med);
+  background: var(--bg-0);
+  color: var(--text-1);
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-sm, 11px);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* Onglet étroit : volet sous la page, groupes secondaires masqués d'abord. */
+@container navigateur (max-width: 640px) {
+  .nav__corps {
+    flex-direction: column;
+  }
+  .nav__volet {
+    width: auto;
+    max-height: 45%;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .nav__groupe[aria-label="Zoom de la page"] {
+    display: none;
+  }
+}
+@container navigateur (max-width: 460px) {
+  .nav__groupe {
+    display: none;
+  }
+  .nav__btn[data-action="devtools"] {
+    display: none;
+  }
+}
+/* Bouton de la barre de titre : cède la place quand la barre est étroite. */
+@container barre-titre (max-width: 600px) {
+  .titlebar__btn[data-bouton="navigateur"] {
+    display: none;
+  }
+}
+
+/* Réglages > Navigateur : une ligne par choix, libellé tronqué (texte complet au survol). */
+.nav-reglages__choix {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  min-width: 0;
+  color: var(--text-1);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.nav-reglages__choix input {
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.nav-reglages__libelle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav-reglages h3 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

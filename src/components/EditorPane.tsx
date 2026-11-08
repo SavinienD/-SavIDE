@@ -54,6 +54,17 @@ if (!(globalThis as typeof globalThis & { MonacoEnvironment?: unknown }).MonacoE
 
 loader.config({ monaco: monacoNs });
 
+/** Lot 186 — onglet qui n'est pas un fichier (Navigateur), rendu par son module. */
+export type OngletSpecial = {
+  cle: string;
+  titre: string;
+  icone: string;
+  actif: boolean;
+  vue: ReactNode;
+  onActiver: () => void;
+  onFermer: () => void;
+};
+
 type Props = {
   tabs: EditorTab[];
   activeIndex: number;
@@ -79,6 +90,10 @@ type Props = {
   revealTarget?: EditorRevealTarget | null;
   onSettingsActivate?: () => void;
   onSettingsClose?: () => void;
+  /** Lot 186 — onglets spéciaux (Navigateur) après Réglages et « À distance ». */
+  ongletsSpeciaux?: OngletSpecial[];
+  /** Lot 186 — un onglet de fichier, Réglages ou « À distance » a été cliqué. */
+  onQuitterSpecial?: () => void;
 };
 
 export function EditorPane({
@@ -103,7 +118,10 @@ export function EditorPane({
   revealTarget,
   onSettingsActivate,
   onSettingsClose,
+  ongletsSpeciaux,
+  onQuitterSpecial,
 }: Props) {
+  const specialActif = ongletsSpeciaux?.some((o) => o.actif) ?? false; // lot 186
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const searchDecorationsRef =
     useRef<Monaco.editor.IEditorDecorationsCollection | null>(null);
@@ -126,7 +144,7 @@ export function EditorPane({
     null,
   );
   const activeTab: EditorTab | undefined =
-    settingsActive || remoteActive ? undefined : tabs[activeIndex];
+    settingsActive || remoteActive || specialActif ? undefined : tabs[activeIndex];
   // Close the image context menu whenever the user switches tabs or
   // toggles into the settings / remote view, so it never lingers on the
   // wrong file.
@@ -402,8 +420,8 @@ export function EditorPane({
           <div
             key={tab.relativePath}
             className="tab"
-            data-active={!settingsActive && !remoteActive && index === activeIndex ? "true" : "false"}
-            onClick={() => onActivate(index)}
+            data-active={!settingsActive && !remoteActive && !specialActif && index === activeIndex ? "true" : "false"}
+            onClick={() => { onActivate(index); onQuitterSpecial?.(); }}
             onMouseDown={(event) => { if (event.button === 1) event.preventDefault(); }}
             onAuxClick={(event) => {
               // Clic molette : fermer l'onglet.
@@ -454,7 +472,7 @@ export function EditorPane({
           <div
             className="tab"
             data-active={settingsActive ? "true" : "false"}
-            onClick={onSettingsActivate}
+            onClick={() => { onSettingsActivate?.(); onQuitterSpecial?.(); }}
             title="Réglages"
           >
             <span className="tab__icon">
@@ -477,7 +495,7 @@ export function EditorPane({
           <div
             className="tab"
             data-active={remoteActive ? "true" : "false"}
-            onClick={onRemoteActivate}
+            onClick={() => { onRemoteActivate?.(); onQuitterSpecial?.(); }}
             title="À distance"
           >
             <span className="tab__icon">
@@ -496,6 +514,33 @@ export function EditorPane({
             </button>
           </div>
         )}
+        {ongletsSpeciaux?.map((o) => (
+          <div
+            key={o.cle}
+            className="tab"
+            data-onglet-special={o.cle}
+            data-active={o.actif ? "true" : "false"}
+            onClick={o.onActiver}
+            onMouseDown={(event) => { if (event.button === 1) event.preventDefault(); }}
+            onAuxClick={(event) => { if (event.button === 1) { event.preventDefault(); o.onFermer(); } }}
+            title={o.titre}
+          >
+            <span className="tab__icon">
+              <Icon icon={o.icone} width={14} height={14} />
+            </span>
+            <span className="tab__name">{o.titre}</span>
+            <button
+              className="tab__close"
+              onClick={(event) => {
+                event.stopPropagation();
+                o.onFermer();
+              }}
+              title="Fermer l'onglet"
+            >
+              <Icon icon="solar:close-circle-linear" width={13} height={13} />
+            </button>
+          </div>
+        ))}
         <div className="tabs__spacer" />
         {activeIsMarkdown && (
           <button
@@ -561,7 +606,12 @@ export function EditorPane({
             {remoteView}
           </div>
         )}
-        {!settingsActive && !remoteActive &&
+        {ongletsSpeciaux?.map((o) => (
+          <div key={o.cle} className="editor-settings-layer" data-active={o.actif ? "true" : "false"}>
+            {o.vue}
+          </div>
+        ))}
+        {!settingsActive && !remoteActive && !specialActif &&
           (!activeTab ? (
             <div className="editor-empty">
               <span className="editor-empty__mark">

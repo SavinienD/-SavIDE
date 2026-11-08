@@ -141,6 +141,7 @@ import { loadUiZoom } from "../axe/zoom";
 import { apprendreDuMessage } from "../axe/voix/vocabulaireAuto"; // voix-vocabulaire
 import { noterConversation } from "../lib/gardienPage";
 import { garderSeulement } from "./chat/vuesConversations"; // mémoire
+import { useOngletNavigateur } from "./navigateur/useOngletNavigateur"; // lot 186 : navigateur intégré
 
 type Props = {
   bootstrap: WorkspaceBootstrap;
@@ -811,6 +812,11 @@ export function Workspace({
   const [remoteOpen, setRemoteOpen] = useState(false);
   const [remoteActive, setRemoteActive] = useState(false);
   const [settingsActive, setSettingsActive] = useState(false);
+  // lot 186 — onglet Navigateur (navigateur intégré, Design Mode, ports, pilotage par l'agent).
+  const navigateur = useOngletNavigateur({
+    workspacePath, conversationId: activeConv.id, settingsActive, remoteActive, activeTabIndex,
+    quitterAutres: () => { setSettingsActive(false); setRemoteActive(false); },
+  });
   const [remoteStatus, setRemoteStatus] = useState<RemoteStatus | null>(null);
   const [fileTreeRefreshToken, setFileTreeRefreshToken] = useState(0);
   const [fileSearchOpen, setFileSearchOpen] = useState(false);
@@ -2918,7 +2924,8 @@ export function Workspace({
   };
   const actionsRaccourcisRef = useRef<Parameters<typeof fournirActions>[0]>({});
   actionsRaccourcisRef.current = {
-    fermerOnglet: () => closeActiveEditorTab(),
+    fermerOnglet: () => { if (!navigateur.fermerSiActif()) closeActiveEditorTab(); }, // lot 186 : Ctrl+W ferme aussi le Navigateur
+    navigateur: () => navigateur.ouvrir(), // lot 186
     terminal: () => toggleTerminalRef.current(),
     enregistrer: () => {
       if (settingsActive) return;
@@ -3526,6 +3533,8 @@ export function Workspace({
                   setSettingsActive(true);
                 }}
                 onSettingsClose={closeSettings}
+                ongletsSpeciaux={premiere ? navigateur.onglets : undefined} // lot 186
+                onQuitterSpecial={navigateur.quitter}
               />
             </div>
             {col < colonnesFichiers.length - 1 ? (
@@ -3748,6 +3757,7 @@ export function Workspace({
             />
             <span className="titlebar__btn-label">Terminal</span>
           </button>
+          {navigateur.bouton /* lot 186 */}
           <button
             className="titlebar__btn"
             data-on={gaucheReduite ? "false" : "true"}
