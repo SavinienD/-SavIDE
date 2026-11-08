@@ -44,6 +44,7 @@ import { oublierSectionReglages, sectionReglagesDemandee } from "../lib/sectionR
 import { PythonSkillPreview, isPySkillEnabled } from "./settings/PythonSkillPreview";
 import { ComptesSupplementaires } from "./settings/ComptesSupplementaires";
 import { MenuHarnais, usePartageHarnais } from "./settings/HarnaisPartage";
+import { SkillsExternes } from "./settings/SkillsExternes";
 type SkillKindFilter = "all" | "recipe" | "python";
 import { sanitizeOpenRouterName, type ModelEntry } from "../lib/models";
 import type {
@@ -1579,6 +1580,7 @@ export function SettingsPane({ workspacePath }: Props) {
             onSaveSkillContent={saveSkillContent}
             serviceSkills={serviceSkills}
             serviceNote={serviceSkillsNote}
+            actionsInterop={<SkillsExternes workspacePath={workspacePath} onChange={() => { void loadSkills(); void loadPySkills(); }} />}
           />
           {menuPySkill ? (
             <MenuHarnais
@@ -2977,6 +2979,7 @@ type SkillsSectionProps = {
   onTogglePySkill: (entry: HarnessEntry) => void;
   onMovePySkill: (entry: HarnessEntry) => void;
   onMenuPySkill: (entry: HarnessEntry, x: number, y: number) => void;
+  actionsInterop?: React.ReactNode; // bouton « Importer »
 };
 
 function SkillsSection({
@@ -3011,6 +3014,7 @@ function SkillsSection({
   onTogglePySkill,
   onMovePySkill,
   onMenuPySkill,
+  actionsInterop,
 }: SkillsSectionProps) {
   const total = (allSkills?.length ?? 0) + pyTotal;
   const visible = skills.length + pySkills.length;
@@ -3052,6 +3056,7 @@ function SkillsSection({
               {status}
             </span>
           )}
+          {actionsInterop}
           <button
             type="button"
             className="settings-pane__btn"

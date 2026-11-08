@@ -15,3 +15,36 @@
 .axe-interop__consignes-liste li[data-etat="plafond"] span,
 .axe-interop__consignes-liste li[data-etat="illisible"] span { color: var(--accent); }
 
+/* Réglages > Skills : bouton « Importer » et boîte d'import (Claude Code, Codex, adresse). */
+.axe-interop__badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 999px; background: var(--accent); color: #fff; font-size: calc(10px * var(--text-scale, 1)); line-height: 1; }
+.axe-interop__boite { width: min(640px, 100%); }
+.axe-interop__onglets { display: flex; gap: 4px; border-bottom: 1px solid var(--line-strong); }
+.axe-interop__onglets button { padding: 6px 10px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--text-1);
+  cursor: pointer; font-size: calc(12px * var(--text-scale, 1)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.axe-interop__onglets button[aria-selected="true"] { border-bottom-color: var(--accent); color: var(--text-0); }
+.axe-interop__onglets button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.axe-interop__groupe { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.axe-interop__groupe h4 { margin: 0; font-size: calc(12px * var(--text-scale, 1)); font-weight: 600; color: var(--text-1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-interop__groupe h4 code { font-weight: 400; color: var(--text-2); }
+.axe-interop__liste { list-style: none; margin: 0; padding: 0 !important; display: flex; flex-direction: column; gap: 2px; }
+.axe-interop__liste > li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; padding: 3px 0; }
+.axe-interop__liste > li > label { display: flex; align-items: center; gap: 6px; flex: 1 1 200px; min-width: 0; min-height: 24px; cursor: pointer; }
+.axe-interop__liste > li > label input { flex: none; width: 16px; height: 16px; margin: 0; }
+.axe-interop__liste strong { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-interop__desc { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); }
+.axe-interop__etat { flex: none; color: var(--text-2); font-size: calc(11px * var(--text-scale, 1)); white-space: nowrap; }
+.axe-interop__etat[data-etat="mise_a_jour"] { color: var(--accent); }
+.axe-interop__etat[data-etat="nouveau"] { color: var(--text-1); }
+.axe-interop__installe { display: flex; align-items: baseline; gap: 6px; flex: 1 1 160px; min-width: 0; }
+.axe-interop__url { display: flex; gap: 6px; min-width: 0; }
+.axe-interop__url input { flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid var(--line-strong); border-radius: var(--r-small);
+  background: var(--bg-2); color: var(--text-0); font: inherit; font-family: var(--font-mono, monospace); }
+.axe-interop__url input:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.axe-interop__lire { flex: 1 0 100%; min-width: 0; padding-left: 22px; color: var(--text-2); }
+.axe-interop__lire > summary { min-height: 24px; padding: 4px 0; box-sizing: border-box; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-interop__lire pre { max-height: 220px; overflow: auto; margin: 6px 0 0; padding: 8px; border: 1px solid var(--line-strong);
+  border-radius: var(--r-small); background: var(--bg-2); color: var(--text-0); white-space: pre-wrap; overflow-wrap: anywhere;
+  font-size: calc(11.5px * var(--text-scale, 1)); }
+

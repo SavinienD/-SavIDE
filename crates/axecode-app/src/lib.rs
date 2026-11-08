@@ -26,6 +26,7 @@ mod ripgrep;
 pub mod guet; // guet
 pub mod session_commands; // goal
 pub mod skill;
+pub mod skills_url;
 pub mod store;
 pub mod subagent;
 pub mod team;

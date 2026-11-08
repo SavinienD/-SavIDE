@@ -138,6 +138,7 @@ Code map:
 │   │       ├── rlm.rs # rlm — sous-agents persistants rlm.* + messagerie famille nucléaire messages.* (FamilyHost), garde-fou quota
 │   │       ├── session_commands.rs # goal — TurnHook /goal /autonomous (budgets + gate) /heartbeat /refine /compact
 │   │       ├── skill.rs
+│   │       ├── skills_url.rs # skill installé depuis une adresse git ou .zip (aperçu, version, mise à jour)
 │   │       ├── store.rs
 │   │       ├── subagent.rs
 │   │       ├── team.rs
@@ -218,6 +219,7 @@ Code map:
 │   │       ├── lib.rs
 │   │       ├── model.rs # types, portées, frontmatter YAML
 │   │       ├── refine.rs # /refine : planification, application, journal, rollback
+│   │       ├── skills_externes.rs # skills de Claude Code / Codex / ~/.agents copiés dans le harnais (.origine.json, mises à jour)
 │   │       └── store.rs # CRUD fichiers + index.json (global ~/.axecode/harness, projet .axecode/harness)
 │   ├── axecode-google
 │   │   ├── Cargo.toml
