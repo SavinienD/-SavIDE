@@ -9,6 +9,7 @@ import { infoBulle } from "./infoBulle";
 import { DiffMonaco, type DiffApi, type MarqueNote, type SelectionDiff } from "./DiffMonaco";
 import { ListeFichiers, nomEtDossier, titreGroupe } from "./ListeFichiers";
 import { PanneauNotes, type BrouillonNote } from "./PanneauNotes";
+import { VueConflits } from "./VueConflits";
 import { magasinNotes, type NoteRevue } from "./notes";
 import {
   blocALaLigne,
@@ -91,6 +92,7 @@ export function VueRevue({ dossier, fichier, onFermer, ongletInitial }: Props) {
   const apiRef = useRef<DiffApi | null>(null);
   const vueRef = useRef<HTMLDivElement | null>(null);
   const allerApres = useRef<{ cote: Cote; ligne: number } | null>(null);
+  const premierChargement = useRef(true);
   const baseArg = base === "HEAD" ? null : base;
 
   const chargerListe = useCallback(async () => {
@@ -98,6 +100,9 @@ export function VueRevue({ dossier, fichier, onFermer, ongletInitial }: Props) {
       const l = await revueApi.liste(dossier, baseArg);
       setListe(l);
       setErreurListe(null);
+      // Fusion ou rebase arrêté sur des conflits : on arrive sur les conflits.
+      if (premierChargement.current && !ongletInitial && l.conflits > 0) setOnglet("conflits");
+      premierChargement.current = false;
       setChoix((c) => {
         if (c && l.fichiers.some((f) => f.chemin === c.chemin && f.groupe === c.groupe)) return c;
         const memeFichier = c && l.fichiers.find((f) => f.chemin === c.chemin && f.groupe !== "conflit");
@@ -109,7 +114,7 @@ export function VueRevue({ dossier, fichier, onFermer, ongletInitial }: Props) {
       setListe(null);
       setErreurListe(texteErreur(err));
     }
-  }, [dossier, baseArg, fichier]);
+  }, [dossier, baseArg, fichier, ongletInitial]);
 
   useEffect(() => {
     void chargerListe();
@@ -355,6 +360,17 @@ export function VueRevue({ dossier, fichier, onFermer, ongletInitial }: Props) {
       <div className="revue-vue" ref={vueRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Changements du dossier">
         <header className="revue-tete">
           <h2 className="revue-tete__titre">Changements</h2>
+          {enConflit ? (
+            <div className="revue-onglets" role="tablist">
+              <button type="button" role="tab" aria-selected={ongletVu === "changements"} data-actif={ongletVu === "changements" ? "true" : "false"} onClick={() => setOnglet("changements")}>
+                Fichiers
+              </button>
+              <button type="button" role="tab" aria-selected={ongletVu === "conflits"} data-actif={ongletVu === "conflits" ? "true" : "false"} onClick={() => setOnglet("conflits")}>
+                Conflits
+                {nbConflits ? <span className="revue-onglets__nombre">{nbConflits}</span> : null}
+              </button>
+            </div>
+          ) : null}
           <span className="revue-espace" />
           {ongletVu === "changements" ? (
             <label className="revue-champ revue-champ--base">
@@ -396,7 +412,18 @@ export function VueRevue({ dossier, fichier, onFermer, ongletInitial }: Props) {
         </header>
 
         <div className="revue-corps" data-notes={notesVisibles ? "true" : "false"}>
-          {(
+          {ongletVu === "conflits" ? (
+            <div className="revue-corps__conflits">
+              <VueConflits
+                dossier={dossier}
+                onFini={(message) => {
+                  setOnglet("changements");
+                  if (message) setAvis({ genre: "ok", texte: message });
+                  actualiser();
+                }}
+              />
+            </div>
+          ) : (
             <>
               <nav className="revue-colonne revue-colonne--fichiers" aria-label="Fichiers modifiés">
                 {erreurListe ? (

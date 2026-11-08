@@ -107,21 +107,21 @@ export function simulationRevue(scene: any): Record<string, (a: any) => unknown>
 const NOUS = ["import { useState } from \"react\";", "", "export function GitPanel() {", "  const [ouvert, setOuvert] = useState(false);", "  return <div className=\"git-panel\" data-ouvert={ouvert} />;", "}", ""].join("\n");
 const EUX = ["import { useEffect, useState } from \"react\";", "", "export function GitPanel() {", "  const [ouvert, setOuvert] = useState(true);", "  useEffect(() => setOuvert(true), []);", "  return <div className=\"git-panel git-panel--revue\" />;", "}", ""].join("\n");
 const RESULTAT = [
-  "<<<<<<< night186-revue",
+  "<<<<<<< feature/revue",
   "import { useState } from \"react\";",
   "=======",
   "import { useEffect, useState } from \"react\";",
-  ">>>>>>> night186-git",
+  ">>>>>>> feature/git",
   "",
   "export function GitPanel() {",
-  "<<<<<<< night186-revue",
+  "<<<<<<< feature/revue",
   "  const [ouvert, setOuvert] = useState(false);",
   "  return <div className=\"git-panel\" data-ouvert={ouvert} />;",
   "=======",
   "  const [ouvert, setOuvert] = useState(true);",
   "  useEffect(() => setOuvert(true), []);",
   "  return <div className=\"git-panel git-panel--revue\" />;",
-  ">>>>>>> night186-git",
+  ">>>>>>> feature/git",
   "}",
   "",
 ].join("\n");
@@ -134,7 +134,7 @@ export function simulationConflits(scene: any): Record<string, (a: any) => unkno
     { chemin: "docs/notes-de-version.md", code: "UD" },
   ];
   return {
-    revue_conflits: () => ({ operation: "fusion", nous: "feature/revue", eux: "night186-git", fichiers }),
+    revue_conflits: () => ({ operation: "fusion", nous: "feature/revue", eux: "feature/git", fichiers }),
     revue_conflit_fichier: (a: any) => {
       const chemin = a?.input?.chemin ?? a?.chemin;
       if (chemin === "docs/notes-de-version.md") {

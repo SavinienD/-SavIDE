@@ -514,6 +514,10 @@ pub fn run() {
             diff::revue_liste, // revue des changements
             diff::revue_diff,
             diff::revue_appliquer,
+            conflits::revue_conflits,
+            conflits::revue_conflit_fichier,
+            conflits::revue_conflit_resoudre,
+            conflits::revue_conflits_action,
             workspace::open_cloud_workspace, // v2-l2.3
             workspace::open_new_window,
             workspace::reset_window_title,

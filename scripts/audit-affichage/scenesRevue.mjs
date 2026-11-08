@@ -43,3 +43,14 @@ SCENES_REVUE.push(
     cliquer: [".revue-apercu-noter"], pauseClics: 600,
     temoins: ["sel:.revue-tiroir .revue-note--brouillon .revue-note__saisie", "sel:.revue-tiroir .revue-note__extrait"] },
 );
+
+// Conflits (RV5) : fusion arrêtée, l'onglet des conflits s'ouvre seul ; « Prendre la nôtre » ; « Demander à l'agent ».
+SCENES_REVUE.push(
+  { id: "revue-conflits", sim: { revue: "conflit" }, touches: OUVRIR,
+    temoins: ["sel:.revue-conflits", "sel:.revue-conflits__versions .monaco-editor", "sel:.revue-conflits__resultat .monaco-editor",
+      "compte:.revue-conflits .revue-fichier=2", "sel:.revue-conflits .revue-diff__barre[data-blocs='2']", "appel:revue_conflit_fichier", "clic:[data-action='prendre-nous']"] },
+  { id: "revue-conflits-prendre", sim: { revue: "conflit" }, touches: OUVRIR, cliquer: ["[data-action='prendre-nous']", "[data-action='prendre-eux']"], pauseClics: 600,
+    temoins: ["sel:.revue-conflits .revue-diff__barre[data-blocs='0']", "clic:[data-action='marquer-resolu']"] },
+  { id: "revue-conflits-agent", sim: { revue: "conflit" }, touches: OUVRIR, cliquer: ["[data-action='demander-agent']"], pauseClics: 900,
+    temoins: ["appel:queue_push", "sel:.revue-conflits > .revue-avis[data-genre='ok']"] },
+);
