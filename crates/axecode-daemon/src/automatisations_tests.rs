@@ -459,3 +459,41 @@ async fn la_fin_d_une_execution_est_annoncee_aux_ecrans() {
     assert_eq!(auto(&b, &a.id).historique[0].statut, Statut::Manquee);
     assert!(evenements(&mut b.rx, "fin").is_empty());
 }
+
+
+#[tokio::test(flavor = "multi_thread")]
+async fn le_module_repl_cree_dans_le_dossier_de_la_conversation() {
+    let b = banc(Arc::new(crate::stub::EchoFactory));
+    lock(demons()).push(Arc::downgrade(&b.d));
+    let session = b
+        .d
+        .create(axecode_core::CreateSessionRequest {
+            name: "conversation".into(),
+            workspace_id: b.dossier.display().to_string(),
+            model: axecode_core::ModelRef::new("anthropic", "claude-x"),
+            parent_id: None,
+            system_prompt_extra: None,
+            initial_message: None,
+        })
+        .unwrap();
+    #[allow(unused_imports)]
+    use axecode_app::repl::TurnHook;
+    let crochet = crochet_repl();
+    assert!(crochet.handles("automatisations.creer"));
+    assert!(!crochet.handles("guet.liste"));
+    let horaire = json!({"type": "quotidien", "heure": "08:00"});
+    let fiche = crochet
+        .host_call(&session, "automatisations.creer", json!({"nom": "Rapport", "prompt": "Fais le point.", "horaire": horaire}))
+        .await
+        .unwrap();
+    assert_eq!(fiche["dossier"], json!(b.dossier.display().to_string()));
+    assert_eq!(fiche["modele"], json!({"provider": "anthropic", "name": "claude-x"}));
+    let liste = crochet.host_call(&session, "automatisations.lister", Value::Null).await.unwrap();
+    assert_eq!(liste["automatisations"].as_array().unwrap().len(), 1);
+    let refus = crochet
+        .host_call(&session, "automatisations.creer", json!({"nom": " ", "prompt": "x", "horaire": horaire}))
+        .await
+        .unwrap_err();
+    assert_eq!(refus, "Donnez un nom à l'automatisation.");
+}
+

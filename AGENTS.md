@@ -58,6 +58,7 @@ Code map:
 │   │   ├── bridge.py # RPC kernel→Rust bridge.call(method, params), images, file changes
 │   │   ├── files.py / shell.py / web.py / images.py / context.py / question.py / todo.py / skills.py / mcp.py / compact.py # modules préchargés
 │   │   ├── _documents.py # viewers — texte des xlsx/docx/pdf/pptx/odt/epub pour files.read (privé, non préchargé)
+│   │   ├── automatisations.py # automatisations — module automatisations : creer, lister, modifier, supprimer, lancer, historique (RPC automatisations.* du service)
 │   │   └── rlm.py / messages.py / harness.py / refine.py / goal.py / heartbeat.py # modules E/D/F (brain)
 │   └── tests # pytest files + shell + documents
 ├── web # webui — app web des conversations (Vite + React, npm run build:web -> web/dist, embarquée dans le service)

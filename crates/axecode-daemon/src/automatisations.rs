@@ -20,11 +20,12 @@
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex, OnceLock},
+    sync::{Arc, Mutex, OnceLock, Weak},
     time::Duration,
 };
 
-use axecode_core::{ModelRef, SessionError, SessionResult};
+use async_trait::async_trait;
+use axecode_core::{ModelRef, SessionError, SessionMeta, SessionResult};
 use chrono::{DateTime, Local, TimeZone};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -213,6 +214,24 @@ pub(crate) fn etat(d: &Daemon) -> Arc<Mutex<Etat>> {
         .entry(cle.clone())
         .or_insert_with(|| Arc::new(Mutex::new(Etat::charger(cle.join("automatisations.json")))))
         .clone()
+}
+
+/// Services vivants de ce processus (le module REPL `automatisations` passe par eux).
+fn demons() -> &'static Mutex<Vec<Weak<Daemon>>> {
+    static DEMONS: OnceLock<Mutex<Vec<Weak<Daemon>>>> = OnceLock::new();
+    DEMONS.get_or_init(Default::default)
+}
+
+fn demon_de(session_id: &str) -> Option<Arc<Daemon>> {
+    let mut liste = lock(demons());
+    liste.retain(|w| w.strong_count() > 0);
+    let vivants: Vec<Arc<Daemon>> = liste.iter().filter_map(Weak::upgrade).collect();
+    drop(liste);
+    vivants
+        .iter()
+        .find(|d| d.meta(session_id).is_ok())
+        .or_else(|| vivants.first())
+        .cloned()
 }
 
 /// Diffuse « maj » : les écrans relisent la liste.
@@ -615,6 +634,7 @@ pub fn retient_le_service(d: &Daemon) -> bool {
 /// Au démarrage du service : reprend les exécutions laissées en route, puis
 /// lance le planificateur (un passage toutes les 10 s).
 pub fn demarrer(d: &Arc<Daemon>) {
+    lock(demons()).push(Arc::downgrade(d));
     execution::reprendre(d, crate::util::now_ms());
     let faible = Arc::downgrade(d);
     tokio::spawn(async move {
@@ -629,4 +649,41 @@ pub fn demarrer(d: &Arc<Daemon>) {
             tic(&d, crate::util::now_ms());
         }
     });
+}
+
+// ----- module REPL `automatisations` ----------------------------------------
+
+/// Crochet du noyau REPL : le module Python `automatisations` (creer, lister…).
+/// Sans dossier ni modèle donnés, ceux de la conversation qui appelle.
+pub fn crochet_repl() -> Arc<dyn axecode_app::repl::TurnHook> {
+    Arc::new(CrochetRepl)
+}
+
+struct CrochetRepl;
+
+fn completer(method: &str, params: Value, session: &SessionMeta) -> Value {
+    let mut params = if params.is_object() { params } else { json!({}) };
+    if method == "automatisations.creer" {
+        if let Some(o) = params.as_object_mut() {
+            if o.get("dossier").and_then(Value::as_str).is_none_or(|s| s.trim().is_empty()) {
+                o.insert("dossier".into(), json!(session.workspace_id));
+            }
+            if o.get("modele").is_none_or(Value::is_null) {
+                o.insert("modele".into(), serde_json::to_value(&session.model).unwrap_or_default());
+            }
+        }
+    }
+    params
+}
+
+#[async_trait]
+impl axecode_app::repl::TurnHook for CrochetRepl {
+    fn handles(&self, method: &str) -> bool {
+        method.starts_with("automatisations.")
+    }
+
+    async fn host_call(&self, session: &SessionMeta, method: &str, params: Value) -> Result<Value, String> {
+        let d = demon_de(&session.id).ok_or_else(|| "automatisations : service indisponible.".to_string())?;
+        dispatch(&d, method, &completer(method, params, session)).map_err(|e| message(&e))
+    }
 }
