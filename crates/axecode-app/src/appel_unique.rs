@@ -16,6 +16,7 @@ use axecode_core::{
 };
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 
 use crate::repl::{ProviderResolver, ReplSettings};
 
@@ -96,12 +97,7 @@ pub async fn appel_unique(
         return Err("appel unique : le texte est vide".into());
     }
     let modele = choisir_modele(demande.modele.as_deref(), data_dir, conversation)?;
-    let fournisseur = fournisseurs.provider(&modele.provider).map_err(|err| {
-        format!(
-            "appel unique : fournisseur « {} » indisponible ({err}) ; connectez-le dans Réglages > Fournisseurs",
-            modele.provider
-        )
-    })?;
+    let fournisseur = resoudre(fournisseurs, &modele)?;
     appeler(
         fournisseur.as_ref(),
         modele,
@@ -110,6 +106,19 @@ pub async fn appel_unique(
         demande.plafond,
     )
     .await
+}
+
+/// Le fournisseur du modèle, résolu comme pour les sessions.
+fn resoudre(
+    fournisseurs: &dyn ProviderResolver,
+    modele: &ModelRef,
+) -> Result<std::sync::Arc<dyn axecode_core::Provider>, String> {
+    fournisseurs.provider(&modele.provider).map_err(|err| {
+        format!(
+            "appel unique : fournisseur « {} » indisponible ({err}) ; connectez-le dans Réglages > Fournisseurs",
+            modele.provider
+        )
+    })
 }
 
 fn passagere(err: &AppError) -> bool {
@@ -202,6 +211,137 @@ async fn echange(
         None if !texte.is_empty() => Ok((texte, usage, StopReason::Other)),
         None => Err(AppError::Stream("flux terminé sans réponse".into())),
     }
+}
+
+// ----- noyau : rlm.query et rlm.query_lot -----------------------------------
+
+/// Parallélisme par défaut de `rlm.query_lot`.
+pub const PARALLELE_DEFAUT: usize = 4;
+/// Parallélisme le plus haut accepté.
+pub const PARALLELE_MAX: usize = 16;
+/// Nombre de textes le plus haut d'un lot.
+pub const LOT_MAX: usize = 2_000;
+
+/// Réglages communs à tous les éléments d'un lot.
+#[derive(Debug, Clone, Default)]
+pub struct Commun {
+    pub systeme: Option<String>,
+    pub modele: Option<String>,
+    pub plafond: Option<u32>,
+}
+
+/// Méthodes du noyau servies par [`host_call`].
+pub fn handles(method: &str) -> bool {
+    matches!(method, "rlm.query" | "rlm.query_lot")
+}
+
+fn chaine(params: &Value, cle: &str) -> Option<String> {
+    params.get(cle).and_then(Value::as_str).map(str::to_string)
+}
+
+/// Appels du noyau `rlm.query` (`{texte, systeme?, modele?, plafond?}` →
+/// [`Reponse`]) et `rlm.query_lot` (`{textes, systeme?, modele?, plafond?,
+/// parallele?}` → une réponse ou `{"erreur"}` par texte, dans l'ordre).
+/// `conversation` est le modèle de la session (dernier repli).
+pub async fn host_call(
+    fournisseurs: &dyn ProviderResolver,
+    data_dir: &Path,
+    conversation: &ModelRef,
+    method: &str,
+    params: &Value,
+) -> Result<Value, String> {
+    let commun = Commun {
+        systeme: chaine(params, "systeme"),
+        modele: chaine(params, "modele"),
+        plafond: params
+            .get("plafond")
+            .and_then(Value::as_u64)
+            .map(|p| p.min(u64::from(u32::MAX)) as u32),
+    };
+    match method {
+        "rlm.query" => {
+            let demande = Demande {
+                systeme: commun.systeme,
+                texte: chaine(params, "texte").unwrap_or_default(),
+                modele: commun.modele,
+                plafond: commun.plafond,
+            };
+            let reponse = appel_unique(fournisseurs, data_dir, Some(conversation), demande).await?;
+            serde_json::to_value(reponse).map_err(|e| e.to_string())
+        }
+        "rlm.query_lot" => {
+            let liste = "rlm.query_lot : `textes` doit être une liste de chaînes";
+            let textes = params
+                .get("textes")
+                .and_then(Value::as_array)
+                .ok_or(liste)?
+                .iter()
+                .map(|v| v.as_str().map(str::to_string).ok_or(liste))
+                .collect::<Result<Vec<_>, _>>()?;
+            let parallele = params
+                .get("parallele")
+                .and_then(Value::as_u64)
+                .map_or(PARALLELE_DEFAUT, |p| p as usize);
+            let resultats =
+                lot(fournisseurs, data_dir, Some(conversation), &commun, textes, parallele).await?;
+            Ok(Value::Array(
+                resultats
+                    .into_iter()
+                    .map(|r| match r {
+                        Ok(reponse) => serde_json::to_value(reponse).unwrap_or(Value::Null),
+                        Err(erreur) => json!({ "erreur": erreur }),
+                    })
+                    .collect(),
+            ))
+        }
+        other => Err(format!("méthode inconnue `{other}`")),
+    }
+}
+
+/// Plusieurs appels uniques avec la même consigne et le même modèle, au plus
+/// `parallele` à la fois (borné à [`PARALLELE_MAX`]). Les réponses gardent
+/// l'ordre des textes ; l'erreur d'un élément est rendue à sa place sans
+/// arrêter les autres. Seul un modèle ou un fournisseur introuvable fait
+/// échouer tout le lot.
+pub async fn lot(
+    fournisseurs: &dyn ProviderResolver,
+    data_dir: &Path,
+    conversation: Option<&ModelRef>,
+    commun: &Commun,
+    textes: Vec<String>,
+    parallele: usize,
+) -> Result<Vec<Result<Reponse, String>>, String> {
+    if textes.len() > LOT_MAX {
+        return Err(format!(
+            "rlm.query_lot : {} textes, {LOT_MAX} au plus par lot",
+            textes.len()
+        ));
+    }
+    if textes.is_empty() {
+        return Ok(Vec::new());
+    }
+    let modele = choisir_modele(commun.modele.as_deref(), data_dir, conversation)?;
+    let fournisseur = resoudre(fournisseurs, &modele)?;
+    let fournisseur = fournisseur.as_ref();
+    let systeme = commun.systeme.as_deref();
+    let plafond = commun.plafond;
+    let appels: Vec<_> = textes
+        .into_iter()
+        .map(|texte| {
+            let modele = modele.clone();
+            async move {
+                if texte.trim().is_empty() {
+                    return Err("texte vide".to_string());
+                }
+                appeler(fournisseur, modele, systeme, &texte, plafond).await
+            }
+        })
+        .collect();
+    let resultats = futures_util::stream::iter(appels)
+        .buffered(parallele.clamp(1, PARALLELE_MAX))
+    .collect::<Vec<_>>()
+    .await;
+    Ok(resultats)
 }
 
 #[cfg(test)]
@@ -374,5 +514,70 @@ mod tests {
         assert!(choisir_modele(Some("pas-de-barre"), dir.path(), None).unwrap_err().contains("fournisseur/modèle"));
         let vide = tempfile::tempdir().unwrap();
         assert!(choisir_modele(None, vide.path(), None).unwrap_err().contains("aucun modèle"));
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 6)]
+    async fn lot_garde_l_ordre_borne_le_parallelisme_et_isole_les_erreurs() {
+        use std::sync::atomic::{AtomicUsize, Ordering::SeqCst};
+        let en_cours = Arc::new(AtomicUsize::new(0));
+        let maxi = Arc::new(AtomicUsize::new(0));
+        let (c, m) = (en_cours.clone(), maxi.clone());
+        let serveur = lancer(move |r, _| {
+            let n = c.fetch_add(1, SeqCst) + 1;
+            m.fetch_max(n, SeqCst);
+            std::thread::sleep(std::time::Duration::from_millis(150));
+            c.fetch_sub(1, SeqCst);
+            if r.body.contains("ÉCHEC") {
+                return Rep::status(400, r#"{"error":{"message":"morceau refusé","type":"invalid_request_error"}}"#);
+            }
+            let vu = (0..7).map(|i| format!("morceau {i}")).find(|t| r.body.contains(t.as_str())).unwrap();
+            sse(&[&format!("vu {vu}")], fini(2, 1))
+        })
+        .await;
+        let dir = tempfile::tempdir().unwrap();
+        let textes: Vec<String> =
+            (0..7).map(|i| if i == 3 { "ÉCHEC".to_string() } else { format!("morceau {i}") }).collect();
+        let commun = Commun { systeme: Some("Résume.".into()), ..Default::default() };
+        let r = lot(&openai(&serveur.base), dir.path(), Some(&conversation()), &commun, textes, 2)
+            .await
+            .unwrap();
+        assert_eq!(r.len(), 7);
+        for (i, x) in r.iter().enumerate() {
+            if i == 3 {
+                assert!(x.as_ref().unwrap_err().contains("morceau refusé"), "{x:?}");
+            } else {
+                assert_eq!(x.as_ref().unwrap().texte, format!("vu morceau {i}"));
+            }
+        }
+        assert_eq!(maxi.load(SeqCst), 2, "2 appels à la fois au plus, et le lot les utilise");
+        assert_eq!(serveur.requetes().len(), 7, "l'erreur 400 n'est pas réessayée");
+    }
+
+    #[tokio::test]
+    async fn appels_du_noyau() {
+        let serveur = lancer(|_, _| sse(&["réponse"], fini(3, 2))).await;
+        let dir = tempfile::tempdir().unwrap();
+        let reg = openai(&serveur.base);
+        assert!(handles("rlm.query") && handles("rlm.query_lot") && !handles("rlm.spawn"));
+        let v = host_call(&reg, dir.path(), &conversation(), "rlm.query",
+            &json!({"texte": "x", "systeme": "s", "plafond": 100})).await.unwrap();
+        assert_eq!(v["texte"], "réponse");
+        assert_eq!(v["usage"]["input_tokens"], 3);
+        let body: Value = serde_json::from_str(&serveur.requetes()[0].body).unwrap();
+        assert_eq!((body["max_output_tokens"].as_u64(), body["instructions"].as_str()), (Some(100), Some("s")));
+        let v = host_call(&reg, dir.path(), &conversation(), "rlm.query_lot",
+            &json!({"textes": ["a", " ", "b"], "parallele": 2})).await.unwrap();
+        assert_eq!(v[0]["texte"], "réponse");
+        assert!(v[1]["erreur"].as_str().unwrap().contains("vide"), "{v}");
+        assert_eq!(v[2]["texte"], "réponse");
+        assert_eq!(serveur.requetes().len(), 3, "le texte vide n'est pas envoyé");
+        let err = host_call(&reg, dir.path(), &conversation(), "rlm.query_lot", &json!({"textes": "abc"}))
+            .await.unwrap_err();
+        assert!(err.contains("liste de chaînes"), "{err}");
+        let err = host_call(&Registre(None), dir.path(), &conversation(), "rlm.query_lot", &json!({"textes": ["a"]}))
+            .await.unwrap_err();
+        assert!(err.contains("indisponible"), "tout le lot échoue sans fournisseur : {err}");
+        let vide = host_call(&reg, dir.path(), &conversation(), "rlm.query_lot", &json!({"textes": []})).await.unwrap();
+        assert_eq!(vide, json!([]));
     }
 }
