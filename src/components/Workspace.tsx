@@ -141,6 +141,8 @@ import { loadUiZoom } from "../axe/zoom";
 import { apprendreDuMessage } from "../axe/voix/vocabulaireAuto"; // voix-vocabulaire
 import { noterConversation } from "../lib/gardienPage";
 import { garderSeulement } from "./chat/vuesConversations"; // mémoire
+import { appliquerEnregistrement } from "./editeur/onglets";
+import { sauverAvantFermeture } from "./editeur/fermeture";
 
 type Props = {
   bootstrap: WorkspaceBootstrap;
@@ -1392,6 +1394,7 @@ export function Workspace({
   const closeTab = useCallback((index: number) => {
     const tabCount = tabsRef.current.length;
     if (index < 0 || index >= tabCount) return;
+    sauverAvantFermeture(workspacePathRef.current, tabsRef.current[index]);
 
     setTabs((prev) => {
       if (index < 0 || index >= prev.length) return prev;
@@ -1507,17 +1510,8 @@ export function Workspace({
           tab.relativePath,
           tab.buffer,
         );
-        setTabs((prev) => {
-          const next = prev.slice();
-          if (!next[index]) return prev;
-          next[index] = {
-            ...next[index],
-            doc: updated,
-            buffer: updated.content ?? next[index].buffer,
-            dirty: false,
-          };
-          return next;
-        });
+        // par chemin, et la frappe faite pendant l'écriture est gardée.
+        setTabs((prev) => appliquerEnregistrement(prev, tab.relativePath, tab.buffer, updated));
       } catch (err) {
         console.error(err);
         // v2-l6 — hors ligne : message court au lieu de l'erreur brute.

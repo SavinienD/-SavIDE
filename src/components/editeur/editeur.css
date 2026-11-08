@@ -1,0 +1,46 @@
+/* Réglages de l'éditeur (Réglages > Éditeur) et éléments de l'éditeur. */
+
+.axe-editeur-reglages h2,
+.axe-editeur-reglages h3,
+.axe-editeur-reglages__case > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.axe-editeur-reglages select {
+  align-self: flex-start;
+  height: 28px;
+  max-width: 100%;
+  padding: 0 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-small);
+  background: var(--bg-2);
+  color: var(--text-0);
+  font: inherit;
+  font-size: var(--fs-sm);
+}
+.axe-editeur-reglages select:focus-visible,
+.axe-editeur-reglages__case input:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+.axe-editeur-reglages__case {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  min-width: 0;
+  max-width: 320px;
+  color: var(--text-1);
+  cursor: pointer;
+}
+.axe-editeur-reglages__case input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+

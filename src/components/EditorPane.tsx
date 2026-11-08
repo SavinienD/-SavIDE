@@ -27,6 +27,8 @@ import {
 import { FallbackHost, ViewerHost, usesFileViewer, viewerForPath } from "./viewers/ViewerHost"; // viewers
 import { ZoomableImage } from "./viewers/ImageZoom"; // viewers
 import { OpenWithDefaultApp, ViewerError } from "./viewers/common"; // viewers
+import { ecouterReglagesEditeur, lireReglagesEditeur, optionsMonaco } from "./editeur/reglagesEditeur";
+import { PlanificateurSauvegarde } from "./editeur/sauvegardeAuto";
 
 if (!(globalThis as typeof globalThis & { MonacoEnvironment?: unknown }).MonacoEnvironment) {
   (
@@ -66,7 +68,7 @@ type Props = {
   /** Appui gauche sur un onglet : glisser a la souris par evenements pointer. */
   onTabPointerDown?: (index: number, event: ReactPointerEvent<HTMLDivElement>) => void;
   onChange: (index: number, value: string) => void;
-  onSave: (index: number) => void;
+  onSave: (index: number) => void | Promise<void>;
   onOpenFile?: (path: string) => void;
   settingsOpen?: boolean;
   settingsActive?: boolean;
@@ -109,6 +111,9 @@ export function EditorPane({
     useRef<Monaco.editor.IEditorDecorationsCollection | null>(null);
   const onSaveRef = useRef(onSave);
   const [editorReadySeq, setEditorReadySeq] = useState(0);
+  // retour à la ligne, minimap, sauvegarde automatique (Réglages > Apparence).
+  const [reglagesEditeur, setReglagesEditeur] = useState(lireReglagesEditeur);
+  useEffect(() => ecouterReglagesEditeur(setReglagesEditeur), []);
   // zoom — text size picked in Settings > Apparence (only chars grow);
   // the wrapper re-applies Monaco's `options` prop on change.
   const [textScale, setTextScale] = useState<number>(() => loadTextScale());
@@ -214,6 +219,12 @@ export function EditorPane({
       monaco.editor.setTheme(AXE_MONACO_THEME);
     });
 
+    // l'éditeur perd le focus (clic ailleurs, fenêtre quittée) : « en quittant l'onglet ».
+    editor.onDidBlurEditorWidget(() => {
+      const chemin = currentPathRef.current;
+      if (chemin) planificateurRef.current?.quitte(chemin);
+    });
+
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       const path = currentPathRef.current;
       if (!path) return;
@@ -231,6 +242,40 @@ export function EditorPane({
   tabsRef.current = tabs;
   onSaveRef.current = onSave;
   currentPathRef.current = activeTab?.relativePath ?? null;
+
+  // sauvegarde automatique : un planificateur par colonne d'éditeur.
+  const planificateurRef = useRef<PlanificateurSauvegarde | null>(null);
+  if (!planificateurRef.current) {
+    planificateurRef.current = new PlanificateurSauvegarde(
+      () => lireReglagesEditeur().sauvegardeAuto,
+      async (chemin) => {
+        const i = tabsRef.current.findIndex((t) => t.relativePath === chemin);
+        const onglet = tabsRef.current[i];
+        if (!onglet || !onglet.dirty || onglet.external) return;
+        await onSaveRef.current(i);
+      },
+    );
+  }
+  useEffect(() => () => planificateurRef.current?.vider(), []);
+  const cheminActif = activeTab?.relativePath ?? null;
+  const texteModifie = activeTab?.dirty ? activeTab.buffer : null;
+  useEffect(() => {
+    if (cheminActif && texteModifie !== null) planificateurRef.current?.modifie(cheminActif);
+  }, [cheminActif, texteModifie]);
+  const cheminPrecedentRef = useRef<string | null>(null);
+  useEffect(() => {
+    const avant = cheminPrecedentRef.current;
+    cheminPrecedentRef.current = cheminActif;
+    if (avant && avant !== cheminActif) planificateurRef.current?.quitte(avant);
+  }, [cheminActif]);
+  useEffect(() => {
+    const quitter = () => {
+      const chemin = currentPathRef.current;
+      if (chemin) planificateurRef.current?.quitte(chemin);
+    };
+    window.addEventListener("blur", quitter);
+    return () => window.removeEventListener("blur", quitter);
+  }, []);
 
   useEffect(() => {
     if (!showTextEditor || activePreview) return;
@@ -630,7 +675,11 @@ export function EditorPane({
                 (activeIsMarkdown && activePreview) || activeOverlay ? "true" : "false"
               }
             >
-              <div className="editor-monaco-layer">
+              <div
+                className="editor-monaco-layer"
+                data-minimap={reglagesEditeur.minimap ? "true" : "false"}
+                data-retour-ligne={reglagesEditeur.retourLigne ? "true" : "false"}
+              >
                 <Editor
                   key={activeTab.relativePath}
                   height="100%"
@@ -645,13 +694,12 @@ export function EditorPane({
                       '"Geist Mono", ui-monospace, "SF Mono", Menlo, monospace',
                     fontSize: Math.max(1, Math.round(MONO_BASE_PX * textScale)),
                     lineHeight: Math.max(1, Math.round(MONO_LINE_BASE_PX * textScale)),
-                    minimap: { enabled: false },
                     scrollBeyondLastLine: false,
                     smoothScrolling: true,
                     renderLineHighlight: "line",
                     padding: { top: 14, bottom: 14 },
                     tabSize: 2,
-                    wordWrap: "off",
+                    ...optionsMonaco(reglagesEditeur),
                     scrollbar: {
                       verticalScrollbarSize: 10,
                       horizontalScrollbarSize: 10,
