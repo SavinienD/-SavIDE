@@ -213,3 +213,51 @@
   min-height: 0;
   overflow: auto;
 }
+
+/* axe:sans-dossier — en-tête de la barre latérale : « Nouvelle conversation » + repli (Ctrl+B). */
+.axe-freechat__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.axe-freechat__head .axe-freechat__new {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.axe-freechat__rail {
+  flex: 0 0 44px;
+  width: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0 8px;
+  background: var(--bg-1);
+  border-right: 1px solid var(--line);
+}
+.axe-freechat__rail-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-card);
+  color: var(--text-2);
+  transition: background 140ms ease, color 140ms ease;
+}
+.axe-freechat__rail-btn:hover {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+/* axe:sans-dossier — quatre boutons seulement dans cette barre : les libellés restent
+   visibles dès 600 px (à 1366x768 on n'avait que des icônes). */
+@container barre-titre (min-width: 600px) {
+  .axe-freechat .titlebar__actions .titlebar__btn .titlebar__btn-label {
+    display: inline;
+  }
+  .axe-freechat .titlebar__actions .titlebar__btn {
+    padding: 0 7px;
+  }
+}
+

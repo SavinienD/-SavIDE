@@ -1,7 +1,7 @@
 // freechat — full-screen free conversation view (ChatGPT style): every
 // conversation in a sidebar (free ones first, then per project, search),
 // a wide centered chat (the regular ChatPane), no editor / tree / terminal.
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Icon } from "@iconify/react";
 import type { ConversationSummary, SavedConversation } from "../../types";
@@ -22,6 +22,7 @@ import {
 } from "./freechatApi";
 import "./freechat.css";
 import { formaterTexte } from "../../lib/plateforme";
+import { infoBulle } from "../../axe/raccourcis";
 
 type Props = {
   /** IDE workspace of free conversations (the scratch root). */
@@ -44,7 +45,25 @@ type Props = {
   settingsView: ReactNode;
   /** The ChatPane of the active conversation. */
   chat: ReactNode;
+  // axe:sans-dossier — le champ « nom » est piloté par l'espace : Ctrl+T l'ouvre aussi ici.
+  creating: boolean;
+  onStartCreate: () => void;
+  onCancelCreate: () => void;
+  // axe:sans-dossier — barre latérale repliable (Ctrl+B), comme le volet gauche de l'IDE.
+  sidebarCollapsed: boolean;
+  onToggleSidebar: () => void;
 };
+
+// axe:sans-dossier — met le curseur dans le compositeur (comme Orca : on peut écrire dès
+// l'arrivée). Ne prend jamais le focus d'un autre champ (recherche, nom, réglages).
+function focusComposer(force = false): void {
+  const actif = document.activeElement as HTMLElement | null;
+  if (!force && actif && actif !== document.body && actif.closest("input, textarea, select, [contenteditable=true], [role=dialog]")) return;
+  const champ = document.querySelector<HTMLElement>(
+    ".axe-freechat__chat .composer textarea, .axe-freechat__chat .composer [contenteditable=true]",
+  );
+  champ?.focus();
+}
 
 const SIDEBAR_WIDTH = 280;
 // savide-accueil — la barre d'actions est un conteneur (container: inline-size,
@@ -109,14 +128,26 @@ export function FreechatView(props: Props) {
 
   const streaming = streamingIds.has(activeConversation.id);
 
-  const [creating, setCreating] = useState(false);
+  const { creating, settingsOpen, sidebarCollapsed } = props;
 
-  const createConversation = () => {
+  // axe:sans-dossier — à l'arrivée et à chaque changement de conversation.
+  useEffect(() => {
+    if (creating || settingsOpen) return;
+    const id = window.requestAnimationFrame(() => focusComposer());
+    return () => window.cancelAnimationFrame(id);
+  }, [activeConversation.id, creating, settingsOpen]);
+
+  const createConversation = useCallback(() => {
     setError(null);
-    // An empty conversation is already a new one.
-    if (activeConversation.history.length === 0) return;
-    setCreating(true);
-  };
+    // An empty conversation is already a new one : on va droit au compositeur
+    // (avant : le clic ne faisait rien).
+    if (activeConversation.history.length === 0) {
+      focusComposer(true);
+      return;
+    }
+    props.onStartCreate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeConversation.history.length, props.onStartCreate]);
 
   const openFolderForConversation = async () => {
     setError(null);
@@ -179,18 +210,34 @@ export function FreechatView(props: Props) {
       </div>
 
       <div className="axe-freechat__main">
+        {sidebarCollapsed ? (
+          // axe:sans-dossier — barre repliée : une colonne d'icônes garde « afficher » et « nouvelle ».
+          <aside className="axe-freechat__rail" data-replie="true">
+            <button type="button" className="axe-freechat__rail-btn" data-action="volet" onClick={props.onToggleSidebar}
+              title={formaterTexte("Afficher les conversations (Ctrl+B)")} aria-label="Afficher les conversations">
+              <Icon icon="solar:sidebar-minimalistic-linear" width={15} height={15} />
+            </button>
+            <button type="button" className="axe-freechat__rail-btn" onClick={createConversation}
+              title={infoBulle("Nouvelle conversation", "nouvelleConversation")} aria-label="Nouvelle conversation">
+              <Icon icon="solar:pen-new-square-linear" width={15} height={15} />
+            </button>
+          </aside>
+        ) : (
         <aside className="axe-freechat__sidebar" style={{ width: SIDEBAR_WIDTH, flex: `0 0 ${SIDEBAR_WIDTH}px` }}>
-          <button type="button" className="axe-freechat__new" onClick={createConversation}>
-            <Icon icon="solar:pen-new-square-linear" width={15} height={15} />
-            Nouvelle conversation
-          </button>
+          <div className="axe-freechat__head">
+            <button type="button" className="axe-freechat__new" onClick={createConversation} title={infoBulle("Nouvelle conversation", "nouvelleConversation")}>
+              <Icon icon="solar:pen-new-square-linear" width={15} height={15} />
+              Nouvelle conversation
+            </button>
+            <button type="button" className="axe-freechat__rail-btn" data-action="volet" onClick={props.onToggleSidebar}
+              title={formaterTexte("Masquer les conversations (Ctrl+B)")} aria-label="Masquer les conversations">
+              <Icon icon="solar:sidebar-minimalistic-linear" width={15} height={15} />
+            </button>
+          </div>
           {creating ? (
             <NouvelleConversation
-              onCancel={() => setCreating(false)}
-              onCreate={(titre) => {
-                setCreating(false);
-                props.onCreate(titre);
-              }}
+              onCancel={props.onCancelCreate}
+              onCreate={(titre) => props.onCreate(titre)}
             />
           ) : null}
           <label className="axe-freechat__search">
@@ -260,6 +307,7 @@ export function FreechatView(props: Props) {
             })}
           </div>
         </aside>
+        )}
 
         <section className="axe-freechat__center">
           {error && (

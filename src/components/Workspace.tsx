@@ -2965,7 +2965,8 @@ export function Workspace({
     },
     rechercheFichiers: () => setFileSearchOpen(true),
     rechercherMac: () => setFileSearchOpen(true),
-    nouvelleConversation: () => startCreate(),
+    // Vue sans dossier : le champ « nom » est dans la barre latérale, on la rouvre.
+    nouvelleConversation: () => { if (layout === "chat") setGaucheReduite(false); startCreate(); },
     ongletSuivant: () => {
       if (tabs.length) activateFileTab((Math.max(activeTabIndex, -1) + 1) % tabs.length);
     },
@@ -3113,7 +3114,12 @@ export function Workspace({
         activeConversation={activeConv}
         streamingIds={streamingConversationIds}
         onSelect={(id) => void selectConversation(id)}
-        onCreate={(titre) => void createConversation(titre)}
+        onCreate={confirmCreate}
+        creating={creating}
+        onStartCreate={() => { setGaucheReduite(false); startCreate(); }}
+        onCancelCreate={cancelCreate}
+        sidebarCollapsed={gaucheReduite}
+        onToggleSidebar={() => setGaucheReduite((v) => !v)}
         onRename={(id, title) => void renameConversation(id, title)}
         onDelete={(id) => void archiveConversation(id)} // archive-locale
         onHome={onSwitchWorkspace}
