@@ -138,7 +138,10 @@ fn daemon_hooks() -> Vec<Arc<dyn axecode_app::repl::TurnHook>> {
     // goal — /goal, /autonomous, /heartbeat, /refine, /compact.
     let providers: Arc<dyn ProviderResolver> =
         Arc::new(DaemonProviders::new());
-    vec![axecode_app::session_commands::SessionCommandsHook::new(providers)]
+    vec![
+        axecode_app::session_commands::SessionCommandsHook::new(providers),
+        Arc::new(crate::navigateur::HookNavigateur), // module navigateur du REPL
+    ]
     // goal end
 }
 
