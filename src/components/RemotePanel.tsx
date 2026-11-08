@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { Icon } from "@iconify/react";
 import { api } from "../lib/ipc";
+import { cheminSvg, fabriquerQr } from "../lib/qrcode";
+import "./distant/distant.css";
 import type { RemoteDevice, RemoteStatus } from "../types";
 
 type Props = {
@@ -125,7 +127,7 @@ export function RemotePanel({ initialStatus = null, onStatusChange }: Props) {
       <div className="remote-panel__inner">
         <header className="remote-panel__head">
           <div className="remote-panel__head-text">
-            <h1>Accès à distance</h1>
+            <h1 title="Accès à distance">Accès à distance</h1>
             <p>
               Pilotez les conversations SavIDE depuis un téléphone appairé, via votre propre relais
               (image Docker du dossier <code>remote/</code>). Les messages restent chiffrés de bout
@@ -149,7 +151,7 @@ export function RemotePanel({ initialStatus = null, onStatusChange }: Props) {
         <section className="remote-panel__block">
           <div className="remote-panel__block-head">
             <div>
-              <h2>Relais</h2>
+              <h2 title="Relais">Relais</h2>
               <p>Adresse HTTPS de votre relais auto-hébergé, par exemple https://relay.exemple.fr.</p>
             </div>
           </div>
@@ -210,7 +212,7 @@ export function RemotePanel({ initialStatus = null, onStatusChange }: Props) {
         <section className="remote-panel__block">
           <div className="remote-panel__block-head">
             <div>
-              <h2>Appairage</h2>
+              <h2 title="Appairage">Appairage</h2>
               <p>Le code à 6 chiffres n'est accepté que tant que cet écran est ouvert.</p>
             </div>
             <button
@@ -253,7 +255,7 @@ export function RemotePanel({ initialStatus = null, onStatusChange }: Props) {
         <section className="remote-panel__block">
           <div className="remote-panel__block-head">
             <div>
-              <h2>Appareils appairés</h2>
+              <h2 title="Appareils appairés">Appareils appairés</h2>
               <p>Révoquez immédiatement un téléphone perdu, vendu ou remplacé.</p>
             </div>
           </div>
@@ -379,11 +381,30 @@ function DeviceRow({
   );
 }
 
+// QR dessiné ici, sans réseau (l'adresse du relais et le code ne sortent pas du PC).
 function QrCode({ value }: { value: string }) {
-  const src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=${encodeURIComponent(value)}`;
+  const dessin = useMemo(() => {
+    try {
+      return cheminSvg(fabriquerQr(value, "M"), 2);
+    } catch {
+      return null;
+    }
+  }, [value]);
+  if (!dessin) return null;
   return (
     <div className="remote-panel__qr">
-      <img src={src} alt="QR code d'appairage" width={112} height={112} />
+      <svg
+        width={112}
+        height={112}
+        viewBox={`0 0 ${dessin.cote} ${dessin.cote}`}
+        role="img"
+        aria-label="QR code d'appairage"
+        shapeRendering="crispEdges"
+        style={{ display: "block" }}
+      >
+        <rect width={dessin.cote} height={dessin.cote} fill="#fff" />
+        <path d={dessin.chemin} fill="#000" />
+      </svg>
     </div>
   );
 }
