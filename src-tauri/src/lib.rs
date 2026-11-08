@@ -130,6 +130,7 @@ mod quota; // providers
 mod skill_sync; // e4
 mod import_dossier; // import
 mod git;
+mod forges; // rédaction IA, PR, checks, issues (GitHub, Forgejo / Gitea)
 mod harness; // harness
 mod harness_backup; // cleanup
 mod ia_appel; // commande ia_appel_unique (appel unique au modèle)
@@ -626,6 +627,19 @@ pub fn run() {
             git::git_push_command,
             git::git_pull_command,
             git::git_create_pull_request_command,
+            git::git_etat_command,
+            git::git_fetch_command,
+            git::git_valider_command,
+            git::git_pousser_command,
+            git::git_abandonner_command,
+            forges::contexte::git_contexte_ia_command,
+            forges::commandes::forge_etat,
+            forges::commandes::forge_jeton,
+            forges::commandes::forge_prs,
+            forges::commandes::forge_pr,
+            forges::commandes::forge_issues,
+            forges::commandes::forge_journal,
+            forges::commandes::forge_creer_pr,
             updater::updater_check,
             updater::updater_download_and_install,
             updater::updater_restart,

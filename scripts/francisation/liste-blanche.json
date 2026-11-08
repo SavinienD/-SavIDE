@@ -276,5 +276,25 @@
   "fichier": "src/components/settings/ReplServicesSection.tsx",
   "motif": "provider=|^\\{model\\}|^Authorization$|^\\{\"model\"",
   "raison": "syntaxe d'appel REPL, en-tête HTTP et gabarit JSON (à recopier tels quels)"
+ },
+ {
+  "fichier": "src/components/pr/gitApi.ts",
+  "terme": "\\b([Rr]ebase|[Cc]herry-pick|[Rr]evert)\\b",
+  "raison": "noms des opérations Git en cours (rebase, cherry-pick, revert), gardés comme diff ou HEAD"
+ },
+ {
+  "fichier": "src/components/pr/consignes.ts",
+  "terme": "Co-authored-by",
+  "raison": "consigne envoyée au modèle : nom de la ligne de fin de commit Git à ne pas écrire"
+ },
+ {
+  "fichier": "src/components/GitPanel.tsx",
+  "terme": "--force-with-lease|\\(fetch\\)",
+  "raison": "option de git push et commande Git rappelée entre parenthèses, comme « Valider (commit) »"
+ },
+ {
+  "fichier": "src/components/pr/PrOnglet.tsx",
+  "terme": "gh auth login",
+  "raison": "commande de GitHub CLI à taper dans un terminal"
  }
 ]

@@ -6,6 +6,7 @@ import { noterOuverture, libererOrdre, deriveName, dossierRecentNumero, loadRece
 import { open as choisirDossier } from "@tauri-apps/plugin-dialog";
 import { dependancesTauri, deplacerEtOuvrir, nomDe, noterDossiersRecents, ouvrirDossier, parentDe, type Dependances, type Ouverture } from "./lib/dossierDeplace";
 import { DossierIntrouvable } from "./components/DossierIntrouvable";
+import { ecouterOuvertureDossier } from "./components/pr/versAgent"; // panneau Git : « Travailler dessus » (issue)
 import { ecouterRaccourcis, fournirActions, numeroTouche, versionRaccourcis } from "./axe/raccourcis";
 import { samePath } from "./components/freechat/freechatApi";
 import { api } from "./lib/ipc";
@@ -120,6 +121,9 @@ export default function App() {
     const r = await ouvrirDossier(path, dependances(conversationId));
     await appliquerOuverture(r, path, conversationId);
   }, [appliquerOuverture, dependances]);
+
+  // Panneau Git : une issue ouvre son worktree sur la conversation créée pour elle.
+  useEffect(() => ecouterOuvertureDossier((dossier, conversationId) => void openWorkspace(dossier, conversationId)), [openWorkspace]);
 
   // Actions de la carte « Dossier introuvable ».
   const choisirNouvelEmplacement = useCallback(async () => {

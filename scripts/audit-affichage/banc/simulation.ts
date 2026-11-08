@@ -5,6 +5,7 @@ import { mockIPC, mockWindows, mockConvertFileSrc } from "@tauri-apps/api/mocks"
 import { emit } from "@tauri-apps/api/event";
 import * as D from "./donnees";
 import { simulationCollegue } from "./collegue";
+import { simulationGit } from "./git"; // panneau Git, PR, issues
 
 export type Scene = {
   /** ordre-dossiers — open_workspace ouvre le dossier demandé (et non l'espace du banc). */
@@ -548,6 +549,7 @@ export function installerSimulation(scene: Scene): void {
       viewer_read_bytes: async (a: any) => { const b = await octets(nom(a)); return b.slice(a.offset, a.offset + a.length).buffer; },
     });
   }
+  Object.assign(h, simulationGit(scene)); // panneau Git, PR, issues
   // Scène « collegue » : espace cloud d'un collègue sans fournisseur sur son PC.
   if (scene.collegue) Object.assign(h, simulationCollegue(scene, { ...h }));
   mockWindows("main");

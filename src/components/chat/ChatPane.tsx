@@ -46,6 +46,7 @@ import { fileIcon } from "../../lib/fileIcon";
 import { DicteeBouton } from "../../axe/voix/DicteeBouton"; // voix
 import { insererTexteDicte } from "../../axe/voix/inserer"; // voix
 import { brancherBrouillons, enregistrerComposeur } from "../../axe/voix/dicteeCible";
+import { brancherCompositeur } from "../pr/versAgent"; // panneau Git : consignes envoyées à l'agent
 import { api, cloudConnectionFromPath } from "../../lib/ipc";
 import { actionsDuPc, modelesEspace, NOTE_COMPACTION_ESPACE } from "../../lib/modelesEspace"; // parcours-collegue
 import { expliquerErreurIA } from "../../lib/erreursIA"; // parcours-collegue
@@ -2952,6 +2953,15 @@ export function ChatPane({
   useEffect(
     () => enregistrerComposeur(conversationId, (dicte) => insererDicteeRef.current(dicte)),
     [conversationId],
+  );
+  // Panneau Git : hook refusé, checks en échec, commentaires de revue, issue (jamais envoyés seuls).
+  useEffect(
+    () =>
+      brancherCompositeur(conversationId, workspacePath, {
+        inserer: (texte) => insererDicteeRef.current(texte),
+        element: () => textareaRef.current,
+      }),
+    [conversationId, workspacePath],
   );
 
   const handleTextChange = (
