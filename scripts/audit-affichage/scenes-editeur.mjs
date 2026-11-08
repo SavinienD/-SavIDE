@@ -49,7 +49,8 @@ export const SCENES_EDITEUR = [
       "sel:.md-actions [data-mode-md='cote'][data-active='true']", "clic:.md-actions .editor-preview-toggle", "sel:.editor-md-preview[data-defile='haut']"] },
   { id: "editeur-md-defilement", ...EDITEUR, ouvrirFichier: "notes.md", clics: [".md-actions [data-mode-md='cote']"],
     saisies: [[".editor-monaco-layer .monaco-editor textarea", ""]], touches: ["Control+End"],
-    temoins: ["sel:.editor-md-preview[data-defile='bas']", "Fin de la procédure."] },
+    // Témoins valables aussi texte agrandi (l'éditeur n'est alors plus tout en bas : l'aperçu suit).
+    temoins: ["absent:.editor-md-preview[data-defile='haut']", "sel:.editor-md-preview[data-synchro='ok']", "Fin de la procédure."] },
   { id: "editeur-md-apercu", ...EDITEUR, ouvrirFichier: "notes.md", clics: [".editor-preview-toggle"],
     temoins: ["sel:.editor-text-stack[data-mode='apercu'] .editor-md-preview h1", "sel:.md-actions [data-mode-md='cote'][data-active='false']"] },
   // ED2b — image déposée depuis l'explorateur du système sur l'éditeur d'un .md : enregistrée dans

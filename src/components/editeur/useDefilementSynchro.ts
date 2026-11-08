@@ -2,7 +2,9 @@
 // La ligne en haut de l'éditeur est amenée en haut de l'aperçu et inversement ; les ancres
 // « data-ligne » de l'aperçu sont mesurées une fois, puis remesurées quand le texte ou la taille
 // change (images chargées, colonne élargie). Un défilement provoqué par la synchro ne revient pas
-// dans l'autre sens. L'aperçu porte data-defile = haut | milieu | bas.
+// dans l'autre sens. L'aperçu porte data-defile = haut | milieu | bas, et data-synchro = ok quand
+// sa position est celle que donne l'éditeur. Quand l'aperçu change de taille (images chargées,
+// texte agrandi), il est recalé sur l'éditeur.
 
 import { useEffect, useRef } from "react";
 import type * as Monaco from "monaco-editor";
@@ -66,6 +68,7 @@ export function useDefilementSynchro(
         attendu = { y: cible, t: performance.now() };
         apercu.scrollTop = cible;
       }
+      apercu.dataset.synchro = Math.abs(apercu.scrollTop - cible) < 2 ? "ok" : "ecart";
       marquer();
     };
     const depuisApercu = () => {
@@ -82,20 +85,25 @@ export function useDefilementSynchro(
       depuisApercuEnCours = true;
       editeur.setScrollTop(haut, 1 /* ScrollType.Immediate */);
       depuisApercuEnCours = false;
+      apercu.dataset.synchro = "ok";
     };
 
     const abonnement = editeur.onDidScrollChange((e) => {
       if (e.scrollTopChanged) depuisEditeur();
     });
     apercu.addEventListener("scroll", depuisApercu, { passive: true });
+    let recaler = 0;
     const observateur = new ResizeObserver(() => {
       ancresRef.current = null;
+      window.cancelAnimationFrame(recaler);
+      recaler = window.requestAnimationFrame(depuisEditeur);
     });
     observateur.observe(apercu);
     if (apercu.firstElementChild) observateur.observe(apercu.firstElementChild);
     const image = window.requestAnimationFrame(depuisEditeur);
     return () => {
       window.cancelAnimationFrame(image);
+      window.cancelAnimationFrame(recaler);
       abonnement.dispose();
       apercu.removeEventListener("scroll", depuisApercu);
       observateur.disconnect();

@@ -235,6 +235,16 @@ export function EditorPane({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [headImage?.base64, activeTab?.doc.name],
   );
+  // barre d'onglets étroite : boutons Markdown réduits à leur icône (info-bulle).
+  const ongletsRef = useRef<HTMLDivElement | null>(null);
+  const [largeurOnglets, setLargeurOnglets] = useState(1000);
+  useEffect(() => {
+    const el = ongletsRef.current;
+    if (!el) return;
+    const observateur = new ResizeObserver(() => setLargeurOnglets(el.clientWidth));
+    observateur.observe(el);
+    return () => observateur.disconnect();
+  }, []);
   // côte à côte : défilement synchronisé de l'éditeur et de l'aperçu.
   const [apercuMd, setApercuMd] = useState<HTMLDivElement | null>(null);
   useDefilementSynchro(editorRef.current, apercuMd, activeCote && showTextEditor, activeTab?.buffer ?? "", editorReadySeq);
@@ -484,7 +494,7 @@ export function EditorPane({
 
   return (
     <div className="editor-col">
-      <div className="tabs">
+      <div className="tabs" ref={ongletsRef}>
         {tabs.map((tab, index) => (
           <div
             key={tab.relativePath}
@@ -593,17 +603,19 @@ export function EditorPane({
             data-mode-md="cote"
             data-active={activeCote ? "true" : "false"}
             aria-pressed={activeCote}
+            aria-label="Côte à côte"
             onClick={() => changerModeMarkdown(activeCote ? "source" : "cote")}
             title={activeCote ? "Revenir à la source seule" : "Source et aperçu côte à côte"}
           >
             <Icon icon="solar:sidebar-code-linear" width={13} height={13} />
-            <span>Côte à côte</span>
+            {largeurOnglets >= 460 ? <span>Côte à côte</span> : null}
           </button>
           <button
             type="button"
             className="tab-action editor-preview-toggle"
             data-mode-md="apercu"
             data-active={activePreview ? "true" : "false"}
+            aria-label={activePreview ? "Source" : "Aperçu"}
             onClick={toggleMarkdownPreview}
             title={
               activePreview
@@ -620,7 +632,7 @@ export function EditorPane({
               width={13}
               height={13}
             />
-            <span>{activePreview ? "Source" : "Aperçu"}</span>
+            {largeurOnglets >= 330 ? <span>{activePreview ? "Source" : "Aperçu"}</span> : null}
           </button>
           </div>
         )}
