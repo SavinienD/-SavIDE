@@ -1,5 +1,5 @@
 // Cloche de la barre du haut : événements récents (fini, attend votre réponse,
-// échec, informations des autres lots), non-lus, « Tout marquer lu ». Clic sur un événement =
+// échec, informations des autres écrans), non-lus, « Tout marquer lu ». Clic sur un événement =
 // ouvrir sa conversation. Clavier : Entrée / Espace ouvre, flèches haut / bas pour parcourir, Échap ferme.
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";

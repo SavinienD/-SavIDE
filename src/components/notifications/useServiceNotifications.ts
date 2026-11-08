@@ -1,6 +1,7 @@
 // Monté une fois par fenêtre (App.tsx) : suit les fins de tour dans les
 // événements du service et les signale au centre (qui décide de la notification du système),
-// joue le son court quand le centre le demande, ouvre la conversation d'une notification
+// joue le son court quand le centre le demande, écoute le contrat commun « ide-notification »
+// des autres écrans (contrat.ts), ouvre la conversation d'une notification
 // cliquée, et fournit l'ouvreur de secours (écran d'accueil : aucun espace affiché).
 import { useEffect, useRef } from "react";
 import { agentsApi } from "../agents/agentsApi";
@@ -9,6 +10,7 @@ import { notificationsApi, type DecisionNotif, type SignalementNotif } from "./n
 import { appliquer, nouveauSuivi, semer, type ActionSuivi } from "./suivi";
 import { cheminPoste, cibleDe, fournirOuvreur, ouvrirCible } from "./ouvrir";
 import { armerSon, jouerSon } from "./son";
+import { ecouterIdeNotifications } from "./contrat";
 
 type Secours = {
   /** Ouvre un dossier du poste sur une conversation. */
@@ -60,6 +62,10 @@ export function useServiceNotifications(secours: Secours): void {
       agentsApi.onEvent((ev) => void executerActions(appliquer(suivi, ev, Date.now()), DEPENDANCES)),
       notificationsApi.surOuvrir((ev) => void ouvrirCible(cibleDe(ev))),
     ];
+    // Contrat commun (contrat.ts) : traité comme une fin de tour.
+    const arreterContrat = ecouterIdeNotifications(window, (signalement) =>
+      void executerActions([{ type: "signaler", signalement }], DEPENDANCES),
+    );
     const retirer = fournirOuvreur((cible) => {
       if (cible.connexion && cible.connexion !== LOCAL_CONNECTION) return false;
       if (cible.libre) ref.current.ouvrirLibre(cible.sessionId);
@@ -70,6 +76,7 @@ export function useServiceNotifications(secours: Secours): void {
     return () => {
       fini = true;
       desarmer();
+      arreterContrat();
       retirer();
       for (const arret of arrets) void arret.then((f) => f()).catch(() => undefined);
     };

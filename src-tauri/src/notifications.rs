@@ -6,7 +6,7 @@
 //! - Les fenêtres repèrent les fins de tour dans les événements du service
 //!   (`src/components/notifications/suivi.ts`) et les signalent ici. Plusieurs fenêtres signalent
 //!   la même fin avec la même clé : elle n'est gardée, montrée et sonnée qu'une fois. L'événement
-//!   de fenêtre `ide-notification` des autres lots (contrat commun :
+//!   de fenêtre `ide-notification` des autres écrans (contrat commun :
 //!   `src/components/notifications/contrat.ts`) arrive par le même chemin.
 //! - Notification du système seulement si aucune fenêtre qui a le focus n'affiche la
 //!   conversation : Windows = toast WinRT (clic = ouvrir la conversation), macOS = `osascript`
