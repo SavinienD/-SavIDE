@@ -148,6 +148,7 @@ import { appliquerEnregistrement } from "./editeur/onglets";
 import { cheminARouvrir, fermerTousLesFichiers, memoriserFermeture, peutRouvrir, sauverAvantFermeture } from "./editeur/fermeture";
 import { EntreesMenuOnglet } from "./editeur/MenuOnglet";
 import { DEPOT_MARKDOWN_EVENT } from "./editeur/useImagesMarkdown";
+import { useOngletNavigateur } from "./navigateur/useOngletNavigateur"; // navigateur intégré
 
 type Props = {
   bootstrap: WorkspaceBootstrap;
@@ -818,6 +819,11 @@ export function Workspace({
   const [remoteOpen, setRemoteOpen] = useState(false);
   const [remoteActive, setRemoteActive] = useState(false);
   const [settingsActive, setSettingsActive] = useState(false);
+  // onglet Navigateur (navigateur intégré, Design Mode, ports, pilotage par l'agent).
+  const navigateur = useOngletNavigateur({
+    workspacePath, conversationId: activeConv.id, settingsActive, remoteActive, activeTabIndex,
+    quitterAutres: () => { setSettingsActive(false); setRemoteActive(false); },
+  });
   const [remoteStatus, setRemoteStatus] = useState<RemoteStatus | null>(null);
   const [fileTreeRefreshToken, setFileTreeRefreshToken] = useState(0);
   const [fileSearchOpen, setFileSearchOpen] = useState(false);
@@ -2938,9 +2944,10 @@ export function Workspace({
   };
   const actionsRaccourcisRef = useRef<Parameters<typeof fournirActions>[0]>({});
   actionsRaccourcisRef.current = {
-    fermerOnglet: () => closeActiveEditorTab(),
+    fermerOnglet: () => { if (!navigateur.fermerSiActif()) closeActiveEditorTab(); }, // Ctrl+W ferme aussi le Navigateur
     fermerTousFichiers: () => fermerTousFichiers(),
     rouvrirOnglet: () => rouvrirOngletFerme(),
+    navigateur: () => navigateur.ouvrir(),
     terminal: () => toggleTerminalRef.current(),
     enregistrer: () => {
       if (settingsActive) return;
@@ -3551,6 +3558,8 @@ export function Workspace({
                   setSettingsActive(true);
                 }}
                 onSettingsClose={closeSettings}
+                ongletsSpeciaux={premiere ? navigateur.onglets : undefined}
+                onQuitterSpecial={navigateur.quitter}
               />
             </div>
             {col < colonnesFichiers.length - 1 ? (
@@ -3782,6 +3791,7 @@ export function Workspace({
             />
             <span className="titlebar__btn-label">Terminal</span>
           </button>
+          {navigateur.bouton}
           <button
             className="titlebar__btn"
             data-on={gaucheReduite ? "false" : "true"}

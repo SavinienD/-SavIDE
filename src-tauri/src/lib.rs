@@ -172,6 +172,7 @@ mod dossiers; // dossiers renommés ou déplacés
 mod worktrees; // worktrees : une tâche = un worktree prêt à l'emploi
 mod diff; // revue des changements
 mod conflits; // conflits à 3 volets
+mod navigateur; // navigateur intégré, Design Mode, ports, pilotage par l'agent
 
 use context::*;
 use models::*;
@@ -294,6 +295,7 @@ pub fn run() {
         .setup(|app| {
             updater::nettoyer_au_demarrage(app.handle()); // marqueur d'une version déjà installée
             daemon_client::attach_on_startup(app.handle()); // daemon
+            navigateur::demarrer_pont(app.handle()); // l'agent pilote le navigateur intégré
             #[cfg(target_os = "windows")]
             let _ = app;
 
@@ -341,6 +343,7 @@ pub fn run() {
         .on_window_event(|window, event| match event {
             tauri::WindowEvent::Destroyed => {
                 gardien_page::fenetre_detruite(window.label());
+                navigateur::fenetre_detruite(window.label());
                 remove_window_workspace(&window.app_handle(), window.label().to_string());
             }
             tauri::WindowEvent::Focused(true) => {
@@ -385,6 +388,15 @@ pub fn run() {
             gardien_page::page_journal,
             gardien_page::page_reprise_demandee,
             ia_appel::ia_appel_unique,
+            navigateur::navigateur_enregistrer,
+            navigateur::navigateur_placer,
+            navigateur::navigateur_aller,
+            navigateur::navigateur_action,
+            navigateur::navigateur_zoom,
+            navigateur::navigateur_fermer,
+            navigateur::navigateur_etat,
+            navigateur::navigateur_design,
+            navigateur::navigateur_ports,
             voix::voix_transcrire, // voix
             voix::voix_annuler,
             voix::voix_etat,

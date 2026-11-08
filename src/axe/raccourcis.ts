@@ -63,7 +63,8 @@ export type RaccourciId =
   | "revueBlocPrecedent"
   | "revueFichierSuivant"
   | "revueFichierPrecedent"
-  | "revueNoter";
+  | "revueNoter"
+  | "navigateur";
 
 type Touche = {
   /** Ctrl (ou Cmd sur macOS). */
@@ -125,6 +126,7 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "revueFichierSuivant", categorie: "Revue", libelle: "Fichier suivant", combinaison: "Alt + ↓", touche: { alt: true, touches: ["arrowdown"] } },
   { id: "revueFichierPrecedent", categorie: "Revue", libelle: "Fichier précédent", combinaison: "Alt + ↑", touche: { alt: true, touches: ["arrowup"] } },
   { id: "revueNoter", categorie: "Revue", libelle: "Noter les lignes choisies", combinaison: "Alt + N", touche: { alt: true, touches: ["n", "code:KeyN"] } },
+  { id: "navigateur", categorie: "Panneaux", libelle: "Ouvrir le navigateur intégré", combinaison: "Ctrl + Maj + B", touche: { ctrl: true, shift: true, touches: ["b", "code:KeyB"] } },
 
   { id: "nouveauWorktree", categorie: "Dossiers", libelle: "Nouveau worktree (une branche et son dossier pour une tâche)", combinaison: "Ctrl + Maj + W", touche: { ctrl: true, shift: true, touches: ["w", "code:KeyW"] } }, // worktrees
   // touche physique (AZERTY : Ctrl + « & » = Ctrl+1) ; le numéro est lu par numeroTouche.

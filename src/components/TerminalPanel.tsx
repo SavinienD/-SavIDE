@@ -21,6 +21,7 @@ import { xtermTheme } from "../axe/themeTargets"; // theme
 import { MONO_BASE_PX } from "../axe/zoom"; // zoom — taille fixe (e19 : le reglage ne concerne que le chat et les documents)
 import { prendreCommandeDepart } from "./worktrees/terminauxDepart"; // worktrees
 import type { TerminalDataPayload, TerminalExitPayload } from "../types";
+import { ouvrirLien } from "./navigateur/liens"; // navigateur intégré ou du système
 
 type TerminalStatus = "idle" | "starting" | "running" | "exited" | "error";
 
@@ -454,7 +455,7 @@ function TerminalSurface({
       if (!event.metaKey && !event.ctrlKey) return;
       event.preventDefault();
       event.stopPropagation();
-      void api.openExternalUrl(uri);
+      ouvrirLien(uri, (u) => api.openExternalUrl(u), event.shiftKey); // Maj : l'autre navigateur
     });
     const unicode11 = new Unicode11Addon();
     const clipboard = new ClipboardAddon();

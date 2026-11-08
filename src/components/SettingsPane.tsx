@@ -41,6 +41,7 @@ import {
 // cleanup — unified Skills tab (Markdown recipes + harness Python skills)
 import { harnessApi, type HarnessEntry } from "./settings/harnessApi";
 import { CLOUD_CONNECTION, cloudApi } from "./cloud/cloudApi"; // e16
+import { NavigateurReglages } from "./navigateur/NavigateurReglages";
 import { oublierSectionReglages, sectionReglagesDemandee } from "../lib/sectionReglages"; // parcours-collegue
 import { PythonSkillPreview, isPySkillEnabled } from "./settings/PythonSkillPreview";
 import { ComptesSupplementaires } from "./settings/ComptesSupplementaires";
@@ -85,7 +86,8 @@ type Section =
   | "service" // daemon
   | "connections" // remote
   | "shortcuts" // raccourcis
-  | "voice"; // voix
+  | "voice" // voix
+  | "navigateur";
 
 export function SettingsPane({ workspacePath }: Props) {
   // parcours-collegue — section demandée avant le montage (« Connect a provider ») : avant, « About ».
@@ -1450,6 +1452,17 @@ export function SettingsPane({ workspacePath }: Props) {
           <span className="settings-pane__nav-label">Dictée vocale</span>
           <span className="settings-pane__nav-count" />
         </button>
+        <button
+          type="button"
+          className="settings-pane__nav-item"
+          data-section="navigateur"
+          data-active={section === "navigateur" ? "true" : "false"}
+          onClick={() => setSection("navigateur")}
+        >
+          <Icon icon="solar:global-linear" width={15} height={15} className="settings-pane__nav-icon" />
+          <span className="settings-pane__nav-label">Navigateur</span>
+          <span className="settings-pane__nav-count" />
+        </button>
       </nav>
 
       <section className="settings-pane__main">
@@ -1549,6 +1562,8 @@ export function SettingsPane({ workspacePath }: Props) {
           <RaccourcisSection /> /* raccourcis */
         ) : section === "voice" ? (
           <VoixSection workspacePath={workspacePath} /> /* voix */
+        ) : section === "navigateur" ? (
+          <NavigateurReglages />
         ) : section === "connections" ? (
           <ConnectionsPane /> /* e5 */
         ) : section === "skills" ? (

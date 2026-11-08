@@ -10,6 +10,7 @@ import { simulationQuotas } from "./quotas"; // quotas
 import { simulationWorktrees } from "./worktrees"; // worktrees
 import { simulationConflits, simulationRevue } from "./revue"; // revue des changements
 import { simulationEditeur } from "./editeur";
+import { simulationNavigateur } from "./navigateur"; // navigateur intégré
 
 export type Scene = {
   /** ordre-dossiers — open_workspace ouvre le dossier demandé (et non l'espace du banc). */
@@ -562,6 +563,7 @@ export function installerSimulation(scene: Scene): void {
   if (scene.quotas) Object.assign(h, simulationQuotas(scene, { ...h }));
   if (scene.worktrees) Object.assign(h, simulationWorktrees(scene)); // worktrees
   if (scene.editeur) Object.assign(h, simulationEditeur(scene, { ...h }));
+  Object.assign(h, simulationNavigateur(scene)); // navigateur intégré
   mockWindows("main");
   mockConvertFileSrc("windows");
   mockIPC(

@@ -47,6 +47,10 @@ zip = { workspace = true } # viewers
 ring = { workspace = true }
 portable-pty = "0.9.0"
 toml = "0.9" # worktrees.toml (déjà dans Cargo.lock par tauri)
+# Navigateur intégré : la page est une vue wry à part, sans IPC Tauri. Même version
+# que tauri-runtime-wry (aucune caisse ajoutée à Cargo.lock) ; « devtools » pour le bouton
+# des outils de développement de la page.
+wry = { version = "0.54", default-features = false, features = ["devtools", "os-webview"] }
 reqwest = { workspace = true }
 whisper-rs = "0.16" # micro-local
 sha2 = { workspace = true } # micro-local
@@ -55,6 +59,15 @@ sha2 = { workspace = true } # micro-local
 [target.'cfg(windows)'.dependencies]
 webview2-com = "0.38"
 windows-core = "0.61"
+# ports en écoute du dossier (iphlpapi, PEB du processus) ; même version que
+# webview2-com-sys, seules des fonctions de plus sont compilées.
+windows = { version = "0.61", features = ["Win32_NetworkManagement_IpHelper", "Win32_System_Threading", "Win32_System_Diagnostics_Debug", "Wdk_System_Threading"] }
+
+# vue du navigateur posée au-dessus de la page (gtk::Overlay) et capture
+# (WebKitGTK) ; mêmes versions que wry et tao (déjà dans Cargo.lock).
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+webkit2gtk = "2.0"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6.4"
