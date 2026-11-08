@@ -477,7 +477,7 @@ export const SCENES = [
   // déjà prise : refusée avec un message ; enregistrée : lue partout.
   { id: "raccourcis-modifier", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='shortcuts']", ".axe-raccourcis__ligne[data-raccourci='nouvelleConversation'] .axe-raccourcis__combo"],
-    // Ctrl+K est pris par « Aller à » (lot palette) : Ctrl+Alt+K sert d'exemple de combinaison libre.
+    // Ctrl+K est pris par « Aller à » : Ctrl+Alt+K sert d'exemple de combinaison libre.
     touches: ["Control+Alt+k"],
     temoins: ["sel:.axe-raccourcis__ligne[data-raccourci='nouvelleConversation'][data-combinaison='Ctrl+Alt+K'][data-modifie='true']",
       "clic:.axe-raccourcis__ligne[data-raccourci='nouvelleConversation'] .axe-raccourcis__defaut", "clic:.axe-raccourcis__tout-defaut", "uneligne:.axe-raccourcis__touches"] },
@@ -823,7 +823,7 @@ export const SCENES = [
     temoins: ["absent:.axe-registre", "sel:.axe-repl__field input[type='number']", "sel:.axe-repl__field select"] },
   { id: "outils-repl-modules", ...REGISTRE(".axe-repl__modules"),
     temoins: ["absent:.axe-registre", "sel:.axe-repl__case input[type='checkbox']", "compte:.axe-repl__module=3"] },
-  // Lot palette (P1) — Ctrl+P : ouvrir un fichier par son nom (liste par rg --files simulée),
+  // Ctrl+P : ouvrir un fichier par son nom (liste par rg --files simulée),
   // lettres trouvées surlignées, Entrée ouvre, Ctrl+Entrée ouvre dans une autre colonne.
   { id: "palette-fichiers", stockage: () => colonnes([ids(1)]), touches: ["Control+p"],
     temoins: ["sel:.palette[data-palette='fichiers'] .palette__champ input", "sel:.palette__element[data-actif='true']", "README.md", "appel:palette_fichiers"] },
@@ -836,7 +836,7 @@ export const SCENES = [
   { id: "palette-fichiers-colonne", stockage: () => colonnes([ids(1)]), ouvrirFichier: "Cargo.toml", touches: ["Control+p"],
     taper: [{ sel: ".palette__champ input", texte: "stream", ajouter: true }], touchesFin: ["Control+Enter"],
     temoins: ["absent:.palette", "compte:.colonne-fichiers=2", "sel:.colonne-fichiers[data-colonne-index='1'] .tab[data-active='true']"] },
-  // Lot palette (P2) — Ctrl+K « Aller à » : onglets, conversations de tous les dossiers, dossiers
+  // Ctrl+K « Aller à » : onglets, conversations de tous les dossiers, dossiers
   // récents, sous-agents, terminaux, Réglages ; dès 2 lettres, extraits du texte des conversations.
   { id: "palette-aller", sim: { sousAgents: 2 }, stockage: () => ({ ...colonnes([ids(2)]), "axecode.recentWorkspaces": RECENTS_TROIS() }), touches: ["Control+k"],
     temoins: ["sel:.palette[data-palette='aller'] .palette__champ input", "sel:.palette__groupe", "appel:palette_conversations", "Postes du cabinet Martin : import FIC", "cabinet-martin"] },
@@ -849,7 +849,7 @@ export const SCENES = [
   { id: "palette-aller-accueil-dossier", espace: false, sim: { ouvrirChemin: true }, stockage: () => ({ "axecode.recentWorkspaces": RECENTS_TROIS() }),
     touches: ["Control+k", "c", "a", "b", "i", "n", "e", "t", "Enter"],
     temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\cabinet-martin", "absent:.palette"] },
-  // Lot palette (P3) — recherche dans les Réglages : un mot (sans accents ni casse) filtre les
+  // Recherche dans les Réglages : un mot (sans accents ni casse) filtre les
   // sections et les réglages ; un clic ouvre la section et signale le réglage ; Ctrl+K les trouve aussi.
   { id: "reglages-recherche", stockage: () => colonnes([ids(1)]), reglages: true,
     taper: [{ sel: ".recherche-reglages__champ input", texte: "zoom", ajouter: true }],
@@ -863,7 +863,7 @@ export const SCENES = [
   { id: "palette-aller-reglage-precis", stockage: () => colonnes([ids(1)]), touches: ["Control+k"],
     taper: [{ sel: ".palette__champ input", texte: "compactage auto", ajouter: true }], touchesFin: ["Enter"],
     temoins: ["absent:.palette", "sel:.settings-pane__nav-item[data-section='repl'][data-active='true']"] },
-  // Lot palette (P4) — explorateur : couleurs git (modifié, nouveau, ignoré, en conflit) sur les
+  // Explorateur : couleurs git (modifié, nouveau, ignoré, en conflit) sur les
   // fichiers et les dossiers ; clic droit « Rechercher dans ce dossier » (volet limité au dossier).
   { id: "explorateur-git", stockage: () => colonnes([ids(1)]), explorateur: { clic: "src" },
     temoins: ["sel:.tree-row[data-entry-path='src'][data-git='conflit'] .tree-row__git", "sel:.tree-row[data-entry-path='src/Workspace.tsx'][data-git='modifie']",
@@ -872,7 +872,7 @@ export const SCENES = [
   { id: "explorateur-recherche-dossier", stockage: () => colonnes([ids(1)]), explorateur: { clicDroit: "src", menu: "Rechercher dans ce dossier" },
     touchesFin: ["p", "a", "l", "e", "t", "t", "e"],
     temoins: ["sel:.search-pane__dossier", "Dans src", "appel:palette_recherche_dossier", "sel:.search-result__file[title='src/Workspace.tsx']"] },
-  // Lot palette (P5) — « Ouvrir dans… » VS Code, Cursor, Zed (simulés) au clic droit et dans Ctrl+K ;
+  // « Ouvrir dans… » VS Code, Cursor, Zed (simulés) au clic droit et dans Ctrl+K ;
   // Aide dans Réglages > À propos (journaux ; sous Windows, relancer en administrateur).
   { id: "explorateur-ouvrir-dans", stockage: () => colonnes([ids(1)]), explorateur: { clicDroit: "README.md", menu: "Ouvrir dans VS Code" },
     temoins: ["appel:ouvrir_dans_editeur", "absent:.tree-menu"] },

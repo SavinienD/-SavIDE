@@ -166,10 +166,10 @@ mod viewers; // viewers
 mod workflow;
 mod workspace;
 mod dossiers; // dossiers renommés ou déplacés
-mod palette; // lot palette : Ctrl+P, Ctrl+K, explorateur
-mod recherche_conversations; // lot palette : Ctrl+K, recherche dans l'historique
-mod explorateur_git; // lot palette : couleurs git de l'explorateur, recherche dans un dossier
-mod ouvrir_avec; // lot palette : « Ouvrir dans… », journaux, administrateur
+mod palette; // Ctrl+P, Ctrl+K, explorateur
+mod recherche_conversations; // Ctrl+K, recherche dans l'historique
+mod explorateur_git; // couleurs git de l'explorateur, recherche dans un dossier
+mod ouvrir_avec; // « Ouvrir dans… », journaux, administrateur
 
 use context::*;
 use models::*;
@@ -369,7 +369,7 @@ pub fn run() {
                     let _ = app.emit(TERMINAL_OPEN_EVENT_NAME, ());
                 }
             } else {
-                ouvrir_avec::evenement_menu(event.id().as_ref()); // lot palette : menu Aide
+                ouvrir_avec::evenement_menu(event.id().as_ref()); // menu Aide
             }
         })
         .manage(state)
@@ -515,7 +515,7 @@ pub fn run() {
             dossiers::dossier_retrouver,
             dossiers::dossier_deplacer,
             dossiers::dossiers_noter,
-            palette::palette_fichiers, // lot palette
+            palette::palette_fichiers,
             recherche_conversations::palette_conversations,
             recherche_conversations::palette_recherche_conversations,
             explorateur_git::explorateur_git,

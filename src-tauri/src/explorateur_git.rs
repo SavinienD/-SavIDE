@@ -1,4 +1,4 @@
-// Lot palette (P4) — explorateur : état git de chaque fichier (modifié, nouveau, ignoré, en
+// Explorateur : état git de chaque fichier (modifié, nouveau, ignoré, en
 // conflit) pour colorer l'arbre, et recherche limitée à un sous-dossier (« Rechercher dans ce
 // dossier »).
 

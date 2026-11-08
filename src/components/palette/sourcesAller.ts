@@ -1,4 +1,4 @@
-// Lot palette — Ctrl+K « Aller à » : éléments de toutes les sources (onglets, conversations,
+// Ctrl+K « Aller à » : éléments de toutes les sources (onglets, conversations,
 // dossiers, sous-agents, terminaux, Réglages, actions), filtrés et groupés. Module pur, testé
 // par tests/paletteAller.test.cjs.
 import { correspondance, plier, termesDe } from "./flou";

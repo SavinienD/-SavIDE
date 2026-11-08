@@ -1,4 +1,4 @@
-// Lot palette — appels au système pour les palettes (Ctrl+P, Ctrl+K).
+// Appels au système pour les palettes (Ctrl+P, Ctrl+K).
 import { invoke } from "@tauri-apps/api/core";
 import { api, cloudConnectionFromPath } from "../../lib/ipc";
 

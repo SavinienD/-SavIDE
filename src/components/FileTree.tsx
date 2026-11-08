@@ -25,11 +25,11 @@ import {
   type TriExplorateur,
 } from "../lib/arbreFichiers";
 import { estMac, estWindows } from "../lib/plateforme";
-import { useEtatGit } from "./palette/useEtatGit"; // lot palette : couleurs git de l'explorateur
+import { useEtatGit } from "./palette/useEtatGit"; // couleurs git de l'explorateur
 import { etatDe, LIBELLES_GIT, type CarteGit } from "./palette/etatGit";
-import { demanderRechercheDossier } from "./palette/rechercheDossier"; // lot palette : « Rechercher dans ce dossier »
+import { demanderRechercheDossier } from "./palette/rechercheDossier"; // « Rechercher dans ce dossier »
 import "./palette/explorateur.css";
-import { editeursDetectes, ouvrableLocalement, ouvrirDansEditeur, positionCurseur, type Editeur } from "./palette/ouvrirAvec"; // lot palette : « Ouvrir dans… »
+import { editeursDetectes, ouvrableLocalement, ouvrirDansEditeur, positionCurseur, type Editeur } from "./palette/ouvrirAvec"; // « Ouvrir dans… »
 
 // explorateur — système du poste (raccourcis Cmd sur macOS, séparateur « \ » sous Windows).
 const EST_MAC = estMac();
@@ -166,8 +166,8 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
   const [internalDropHoverRelative, setInternalDropHoverRelative] =
     useState<string | null>(null);
   const [dragPreview, setDragPreview] = useState<DragPreviewState | null>(null);
-  const carteGit = useEtatGit(workspacePath, refreshToken, localRefreshToken); // lot palette
-  // lot palette — « Ouvrir dans VS Code / Cursor / Zed… » (éditeurs trouvés sur le poste).
+  const carteGit = useEtatGit(workspacePath, refreshToken, localRefreshToken);
+  // « Ouvrir dans VS Code / Cursor / Zed… » (éditeurs trouvés sur le poste).
   const [editeurs, setEditeurs] = useState<Editeur[]>([]);
   useEffect(() => {
     let vivant = true;
@@ -1316,7 +1316,7 @@ export const FileTree = forwardRef<FileTreeHandle, Props>(function FileTree(
       onDrop={(event) => void handleRootDrop(event)}
       onContextMenu={(event) => {
         if ((event.target as Element).closest(".tree-row")) return;
-        // lot palette — clavier (touche Menu, Maj+F10) : menu de la ligne sélectionnée.
+        // clavier (touche Menu, Maj+F10) : menu de la ligne sélectionnée.
         if (event.button !== 2 && selectedEntry) {
           const ligne = Array.from(bodyRef.current?.querySelectorAll<HTMLElement>(".tree-row[data-entry-path]") ?? []).find(
             (el) => el.dataset.entryPath === selectedEntry.relativePath,
@@ -1468,7 +1468,7 @@ type NodeProps = {
   dropTargetRelative: string | null;
   dropHoverRelative: string | null;
   tri: TriExplorateur;
-  /** lot palette — état git du dossier (couleurs). */
+  /** état git du dossier (couleurs). */
   git: CarteGit | null;
 };
 
@@ -1499,7 +1499,7 @@ const TreeNode = memo(function TreeNode({
   git,
 }: NodeProps) {
   const isDir = entry.kind === "directory";
-  const etatGit = etatDe(git, entry.relativePath, isDir); // lot palette
+  const etatGit = etatDe(git, entry.relativePath, isDir);
   const state = expanded[entry.relativePath];
   const open = Boolean(state?.expanded);
   const childCreate =
@@ -1908,9 +1908,9 @@ function TreeContextMenu({
   onPaste: () => void;
   onDelete: () => void;
   onRefresh: () => void;
-  /** lot palette — volet de recherche limité à ce dossier. */
+  /** volet de recherche limité à ce dossier. */
   onSearchFolder?: () => void;
-  /** lot palette — éditeurs du poste proposés (« Ouvrir dans … »). */
+  /** éditeurs du poste proposés (« Ouvrir dans … »). */
   editeurs?: Editeur[];
   onOpenIn?: (editeur: string) => void;
 }) {

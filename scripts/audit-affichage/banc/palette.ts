@@ -1,4 +1,4 @@
-// Lot palette — simulations du banc d'affichage : Ctrl+P (palette_fichiers), Ctrl+K
+// Simulations du banc d'affichage : Ctrl+P (palette_fichiers), Ctrl+K
 // (conversations de tous les dossiers, recherche dans leur texte). Les autres commandes du
 // lot (explorateur, éditeurs) s'ajoutent ici.
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -45,7 +45,7 @@ export function simulationPalette(scene: Record<string, unknown>): Record<string
         ],
       };
     },
-    // Lot palette (P4) — couleurs git de l'explorateur et recherche limitée à un dossier.
+    // Couleurs git de l'explorateur et recherche limitée à un dossier.
     explorateur_git: () => ({
       depot: true,
       fichiers: [
@@ -73,7 +73,7 @@ export function simulationPalette(scene: Record<string, unknown>): Record<string
         ],
       };
     },
-    // Lot palette (P5) — éditeurs trouvés sur le poste, journaux, relance en administrateur.
+    // Éditeurs trouvés sur le poste, journaux, relance en administrateur.
     editeurs_detectes: () => (scene.sansEditeur ? [] : [
       { id: "vscode", nom: "VS Code", dossier: true },
       { id: "cursor", nom: "Cursor", dossier: true },

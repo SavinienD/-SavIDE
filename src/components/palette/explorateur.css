@@ -1,4 +1,4 @@
-/* Lot palette (P4) — couleurs git de l'explorateur (repères de VS Code, teintes du thème :
+/* Couleurs git de l'explorateur (repères de VS Code, teintes du thème :
    plus foncées sur un fond clair). Une lettre à droite double la couleur. */
 .tree-row[data-git="modifie"] .tree-row__name,
 .tree-row[data-git="modifie"] .tree-row__git {
@@ -28,7 +28,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Lot palette (P4) — volet de recherche limité à un dossier (clic droit dans l'explorateur). */
+/* Volet de recherche limité à un dossier (clic droit dans l'explorateur). */
 .search-pane__dossier {
   display: flex;
   align-items: center;

@@ -1,4 +1,4 @@
-// Lot palette — palettes d'un dossier ouvert : Ctrl+P (fichier par son nom) et Ctrl+K (aller à).
+// Palettes d'un dossier ouvert : Ctrl+P (fichier par son nom) et Ctrl+K (aller à).
 // Montée dans Workspace.tsx (une ligne d'accroche par disposition) ; tout le reste vit ici.
 import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { fournirActions } from "../../axe/raccourcis";

@@ -1,4 +1,4 @@
-// Lot palette (P4) — état git du dossier pour l'explorateur : relu quand l'arbre est
+// État git du dossier pour l'explorateur : relu quand l'arbre est
 // rafraîchi (fichiers changés, retour de la fenêtre) ; au plus une lecture toutes les 3 s
 // pendant qu'un agent travaille (l'arbre est alors rafraîchi chaque seconde).
 import { useEffect, useRef, useState } from "react";

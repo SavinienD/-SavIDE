@@ -1,5 +1,5 @@
 "use strict";
-// Lot palette (P4) — explorateur : couleurs git (modifié, nouveau, ignoré, en conflit) sur les
+// Explorateur : couleurs git (modifié, nouveau, ignoré, en conflit) sur les
 // fichiers et les dossiers ; clic droit « Rechercher dans ce dossier » (volet limité au dossier).
 const assert = require("node:assert/strict");
 const fs = require("node:fs");

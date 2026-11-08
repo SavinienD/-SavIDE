@@ -1,4 +1,4 @@
-// Lot palette — Ctrl+K : conversations de tous les dossiers et recherche dans leur contenu.
+// Ctrl+K : conversations de tous les dossiers et recherche dans leur contenu.
 // Le moteur (pur, mesuré sur un historique réel) est dans recherche_conversations/moteur.rs ;
 // ici, seulement les deux commandes Tauri et la mémoire partagée entre les recherches.
 

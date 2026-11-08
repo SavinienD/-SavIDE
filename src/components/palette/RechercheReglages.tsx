@@ -1,4 +1,4 @@
-// Lot palette (P3) — champ de recherche en haut des Réglages : les sections et les réglages qui
+// Champ de recherche en haut des Réglages : les sections et les réglages qui
 // contiennent les mots tapés (sans casse ni accents) remplacent la liste des sections ; un clic
 // (ou ↓ puis Entrée) ouvre la section et signale le réglage. Monté par SettingsPane (une ligne).
 import { useEffect, useId, useMemo, useRef, useState } from "react";

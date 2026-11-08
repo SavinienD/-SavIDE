@@ -1,4 +1,4 @@
-// Lot palette — « aller partout vite ».
+// « Aller partout vite ».
 //   palette_fichiers : fichiers d'un dossier pour Ctrl+P, listés par `rg --files` (le
 //   .gitignore est respecté, même hors dépôt git) ; repli sur la liste interne quand rg
 //   manque ou échoue.

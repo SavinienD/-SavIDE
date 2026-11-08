@@ -1,4 +1,4 @@
-// Lot palette — Ctrl+P : ouvrir un fichier par son nom. Liste par `rg --files` (le .gitignore
+// Ctrl+P : ouvrir un fichier par son nom. Liste par `rg --files` (le .gitignore
 // est respecté), recherche approximative, fichiers récents d'abord, dossier affiché à côté.
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { fileIcon } from "../../lib/fileIcon";

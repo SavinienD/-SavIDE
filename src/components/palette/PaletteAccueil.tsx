@@ -1,4 +1,4 @@
-// Lot palette — Ctrl+K sur l'accueil (aucun dossier ouvert) : dossiers récents et
+// Ctrl+K sur l'accueil (aucun dossier ouvert) : dossiers récents et
 // conversations de tous les dossiers, recherche dans leur texte. Ctrl+P y est avalé (pas
 // d'impression de la page). Montée dans App.tsx (une ligne d'accroche).
 import { useEffect, useMemo, useState } from "react";

@@ -1,4 +1,4 @@
-// Lot palette — recherche approximative des palettes (Ctrl+P, Ctrl+K) : les lettres tapées
+// Recherche approximative des palettes (Ctrl+P, Ctrl+K) : les lettres tapées
 // dans l'ordre, sans tenir compte de la casse ni des accents. Le nom du fichier compte plus
 // que ses dossiers ; plusieurs mots séparés par des espaces sont tous requis. Module pur,
 // testé par tests/paletteFichiers.test.cjs.

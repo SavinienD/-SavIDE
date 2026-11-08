@@ -1,4 +1,4 @@
-// Lot palette (P4) — couleurs git de l'explorateur : état de chaque fichier (modifié, nouveau,
+// Couleurs git de l'explorateur : état de chaque fichier (modifié, nouveau,
 // ignoré, en conflit) et d'un dossier (le plus important de ce qu'il contient). Module pur,
 // testé par tests/explorateurGit.test.cjs.
 

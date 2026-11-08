@@ -1,4 +1,4 @@
-//! Lot palette — moteur de la recherche dans les conversations (Ctrl+K) : liste des
+//! Moteur de la recherche dans les conversations (Ctrl+K) : liste des
 //! conversations de tous les dossiers et recherche d'un mot dans le TEXTE des messages
 //! (pas les réflexions, ni le code ou les sorties des outils), sans casse ni accents.
 //! Pur (std + rusqlite + serde) : mesurable seul sur un historique réel (test ignoré

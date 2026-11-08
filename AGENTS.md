@@ -352,11 +352,11 @@ Code map:
 │       ├── main.rs
 │       ├── models.rs
 │       ├── offline.rs # v2-l6 — mode désynchronisé : miroir local + journal (<data>/offline/<connexion>) et IPC offline_* (prepare, list, read, write, create, delete, rename, journal, sync, resolve, forget)
-│       ├── palette.rs # lot palette — palette_fichiers (Ctrl+P : rg --files, .gitignore respecté, repli sur la liste interne)
-│       ├── recherche_conversations.rs # lot palette — IPC palette_conversations / palette_recherche_conversations (Ctrl+K)
+│       ├── palette.rs # palette_fichiers (Ctrl+P : rg --files, .gitignore respecté, repli sur la liste interne)
+│       ├── recherche_conversations.rs # IPC palette_conversations / palette_recherche_conversations (Ctrl+K)
 │       ├── recherche_conversations/moteur.rs # moteur pur : texte des messages en mémoire, relu si la conversation change ; extrait autour du mot
-│       ├── ouvrir_avec.rs # lot palette — « Ouvrir dans… » (VS Code, Cursor, Zed… trouvés), dossier des journaux, relance en administrateur (Windows), menu natif Aide
-│       ├── explorateur_git.rs # lot palette — IPC explorateur_git (git status : modifié, nouveau, ignoré, conflit) et palette_recherche_dossier (recherche limitée à un sous-dossier)
+│       ├── ouvrir_avec.rs # « Ouvrir dans… » (VS Code, Cursor, Zed… trouvés), dossier des journaux, relance en administrateur (Windows), menu natif Aide
+│       ├── explorateur_git.rs # IPC explorateur_git (git status : modifié, nouveau, ignoré, conflit) et palette_recherche_dossier (recherche limitée à un sous-dossier)
 │       ├── platform.rs
 │       ├── providers.rs
 │       ├── quota.rs # providers — IPC provider_quota (usage OAuth Anthropic + historique d'épuisement)
@@ -418,7 +418,7 @@ Code map:
     │   ├── ConversationList.tsx
     │   ├── EditorPane.tsx
     │   ├── FileTree.tsx
-    │   ├── palette # lot palette — Ctrl+P / Ctrl+K « aller partout vite »
+    │   ├── palette # Ctrl+P / Ctrl+K « aller partout vite »
     │   │   ├── Palette.tsx # fenêtre commune (champ + liste, tout au clavier) ; palette.css
     │   │   ├── PaletteEspace.tsx # accroche unique dans Workspace.tsx : raccourcis, récents, ouverture (autre colonne)
     │   │   ├── PaletteFichiers.tsx # Ctrl+P : fichier par son nom (récents d'abord)

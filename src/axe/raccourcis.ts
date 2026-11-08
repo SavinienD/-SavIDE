@@ -55,8 +55,8 @@ export type RaccourciId =
   | "deplacerColonne"
   | "rechercherMac"
   | "dossierRecent"
-  | "ouvrirFichier" // lot palette
-  | "allerA"; // lot palette
+  | "ouvrirFichier"
+  | "allerA";
 
 type Touche = {
   /** Ctrl (ou Cmd sur macOS). */
@@ -103,14 +103,14 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "enregistrer", categorie: "Onglets", libelle: "Enregistrer le fichier", combinaison: "Ctrl + S", touche: { ctrl: true, touches: ["s"] } },
   { id: "rechercherMac", categorie: "Onglets", libelle: "Rechercher dans les fichiers (hors éditeur et terminal)", combinaison: "Ctrl + F", touche: { ctrl: true, touches: ["f"] }, macSeulement: true, horsEditeur: true },
   { id: "rechercheFichiers", categorie: "Onglets", libelle: "Rechercher dans les fichiers", combinaison: "Ctrl + Maj + F", touche: { ctrl: true, shift: true, touches: ["f"] } },
-  // lot palette — ouverture rapide (laissée au terminal : historique du shell).
+  // Ouverture rapide (laissée au terminal : historique du shell).
   { id: "ouvrirFichier", categorie: "Onglets", libelle: "Ouvrir un fichier par son nom", combinaison: "Ctrl + P", touche: { ctrl: true, touches: ["p", "code:KeyP"] }, horsTerminal: true },
   { id: "terminal", categorie: "Panneaux", libelle: "Afficher / masquer le terminal", combinaison: "Ctrl + J", touche: { ctrl: true, touches: ["j"] } },
   { id: "focusExplorateur", categorie: "Panneaux", libelle: "Aller à l'explorateur de fichiers", combinaison: "Ctrl + Maj + E", touche: { ctrl: true, shift: true, touches: ["e", "code:KeyE"] } },
   { id: "focusChat", categorie: "Panneaux", libelle: "Aller à la zone de saisie du chat", combinaison: "Ctrl + Maj + T", touche: { ctrl: true, shift: true, touches: ["t", "code:KeyT"] } },
   { id: "settings", categorie: "Panneaux", libelle: "Ouvrir les Réglages", combinaison: "Ctrl + ,", touche: { ctrl: true, touches: [",", "code:Comma"] } },
   { id: "accueil", categorie: "Panneaux", libelle: "Revenir à l'accueil", combinaison: "Ctrl + Maj + H", touche: { ctrl: true, shift: true, touches: ["h"] } },
-  // lot palette — « Aller à » (laissé aux accords de l'éditeur, Ctrl+K Ctrl+C…, et au terminal).
+  // « Aller à » (laissé aux accords de l'éditeur, Ctrl+K Ctrl+C…, et au terminal).
   { id: "allerA", categorie: "Panneaux", libelle: "Aller à : dossier, conversation, sous-agent, onglet, terminal ou réglage", combinaison: "Ctrl + K", touche: { ctrl: true, touches: ["k", "code:KeyK"] }, horsEditeur: true },
 
   // touche physique (AZERTY : Ctrl + « & » = Ctrl+1) ; le numéro est lu par numeroTouche.

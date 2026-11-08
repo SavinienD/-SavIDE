@@ -1,4 +1,4 @@
-// Lot palette — ouvrir un fichier choisi dans Ctrl+P, au besoin dans une autre colonne de
+// Ouvrir un fichier choisi dans Ctrl+P, au besoin dans une autre colonne de
 // l'éditeur (Ctrl+Entrée). Fonctions pures sur l'état des colonnes (chat/colonnes.ts),
 // testées par tests/paletteFichiers.test.cjs.
 import { deplacer, trouver, type EtatColonnes } from "../chat/colonnes";

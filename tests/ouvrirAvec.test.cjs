@@ -1,5 +1,5 @@
 "use strict";
-// Lot palette (P5) — « Ouvrir dans… » VS Code, Cursor, Zed et autres éditeurs trouvés (dossier ;
+// « Ouvrir dans… » VS Code, Cursor, Zed et autres éditeurs trouvés (dossier ;
 // fichier à la ligne), « Ouvrir le dossier des journaux » (Aide), « Relancer en administrateur »
 // (Windows). Vérifie le branchement (le comportement est testé côté Rust : ouvrir_avec::tests).
 const assert = require("node:assert/strict");

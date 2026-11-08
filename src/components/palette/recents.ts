@@ -1,4 +1,4 @@
-// Lot palette — fichiers ouverts récemment, par dossier (Ctrl+P les montre en premier).
+// Fichiers ouverts récemment, par dossier (Ctrl+P les montre en premier).
 // Gardés dans le stockage local du poste ; testé par tests/paletteFichiers.test.cjs.
 
 const PREFIXE = "axecode:palette:fichiers-recents:";

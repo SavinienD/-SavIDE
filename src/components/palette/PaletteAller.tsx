@@ -1,4 +1,4 @@
-// Lot palette — Ctrl+K « Aller à » : dossiers récents, conversations de tous les dossiers,
+// Ctrl+K « Aller à » : dossiers récents, conversations de tous les dossiers,
 // sous-agents, onglets ouverts, terminaux, sections des Réglages ; et, dès 2 lettres, les
 // conversations dont le TEXTE contient les mots tapés (extrait autour du mot).
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";

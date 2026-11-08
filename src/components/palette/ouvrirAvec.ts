@@ -1,4 +1,4 @@
-// Lot palette (P5) — « Ouvrir dans… » (VS Code, Cursor, Zed… trouvés sur le poste), dossier des
+// « Ouvrir dans… » (VS Code, Cursor, Zed… trouvés sur le poste), dossier des
 // journaux et relance en administrateur (Windows). Appels au système (src-tauri/src/ouvrir_avec.rs).
 import { invoke } from "@tauri-apps/api/core";
 import { loader } from "@monaco-editor/react";

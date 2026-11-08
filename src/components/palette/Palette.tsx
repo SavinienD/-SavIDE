@@ -1,4 +1,4 @@
-// Lot palette — fenêtre commune de Ctrl+P et Ctrl+K : un champ, une liste, tout au clavier.
+// Fenêtre commune de Ctrl+P et Ctrl+K : un champ, une liste, tout au clavier.
 // ↑ ↓ (Page préc. / suiv.) choisissent, Entrée ouvre, Ctrl+Entrée ouvre dans une autre colonne
 // quand l'appelant le permet, Échap ferme et rend le focus là où il était.
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";

@@ -1,5 +1,5 @@
 "use strict";
-// Lot palette (P1) — Ctrl+P : ouvrir un fichier par son nom. Recherche approximative (lettres
+// Ctrl+P : ouvrir un fichier par son nom. Recherche approximative (lettres
 // dans l'ordre, sans casse ni accents), fichiers récents en premier, raccourci déclaré une fois.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");

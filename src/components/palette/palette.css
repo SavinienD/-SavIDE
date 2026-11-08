@@ -1,4 +1,4 @@
-/* Lot palette — Ctrl+P (fichiers), Ctrl+K (aller à) : fenêtre en haut au centre,
+/* Ctrl+P (fichiers), Ctrl+K (aller à) : fenêtre en haut au centre,
    surfaces plates de l'appli, une seule couleur d'accent pour les lettres trouvées. */
 
 .palette-fond {
@@ -193,7 +193,7 @@
   }
 }
 
-/* Lot palette (P3) — recherche dans les Réglages : champ en haut de la liste des sections ;
+/* Recherche dans les Réglages : champ en haut de la liste des sections ;
    pendant une recherche, les résultats (2 lignes au plus chacun) remplacent la liste. */
 .recherche-reglages {
   display: flex;
@@ -313,7 +313,7 @@
   border-radius: var(--r-small);
 }
 
-/* Lot palette (P5) — Réglages > À propos : Aide (journaux, relance en administrateur). */
+/* Réglages > À propos : Aide (journaux, relance en administrateur). */
 .aide-appli {
   display: flex;
   flex-direction: column;

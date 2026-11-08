@@ -1,4 +1,4 @@
-// Lot palette (P5) — « Ouvrir dans… » VS Code, Cursor, Zed et les autres éditeurs trouvés sur
+// « Ouvrir dans… » VS Code, Cursor, Zed et les autres éditeurs trouvés sur
 // le poste (un dossier ; un fichier à la ligne), dossier des journaux, et sous Windows
 // « Relancer en administrateur ». Menu natif « Aide » (macOS, Linux) ; sous Windows, mêmes
 // actions dans Réglages > À propos et dans Ctrl+K.

@@ -1,4 +1,4 @@
-// Lot palette (P5) — actions proposées par Ctrl+K : ouvrir le dossier ou le fichier actif dans
+// Actions proposées par Ctrl+K : ouvrir le dossier ou le fichier actif dans
 // un éditeur du poste (VS Code, Cursor, Zed…), ouvrir le dossier des journaux, et sous Windows
 // relancer l'application en administrateur.
 import { estWindows } from "../../lib/plateforme";

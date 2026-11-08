@@ -44,8 +44,8 @@ import { oublierSectionReglages, sectionReglagesDemandee } from "../lib/sectionR
 import { PythonSkillPreview, isPySkillEnabled } from "./settings/PythonSkillPreview";
 import { ComptesSupplementaires } from "./settings/ComptesSupplementaires";
 import { MenuHarnais, usePartageHarnais } from "./settings/HarnaisPartage";
-import { RechercheReglages } from "./palette/RechercheReglages"; // lot palette : recherche dans les Réglages
-import { AideAppli } from "./palette/AideAppli"; // lot palette : Aide (journaux, administrateur)
+import { RechercheReglages } from "./palette/RechercheReglages"; // recherche dans les Réglages
+import { AideAppli } from "./palette/AideAppli"; // Aide (journaux, administrateur)
 type SkillKindFilter = "all" | "recipe" | "python";
 import { sanitizeOpenRouterName, type ModelEntry } from "../lib/models";
 import type {
@@ -1251,7 +1251,7 @@ export function SettingsPane({ workspacePath }: Props) {
   return (
     <div className="settings-pane">
       <nav className="settings-pane__nav" aria-label="Sections des réglages">
-        <RechercheReglages section={section} onSection={(s) => setSection(s as Section)} /> {/* lot palette */}
+        <RechercheReglages section={section} onSection={(s) => setSection(s as Section)} />
         <button
           type="button"
           className="settings-pane__nav-item"
@@ -1659,7 +1659,7 @@ function AboutSection() {
           <span>www.axe-international.com</span>
         </a>
       </div>
-      <AideAppli /> {/* lot palette */}
+      <AideAppli />
     </div>
   );
 }

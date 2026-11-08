@@ -1,5 +1,5 @@
 "use strict";
-// Lot palette (P2) — Ctrl+K « Aller à » : dossiers récents, conversations de tous les dossiers,
+// Ctrl+K « Aller à » : dossiers récents, conversations de tous les dossiers,
 // sous-agents, onglets, terminaux, sections des Réglages, et recherche dans le contenu des
 // conversations (extrait autour du mot).
 const assert = require("node:assert/strict");

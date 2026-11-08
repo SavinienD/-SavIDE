@@ -1,4 +1,4 @@
-// Lot palette (P3) — recherche dans les Réglages : sections et réglages par mot, sans tenir
+// Recherche dans les Réglages : sections et réglages par mot, sans tenir
 // compte de la casse ni des accents. Index écrit d'après les volets (titres visibles) ; le
 // test tests/rechercheReglages.test.cjs vérifie que chaque titre existe bien dans le code de
 // sa section. Les raccourcis viennent du registre (src/axe/raccourcis.ts).

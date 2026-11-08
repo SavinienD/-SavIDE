@@ -88,7 +88,7 @@ fn build_desktop_menu<R: Runtime>(app: &AppHandle<R>) -> Result<Menu<R>> {
                 &PredefinedMenuItem::separator(app)?,
             ],
         )?;
-        let help_menu = crate::ouvrir_avec::menu_aide(app)?; // lot palette : « Ouvrir le dossier des journaux »
+        let help_menu = crate::ouvrir_avec::menu_aide(app)?; // « Ouvrir le dossier des journaux »
         return Menu::with_items(
             app,
             &[
@@ -107,7 +107,7 @@ fn build_desktop_menu<R: Runtime>(app: &AppHandle<R>) -> Result<Menu<R>> {
     #[cfg(not(target_os = "macos"))]
     {
         let _ = about_metadata;
-        let help_menu = crate::ouvrir_avec::menu_aide(app)?; // lot palette
+        let help_menu = crate::ouvrir_avec::menu_aide(app)?;
         return Menu::with_items(app, &[&file_menu, &edit_menu, &terminal_menu, &help_menu])
             .map_err(Into::into);
     }

@@ -1,4 +1,4 @@
-// Lot palette (P5) — Réglages > À propos : « Aide » (dossier des journaux ; sous Windows,
+// Réglages > À propos : « Aide » (dossier des journaux ; sous Windows,
 // relancer l'application en administrateur). Sous macOS et Linux, le menu natif Aide le propose aussi.
 import { useState } from "react";
 import { Icon } from "@iconify/react";

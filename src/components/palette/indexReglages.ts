@@ -1,4 +1,4 @@
-// Lot palette — sections des Réglages (Ctrl+K y mène ; P3 : recherche dans les Réglages).
+// Sections des Réglages (Ctrl+K y mène, et la recherche dans les Réglages).
 // Mêmes identifiants que les boutons du volet (data-section de SettingsPane.tsx) : le test
 // tests/paletteAller.test.cjs vérifie qu'ils correspondent. Édition locale : sans les
 // sections qui demandent un serveur (Service, Appareils), masquées dans le volet.

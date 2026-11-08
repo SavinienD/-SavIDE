@@ -7,7 +7,7 @@ import {
   dossierDeRecherche,
   EVENEMENT_RECHERCHE_DOSSIER,
   oublierRechercheDossier,
-} from "./palette/rechercheDossier"; // lot palette : « Rechercher dans ce dossier »
+} from "./palette/rechercheDossier"; // « Rechercher dans ce dossier »
 import { fileIcon } from "../lib/fileIcon";
 import type {
   EditorRevealTarget,
@@ -27,7 +27,7 @@ type Props = {
 
 const SEARCH_DELAY_MS = 180;
 
-// lot palette — recherche limitée à un sous-dossier (clic droit dans l'explorateur) ; un espace
+// recherche limitée à un sous-dossier (clic droit dans l'explorateur) ; un espace
 // cloud est filtré après coup (la recherche du service n'a pas de dossier).
 function chercher(workspacePath: string, query: string, dossier: string | null): Promise<WorkspaceSearchResult> {
   if (!dossier) return api.searchWorkspace(workspacePath, query);
@@ -46,7 +46,7 @@ export function SearchPane({ workspacePath, refreshToken, onOpenFile }: Props) {
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const requestSeqRef = useRef(0);
-  // lot palette — dossier auquel la recherche est limitée (null : tout le dossier ouvert).
+  // dossier auquel la recherche est limitée (null : tout le dossier ouvert).
   const [dossier, setDossier] = useState<string | null>(() => dossierDeRecherche());
   useEffect(() => {
     const changer = (e: Event) => {

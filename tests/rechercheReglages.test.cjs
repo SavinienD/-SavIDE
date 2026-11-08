@@ -1,5 +1,5 @@
 "use strict";
-// Lot palette (P3) — recherche dans les Réglages : champ en haut, sections et réglages filtrés par
+// Recherche dans les Réglages : champ en haut, sections et réglages filtrés par
 // mot, sans tenir compte des accents ni de la casse ; chaque titre de l'index existe dans le volet.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");

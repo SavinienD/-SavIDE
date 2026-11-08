@@ -1,4 +1,4 @@
-// Lot palette (P4) — « Rechercher dans ce dossier » (clic droit dans l'explorateur) : le
+// « Rechercher dans ce dossier » (clic droit dans l'explorateur) : le
 // dossier choisi est gardé ici ; le volet de recherche le lit en s'ouvrant (ou l'apprend par
 // l'événement s'il est déjà ouvert), l'espace ouvre le volet. Module pur (testé).
 
