@@ -175,6 +175,10 @@ mod diff; // revue des changements
 mod conflits; // conflits à 3 volets
 mod navigateur; // navigateur intégré, Design Mode, ports, pilotage par l'agent
 mod notifications; // notifications, cloche, badge
+mod palette; // Ctrl+P, Ctrl+K, explorateur
+mod recherche_conversations; // Ctrl+K, recherche dans l'historique
+mod explorateur_git; // couleurs git de l'explorateur, recherche dans un dossier
+mod ouvrir_avec; // « Ouvrir dans… », journaux, administrateur
 
 use context::*;
 use models::*;
@@ -375,6 +379,8 @@ pub fn run() {
                 } else {
                     let _ = app.emit(TERMINAL_OPEN_EVENT_NAME, ());
                 }
+            } else {
+                ouvrir_avec::evenement_menu(event.id().as_ref()); // menu Aide
             }
         })
         .manage(state)
@@ -548,6 +554,15 @@ pub fn run() {
             conflits::revue_conflit_fichier,
             conflits::revue_conflit_resoudre,
             conflits::revue_conflits_action,
+            palette::palette_fichiers,
+            recherche_conversations::palette_conversations,
+            recherche_conversations::palette_recherche_conversations,
+            explorateur_git::explorateur_git,
+            explorateur_git::palette_recherche_dossier,
+            ouvrir_avec::editeurs_detectes,
+            ouvrir_avec::ouvrir_dans_editeur,
+            ouvrir_avec::ouvrir_dossier_journaux,
+            ouvrir_avec::relancer_administrateur,
             workspace::open_cloud_workspace, // v2-l2.3
             workspace::open_new_window,
             workspace::reset_window_title,

@@ -1,0 +1,352 @@
+/* Ctrl+P (fichiers), Ctrl+K (aller à) : fenêtre en haut au centre,
+   surfaces plates de l'appli, une seule couleur d'accent pour les lettres trouvées. */
+
+.palette-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: min(12vh, 96px) 16px 16px;
+  background: rgba(8, 9, 11, 0.45);
+}
+
+.palette {
+  width: min(640px, 100%);
+  max-height: min(560px, calc(100vh - min(12vh, 96px) - 16px));
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-2);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-elevated);
+  color: var(--text-1);
+  font-family: var(--font-ui);
+}
+
+.palette__champ {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-3);
+}
+.palette__champ input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text-0);
+  font: inherit;
+  font-size: var(--fs-base);
+}
+.palette__champ input::placeholder {
+  color: var(--text-3);
+}
+
+.palette__liste {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.palette__groupe {
+  padding: 8px 8px 4px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.palette__element {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 4px 8px;
+  border-radius: var(--r-small);
+  color: var(--text-1);
+  cursor: pointer;
+}
+.palette__element[data-actif="true"] {
+  background: var(--bg-4);
+  color: var(--text-0);
+}
+.palette__icone {
+  flex: none;
+  color: var(--text-3);
+}
+
+.palette__textes {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+/* Titre sur 2 lignes au plus, détail sur 1 (2 pour un extrait) : rien n'est poussé hors de la
+   ligne dans une fenêtre étroite, même avec des lettres surlignées en fin de titre. */
+.palette__titre,
+.palette__detail {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.palette__titre {
+  -webkit-line-clamp: 2;
+  font-size: var(--fs-sm);
+  line-height: 1.35;
+}
+.palette__detail {
+  -webkit-line-clamp: 1;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  line-height: 1.35;
+}
+.palette mark {
+  background: transparent;
+  color: var(--accent-hi);
+  font-weight: 600;
+}
+/* Extrait d'une conversation : 2 lignes, le mot cherché sur fond d'accent (comme dans le harnais). */
+.palette__element[data-genre="extrait"] .palette__detail {
+  -webkit-line-clamp: 2;
+}
+.palette__element[data-genre="extrait"] .palette__detail mark {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  color: var(--text-0);
+  font-weight: 400;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.palette__indication {
+  flex: none;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.palette__etat {
+  padding: 16px 12px;
+  color: var(--text-3);
+  font-size: var(--fs-sm);
+}
+
+.palette__note {
+  flex: none;
+  padding: 4px 12px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.palette__aide {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+.palette__aide-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.palette__aide kbd {
+  padding: 0 4px;
+  border-radius: var(--r-micro);
+  background: var(--bg-4);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+@media (max-height: 520px) {
+  .palette-fond {
+    padding-top: 16px;
+  }
+  .palette {
+    max-height: calc(100vh - 32px);
+  }
+  .palette__aide {
+    display: none;
+  }
+}
+
+/* Recherche dans les Réglages : champ en haut de la liste des sections ;
+   pendant une recherche, les résultats (2 lignes au plus chacun) remplacent la liste. */
+.recherche-reglages {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+  min-width: 0;
+}
+.recherche-reglages__champ {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 4px 0 8px;
+  border-radius: var(--r-med);
+  background: var(--bg-2);
+  color: var(--text-3);
+  min-width: 0;
+}
+.recherche-reglages__champ:focus-within {
+  box-shadow: 0 0 0 1px var(--line-strong);
+}
+.recherche-reglages__champ input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text-0);
+  font: inherit;
+  font-size: var(--fs-xs);
+}
+.recherche-reglages__champ input::placeholder {
+  color: var(--text-3);
+}
+.recherche-reglages__effacer {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--r-small);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.recherche-reglages__effacer:hover {
+  color: var(--text-0);
+}
+.settings-pane__nav:has(.recherche-reglages[data-active="true"]) > .settings-pane__nav-item {
+  display: none;
+}
+.recherche-reglages__resultats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.recherche-reglages__ligne {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  min-height: 28px;
+  padding: 4px 9px;
+  border-radius: var(--r-med);
+  color: var(--text-2);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+.recherche-reglages__ligne[data-genre="section"] {
+  font-weight: 500;
+}
+.recherche-reglages__ligne[data-genre="reglage"] {
+  padding-left: 33px;
+}
+.recherche-reglages__ligne[data-actif="true"],
+.recherche-reglages__ligne:hover {
+  background: var(--bg-2);
+  color: var(--text-0);
+}
+.recherche-reglages__ligne[data-active="true"] {
+  background: var(--bg-3);
+  color: var(--text-0);
+}
+.recherche-reglages__icone {
+  flex: none;
+  opacity: 0.85;
+}
+.recherche-reglages__texte {
+  min-width: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+.recherche-reglages mark {
+  background: transparent;
+  color: var(--accent-hi);
+  font-weight: 600;
+}
+.recherche-reglages__vide {
+  padding: 4px 9px;
+  color: var(--text-3);
+  font-size: var(--fs-xs);
+}
+/* Réglage atteint depuis la recherche ou Ctrl+K : signalé un instant. */
+.recherche-reglages__cible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-small);
+}
+
+/* Réglages > À propos : Aide (journaux, relance en administrateur). */
+.aide-appli {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 24px;
+  min-width: 0;
+}
+.aide-appli__titre {
+  margin: 0;
+  color: var(--text-0);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aide-appli__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.aide-appli__actions .settings-pane__btn {
+  max-width: 100%;
+}
+.aide-appli__actions .settings-pane__btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aide-appli__message {
+  margin: 0;
+  color: var(--text-2);
+  font-size: var(--fs-xs);
+  overflow-wrap: anywhere;
+}

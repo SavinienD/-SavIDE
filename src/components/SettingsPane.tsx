@@ -53,6 +53,8 @@ import { MenuHarnais, usePartageHarnais } from "./settings/HarnaisPartage";
 import { SkillsExternes } from "./settings/SkillsExternes";
 import { ImportMcp } from "./settings/ImportMcp";
 import { ValidationDefaut } from "./settings/ValidationDefaut";
+import { RechercheReglages } from "./palette/RechercheReglages"; // recherche dans les Réglages
+import { AideAppli } from "./palette/AideAppli"; // Aide (journaux, administrateur)
 type SkillKindFilter = "all" | "recipe" | "python";
 import { sanitizeOpenRouterName, type ModelEntry } from "../lib/models";
 import type {
@@ -1264,6 +1266,7 @@ export function SettingsPane({ workspacePath }: Props) {
   return (
     <div className="settings-pane">
       <nav className="settings-pane__nav" aria-label="Sections des réglages">
+        <RechercheReglages section={section} onSection={(s) => setSection(s as Section)} />
         <button
           type="button"
           className="settings-pane__nav-item"
@@ -1712,6 +1715,7 @@ function AboutSection() {
           <span>www.axe-international.com</span>
         </a>
       </div>
+      <AideAppli />
     </div>
   );
 }

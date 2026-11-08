@@ -20,7 +20,7 @@ pub(crate) fn ripgrep_executable() -> PathBuf {
     find_existing_ripgrep().unwrap_or_else(|| PathBuf::from(platform_executable_name()))
 }
 
-pub(crate) async fn ensure_ripgrep_executable() -> Result<PathBuf> {
+pub async fn ensure_ripgrep_executable() -> Result<PathBuf> {
     if let Some(path) = find_existing_ripgrep() {
         return Ok(path);
     }

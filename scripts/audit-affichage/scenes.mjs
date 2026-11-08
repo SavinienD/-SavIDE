@@ -539,8 +539,9 @@ export const SCENES = [
   // déjà prise : refusée avec un message ; enregistrée : lue partout.
   { id: "raccourcis-modifier", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='shortcuts']", ".axe-raccourcis__ligne[data-raccourci='nouvelleConversation'] .axe-raccourcis__combo"],
-    touches: ["Control+k"],
-    temoins: ["sel:.axe-raccourcis__ligne[data-raccourci='nouvelleConversation'][data-combinaison='Ctrl+K'][data-modifie='true']",
+    // Ctrl+K est pris par « Aller à » : Ctrl+Alt+K sert d'exemple de combinaison libre.
+    touches: ["Control+Alt+k"],
+    temoins: ["sel:.axe-raccourcis__ligne[data-raccourci='nouvelleConversation'][data-combinaison='Ctrl+Alt+K'][data-modifie='true']",
       "clic:.axe-raccourcis__ligne[data-raccourci='nouvelleConversation'] .axe-raccourcis__defaut", "clic:.axe-raccourcis__tout-defaut", "uneligne:.axe-raccourcis__touches"] },
   { id: "raccourcis-conflit", sim: {}, stockage: () => colonnes([ids(3)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='shortcuts']", ".axe-raccourcis__ligne[data-raccourci='nouvelleConversation'] .axe-raccourcis__combo"],
@@ -1037,5 +1038,66 @@ export const SCENES = [
   { id: "commandes-chat", sim: {}, stockage: () => colonnes([ids(1)]),
     cliquer: [".composer [data-action='commandes-chat']", ".acli-menu--commandes [data-commande='exemple-git']"],
     temoins: ["valeur:git diff --stat", "absent:.acli-menu--commandes"] },
+  // Ctrl+P : ouvrir un fichier par son nom (liste par rg --files simulée),
+  // lettres trouvées surlignées, Entrée ouvre, Ctrl+Entrée ouvre dans une autre colonne.
+  { id: "palette-fichiers", stockage: () => colonnes([ids(1)]), touches: ["Control+p"],
+    temoins: ["sel:.palette[data-palette='fichiers'] .palette__champ input", "sel:.palette__element[data-actif='true']", "README.md", "appel:palette_fichiers"] },
+  { id: "palette-fichiers-cherche", stockage: () => colonnes([ids(1)]), touches: ["Control+p"],
+    taper: [{ sel: ".palette__champ input", texte: "wsp", ajouter: true }],
+    temoins: ["sel:.palette__element[data-index='0'] .palette__titre[title='Workspace.tsx'] mark", "absent:.palette__element[data-index='0'] .palette__titre[title='README.md']"] },
+  { id: "palette-fichiers-ouvrir", stockage: () => colonnes([ids(1)]), touches: ["Control+p"],
+    taper: [{ sel: ".palette__champ input", texte: "readme", ajouter: true }], touchesFin: ["Enter"],
+    temoins: ["absent:.palette", "sel:.editor-col .tabs .tab[data-active='true']", "appel:read_workspace_file_command"] },
+  { id: "palette-fichiers-colonne", stockage: () => colonnes([ids(1)]), ouvrirFichier: "Cargo.toml", touches: ["Control+p"],
+    taper: [{ sel: ".palette__champ input", texte: "stream", ajouter: true }], touchesFin: ["Control+Enter"],
+    temoins: ["absent:.palette", "compte:.colonne-fichiers=2", "sel:.colonne-fichiers[data-colonne-index='1'] .tab[data-active='true']"] },
+  // Ctrl+K « Aller à » : onglets, conversations de tous les dossiers, dossiers
+  // récents, sous-agents, terminaux, Réglages ; dès 2 lettres, extraits du texte des conversations.
+  { id: "palette-aller", sim: { sousAgents: 2 }, stockage: () => ({ ...colonnes([ids(2)]), "axecode.recentWorkspaces": RECENTS_TROIS() }), touches: ["Control+k"],
+    temoins: ["sel:.palette[data-palette='aller'] .palette__champ input", "sel:.palette__groupe", "appel:palette_conversations", "Postes du cabinet Martin : import FIC", "cabinet-martin"] },
+  { id: "palette-aller-contenu", stockage: () => colonnes([ids(1)]), touches: ["Control+k"], taper: [{ sel: ".palette__champ input", texte: "banc", ajouter: true }],
+    temoins: ["sel:.palette__element[data-genre='extrait'] .palette__detail mark", "appel:palette_recherche_conversations"] },
+  { id: "palette-aller-reglage", stockage: () => colonnes([ids(1)]), touches: ["Control+k"], taper: [{ sel: ".palette__champ input", texte: "outils repl", ajouter: true }],
+    touchesFin: ["Enter"], temoins: ["absent:.palette", "sel:.settings-pane__nav-item[data-section='repl'][data-active='true']"] },
+  { id: "palette-aller-accueil", espace: false, stockage: () => ({ "axecode.recentWorkspaces": RECENTS_TROIS() }), touches: ["Control+k"],
+    temoins: ["sel:.palette[data-palette='aller'] .palette__element", "cabinet-martin", "absent:.workspace"] },
+  { id: "palette-aller-accueil-dossier", espace: false, sim: { ouvrirChemin: true }, stockage: () => ({ "axecode.recentWorkspaces": RECENTS_TROIS() }),
+    touches: ["Control+k", "c", "a", "b", "i", "n", "e", "t", "Enter"],
+    temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\cabinet-martin", "absent:.palette"] },
+  // Recherche dans les Réglages : un mot (sans accents ni casse) filtre les
+  // sections et les réglages ; un clic ouvre la section et signale le réglage ; Ctrl+K les trouve aussi.
+  { id: "reglages-recherche", stockage: () => colonnes([ids(1)]), reglages: true,
+    taper: [{ sel: ".recherche-reglages__champ input", texte: "zoom", ajouter: true }],
+    temoins: ["sel:.recherche-reglages[data-active='true'] .recherche-reglages__ligne[data-genre='reglage'] mark", "absent:.settings-pane__nav > .settings-pane__nav-item", "Zoom de l'interface"] },
+  { id: "reglages-recherche-aller", stockage: () => colonnes([ids(1)]), reglages: true,
+    taper: [{ sel: ".recherche-reglages__champ input", texte: "compactage", ajouter: true }], touchesFin: ["ArrowDown", "Enter"],
+    temoins: ["sel:.recherche-reglages__resultats [data-section='repl'][data-active='true']"] },
+  { id: "reglages-recherche-vide", stockage: () => colonnes([ids(1)]), reglages: true,
+    taper: [{ sel: ".recherche-reglages__champ input", texte: "xyzw", ajouter: true }],
+    temoins: ["sel:.recherche-reglages__vide"] },
+  { id: "palette-aller-reglage-precis", stockage: () => colonnes([ids(1)]), touches: ["Control+k"],
+    taper: [{ sel: ".palette__champ input", texte: "compactage auto", ajouter: true }], touchesFin: ["Enter"],
+    temoins: ["absent:.palette", "sel:.settings-pane__nav-item[data-section='repl'][data-active='true']"] },
+  // Explorateur : couleurs git (modifié, nouveau, ignoré, en conflit) sur les
+  // fichiers et les dossiers ; clic droit « Rechercher dans ce dossier » (volet limité au dossier).
+  { id: "explorateur-git", stockage: () => colonnes([ids(1)]), explorateur: { clic: "src" },
+    temoins: ["sel:.tree-row[data-entry-path='src'][data-git='conflit'] .tree-row__git", "sel:.tree-row[data-entry-path='src/Workspace.tsx'][data-git='modifie']",
+      "sel:.tree-row[data-entry-path='src/stream.ts'][data-git='nouveau']", "sel:.tree-row[data-entry-path='README.md'][data-git='modifie']",
+      "sel:.tree-row[data-entry-path='web'][data-git='ignore']", "sel:.tree-row[data-entry-path='scripts'][data-git='nouveau']", "appel:explorateur_git"] },
+  { id: "explorateur-recherche-dossier", stockage: () => colonnes([ids(1)]), explorateur: { clicDroit: "src", menu: "Rechercher dans ce dossier" },
+    touchesFin: ["p", "a", "l", "e", "t", "t", "e"],
+    temoins: ["sel:.search-pane__dossier", "Dans src", "appel:palette_recherche_dossier", "sel:.search-result__file[title='src/Workspace.tsx']"] },
+  // « Ouvrir dans… » VS Code, Cursor, Zed (simulés) au clic droit et dans Ctrl+K ;
+  // Aide dans Réglages > À propos (journaux ; sous Windows, relancer en administrateur).
+  { id: "explorateur-ouvrir-dans", stockage: () => colonnes([ids(1)]), explorateur: { clicDroit: "README.md", menu: "Ouvrir dans VS Code" },
+    temoins: ["appel:ouvrir_dans_editeur", "absent:.tree-menu"] },
+  { id: "explorateur-menu-editeurs", stockage: () => colonnes([ids(1)]), explorateur: { clicDroit: "src" },
+    temoins: ["Ouvrir dans VS Code", "Ouvrir dans Zed", "Rechercher dans ce dossier"] },
+  { id: "palette-aller-editeur", stockage: () => colonnes([ids(1)]), touches: ["Control+k"],
+    taper: [{ sel: ".palette__champ input", texte: "dossier dans cursor", ajouter: true }], touchesFin: ["Enter"],
+    temoins: ["appel:ouvrir_dans_editeur", "absent:.palette"] },
+  { id: "reglages-aide", stockage: () => colonnes([ids(1)]), reglages: true, clics: [".settings-pane__nav-item[data-section='about']"],
+    cliquer: [".aide-appli [data-action='ouvrir-journaux']"],
+    temoins: ["appel:ouvrir_dossier_journaux", "sel:.aide-appli__message"] },
 ];
 SCENES.push(...SCENES_INTEROP);

@@ -88,8 +88,7 @@ fn build_desktop_menu<R: Runtime>(app: &AppHandle<R>) -> Result<Menu<R>> {
                 &PredefinedMenuItem::separator(app)?,
             ],
         )?;
-        let help_menu =
-            Submenu::with_id_and_items(app, tauri::menu::HELP_SUBMENU_ID, "Aide", true, &[])?;
+        let help_menu = crate::ouvrir_avec::menu_aide(app)?; // « Ouvrir le dossier des journaux »
         return Menu::with_items(
             app,
             &[
@@ -108,7 +107,8 @@ fn build_desktop_menu<R: Runtime>(app: &AppHandle<R>) -> Result<Menu<R>> {
     #[cfg(not(target_os = "macos"))]
     {
         let _ = about_metadata;
-        return Menu::with_items(app, &[&file_menu, &edit_menu, &terminal_menu])
+        let help_menu = crate::ouvrir_avec::menu_aide(app)?;
+        return Menu::with_items(app, &[&file_menu, &edit_menu, &terminal_menu, &help_menu])
             .map_err(Into::into);
     }
 }

@@ -14,6 +14,7 @@ import { simulationNavigateur } from "./navigateur"; // navigateur intégré
 import { simulationAutomatisations } from "./automatisations"; // automatisations
 import { simulationInterop } from "./interop";
 import { simulationAgentsCli } from "./agentsCli"; // agents en ligne de commande
+import { simulationPalette } from "./palette";
 
 export type Scene = {
   /** ordre-dossiers — open_workspace ouvre le dossier demandé (et non l'espace du banc). */
@@ -179,6 +180,7 @@ export function installerSimulation(scene: Scene): void {
   const h: Record<string, (a: any, brut: any) => unknown> = {
     ...simulationRevue(scene), // revue des changements
     ...simulationConflits(scene),
+    ...simulationPalette(scene), // Ctrl+P, Ctrl+K, explorateur
     // Scène « maj-badge » : une version disponible (badge discret, installation sur clic seulement).
     updater_check: () =>
       scene.majDispo

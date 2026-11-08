@@ -47,7 +47,9 @@ test("vérification : lettre seule, touche réservée, AltGr, conflit", () => {
   assert.match(verif("archiver", { ctrlKey: true, key: "3", code: "Digit3" }), /dossier/i);
   assert.match(verif("archiver", { ctrlKey: true, altKey: true, key: "€", code: "KeyE" }), /AltGr/);
   assert.match(verif("archiver", { ctrlKey: true, key: "t", code: "KeyT" }), /Nouvelle conversation/);
-  assert.equal(verif("archiver", { ctrlKey: true, key: "k", code: "KeyK" }), null);
+  // Ctrl+K est pris par « Aller à » : une autre combinaison libre sert d'exemple.
+  assert.match(verif("archiver", { ctrlKey: true, key: "k", code: "KeyK" }), /Aller à/);
+  assert.equal(verif("archiver", { ctrlKey: true, altKey: true, key: "k", code: "KeyK" }), null);
   assert.equal(verif("nouvelleConversation", { ctrlKey: true, key: "t", code: "KeyT" }), null, "sa propre combinaison");
   assert.equal(verif("archiver", { key: "F2", code: "F2" }), null);
 });

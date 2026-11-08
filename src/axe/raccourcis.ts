@@ -67,7 +67,9 @@ export type RaccourciId =
   | "navigateur"
   | "automatisations" // automatisations
   | "validerAction"
-  | "rechercheTerminal"; // agents en ligne de commande : recherche dans le terminal
+  | "rechercheTerminal" // agents en ligne de commande : recherche dans le terminal
+  | "ouvrirFichier"
+  | "allerA";
 
 type Touche = {
   /** Ctrl (ou Cmd sur macOS). */
@@ -118,6 +120,8 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "enregistrer", categorie: "Onglets", libelle: "Enregistrer le fichier", combinaison: "Ctrl + S", touche: { ctrl: true, touches: ["s"] } },
   { id: "rechercherMac", categorie: "Onglets", libelle: "Rechercher dans les fichiers (hors éditeur et terminal)", combinaison: "Ctrl + F", touche: { ctrl: true, touches: ["f"] }, macSeulement: true, horsEditeur: true },
   { id: "rechercheFichiers", categorie: "Onglets", libelle: "Rechercher dans les fichiers", combinaison: "Ctrl + Maj + F", touche: { ctrl: true, shift: true, touches: ["f"] } },
+  // Ouverture rapide (laissée au terminal : historique du shell).
+  { id: "ouvrirFichier", categorie: "Onglets", libelle: "Ouvrir un fichier par son nom", combinaison: "Ctrl + P", touche: { ctrl: true, touches: ["p", "code:KeyP"] }, horsTerminal: true },
   { id: "terminal", categorie: "Panneaux", libelle: "Afficher / masquer le terminal", combinaison: "Ctrl + J", touche: { ctrl: true, touches: ["j"] } },
   // Ctrl+F dans le terminal (focus dans xterm) ; ailleurs la touche garde son rôle (rechercherMac, horsEditeur).
   { id: "rechercheTerminal", categorie: "Panneaux", libelle: "Rechercher dans le terminal (quand il a le focus)", combinaison: "Ctrl + F", touche: { ctrl: true, touches: ["code:KeyF"] } },
@@ -135,6 +139,8 @@ export const RACCOURCIS: Raccourci[] = [
   { id: "navigateur", categorie: "Panneaux", libelle: "Ouvrir le navigateur intégré", combinaison: "Ctrl + Maj + B", touche: { ctrl: true, shift: true, touches: ["b", "code:KeyB"] } },
   // automatisations — écran des prompts planifiés (laissé à l'éditeur : Ctrl+Maj+L y sélectionne les occurrences).
   { id: "automatisations", categorie: "Panneaux", libelle: "Ouvrir les automatisations (prompts planifiés)", combinaison: "Ctrl + Maj + L", touche: { ctrl: true, shift: true, touches: ["l", "code:KeyL"] }, horsEditeur: true },
+  // « Aller à » (laissé aux accords de l'éditeur, Ctrl+K Ctrl+C…, et au terminal).
+  { id: "allerA", categorie: "Panneaux", libelle: "Aller à : dossier, conversation, sous-agent, onglet, terminal ou réglage", combinaison: "Ctrl + K", touche: { ctrl: true, touches: ["k", "code:KeyK"] }, horsEditeur: true },
 
   // Ctrl+Maj+W reste à « Fermer tous les fichiers » (famille de Ctrl+W) ; Ctrl+Alt+E est évité (AltGr+E = € au clavier français).
   { id: "nouveauWorktree", categorie: "Dossiers", libelle: "Nouveau worktree (une branche et son dossier pour une tâche)", combinaison: "Ctrl + Alt + W", touche: { ctrl: true, alt: true, touches: ["w"] } }, // worktrees

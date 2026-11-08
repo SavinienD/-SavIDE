@@ -381,6 +381,11 @@ Code map:
 │       ├── navigateur # navigateur intégré : vue.rs (vue wry enfant, sans IPC Tauri ; Linux : gtk::Overlay), mod.rs (commandes navigateur_*), adresse.rs (http/https seulement), page.rs + page/agent.js + page/design.js (scripts évalués dans la page : lecture compacte, actions, Design Mode), ports.rs (ports du dossier : /proc, PEB sous Windows, lsof), pont.rs (pont local appli ↔ service pour le module REPL navigateur), capture.rs (PNG : WebView2 CDP, WebKitGTK), etat.rs, telechargements.rs
 │       ├── notifications.rs # centre des notifications : événements (cloche), états des sessions (vue Tableau), réglages, <données>/notifications.json ; une même fin signalée par plusieurs fenêtres n'est gardée qu'une fois ; notification du système (Windows : toast WinRT, clic = ouvrir ; macOS : osascript ; Linux : notify-send) seulement si aucune fenêtre focalisée n'affiche la conversation
 │       ├── offline.rs # v2-l6 — mode désynchronisé : miroir local + journal (<data>/offline/<connexion>) et IPC offline_* (prepare, list, read, write, create, delete, rename, journal, sync, resolve, forget)
+│       ├── palette.rs # palette_fichiers (Ctrl+P : rg --files, .gitignore respecté, repli sur la liste interne)
+│       ├── recherche_conversations.rs # IPC palette_conversations / palette_recherche_conversations (Ctrl+K)
+│       ├── recherche_conversations/moteur.rs # moteur pur : texte des messages en mémoire, relu si la conversation change ; extrait autour du mot
+│       ├── ouvrir_avec.rs # « Ouvrir dans… » (VS Code, Cursor, Zed… trouvés), dossier des journaux, relance en administrateur (Windows), menu natif Aide
+│       ├── explorateur_git.rs # IPC explorateur_git (git status : modifié, nouveau, ignoré, conflit) et palette_recherche_dossier (recherche limitée à un sous-dossier)
 │       ├── platform.rs
 │       ├── providers.rs
 │       ├── quota.rs # providers — IPC provider_quota : quotas de tous les comptes Claude (oauth/usage) et ChatGPT (wham/usage), historique d'épuisement, tests avec un faux serveur
@@ -468,6 +473,19 @@ Code map:
     │   │   ├── imageAvantApres.ts # type d'image, cadre commun et glissière de la comparaison avant / après
     │   │   └── editeur.css
     │   ├── FileTree.tsx
+    │   ├── palette # Ctrl+P / Ctrl+K « aller partout vite »
+    │   │   ├── Palette.tsx # fenêtre commune (champ + liste, tout au clavier) ; palette.css
+    │   │   ├── PaletteEspace.tsx # accroche unique dans Workspace.tsx : raccourcis, récents, ouverture (autre colonne)
+    │   │   ├── PaletteFichiers.tsx # Ctrl+P : fichier par son nom (récents d'abord)
+    │   │   ├── flou.ts # recherche approximative sans casse ni accents (tests/paletteFichiers.test.cjs)
+    │   │   ├── recents.ts / ouvertureFichier.ts / paletteApi.ts # fichiers récents par dossier, colonne voisine, IPC
+    │   │   ├── PaletteAller.tsx / sourcesAller.ts # Ctrl+K : onglets, conversations, dossiers, sous-agents, terminaux, Réglages, texte des conversations (tests/paletteAller.test.cjs)
+    │   │   ├── PaletteAccueil.tsx # Ctrl+K sur l'accueil (accroche dans App.tsx)
+    │   │   ├── indexReglages.ts # sections des Réglages (mêmes data-section que SettingsPane ; édition locale : sans Service ni Appareils)
+    │   │   ├── RechercheReglages.tsx / rechercheReglages.ts # recherche dans les Réglages : champ en haut du volet, index des réglages (+ raccourcis), signalement (tests/rechercheReglages.test.cjs)
+    │   │   ├── etatGit.ts / useEtatGit.ts / explorateur.css # couleurs git de l'explorateur (fichiers et dossiers) (tests/explorateurGit.test.cjs)
+    │   │   ├── rechercheDossier.ts # « Rechercher dans ce dossier » : dossier gardé pour le volet de recherche
+    │   │   ├── ouvrirAvec.ts / actionsAide.ts / AideAppli.tsx # éditeurs du poste, actions de Ctrl+K, bloc Aide de Réglages > À propos (tests/ouvrirAvec.test.cjs)
     │   ├── TerminalPanel.tsx # multi-onglets PTY : Ctrl+Tab, renommage, PowerShell/WSL et scrollback texte local ; agents CLI (état, Relancer), recherche, scindé, gestionnaire, glisser un fichier
     │   ├── agents-cli # agents en ligne de commande dans les terminaux
     │   │   ├── catalogueCli.ts / ReglagesAgentsCli.tsx # catalogue (crates/axecode-agents/catalogue-cli.json), Réglages > Agents CLI

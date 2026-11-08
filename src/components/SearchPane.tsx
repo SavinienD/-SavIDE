@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon } from "@iconify/react";
-import { api } from "../lib/ipc";
+import { invoke } from "@tauri-apps/api/core";
+import { api, cloudConnectionFromPath } from "../lib/ipc";
+import {
+  dansDossier,
+  dossierDeRecherche,
+  EVENEMENT_RECHERCHE_DOSSIER,
+  oublierRechercheDossier,
+} from "./palette/rechercheDossier"; // « Rechercher dans ce dossier »
 import { fileIcon } from "../lib/fileIcon";
 import type {
   EditorRevealTarget,
@@ -20,6 +27,18 @@ type Props = {
 
 const SEARCH_DELAY_MS = 180;
 
+// recherche limitée à un sous-dossier (clic droit dans l'explorateur) ; un espace
+// cloud est filtré après coup (la recherche du service n'a pas de dossier).
+function chercher(workspacePath: string, query: string, dossier: string | null): Promise<WorkspaceSearchResult> {
+  if (!dossier) return api.searchWorkspace(workspacePath, query);
+  if (cloudConnectionFromPath(workspacePath)) {
+    return api
+      .searchWorkspace(workspacePath, query)
+      .then((r) => ({ ...r, files: r.files.filter((f) => dansDossier(f.relativePath, dossier)) }));
+  }
+  return invoke<WorkspaceSearchResult>("palette_recherche_dossier", { input: { workspacePath, dossier, query } });
+}
+
 export function SearchPane({ workspacePath, refreshToken, onOpenFile }: Props) {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<WorkspaceSearchResult | null>(null);
@@ -27,6 +46,19 @@ export function SearchPane({ workspacePath, refreshToken, onOpenFile }: Props) {
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const requestSeqRef = useRef(0);
+  // dossier auquel la recherche est limitée (null : tout le dossier ouvert).
+  const [dossier, setDossier] = useState<string | null>(() => dossierDeRecherche());
+  useEffect(() => {
+    const changer = (e: Event) => {
+      setDossier((e as CustomEvent<{ dossier: string | null }>).detail?.dossier ?? null);
+      inputRef.current?.focus();
+    };
+    window.addEventListener(EVENEMENT_RECHERCHE_DOSSIER, changer);
+    return () => {
+      window.removeEventListener(EVENEMENT_RECHERCHE_DOSSIER, changer);
+      oublierRechercheDossier();
+    };
+  }, []);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -47,8 +79,7 @@ export function SearchPane({ workspacePath, refreshToken, onOpenFile }: Props) {
     setLoading(true);
     setError(null);
     const timer = window.setTimeout(() => {
-      void api
-        .searchWorkspace(workspacePath, trimmed)
+      void chercher(workspacePath, trimmed, dossier)
         .then((next) => {
           if (seq !== requestSeqRef.current) return;
           setResult(next);
@@ -64,7 +95,7 @@ export function SearchPane({ workspacePath, refreshToken, onOpenFile }: Props) {
     }, SEARCH_DELAY_MS);
 
     return () => window.clearTimeout(timer);
-  }, [query, refreshToken, workspacePath]);
+  }, [query, refreshToken, workspacePath, dossier]);
 
   const openFile = useCallback(
     (
@@ -123,6 +154,23 @@ export function SearchPane({ workspacePath, refreshToken, onOpenFile }: Props) {
           </button>
         )}
       </div>
+      {dossier ? (
+        <div className="search-pane__dossier" title={`Recherche limitée à ${dossier}`}>
+          <span className="search-pane__dossier-nom">Dans {dossier}</span>
+          <button
+            type="button"
+            title="Rechercher dans tout le dossier"
+            aria-label="Rechercher dans tout le dossier"
+            onClick={() => {
+              oublierRechercheDossier();
+              setDossier(null);
+              inputRef.current?.focus();
+            }}
+          >
+            <Icon icon="solar:close-circle-linear" width={13} height={13} />
+          </button>
+        </div>
+      ) : null}
 
       <div className="search-pane__meta">
         {loading
@@ -131,7 +179,9 @@ export function SearchPane({ workspacePath, refreshToken, onOpenFile }: Props) {
             ? error
             : hasQuery
               ? `${files.length} fichiers, ${result?.totalMatches ?? 0} résultats`
-              : "Rechercher dans les fichiers"}
+              : dossier
+                ? `Rechercher dans ${dossier}`
+                : "Rechercher dans les fichiers"}
       </div>
 
       <div className="search-pane__results">

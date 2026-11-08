@@ -26,6 +26,7 @@ pub mod repl; // repl
 pub mod rlm; // rlm
 pub mod rlm_git; // worktrees git des sous-agents
 mod ripgrep;
+pub use ripgrep::ensure_ripgrep_executable; // rg --files (Ctrl+P)
 pub mod guet; // guet
 pub mod session_commands; // goal
 pub mod skill;
