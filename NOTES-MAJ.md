@@ -1,16 +1,18 @@
 Nouveautés :
-- Plusieurs comptes Claude ou ChatGPT par fournisseur
-- Raccourcis modifiables et boutons 1 2 3 des dossiers récents
-- Harnais : exporter ou importer une entrée en .md, recherche
-- Dictée : mots appris de ce que vous tapez
-- REPL : API d'images et de vidéos au choix, requests inclus
+- Navigateur intégré, pilotable par l'agent
+- Vue Changements : relire, noter, résoudre les conflits
+- Worktrees : une tâche, une branche, un dossier
+- Git : demandes de fusion, commit rédigé par l'IA
+- Ctrl+P ouvrir un fichier, Ctrl+K aller partout
+- Automatisations : prompts planifiés
+- Notifications et tableau des agents
+- Agents en ligne de commande dans le terminal
+- Import depuis Claude Code, Codex et Cursor
+- Mode « Demander avant d'agir »
+- Quotas de tous les comptes, jauge du contexte
 Changements :
-- Ctrl+T conversation, Ctrl+Tab onglets, Échap arrête, Ctrl+D dicter
-- Images et recherche web par l'abonnement ChatGPT, sans clé API
-- Liste des modèles lue chez le fournisseur
-- Accueil, MCP et réglages du REPL revus
+- Éditeur : sauvegarde automatique, Markdown côte à côte
+- Terminal : recherche et écran scindé
+- Recherche dans les Réglages
 Corrections :
-- Écran noir : la page se recharge seule
-- Dictée insérée dans le bon chat
-- Dossier renommé ou déplacé retrouvé avec son historique
-- Compteurs de l'onglet Agents
+- Erreurs de quota expliquées en clair
