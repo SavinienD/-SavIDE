@@ -41,7 +41,14 @@
 .axe-cloche__details { overflow: hidden; color: var(--text-2); font-size: calc(11px * var(--text-scale, 1)); text-overflow: ellipsis; white-space: nowrap; }
 .axe-cloche__vide { margin: 0; padding: 16px 12px; color: var(--text-2); }
 
-/* Réglages > Service : conversations inactives. */
+/* Réglages > Notifications : conversations inactives. */
 .axe-sommeil { padding-top: 0; }
 .axe-sommeil h3 { margin: 0; overflow: hidden; color: var(--text-1); font-size: var(--fs-sm); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .axe-sommeil__delai { min-height: 28px; padding: 2px 6px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-2); color: var(--text-0); font: inherit; }
+
+/* Banc (800x600, libellés allongés de 30 %) : Réglages dans une colonne très étroite. */
+.axe-notifs-reglages h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-notifs-reglages__aide, .axe-notifs-reglages__ligne > span { min-width: 0; overflow-wrap: anywhere; }
+.axe-notifs-reglages__case { min-width: 0; }
+.axe-notifs-reglages__bouton { flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.axe-sommeil__delai { min-width: 0; max-width: 100%; }
