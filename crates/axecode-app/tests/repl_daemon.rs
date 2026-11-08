@@ -413,8 +413,10 @@ async fn context_overflow_compacts_and_retries() {
 /// previous call, 10 here) never fired.
 #[tokio::test(flavor = "multi_thread")]
 async fn compacts_before_the_request_that_would_not_fit() {
-    // Threshold = 27 384 − 16 384 = 11 000 tokens: the 2nd request (system +
-    // one output, ≤ 10 000 tokens) fits, the 3rd (two outputs, ≥ 12 000) does not.
+    // Threshold = 30 384 − 16 384 = 14 000 tokens: the 2nd request (system +
+    // one output, about 11 400 tokens) fits, the 3rd (two outputs, about 16 400)
+    // does not. The system prompt holds the module catalogue: when modules are
+    // added, check that the 2nd request still stays below the threshold.
     let Some((s, provider)) = setup_with(
         vec![
             Step::Code("print('a' * 30000)"),
@@ -422,7 +424,7 @@ async fn compacts_before_the_request_that_would_not_fit() {
             Step::Text("Summary: two long prints."),
             Step::Text("E done"),
         ],
-        Some(27_384),
+        Some(30_384),
     ) else {
         return;
     };
