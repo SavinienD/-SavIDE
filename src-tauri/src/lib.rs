@@ -608,6 +608,7 @@ pub fn run() {
             terminal::write_terminal,
             terminal::resize_terminal,
             terminal::kill_terminal,
+            terminal::agents_cli_etat, terminal::agents_cli_enregistrer, terminal::spawn_agent_terminal, // agents en ligne de commande
             // v2-e12 — onglet « Agent » epingle (session de production du portail)
             agent_term::agent_term_open,
             agent_term::agent_term_write,

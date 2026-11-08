@@ -1,0 +1,120 @@
+/* Agents en ligne de commande : Réglages, menu « Nouvel agent », état des onglets,
+   recherche, gestionnaire des terminaux, commandes enregistrées. */
+
+.acli-reglages { gap: 16px; }
+.acli-reglages h2, .acli-reglages h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acli-reglages__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.acli-reglages__actions > button { min-height: 28px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acli-reglages__enregistrer:not(:disabled) { border-color: var(--accent); color: var(--text-0); }
+.acli-reglages button:disabled { opacity: 0.55; cursor: default; }
+.acli-erreur { margin: 0; color: var(--danger); font-size: var(--fs-sm); overflow-wrap: anywhere; }
+
+.acli-agent { border: 1px solid var(--line); border-radius: var(--r-med); background: var(--bg-1); min-width: 0; }
+.acli-agent[open] { border-color: var(--line-strong); }
+.acli-agent__resume {
+  display: flex; align-items: center; gap: 8px; min-height: 30px; padding: 4px 10px;
+  cursor: pointer; list-style: none; color: var(--text-1); font-size: var(--fs-sm);
+}
+.acli-agent__resume::-webkit-details-marker { display: none; }
+.acli-agent__resume::before {
+  content: ""; flex: 0 0 auto; width: 6px; height: 6px; border-right: 1.5px solid var(--text-3);
+  border-bottom: 1.5px solid var(--text-3); transform: rotate(-45deg); transition: transform 120ms ease;
+}
+.acli-agent[open] > .acli-agent__resume::before { transform: rotate(45deg); }
+.acli-agent__resume:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; border-radius: var(--r-med); }
+.acli-agent__nom { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-0); }
+.acli-agent[data-installe="non"] .acli-agent__nom { color: var(--text-2); }
+.acli-pastille {
+  flex: 0 0 auto; padding: 0 6px; border-radius: var(--r-pill); font-size: var(--fs-xs); line-height: 16px;
+  border: 1px solid var(--line-strong); color: var(--text-2); white-space: nowrap;
+}
+.acli-pastille[data-genre="autonomie"] { border-color: color-mix(in srgb, var(--danger) 55%, transparent); color: var(--danger); }
+.acli-agent__corps { display: flex; flex-direction: column; gap: 8px; padding: 4px 10px 10px; min-width: 0; }
+.acli-agent__chemin { margin: 0; font-family: var(--font-mono); font-size: var(--fs-mono-sm); color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acli-agent__installer { align-self: flex-start; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acli-champ { display: flex; flex-direction: column; gap: 3px; min-width: 0; font-size: var(--fs-sm); color: var(--text-2); }
+.acli-champ > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acli-champ input, .acli-champ textarea, .acli-champ select {
+  min-width: 0; width: 100%; box-sizing: border-box; padding: 5px 8px; border: 1px solid var(--line);
+  border-radius: var(--r-small); background: var(--bg-2); color: var(--text-0);
+  font-family: var(--font-mono); font-size: var(--fs-mono);
+}
+.acli-champ textarea { min-height: 64px; resize: vertical; }
+.acli-champ input:focus, .acli-champ textarea:focus, .acli-champ select:focus { outline: none; border-color: var(--accent); }
+.acli-case { display: flex; align-items: center; gap: 8px; min-height: 24px; font-size: var(--fs-sm); color: var(--text-1); cursor: pointer; }
+.acli-case > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acli-avertissement {
+  margin: 0; padding: 6px 8px; border-radius: var(--r-small); font-size: var(--fs-sm); color: var(--text-1);
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, transparent);
+  background: color-mix(in srgb, var(--danger) 10%, transparent); overflow-wrap: anywhere;
+}
+.acli-agent__ligne { margin: 0; min-width: 0; overflow: hidden; }
+.acli-agent__ligne code {
+  display: block; padding: 4px 6px; border-radius: var(--r-small); background: var(--bg-2); color: var(--text-1);
+  font-family: var(--font-mono); font-size: var(--fs-mono-sm); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Menus flottants des terminaux (portail, position fixe) : mêmes tons que les menus du compositeur. */
+.acli-menu {
+  position: fixed; z-index: 60; display: flex; flex-direction: column; gap: 2px; padding: 4px;
+  overflow-y: auto; overscroll-behavior: contain; box-sizing: border-box;
+  border: 1px solid var(--line-strong); border-radius: var(--r-card); background: var(--bg-3);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35); font-family: var(--font-ui); font-size: var(--fs-xs);
+}
+.acli-menu__titre {
+  margin: 0; padding: 4px 8px 2px; color: var(--text-3); font-size: var(--fs-xs); font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.acli-menu__item {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 26px; padding: 4px 8px;
+  border: 0; border-radius: var(--r-small); background: transparent; color: var(--text-1);
+  font: inherit; text-align: left; cursor: pointer; box-sizing: border-box;
+}
+.acli-menu__item:hover, .acli-menu__item:focus-visible { background: var(--bg-4); color: var(--text-0); outline: none; }
+.acli-menu__item:disabled { opacity: 0.45; cursor: default; background: transparent; }
+.acli-menu__item > svg { flex: 0 0 auto; color: var(--text-3); }
+.acli-menu__libelle { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acli-menu__detail { flex: 0 1 auto; min-width: 0; max-width: 45%; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acli-menu__separateur { height: 1px; margin: 3px 4px; background: var(--line); flex: 0 0 auto; }
+.acli-menu__choix { display: flex; gap: 2px; padding: 2px; border-radius: var(--r-small); background: var(--bg-2); }
+.acli-menu__choix > button {
+  flex: 1 1 0; min-width: 0; min-height: 24px; padding: 2px 6px; border: 0; border-radius: var(--r-micro);
+  background: transparent; color: var(--text-2); font: inherit; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.acli-menu__choix > button[aria-pressed="true"] { background: var(--bg-4); color: var(--text-0); }
+.acli-menu__choix > button:focus-visible { outline: 1px solid var(--accent); }
+.acli-menu__note { margin: 0; padding: 4px 8px; color: var(--text-3); overflow-wrap: anywhere; }
+.acli-menu__erreur { margin: 0; padding: 4px 8px; color: var(--danger); overflow-wrap: anywhere; }
+
+/* « Nouvel agent » : une ligne par agent, reprise de session à droite. */
+.acli-menu__ligne { display: flex; align-items: stretch; gap: 2px; min-width: 0; }
+.acli-menu__ligne > .acli-menu__item:first-child { flex: 1 1 auto; min-width: 0; }
+.acli-menu__reprendre { flex: 0 0 28px; width: 28px; justify-content: center; padding: 4px; }
+
+/* Onglet d'un agent : sablier pendant le travail, pastille pour l'attente et la fin. */
+.acli-onglet__travail { color: var(--accent); }
+.terminal-tab__status[data-etat="travaille"] { background: var(--accent); }
+.terminal-tab__status[data-etat="attend"] { background: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+.terminal-tab__status[data-etat="fini"] { background: var(--ok); }
+.terminal-tab__status[data-etat="echec"] { background: var(--danger); }
+.terminal-tab__status[data-etat="pause"] { background: var(--text-3); }
+
+/* Terminal arrêté : barre « Relancer / Reprendre une session » sous l'historique. */
+.acli-surface__xterm { position: absolute; inset: 0; }
+.acli-surface[data-arrete="true"] .acli-surface__xterm { bottom: 32px; }
+.acli-fin {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 32px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 8px; padding: 0 10px; min-width: 0;
+  border-top: 1px solid var(--line); background: var(--bg-1); font-size: var(--fs-xs); color: var(--text-2);
+}
+.acli-fin__texte { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acli-fin__bouton {
+  flex: 0 1 auto; min-width: 0; height: 24px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: var(--r-small);
+  background: var(--bg-2); color: var(--text-1); font: inherit; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.acli-fin__bouton:hover { background: var(--bg-3); color: var(--text-0); }
+.acli-fin__bouton:focus-visible { outline: 1px solid var(--accent); outline-offset: 1px; }
+
+/* Volet des Réglages très étroit (≈ 170 px à 800 px) : les pastilles passent sous le nom. */
+.acli-agent__resume { flex-wrap: wrap; row-gap: 2px; }
+.acli-agent__nom { flex: 1 0 auto; max-width: calc(100% - 14px); }

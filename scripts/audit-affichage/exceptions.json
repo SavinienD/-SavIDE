@@ -3,6 +3,11 @@
   "exceptions": [
     {
       "regle": "chevauchement",
+      "selecteur": ".acli-menu",
+      "raison": "Menus de la barre des terminaux (Nouvel agent, terminaux ouverts, actions, commandes enregistrées), ouverts par un clic : ils flottent au-dessus du contenu (comme tout menu déroulant) et se ferment par Échap ou un clic à côté."
+    },
+    {
+      "regle": "chevauchement",
       "selecteur": ".chat-body__bas",
       "situation": "/(copier-code|copie-selection-code)$",
       "raison": "Scène copier-code : le fil est remonté jusqu'au bloc de code, le bouton flottant « Aller en bas » apparaît donc au-dessus du contenu, comme prévu."

@@ -9,6 +9,9 @@ use axecode_core::ToolDescriptor;
 
 use crate::ToolRunResult;
 
+/// Agents en ligne de commande (catalogue, détection, réglages) : aussi lu par l'IDE.
+pub use axecode_agents::catalogue as cli;
+
 pub const AGENTS_SPAWN: &str = "agents_spawn";
 pub const AGENTS_WAIT: &str = "agents_wait";
 pub const AGENTS_RESULT: &str = "agents_result";
@@ -54,6 +57,11 @@ fn data_dir() -> PathBuf {
     directories::ProjectDirs::from("", "", "savide")
         .map(|d| d.data_dir().to_path_buf())
         .unwrap_or_else(|| PathBuf::from("."))
+}
+
+/// Dossier de données des agents externes (`agents-settings.json`, `agents-cli.json`).
+pub fn dossier_donnees() -> PathBuf {
+    data_dir()
 }
 
 fn open(root: &Path) -> Result<AgentStore, String> {

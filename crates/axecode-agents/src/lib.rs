@@ -7,6 +7,7 @@
 //! commands declared in its configuration, each in its own process group, and
 //! supervises them (concurrency cap, deadline, stop).
 
+pub mod catalogue; // agents en ligne de commande (catalogue, détection, réglages)
 pub mod config;
 mod store;
 

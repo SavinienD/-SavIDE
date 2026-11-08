@@ -20,6 +20,12 @@ import { onThemeChange } from "../axe/theme"; // theme
 import { xtermTheme } from "../axe/themeTargets"; // theme
 import { MONO_BASE_PX } from "../axe/zoom"; // zoom — taille fixe (e19 : le reglage ne concerne que le chat et les documents)
 import type { TerminalDataPayload, TerminalExitPayload } from "../types";
+import { BoutonNouvelAgent, type LancementAgent } from "./agents-cli/NouvelAgentMenu"; // agents en ligne de commande
+import { lancerTerminalAgent, titreAgent } from "./agents-cli/catalogueCli";
+import {
+  compilerInvites, emettreNotification, libelleEtat, messageOsc777, messageOsc9, notificationAgent,
+  suiviInitial, surFin, surHorloge, surSaisie, surSignal, surSortie, type EtatAgent, type Suivi, type Transition,
+} from "./agents-cli/etatAgent";
 
 type TerminalStatus = "idle" | "starting" | "running" | "exited" | "error";
 
@@ -31,6 +37,29 @@ type TerminalSession = {
   customTitle?: string;
   status: TerminalStatus;
   shell?: string;
+  /** Agent en ligne de commande lancé dans ce terminal (sinon un shell). */
+  agent?: AgentDuTerminal;
+  // Champs du moment, jamais enregistrés :
+  /** État de l'agent (travaille, attend, fini…). */
+  etat?: EtatAgent;
+  etatLibelle?: string;
+  /** Compteur de relances : une relance remonte un terminal neuf. */
+  relance?: number;
+  /** Lancer avec la commande de reprise de session de l'agent. */
+  reprendre?: boolean;
+  /** Agent rouvert avec l'appli : rien ne tourne tant qu'on ne le relance pas. */
+  enPause?: boolean;
+};
+
+type AgentDuTerminal = {
+  cli: string;
+  nom: string;
+  dossier: string;
+  branche?: string;
+  /** L'agent sait reprendre une session. */
+  reprise?: boolean;
+  /** Expressions qui reconnaissent son invite (catalogue). */
+  invites?: string[];
 };
 
 type Props = {
@@ -110,7 +139,7 @@ export function TerminalPanel({
   const nextSessionIndex = useRef(1 + Math.max(0, ...loadTerminalSessions(workspacePath).map((session) => session.index)));
 
   useEffect(() => {
-    try { localStorage.setItem(terminalStorageKey(workspacePath), JSON.stringify(sessions.map(({ id, status, ...session }) => session))); } catch { /* storage can be disabled/full */ }
+    try { localStorage.setItem(terminalStorageKey(workspacePath), JSON.stringify(sessions.map(({ id, status, etat, etatLibelle, relance, reprendre, enPause, ...session }) => session))); } catch { /* storage can be disabled/full */ }
   }, [sessions, workspacePath]);
 
   // Cycle terminal tabs without intercepting shortcuts while typing in inputs.
@@ -148,6 +177,29 @@ export function TerminalPanel({
     const session = createSession(nextSessionIndex.current++);
     setSessions((prev) => [...prev, session]);
     setActiveId(session.id);
+  }, []);
+
+  // Nouvel agent : un onglet « agent · dossier » qui lance le programme de l'agent.
+  const addAgentSession = useCallback((l: LancementAgent) => {
+    const session: TerminalSession = {
+      ...createSession(nextSessionIndex.current++),
+      title: titreAgent(l.nom, l.dossier),
+      agent: { cli: l.cli, nom: l.nom, dossier: l.dossier, branche: l.branche, reprise: l.reprise, invites: l.invites },
+      reprendre: l.reprendre,
+    };
+    setSessions((prev) => [...prev, session]);
+    setActiveId(session.id);
+  }, []);
+
+  // Relancer le même programme (ou reprendre une session de l'agent) : un terminal neuf
+  // remplace l'ancien dans le même onglet ; l'historique affiché est gardé.
+  const relancer = useCallback((id: string, reprendre: boolean) => {
+    setSessions((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, relance: (s.relance ?? 0) + 1, reprendre, enPause: false, status: "idle", etat: undefined, etatLibelle: undefined } : s,
+      ),
+    );
+    setActiveId(id);
   }, []);
 
   const closeSession = useCallback(
@@ -205,7 +257,8 @@ export function TerminalPanel({
               role="tab"
               aria-selected={session.id === shownId}
               className="terminal-tab"
-              data-shell={session.shell}
+              data-shell={session.agent ? undefined : session.shell}
+              data-agent={session.agent?.cli}
               data-active={session.id === shownId ? "true" : "false"}
               onClick={() => setActiveId(session.id)}
               onMouseDown={(event) => { if (event.button === 1) event.preventDefault(); }}
@@ -213,15 +266,21 @@ export function TerminalPanel({
                 // Clic molette : fermer l'onglet.
                 if (event.button === 1) { event.preventDefault(); event.stopPropagation(); closeSession(session.id); }
               }}
-              title={session.customTitle ?? session.title}
+              data-etat={session.agent ? session.etat ?? (session.enPause ? "pause" : "demarre") : undefined}
+              title={session.agent ? `${session.customTitle ?? session.title} · ${session.etatLibelle ?? (session.enPause ? "Arrêté" : "Démarre")}\n${session.agent.dossier}${session.agent.branche ? ` (branche ${session.agent.branche})` : ""}` : session.customTitle ?? session.title}
               onContextMenu={(event) => {
                 event.preventDefault();
+                if (session.agent) return;
                 const choice = window.prompt("Choisir le shell : powershell ou bash", session.shell ?? "powershell");
                 const shell = choice?.trim().toLowerCase();
                 if (shell === "bash" || shell === "powershell") patchSession(session.id, { shell });
               }}
             >
-              <Icon icon="solar:command-linear" width={13} height={13} />
+              {session.etat === "travaille" ? (
+                <span className="onglets-chat__spinner acli-onglet__travail" role="status" aria-label="L'agent travaille" />
+              ) : (
+                <Icon icon={session.agent ? "solar:cpu-bolt-linear" : "solar:command-linear"} width={13} height={13} />
+              )}
               <span className="terminal-tab__label">{session.customTitle ?? session.title}</span>
               <button
                 type="button"
@@ -238,6 +297,7 @@ export function TerminalPanel({
               <span
                 className="terminal-tab__status"
                 data-status={session.status}
+                data-etat={session.agent ? session.etat ?? (session.enPause ? "pause" : undefined) : undefined}
               />
               <span
                 className="terminal-tab__close"
@@ -255,6 +315,7 @@ export function TerminalPanel({
           ))}
         </div>
         <div className="terminal-tabs__actions">
+          <BoutonNouvelAgent workspacePath={workspacePath} onLancer={addAgentSession} />
           <button
             type="button"
             className="terminal-action"
@@ -312,12 +373,14 @@ export function TerminalPanel({
         ) : null}
         {sessions.map((session) => (
           <TerminalSurface
-            key={session.id}
+            key={`${session.id}:${session.relance ?? 0}`}
             session={session}
             active={active && session.id === shownId}
             workspacePath={workspacePath}
             onStatus={(status) => patchSession(session.id, { status })}
             onTitle={(title) => patchSession(session.id, { title })}
+            onEtat={(etat, etatLibelle) => patchSession(session.id, { etat, etatLibelle })}
+            onRelancer={(reprendre) => relancer(session.id, reprendre)}
             onOpenTerminalPath={onOpenTerminalPath}
           />
         ))}
@@ -332,6 +395,8 @@ function TerminalSurface({
   workspacePath,
   onStatus,
   onTitle,
+  onEtat,
+  onRelancer,
   onOpenTerminalPath,
 }: {
   session: TerminalSession;
@@ -339,6 +404,8 @@ function TerminalSurface({
   workspacePath: string;
   onStatus: (status: TerminalStatus) => void;
   onTitle: (title: string) => void;
+  onEtat: (etat: EtatAgent, libelle: string) => void;
+  onRelancer: (reprendre: boolean) => void;
   onOpenTerminalPath?: (rawPath: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -358,6 +425,11 @@ function TerminalSurface({
   // crees une seule fois (le ResizeObserver gardait la valeur du demarrage).
   const activeRef = useRef(active);
   activeRef.current = active;
+  // État d'un agent (travaille / attend / fini) : suivi hors rendu, publié au panneau.
+  const suiviRef = useRef<Suivi>(suiviInitial(Date.now()));
+  const onEtatRef = useRef(onEtat);
+  onEtatRef.current = onEtat;
+  const horlogeRef = useRef<number | null>(null);
 
   const fitTerminal = useCallback(() => {
     const terminal = terminalRef.current;
@@ -518,12 +590,45 @@ function TerminalSurface({
     terminalRef.current = terminal;
     fitRef.current = fit;
 
+    // Agent : chaque transition est publiée ; une attente ou une fin prévient l'IDE si
+    // l'onglet n'est pas sous les yeux (événement « ide-notification »).
+    const agent = session.agent;
+    const invites = compilerInvites(agent?.invites);
+    let message: string | null = null;
+    const suivre = (t: Transition) => {
+      const avant = suiviRef.current.etat;
+      suiviRef.current = t.suivi;
+      if (t.suivi.etat !== avant) onEtatRef.current(t.suivi.etat, libelleEtat(t.suivi));
+      if (agent && t.notifier && !(activeRef.current && document.hasFocus())) {
+        emettreNotification(notificationAgent(agent.nom, agent.dossier, t.suivi, message));
+      }
+      message = null;
+    };
+    const signal = (texte: string | null) => {
+      message = texte;
+      suivre(surSignal(suiviRef.current, Date.now(), texte));
+    };
+
     disposablesRef.current = [
       linkProviderDisposable,
       terminal.onData((data) => {
         const currentToken = tokenRef.current;
         if (!currentToken) return;
+        if (agent) suiviRef.current = surSaisie(suiviRef.current, Date.now());
         void api.writeTerminal(session.id, currentToken, data);
+      }),
+      terminal.onBell(() => {
+        if (agent) signal(null);
+      }),
+      terminal.parser.registerOscHandler(9, (data) => {
+        const texte = messageOsc9(data);
+        if (agent && texte) signal(texte);
+        return false;
+      }),
+      terminal.parser.registerOscHandler(777, (data) => {
+        const texte = messageOsc777(data);
+        if (agent && texte) signal(texte);
+        return false;
       }),
       terminal.onResize(({ cols, rows }) => {
         const currentToken = tokenRef.current;
@@ -539,6 +644,8 @@ function TerminalSurface({
         );
       }),
       terminal.onTitleChange((title) => {
+        // Onglet d'agent : le titre reste « agent · dossier ».
+        if (session.agent) return;
         const trimmed = title.trim();
         // pwsh annonce le chemin de son exe (« C:\\Program Files\\... ») : on garde « Terminal N ».
         if (trimmed && !isExecutablePathTitle(trimmed)) onTitle(trimmed);
@@ -550,12 +657,25 @@ function TerminalSurface({
     });
     resizeObserverRef.current.observe(container);
 
+    // Agent rouvert avec l'appli : historique affiché, rien ne tourne (« Relancer »).
+    if (session.enPause) {
+      tokenRef.current = null;
+      onStatus("idle");
+      return;
+    }
+    if (agent) {
+      horlogeRef.current = window.setInterval(() => {
+        suivre(surHorloge(suiviRef.current, Date.now(), ecranBas(terminal), invites));
+      }, 500);
+    }
+
     const dataListener = listen<TerminalDataPayload>(
       "terminal-data",
       (event) => {
         const payload = event.payload;
         if (payload.sessionId !== session.id || payload.token !== token) return;
         terminal.write(payload.data);
+        if (agent) suivre({ suivi: surSortie(suiviRef.current, Date.now()), notifier: false });
       },
     );
 
@@ -566,6 +686,7 @@ function TerminalSurface({
         if (payload.sessionId !== session.id || payload.token !== token) return;
         tokenRef.current = null;
         onStatus(payload.exitCode === 0 ? "exited" : "error");
+        if (agent) suivre(surFin(suiviRef.current, payload.exitCode ?? null));
         terminal.write("\r\n\x1b[2m[processus terminé]\x1b[0m\r\n");
       },
     );
@@ -587,17 +708,29 @@ function TerminalSurface({
           // panel may still be measuring; spawn with current cols/rows anyway.
         }
         const rect = container.getBoundingClientRect();
-        void api
-          .spawnTerminal(
-            workspacePath,
-            session.id,
-            token,
-            Math.max(terminal.cols, 20),
-            Math.max(terminal.rows, 4),
-            Math.max(0, Math.round(rect.width)),
-            Math.max(0, Math.round(rect.height)),
-            session.shell,
-          )
+        const lancement = session.agent
+          ? lancerTerminalAgent({
+              dossier: session.agent.dossier,
+              cli: session.agent.cli,
+              reprendre: !!session.reprendre,
+              sessionId: session.id,
+              token,
+              cols: Math.max(terminal.cols, 20),
+              rows: Math.max(terminal.rows, 4),
+              pixelWidth: Math.max(0, Math.round(rect.width)),
+              pixelHeight: Math.max(0, Math.round(rect.height)),
+            })
+          : api.spawnTerminal(
+              workspacePath,
+              session.id,
+              token,
+              Math.max(terminal.cols, 20),
+              Math.max(terminal.rows, 4),
+              Math.max(0, Math.round(rect.width)),
+              Math.max(0, Math.round(rect.height)),
+              session.shell,
+            );
+        void lancement
           .then(() => {
             if (disposedRef.current || tokenRef.current !== token) return;
             onStatus("running");
@@ -652,6 +785,8 @@ function TerminalSurface({
   useEffect(() => {
     return () => {
       disposedRef.current = true;
+      if (horlogeRef.current !== null) window.clearInterval(horlogeRef.current);
+      horlogeRef.current = null;
       const token = tokenRef.current;
       tokenRef.current = null;
       if (token) {
@@ -679,16 +814,49 @@ function TerminalSurface({
     };
   }, [session.id, workspacePath]);
 
+  // Processus arrêté (ou agent rouvert avec l'appli) : Relancer / Reprendre une session.
+  const arrete = !!session.enPause || session.status === "exited" || session.status === "error";
+  const texteFin = session.enPause
+    ? "Agent arrêté (appli rouverte)"
+    : session.agent
+      ? session.etatLibelle ?? "Arrêté"
+      : "Processus terminé";
   return (
     <div
-      ref={containerRef}
-      className="terminal-viewport"
+      className="terminal-viewport acli-surface"
       data-active={active ? "true" : "false"}
-      // No global onMouseDown focus -- it would steal the mouse
-      // selection. Click on the empty area still focuses thanks to
-      // xterm's own handlers.
-    />
+      data-arrete={arrete ? "true" : "false"}
+      data-agent={session.agent?.cli}
+    >
+      {/* No global onMouseDown focus -- it would steal the mouse selection. Click on the
+          empty area still focuses thanks to xterm's own handlers. */}
+      <div ref={containerRef} className="acli-surface__xterm" />
+      {arrete ? (
+        <div className="acli-fin" role="status">
+          <span className="acli-fin__texte" title={texteFin}>{texteFin}</span>
+          <button type="button" className="acli-fin__bouton" data-action="relancer" onClick={() => onRelancer(false)}>
+            Relancer
+          </button>
+          {session.agent?.reprise ? (
+            <button type="button" className="acli-fin__bouton" data-action="reprendre" onClick={() => onRelancer(true)}>
+              Reprendre une session
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
+}
+
+/** Dernières lignes non vides de l'écran (invite de l'agent). */
+function ecranBas(terminal: Terminal, lignes = 8): string {
+  const buffer = terminal.buffer.active;
+  const sortie: string[] = [];
+  for (let y = buffer.viewportY + terminal.rows - 1; y >= buffer.viewportY && sortie.length < lignes; y -= 1) {
+    const texte = buffer.getLine(y)?.translateToString(true) ?? "";
+    if (texte.trim()) sortie.unshift(texte);
+  }
+  return sortie.join("\n");
 }
 
 function terminalStorageKey(workspacePath: string): string {
@@ -699,7 +867,7 @@ function loadTerminalSessions(workspacePath: string): TerminalSession[] {
   try {
     const raw = localStorage.getItem(terminalStorageKey(workspacePath));
     if (raw) {
-      const parsed = JSON.parse(raw) as Array<{ index?: number; title?: string; customTitle?: string; shell?: string }>;
+      const parsed = JSON.parse(raw) as Array<{ index?: number; title?: string; customTitle?: string; shell?: string; agent?: unknown }>;
       const sessions = parsed.filter((item) => Number.isInteger(item.index) && typeof item.title === "string").map((item) => ({
         id: `terminal-${item.index}`,
         index: item.index!,
@@ -708,12 +876,28 @@ function loadTerminalSessions(workspacePath: string): TerminalSession[] {
         title: item.title === "Prime Agent" || isExecutablePathTitle(item.title!) ? `Terminal ${item.index}` : item.title!,
         customTitle: typeof item.customTitle === "string" && item.customTitle ? item.customTitle : undefined,
         shell: item.shell === "bash" ? "bash" : "powershell",
+        agent: agentLu(item.agent),
+        enPause: agentLu(item.agent) ? true : undefined,
         status: "idle" as TerminalStatus,
       }));
       if (sessions.length) return sessions;
     }
   } catch { /* use defaults */ }
   return [createSession(1)];
+}
+
+/** Agent d'un onglet relu du stockage (forme vérifiée, sinon un simple shell). */
+function agentLu(brut: unknown): AgentDuTerminal | undefined {
+  const a = brut as Partial<AgentDuTerminal> | null | undefined;
+  if (!a || typeof a.cli !== "string" || typeof a.nom !== "string" || typeof a.dossier !== "string") return undefined;
+  return {
+    cli: a.cli,
+    nom: a.nom,
+    dossier: a.dossier,
+    branche: typeof a.branche === "string" ? a.branche : undefined,
+    reprise: a.reprise === true,
+    invites: Array.isArray(a.invites) ? a.invites.filter((i): i is string => typeof i === "string") : undefined,
+  };
 }
 
 function createSession(index: number): TerminalSession {
