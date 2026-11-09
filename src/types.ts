@@ -803,4 +803,8 @@ export type RecentWorkspace = {
   path: string;
   name: string;
   lastOpenedMs: number;
+  /** Dossier épinglé (en tête, numéro stable). */
+  epingle?: boolean;
+  /** Épinglé introuvable à son chemin (affiché grisé). */
+  absent?: boolean;
 };

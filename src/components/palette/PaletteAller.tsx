@@ -3,7 +3,7 @@
 // conversations dont le TEXTE contient les mots tapés (extrait autour du mot).
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { fileIcon } from "../../lib/fileIcon";
-import { loadRecents } from "../../lib/recents";
+import { basculerEpingle, dossiersNumerotes } from "../../lib/recents";
 import { agentsApi, STATUS_LABEL, type SessionMeta } from "../agents/agentsApi";
 import { conversationTitle, displayPath, folderName, relativeTime, samePath } from "../freechat/freechatApi";
 import { getActiveConnection } from "../settings/connectionsApi";
@@ -145,11 +145,29 @@ export function PaletteAller({ contexte, onFermer }: { contexte: ContexteAller; 
         () => ouvrirConversation(v.id, v.dossier),
       ),
     );
-    loadRecents().forEach((r, i) => {
+    // Même ordre que Ctrl+1…9 : épinglés d'abord, puis récents ; le numéro est indiqué.
+    dossiersNumerotes().forEach((r, i) => {
       const ici = Boolean(c.dossier && samePath(r.path, c.dossier));
+      const nom = r.name || folderName(r.path);
+      const touche = i < 9 ? `Ctrl+${i + 1}` : null;
+      const etat = ici ? "ouvert" : r.absent ? "introuvable" : r.epingle ? "épinglé" : relativeTime(r.lastOpenedMs);
       ajouter(
-        { genre: "dossier", id: r.path, titre: r.name || folderName(r.path), detail: displayPath(r.path), icone: "solar:folder-linear", indication: ici ? "ouvert" : relativeTime(r.lastOpenedMs), ordre: i },
+        { genre: "dossier", id: r.path, titre: nom, detail: displayPath(r.path), icone: r.epingle ? "solar:pin-linear" : "solar:folder-linear", indication: touche ? `${etat} · ${touche}` : etat, ordre: i },
         () => (ici ? undefined : c.ouvrirDossier?.(r.path)),
+      );
+      // Épingler / Désépingler : proposé pour le dossier ouvert, et pour les autres quand on tape.
+      ajouter(
+        {
+          genre: "action",
+          id: `epingler:${r.path}`,
+          titre: r.epingle ? `Désépingler « ${nom} »` : `Épingler « ${nom} »`,
+          detail: r.epingle ? "Retirer des dossiers épinglés" : "Garder en tête des dossiers récents (Ctrl+1…9 stable)",
+          cle: "epingler desepingler punaise dossier",
+          icone: r.epingle ? "solar:pin-bold" : "solar:pin-linear",
+          ordre: ici ? 0 : 50 + i,
+          seulementSiCherche: !ici,
+        },
+        () => basculerEpingle(r.path, r.name),
       );
     });
     const parId = new Map(sousAgents.map((s) => [s.id, s]));
