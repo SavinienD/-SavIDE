@@ -25,9 +25,15 @@ export const nomOutil = (o: string): string => OUTILS[o] ?? o;
 /** Ce qui se coche : tout sauf un nom déjà pris dans nos serveurs. */
 export const importable = (s: ServeurTrouve): boolean => !s.nomPris;
 
-/** Cochés au départ : importables et sans doublon. */
+/** Serveur propre à Codex (son runtime, ex. node_repl) : déconseillé ailleurs, pas coché d'office. */
+export const interneCodex = (s: Pick<ServeurTrouve, "commande">): boolean =>
+  /[\\/](?:OpenAI[\\/]Codex|\.codex)[\\/]/i.test(s.commande) && /runtimes|node_repl/i.test(s.commande);
+
+const proposable = (s: ServeurTrouve): boolean => importable(s) && !s.doublon && !interneCodex(s);
+
+/** Cochés au départ : importables, sans doublon, pas internes à Codex. */
 export function selectionDeDepart(liste: ServeurTrouve[]): Set<string> {
-  return new Set(liste.filter((s) => importable(s) && !s.doublon).map((s) => s.cle));
+  return new Set(liste.filter(proposable).map((s) => s.cle));
 }
 
 /** Serveurs regroupés par fichier, dans l'ordre reçu. */
@@ -51,7 +57,7 @@ export function detail(s: ServeurTrouve): string {
 
 /** Outils où des serveurs importables ont été trouvés (« Claude Code et Cursor »). */
 export function outilsTrouves(liste: ServeurTrouve[]): string {
-  const noms = [...new Set(liste.filter((s) => importable(s) && !s.doublon).map((s) => nomOutil(s.outil)))];
+  const noms = [...new Set(liste.filter(proposable).map((s) => nomOutil(s.outil)))];
   if (noms.length <= 1) return noms.join("");
   return `${noms.slice(0, -1).join(", ")} et ${noms[noms.length - 1]}`;
 }
@@ -87,7 +93,7 @@ export function noterProposition(stockage: Pick<Storage, "setItem"> | null, repo
 
 /** Nombre de serveurs à proposer (0 : rien à proposer). */
 export const aProposer = (liste: ServeurTrouve[] | null | undefined): number =>
-  (Array.isArray(liste) ? liste : []).filter((s) => importable(s) && !s.doublon).length;
+  (Array.isArray(liste) ? liste : []).filter(proposable).length;
 
 /** Demande l'ouverture de la boîte d'import (Réglages > MCP), montée ou pas encore. */
 export function demanderImportMcp(cible: EventTarget | null = typeof window === "undefined" ? null : window): void {

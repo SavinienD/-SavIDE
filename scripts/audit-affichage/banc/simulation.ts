@@ -137,6 +137,9 @@ export function installerSimulation(scene: Scene): void {
   const cloud = scene.cloud !== false;
   if (scene.accelerer) accelerer(900, 16_001, 25);
   let mcp: any[] = ((scene.mcp as string[] | undefined) ?? []).map((nom) => ({ id: `cat_${nom}`, name: nom, command: "npx", args: ["-y", `@exemple/${nom}`], env: [], headers: [], enabled: true }));
+  // « mcpServeurs » : serveurs complets (stdio, http) ; « mcpOutils » : outils rendus par nom de serveur.
+  if (Array.isArray(scene.mcpServeurs)) mcp = (scene.mcpServeurs as any[]).map((s) => ({ env: [], headers: [], args: [], command: "", enabled: true, ...s }));
+  const outilsScene = (scene.mcpOutils ?? {}) as Record<string, [string, string][]>;
   const statut = (connecte: boolean) => ({ connected: connecte, connectionState: connecte ? "connected" : "disconnected", email: connecte ? "utilisateur@exemple.invalid" : null, error: null });
   // fournisseurs-178 — scènes « fournisseurs-* » : Ollama local avec qwen3:4b (capture d'un utilisateur) ;
   // « Enregistrer » garde ce qui est envoyé (window.__bancFournisseurs), « Découvrir » rend les identifiants réels.
@@ -149,6 +152,8 @@ export function installerSimulation(scene: Scene): void {
     if (s.name === scene.mcpErreur) {
       return { ...base, ok: false, tools: [], authRequired: false, error: "MCP server closed stdout (Some(ExitStatus(unix_wait_status(256))))\nJournal du serveur :\nError: GITHUB_PERSONAL_ACCESS_TOKEN environment variable is required\n    at main (/tmp/npx/server-github/index.js:12:11)" };
     }
+    if (outilsScene[s.name]) return { ...base, ok: true, authRequired: false, error: null,
+      tools: outilsScene[s.name].map(([name, description]) => ({ serverId: s.id, serverName: s.name, name, toolName: `${s.name}__${name}`, description })) };
     if (s.url) return { ...base, ok: false, tools: [], authRequired: true, error: "authentication required" };
     return { ...base, ok: true, tools: [{ serverId: s.id, serverName: s.name, name: "lire", toolName: "lire", title: "Lire", description: "Lire" }, { serverId: s.id, serverName: s.name, name: "ecrire", toolName: "ecrire", title: "Écrire", description: "Écrire" }], authRequired: false, error: null };
   };

@@ -62,7 +62,7 @@ test("index honnête : chaque titre est affiché par le code de sa section", () 
     about: ["src/components/SettingsPane.tsx"],
     appearance: ["src/axe/AppearanceSection.tsx"],
     providers: ["src/components/SettingsPane.tsx", "src/axe/CustomProvidersPanel.tsx"],
-    mcp: ["src/components/SettingsPane.tsx", "src/components/settings/ImportMcp.tsx"],
+    mcp: ["src/components/SettingsPane.tsx", "src/components/settings/McpServeurs.tsx", "src/components/settings/ImportMcp.tsx"],
     skills: ["src/components/SettingsPane.tsx", "src/components/settings/SkillsExternes.tsx"],
     harness: ["src/components/settings/HarnessPane.tsx", "src/axe/HarnessBackupSection.tsx"],
     repl: ["src/components/settings/ReplToolsPane.tsx", "src/components/settings/ReplServicesSection.tsx", "src/components/settings/ValidationDefaut.tsx"],

@@ -9,6 +9,7 @@ import {
   detail,
   grouper,
   importable,
+  interneCodex,
   prendreDemandeImportMcp,
   resumeMcp,
   selectionDeDepart,
@@ -121,11 +122,14 @@ function BoiteImportMcp({ workspacePath, onImported, onFermer }: Props & { onFer
                       <strong>{s.nom}</strong>
                       <code className="axe-interop__desc">{detail(s)}</code>
                     </label>
-                    {s.doublon || s.avertissement ? (
-                      <span className="axe-interop__note" data-genre={s.doublon ? "doublon" : "avertissement"} title={[s.doublon, s.avertissement].filter(Boolean).join(" ; ")}>
-                        {[s.doublon, s.avertissement].filter(Boolean).join(" ; ")}
-                      </span>
-                    ) : null}
+                    {s.doublon || s.avertissement || interneCodex(s) ? (() => {
+                      const notes = [s.doublon, s.avertissement, interneCodex(s) ? "interne à Codex, déconseillé" : null].filter(Boolean).join(" ; ");
+                      return (
+                        <span className="axe-interop__note" data-genre={s.doublon ? "doublon" : "avertissement"} data-interne={interneCodex(s) ? "true" : undefined} title={notes}>
+                          {notes}
+                        </span>
+                      );
+                    })() : null}
                   </li>
                 ))}
               </ul>
