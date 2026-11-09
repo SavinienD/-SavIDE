@@ -8,3 +8,5 @@
 # Faux secrets des tests du masquage (src-tauri/src/forges/masque.rs) : exemples, pas de vraies clés.
 088364f4d6d75623c77c8c5de3d5c14522cc7035:src-tauri/src/forges/masque.rs:generic-api-key:309
 088364f4d6d75623c77c8c5de3d5c14522cc7035:src-tauri/src/forges/masque.rs:generic-api-key:311
+# Faux secret de la scène du banc « serveurs MCP » (variables masquées) : exemple, pas une vraie clé.
+3b87bdbc81a6abb384626c509bcbacb7d56f2574:scripts/audit-affichage/scenes.mjs:generic-api-key:149
