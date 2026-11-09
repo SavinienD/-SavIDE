@@ -1,5 +1,9 @@
+Nouveautés :
+- Dossiers épinglés : toujours en tête, Ctrl+1, 2, 3 fixes
+- Appareils : ajout par commande à copier puis réponse à coller
 Changements :
-- Écran sans dossier : saisie directe, liste repliable (Ctrl+B), Ctrl+T
+- Page des serveurs MCP refaite : état, outils, test lisible
+- Notifications en français
 Corrections :
-- Alertes de quota envoyées une seule fois
-- Navigateur : page affichée en mode Bureau et Tablette
+- Liste des outils MCP vide après import
+- Serveurs internes de Codex plus proposés à l'import
