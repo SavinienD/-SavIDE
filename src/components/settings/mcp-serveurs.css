@@ -1,5 +1,7 @@
 /* Réglages > Serveurs MCP : liste dépliable sur une colonne. */
-.settings-pane__body--mcp.mcp-page { display: block; overflow: auto; padding: 12px 18px 18px; min-height: 0; }
+/* The list keeps its natural height: the settings column is the only scroll area, so an open
+   "Add a server" panel above it can no longer squeeze it into a thin strip cut at the bottom. */
+.settings-pane__body--mcp.mcp-page { display: block; flex: 1 0 auto; overflow: visible; padding: 12px 18px 18px; min-height: 0; }
 .mcp-avis { margin: 0 18px 8px; padding: 6px 10px; border-radius: 6px; font-size: 12px; overflow-wrap: anywhere; background: var(--bg-2, rgba(127,127,127,.08)); }
 .mcp-avis[data-tone="error"] { color: var(--danger); background: rgba(248, 81, 73, 0.08); }
 .mcp-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }

@@ -155,6 +155,8 @@ const MCP_SERVEURS = [
   { id: "linear", name: "linear", url: "https://mcp.linear.app/mcp" },
   { id: "github", name: "github", command: "npx", args: ["-y", "@modelcontextprotocol/server-github"], env: [{ key: "GITHUB_PERSONAL_ACCESS_TOKEN", value: "" }] },
 ];
+// 14 serveurs : assez pour que la liste défile.
+const MCP_LISTE_LONGUE = [...Array.from({ length: 11 }, (_, i) => ({ id: `srv${i}`, name: `serveur-${i + 1}`, command: "npx", args: ["-y", `@exemple/s${i}`] })), ...MCP_SERVEURS];
 const MCP_OUTILS = { node_repl: [["eval", "Évalue du JavaScript dans une session Node persistante."], ["reset", "Réinitialise la session."], ["inspect", "Décrit une variable de la session."], ["install", "Installe un paquet npm dans la session."]] };
 export const SCENES = [
   // Mise à jour disponible (demande utilisateur) : badge discret en haut à droite, jamais d'écran bloquant ;
@@ -854,6 +856,18 @@ export const SCENES = [
   { id: "mcp-page", sim: { mcpServeurs: MCP_SERVEURS, mcpOutils: MCP_OUTILS, mcpErreur: "github" }, stockage: () => colonnes([ids(3)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__nav-list-item[data-server='node_repl'] .settings-pane__nav-list-item-main"],
     temoins: ["sel:.settings-pane__nav-list-item[data-server='node_repl']"] },
+  // Réglages > MCP : liste longue (14 serveurs) amenée tout en bas : la dernière carte tient entière.
+  { id: "mcp-liste-bas", sim: { mcpServeurs: MCP_LISTE_LONGUE, mcpOutils: MCP_OUTILS },
+    stockage: () => colonnes([ids(3)]), reglages: true, clics: [".settings-pane__nav-item[data-section='mcp']"],
+    temoins: ["fond:.mcp-serveur"] },
+  // … terminal disponible mais masqué : la barre « Afficher le terminal » (24 px) occupe le bas de la colonne.
+  { id: "mcp-liste-bas-terminal", sim: { mcpServeurs: MCP_LISTE_LONGUE, mcpOutils: MCP_OUTILS },
+    stockage: () => colonnes([ids(3)]), terminal: true, reglages: true, clics: [".titlebar__btn[title^='Masquer le terminal']", ".settings-pane__nav-item[data-section='mcp']"],
+    temoins: ["sel:.terminal-restore__button", "fond:.mcp-serveur"] },
+  // … catalogue « Ajouter un serveur » ouvert au-dessus de la liste : la liste garde une hauteur utile et son bas reste atteignable.
+  { id: "mcp-liste-bas-catalogue", sim: { mcpServeurs: MCP_LISTE_LONGUE, mcpOutils: MCP_OUTILS },
+    stockage: () => colonnes([ids(3)]), terminal: true, reglages: true, clics: [".titlebar__btn[title^='Masquer le terminal']", ".settings-pane__nav-item[data-section='mcp']", ".settings-pane__header .settings-pane__btn[data-primary='true']"],
+    temoins: ["sel:.terminal-restore__button", "fond:.mcp-serveur"] },
   { id: "mcp-page-tester", sim: { mcpServeurs: MCP_SERVEURS, mcpOutils: MCP_OUTILS, mcpErreur: "github" }, stockage: () => colonnes([ids(3)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__nav-list-item[data-server='github'] .settings-pane__nav-list-item-main", ".settings-pane__detail .settings-pane__mcp-tester"],
     temoins: ["appel:test_mcp_server", "sel:.settings-pane__mcp-erreur"] },
