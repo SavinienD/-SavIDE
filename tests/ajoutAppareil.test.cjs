@@ -15,7 +15,7 @@ Module._extensions[".ts"] = (module, filename) => {
   module._compile(javascript, filename);
 };
 const racine = path.resolve(__dirname, "..");
-const { commandeAppareil, lireReponse, clePublique, obstacles, DEBUT, FIN } = require(path.join(racine, "src/components/settings/ajoutAppareil.ts"));
+const { commandeAppareil, lireReponse, clePublique, obstacles, DEBUT, FIN } = require(path.join(racine, "src/components/settings/ajoutAppareilOutils.ts"));
 
 const EMP = "SHA256:cI77mtv+nEz46KX6ka3ThiYTe5aI00jUqNykzhcwdSQ";
 const FICHE = { v: 1, nom: "atelier", os: "Debian 13", utilisateur: "savinien", ips: ["192.168.1.30", "fe80::1", "pas-une-ip"], port: 2222,

@@ -308,7 +308,7 @@
   "raison": "unités de taille : To = téraoctet"
  },
  {
-  "fichier": "src/components/settings/ajoutAppareil.ts",
+  "fichier": "src/components/settings/ajoutAppareilOutils.ts",
   "motif": "(\\$\\(|\\$[a-z]=|Get-|^if \\()",
   "raison": "commande shell ou PowerShell à copier sur la machine à ajouter (code, pas texte affiché)"
  }

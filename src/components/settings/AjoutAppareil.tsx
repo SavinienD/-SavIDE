@@ -2,7 +2,7 @@
 // réponse collée ici (lue, résumée, puis appareil enregistré et testé).
 import { useEffect, useMemo, useState } from "react";
 import { connectionsApi, type ServiceStatus } from "./connectionsApi";
-import { DEBUT, FIN, commandeAppareil, lireReponse, obstacles, type SystemeAppareil } from "./ajoutAppareil";
+import { DEBUT, FIN, commandeAppareil, lireReponse, obstacles, type SystemeAppareil } from "./ajoutAppareilOutils";
 
 const SYSTEMES: { id: SystemeAppareil; nom: string }[] = [
   { id: "linux", nom: "Linux" },
