@@ -306,5 +306,10 @@
   "fichier": "src/components/worktrees/logique.ts",
   "motif": "^(Ko|Mo|Go|To)$",
   "raison": "unités de taille : To = téraoctet"
+ },
+ {
+  "fichier": "src/components/settings/ajoutAppareil.ts",
+  "motif": "(\\$\\(|\\$[a-z]=|Get-|^if \\()",
+  "raison": "commande shell ou PowerShell à copier sur la machine à ajouter (code, pas texte affiché)"
  }
 ]

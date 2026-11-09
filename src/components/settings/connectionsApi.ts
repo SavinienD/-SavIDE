@@ -47,6 +47,7 @@ export const connectionsApi = {
   remove: (id: string) => invoke<void>("connections_delete", { input: { id } }),
   setActive: (id: string) => invoke<void>("connections_set_active", { input: { id } }),
   test: (id: string) => invoke<ServiceStatus>("connections_test", { input: { id } }),
+  clePublique: () => invoke<{ cle: string | null; fichier?: string; dossier?: string }>("connections_cle_publique"),
   state: () => invoke<Record<string, "connected" | "disconnected">>("connections_state"),
   onActiveChange: (handler: (active: string) => void): Promise<UnlistenFn> =>
     listen<{ active: string }>("axe://connection-active", (e) => handler(e.payload.active)),

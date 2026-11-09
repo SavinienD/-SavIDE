@@ -443,6 +443,7 @@ pub fn run() {
             connections::connections_delete,
             connections::connections_set_active,
             connections::connections_test,
+            connections::connections_cle_publique,
             connections::connections_state,
             // remote end
             // cloud

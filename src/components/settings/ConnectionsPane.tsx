@@ -6,6 +6,7 @@ import {
   type Connection,
   type ServiceStatus,
 } from "./connectionsApi";
+import { AjoutAppareil } from "./AjoutAppareil";
 
 // e5 — « Joindre un autre appareil » : ce n'est pas « choisir où tourne
 // l'application » (l'application travaille toujours dans l'espace cloud),
@@ -96,6 +97,7 @@ export function ConnectionsPane() {
   const [live, setLive] = useState<Record<string, string>>({});
   const [tests, setTests] = useState<Record<string, TestState>>({});
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [ajout, setAjout] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -179,31 +181,27 @@ export function ConnectionsPane() {
     <div className="axe-repl axe-connections">
       <header className="axe-repl__header">
         <div>
-          <h2>Joindre un autre appareil</h2>
+          <h2>Appareils</h2>
           <p className="axe-repl__muted">
-            Les gros calculs (sous-agents, longues analyses) tournent sur la machine de ton espace. Joindre un autre
-            appareil lui ajoute de la puissance de calcul.
-          </p>
-          <p className="axe-repl__muted">
-            Ce n'est ni une sauvegarde ni un déplacement de fichiers : tes fichiers restent là où ils sont, et rien
-            n'est copié sur l'autre appareil.
+            Un autre ordinateur avec SavIDE peut faire tourner des calculs pour cet espace. Tes fichiers n'y sont pas copiés.
           </p>
         </div>
         <button
           type="button"
           className="axe-connections__joindre"
           onClick={() => {
-            setDraft({ ...EMPTY });
+            setDraft(null);
+            setAjout(true);
           }}
         >
-          + Joindre un appareil
+          + Ajouter un appareil
         </button>
       </header>
       {message ? <p className="axe-repl__error">{message}</p> : null}
 
       {connections.length === 0 ? (
         <p className="axe-repl__muted">
-          Aucun appareil joint pour l'instant : tout tourne sur la machine de ton espace.
+          Aucun appareil : tout tourne sur la machine de ton espace.
         </p>
       ) : (
         <ul className="axe-connections__list">
@@ -275,14 +273,24 @@ export function ConnectionsPane() {
         </ul>
       )}
 
-      <p className="axe-repl__muted">
-        Joindre un appareil en un clic (sans SSH) n'existe pas encore : pour le moment, l'appareil doit déjà avoir
-        SavIDE installé et joignable.
-      </p>
+      {ajout ? (
+        <AjoutAppareil
+          onAnnuler={() => setAjout(false)}
+          onManuel={() => {
+            setAjout(false);
+            setDraft({ ...EMPTY, kind: "ssh" });
+          }}
+          onFini={async (r) => {
+            setAjout(false);
+            setTests((t) => ({ ...t, [r.id]: { ok: r.ok, text: r.texte } }));
+            await refresh();
+          }}
+        />
+      ) : null}
 
       {draft ? (
         <section className="axe-repl__card axe-connections__form">
-          <h3>{draft.id ? "Modifier cet appareil" : "Joindre un appareil qui a déjà SavIDE"}</h3>
+          <h3>{draft.id ? "Modifier cet appareil" : "Ajouter un appareil à la main"}</h3>
           <div className="axe-repl__row">
             <label>
               <input type="radio" checked={draft.kind === "ssh"} onChange={() => set({ kind: "ssh" })} /> Par compte
