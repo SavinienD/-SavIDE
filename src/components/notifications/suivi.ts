@@ -4,6 +4,7 @@
 // d'une fin (session, genre, updatedAtMs du statut final) est la même partout, et le centre
 // (src-tauri/src/notifications.rs) ne la garde, ne la montre et ne la sonne qu'une fois.
 import type { GenreNotification, SignalementNotif } from "./notificationsApi";
+import { erreurEnFrancais } from "./texteNotif";
 
 export type MetaSuivie = {
   id: string;
@@ -91,7 +92,7 @@ function tourDe(suivi: Suivi, id: string): Tour {
 
 function texteFin(genre: GenreNotification, tour: Tour): string {
   if (genre === "attente") return tour.question ? `Attend votre réponse : ${extrait(tour.question, 200)}` : "Attend votre réponse.";
-  if (genre === "echec") return tour.erreur ? `Échec : ${extrait(tour.erreur, 200)}` : "Échec du tour.";
+  if (genre === "echec") return tour.erreur ? `Échec : ${extrait(erreurEnFrancais(tour.erreur), 200)}` : "Échec du tour.";
   return tour.dernierTexte ? `Fini : ${tour.dernierTexte}` : "Fini.";
 }
 

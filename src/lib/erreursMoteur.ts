@@ -14,6 +14,7 @@ const PHRASES: ReadonlyArray<[RegExp, Traduction]> = [
     (_tout, fournisseur) => `Fournisseur «${NB}${fournisseur}${NB}» non configuré ou identifiants manquants.`,
   ],
   [/^turn cancelled\.?$/i, "Tour annulé."],
+  [/^worker crashed repeatedly\.?$/i, "Le moteur de la conversation s'est arrêté plusieurs fois."],
 ];
 
 // Préfixes des erreurs du moteur (« stream error: … ») : le libellé passe en français, le détail reste.

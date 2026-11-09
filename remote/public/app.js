@@ -1197,7 +1197,7 @@ function App() {
       setPushState("requesting");
       const registration = await navigator.serviceWorker.ready;
       const vapid = await fetch("./vapid-public-key", { cache: "no-store" }).then((r) => r.json());
-      if (!vapid.publicKey) throw new Error("Push is not configured on the relay.");
+      if (!vapid.publicKey) throw new Error("Les notifications ne sont pas configurées sur le relais.");
       const subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64UrlToBytes(vapid.publicKey) });
       await cmd({ type: "subscribe_push", subscription: subscription.toJSON() });
       setPushState("enabled");
@@ -1289,7 +1289,7 @@ function App() {
           disabled: !canReachPc || pushState === "requesting",
           title: "Notifications",
           onClick: togglePush,
-        }, pushState === "enabled" ? "Push on" : pushState === "requesting" ? "…" : "Push"),
+        }, pushState === "enabled" ? "Notifications actives" : pushState === "requesting" ? "…" : "Notifications"),
         h("button", { className: "icon-btn", onClick: logout, title: "Forget this PC" }, "Forget"),
       ),
     ),
@@ -1313,8 +1313,8 @@ function App() {
       h("div", { className: "hint__text" },
         h("strong", null, "Install SavIDE Remote. "),
         isIosDevice()
-          ? "Add to Home Screen (Share → Add to Home Screen) to enable notifications on iPhone."
-          : "Install the PWA for full-screen chat and notifications.",
+          ? "Ajoutez-la à l'écran d'accueil (Partager → Sur l'écran d'accueil) pour recevoir les notifications sur iPhone."
+          : "Installez l'appli pour le plein écran et les notifications.",
       ),
       h("button", { className: "icon-btn", onClick: dismissInstallHint }, "Got it"),
     ),

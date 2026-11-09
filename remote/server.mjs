@@ -158,7 +158,7 @@ async function sendPush(subscription, payload) {
   }
   const body = JSON.stringify({
     title: payload?.title || "SavIDE",
-    body: payload?.body || "Response ready",
+    body: payload?.body || "Réponse prête",
     conversationId: payload?.conversation_id || payload?.conversationId || null,
   });
   try {

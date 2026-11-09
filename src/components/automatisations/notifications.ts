@@ -3,6 +3,7 @@
 // sur les exécutions faites pendant qu'elle était fermée. Fonctions pures (testées).
 import type { Automatisation, Execution, StatutExecution } from "./automatisationsApi";
 import { STATUTS } from "./horaires";
+import { texteNotification } from "../notifications/texteNotif";
 
 export type DetailNotification = {
   genre: "fini" | "attente" | "echec" | "info";
@@ -36,8 +37,8 @@ export function notificationDeFin(data: unknown): DetailNotification | null {
   const nom = d.automatisation?.nom?.trim() || "Automatisation";
   return {
     genre,
-    titre: `${nom} : ${STATUTS[d.execution.statut].toLowerCase()}`,
-    texte: court(d.execution.resume ?? ""),
+    titre: texteNotification(`${nom} : ${STATUTS[d.execution.statut].toLowerCase()}`),
+    texte: texteNotification(court(d.execution.resume ?? "")),
     dossier: d.automatisation?.dossier,
     sessionId: d.execution.sessionId,
   };
