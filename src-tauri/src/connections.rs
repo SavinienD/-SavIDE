@@ -605,3 +605,53 @@ fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
     }
     c
 }
+
+// ── Clé publique de ce PC (ajout d'un appareil par copier-coller) ────────────
+
+/// Première clé publique de ~/.ssh (ed25519, puis ecdsa, puis rsa) et sa clé privée.
+pub(crate) fn cle_publique_dans(dossier: &Path) -> Option<(String, PathBuf)> {
+    ["id_ed25519", "id_ecdsa", "id_rsa"].iter().find_map(|nom| {
+        let privee = dossier.join(nom);
+        let texte = fs::read_to_string(dossier.join(format!("{nom}.pub"))).ok()?;
+        let ligne = texte.lines().map(str::trim).find(|l| !l.is_empty())?.to_string();
+        (ligne.split_whitespace().count() >= 2 && privee.is_file()).then_some((ligne, privee))
+    })
+}
+
+/// Clé publique de ce PC à autoriser sur la machine à ajouter (jamais la clé privée).
+#[tauri::command]
+pub(crate) async fn connections_cle_publique() -> std::result::Result<Value, String> {
+    tokio::task::spawn_blocking(|| -> std::result::Result<Value, String> {
+        let dossier = crate::platform::home_dir().map(|h| h.join(".ssh")).ok_or("dossier personnel introuvable")?;
+        Ok(match cle_publique_dans(&dossier) {
+            Some((cle, privee)) => json!({ "cle": cle, "fichier": privee.to_string_lossy() }),
+            None => json!({ "cle": null, "dossier": dossier.to_string_lossy() }),
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cle_publique_du_pc() {
+        let dossier = std::env::temp_dir().join(format!("clepub-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dossier);
+        fs::create_dir_all(&dossier).unwrap();
+        assert!(cle_publique_dans(&dossier).is_none());
+        fs::write(dossier.join("id_rsa.pub"), "ssh-rsa AAAAB3 moi@pc\n").unwrap();
+        fs::write(dossier.join("id_rsa"), "x").unwrap();
+        fs::write(dossier.join("id_ed25519.pub"), "ssh-ed25519 AAAAC3 moi@pc\n").unwrap();
+        // ed25519 sans clé privée : ignorée, on prend rsa.
+        let (cle, privee) = cle_publique_dans(&dossier).unwrap();
+        assert_eq!(cle, "ssh-rsa AAAAB3 moi@pc");
+        assert_eq!(privee, dossier.join("id_rsa"));
+        fs::write(dossier.join("id_ed25519"), "x").unwrap();
+        assert_eq!(cle_publique_dans(&dossier).unwrap().0, "ssh-ed25519 AAAAC3 moi@pc");
+        let _ = fs::remove_dir_all(&dossier);
+    }
+}
