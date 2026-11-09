@@ -40,7 +40,7 @@ self.addEventListener("push", (event) => {
   }
   const title = data.title || "SavIDE";
   const options = {
-    body: data.body || "Response ready",
+    body: data.body || "Réponse prête",
     tag: data.conversationId || "axecode-response-ready",
     data: { conversationId: data.conversationId || null },
     icon: "./icons/icon.svg",

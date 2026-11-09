@@ -1,6 +1,7 @@
 // Appels au centre des notifications (src-tauri/src/notifications.rs).
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { franciser, texteNotification } from "./texteNotif";
 
 /** « fini » : tour terminé ; « attente » : attend votre réponse ; « echec » : erreur ; « info ». */
 export type GenreNotification = "fini" | "attente" | "echec" | "info";
@@ -63,7 +64,10 @@ export const EVENEMENT_OUVRIR = "axe://notification-ouvrir";
 /** État reçu du centre, complété (le banc et les vieux services peuvent rendre null). */
 export function normaliserEtat(brut: unknown): EtatCentre {
   const e = (brut ?? {}) as Partial<EtatCentre>;
-  const evenements = Array.isArray(e.evenements) ? e.evenements : [];
+  // Événements gardés par une version précédente : affichés en français eux aussi.
+  const evenements = (Array.isArray(e.evenements) ? e.evenements : []).map((x) =>
+    x && typeof x === "object" ? { ...x, titre: texteNotification(x.titre ?? ""), texte: texteNotification(x.texte ?? "") } : x,
+  );
   return {
     evenements,
     etats: e.etats && typeof e.etats === "object" ? e.etats : {},
@@ -75,7 +79,7 @@ export function normaliserEtat(brut: unknown): EtatCentre {
 export const notificationsApi = {
   lister: () => invoke<unknown>("notifications_lister").then(normaliserEtat),
   signaler: (signalement: SignalementNotif) =>
-    invoke<DecisionNotif | null>("notifications_signaler", { signalement }),
+    invoke<DecisionNotif | null>("notifications_signaler", { signalement: franciser(signalement) }),
   effacerEtat: (sessionId: string) => invoke<void>("notifications_effacer_etat", { sessionId }),
   marquerLu: (cle?: string, sessionId?: string) =>
     invoke<void>("notifications_marquer_lu", { cle: cle ?? null, sessionId: sessionId ?? null }),
