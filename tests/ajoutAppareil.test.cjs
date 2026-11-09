@@ -18,7 +18,7 @@ const racine = path.resolve(__dirname, "..");
 const { commandeAppareil, lireReponse, clePublique, obstacles, DEBUT, FIN } = require(path.join(racine, "src/components/settings/ajoutAppareilOutils.ts"));
 
 const EMP = "SHA256:cI77mtv+nEz46KX6ka3ThiYTe5aI00jUqNykzhcwdSQ";
-const FICHE = { v: 1, nom: "atelier", os: "Debian 13", utilisateur: "savinien", ips: ["192.168.1.30", "fe80::1", "pas-une-ip"], port: 2222,
+const FICHE = { v: 1, nom: "atelier", os: "Debian 13", utilisateur: "alice", ips: ["192.168.1.30", "fe80::1", "pas-une-ip"], port: 2222,
   empreintes: [{ type: "ED25519", sha256: EMP }, { type: "RSA", sha256: "abc" }], ssh: true, axecode: "/usr/bin/axecode", cle: "oui", cleMessage: "" };
 const bloc = (o, b64 = Buffer.from(JSON.stringify(o)).toString("base64")) => `${DEBUT}\n${b64}\n${FIN}\n`;
 const KEY = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIChbUXxQLAanJKOMMQjQUFddSlzH+1Iy6YJM/xB2bDQM";
