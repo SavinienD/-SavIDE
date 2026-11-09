@@ -31,12 +31,8 @@ import { ReplToolsPane } from "./settings/ReplToolsPane"; // repl
 import { RegistrePane } from "./settings/RegistrePane"; // e4
 import { ServicePane } from "./settings/ServicePane"; // daemon
 import { ConnectionsPane } from "./settings/ConnectionsPane"; // remote
-import { McpCatalogPanel } from "./settings/McpCatalogPanel"; // e7
-import { ErreurMcp } from "./settings/McpErreur"; // mcp-guide
-import { etatServeurMcp, expliquerErreurMcp } from "../axe/mcpGuide"; // mcp-guide
 import {
   collectMcpSecrets,
-  redactCommand,
   redactMcpSecrets,
   restoreMcpSecrets,
   retirerServeurMcp,
@@ -52,6 +48,7 @@ import { ComptesSupplementaires } from "./settings/ComptesSupplementaires";
 import { MenuHarnais, usePartageHarnais } from "./settings/HarnaisPartage";
 import { SkillsExternes } from "./settings/SkillsExternes";
 import { ImportMcp } from "./settings/ImportMcp";
+import { McpSection } from "./settings/McpServeurs";
 import { ValidationDefaut } from "./settings/ValidationDefaut";
 import { RechercheReglages } from "./palette/RechercheReglages"; // recherche dans les Réglages
 import { AideAppli } from "./palette/AideAppli"; // Aide (journaux, administrateur)
@@ -296,19 +293,13 @@ export function SettingsPane({ workspacePath }: Props) {
         setSettings(real);
         setSavedJson(nextJson);
         setJsonText(nextJson);
-        setSelectedServerId(real.servers[0]?.id ?? null);
+        setSelectedServerId(null);
         setLoading(false);
 
         if (normalized.servers.some((server) => server.enabled)) {
           const nextProbes = await api.probeMcpTools();
           if (disposed) return;
           setProbes(nextProbes);
-          const failures = nextProbes.filter(
-            (probe) => probe.enabled && !probe.ok,
-          ).length;
-          if (failures) {
-            setStatus(`${failures} serveur${failures === 1 ? "" : "s"} en échec`);
-          }
         }
       } catch (err) {
         if (!disposed) setStatus(String(err));
@@ -354,24 +345,26 @@ export function SettingsPane({ workspacePath }: Props) {
         parseMcpJson(jsonText),
         secretVaultRef.current,
       );
-      setSettings(parsed);
+      // Le JSON n'a pas d'identifiant : on garde celui du serveur de même nom, sinon les
+      // sondes (rangées par identifiant) ne retrouvent plus leur serveur.
+      const anciens = settingsRef.current.servers;
+      const garde = {
+        servers: parsed.servers.map((server) => {
+          const ancien = anciens.find((item) => item.name === server.name);
+          return ancien ? { ...server, id: ancien.id } : server;
+        }),
+      };
+      setSettings(garde);
       setParseError(null);
-      setSelectedServerId((current) => {
-        if (current && parsed.servers.some((server) => server.id === current)) {
-          return current;
-        }
-        return parsed.servers[0]?.id ?? null;
-      });
+      setSelectedServerId((current) =>
+        current && garde.servers.some((server) => server.id === current) ? current : null,
+      );
     } catch (err) {
       setParseError(err instanceof Error ? err.message : String(err));
     }
   }, [jsonText]);
 
   const dirty = jsonText !== savedJson;
-  const selectedServer =
-    settings.servers.find((server) => server.id === selectedServerId) ?? null;
-  const selectedProbe =
-    probes.find((probe) => probe.serverId === selectedServerId) ?? null;
 
   const loadConfiguredProviders = useCallback(async () => {
     try {
@@ -759,10 +752,7 @@ export function SettingsPane({ workspacePath }: Props) {
 
       const nextProbes = await api.probeMcpTools();
       setProbes(nextProbes);
-      const failures = nextProbes.filter((probe) => probe.enabled && !probe.ok).length;
-      if (failures) {
-        setStatus(`${failures} serveur${failures === 1 ? "" : "s"} en échec`);
-      }
+      setStatus(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setParseError(message);
@@ -801,14 +791,7 @@ export function SettingsPane({ workspacePath }: Props) {
         if (connecter) void connectMcpOAuthRef.current(savedId);
         const nextProbes = await api.probeMcpTools();
         setProbes(nextProbes);
-        const failures = nextProbes.filter(
-          (probe) => probe.enabled && !probe.ok,
-        ).length;
-        setStatus(
-          failures
-            ? `${failures} serveur${failures === 1 ? "" : "s"} sans réponse`
-            : "Serveur ajouté",
-        );
+        setStatus(null);
         return true;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -829,8 +812,10 @@ export function SettingsPane({ workspacePath }: Props) {
     [],
   );
   const [testingServerId, setTestingServerId] = useState<string | null>(null);
+  const [testedIds, setTestedIds] = useState<Set<string>>(() => new Set());
   const testSavedServer = useCallback(async (id: string) => {
     setTestingServerId(id);
+    setTestedIds((prev) => new Set(prev).add(id));
     try {
       const probe = await api.testMcpServer({
         serverId: id,
@@ -873,12 +858,7 @@ export function SettingsPane({ workspacePath }: Props) {
 
         const nextProbes = await api.probeMcpTools();
         setProbes(nextProbes);
-        const failures = nextProbes.filter((probe) => probe.enabled && !probe.ok).length;
-        setStatus(
-          failures
-            ? `${failures} serveur${failures === 1 ? "" : "s"} en échec`
-            : "Enregistré",
-        );
+        setStatus(null);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         setParseError(message);
@@ -1541,14 +1521,13 @@ export function SettingsPane({ workspacePath }: Props) {
             onSave={() => void saveAndDetect()}
             servers={settings.servers}
             probes={probes}
-            onSelectServer={(id) => {
+            openServerId={selectedServerId}
+            onOpenServer={(id) => {
               setSelectedServerId(id);
               setMcpAdvancedOpen(false);
             }}
-            selectedServer={selectedServer}
             advancedOpen={mcpAdvancedOpen}
             onAdvancedOpenChange={setMcpAdvancedOpen}
-            selectedProbe={selectedProbe}
             knownToolCounts={knownToolCounts}
             onToggleEnabled={toggleEnabled}
             oauthStatuses={oauthStatuses}
@@ -1568,6 +1547,7 @@ export function SettingsPane({ workspacePath }: Props) {
             onAddServer={addServerFromCatalog}
             onTestCandidate={testCandidateServer}
             testingServerId={testingServerId}
+            testedIds={testedIds}
             onTestServer={(id) => void testSavedServer(id)}
             actionsInterop={<ImportMcp workspacePath={workspacePath} onImported={() => setRechargeMcp((n) => n + 1)} />}
           />
@@ -2334,673 +2314,6 @@ function OpenRouterProviderCard({
         )}
       </div>
     </section>
-  );
-}
-
-// ---- MCP section component ---------------------------------------------
-
-type McpSectionProps = {
-  loading: boolean;
-  saving: boolean;
-  probing: boolean;
-  dirty: boolean;
-  status: string | null;
-  parseError: string | null;
-  jsonText: string;
-  onJsonChange: (value: string) => void;
-  onSave: () => void;
-  servers: McpServerConfig[];
-  probes: McpServerProbe[];
-  onSelectServer: (id: string) => void;
-  selectedServer: McpServerConfig | null;
-  advancedOpen: boolean;
-  onAdvancedOpenChange: (open: boolean) => void;
-  selectedProbe: McpServerProbe | null;
-  knownToolCounts: Record<string, number>;
-  onToggleEnabled: (id: string) => void;
-  oauthStatuses: Record<string, McpOAuthStatus>;
-  oauthBusyId: string | null;
-  onConnectOAuth: (id: string) => void;
-  onCancelOAuth: (id: string) => void;
-  onDisconnectOAuth: (id: string) => void;
-  deletingServerId: string | null;
-  onDeleteServer: (id: string) => void;
-  onMount: OnMount;
-  // e7 — catalogue d'ajout (formulaire minimal, cle API masquee).
-  catalogOpen: boolean;
-  onOpenCatalog: () => void;
-  onCloseCatalog: () => void;
-  onAddServer: (server: McpServerConfig, connecter: boolean) => Promise<boolean>;
-  // mcp-guide — « Tester » (formulaire d'ajout et détail d'un serveur).
-  onTestCandidate: (server: McpServerConfig) => Promise<McpServerProbe>;
-  testingServerId: string | null;
-  onTestServer: (id: string) => void;
-  actionsInterop?: React.ReactNode; // bouton « Importer »
-};
-
-function McpSection({
-  loading,
-  saving,
-  probing,
-  dirty,
-  status,
-  parseError,
-  jsonText,
-  onJsonChange,
-  onSave,
-  servers,
-  probes,
-  onSelectServer,
-  selectedServer,
-  advancedOpen,
-  onAdvancedOpenChange,
-  selectedProbe,
-  knownToolCounts,
-  onToggleEnabled,
-  oauthStatuses,
-  oauthBusyId,
-  onConnectOAuth,
-  onCancelOAuth,
-  onDisconnectOAuth,
-  deletingServerId,
-  onDeleteServer,
-  onMount,
-  catalogOpen,
-  onOpenCatalog,
-  onCloseCatalog,
-  onAddServer,
-  onTestCandidate,
-  testingServerId,
-  onTestServer,
-  actionsInterop,
-}: McpSectionProps) {
-  // zoom — the JSON editor follows the text size (only chars grow).
-  const [textScale, setTextScale] = useState<number>(() => loadTextScale());
-  useEffect(() => onTextScaleChange(setTextScale), []);
-
-  const enabledCount = servers.filter((server) => server.enabled).length;
-  const failedCount = probes.filter((probe) => probe.enabled && !probe.ok).length;
-
-  return (
-    <>
-      <header className="settings-pane__header">
-        <div className="settings-pane__header-text">
-          <h1 className="settings-pane__title" title="Serveurs MCP">Serveurs MCP</h1>
-          <p
-            className="settings-pane__subtitle"
-            data-court={!loading && servers.length > 0 ? "true" : "false"}
-            title={!loading && servers.length > 0 ? `${enabledCount}/${servers.length} actif${enabledCount > 1 ? "s" : ""}${failedCount ? ` · ${failedCount} sans réponse` : ""}` : undefined}
-          >
-            {loading
-              ? "Chargement des serveurs…"
-              : servers.length === 0
-                ? "Ajoutez un serveur courant : le catalogue écrit la configuration à votre place."
-                : `${enabledCount}/${servers.length} actif${enabledCount > 1 ? "s" : ""}${failedCount ? ` · ${failedCount} sans réponse` : ""}`}
-          </p>
-        </div>
-        <div className="settings-pane__actions">
-          {status && (
-            <span className="settings-pane__status" data-tone={parseError ? "error" : "ok"}>
-              {status}
-            </span>
-          )}
-          {actionsInterop}
-          <button
-            type="button"
-            className="settings-pane__btn"
-            data-primary="true"
-            onClick={onOpenCatalog}
-            disabled={loading || saving}
-          >
-            <Icon icon="solar:add-circle-linear" width={13} height={13} />
-            <span>Ajouter un serveur</span>
-          </button>
-          {/* e7 — la configuration avancee reste disponible, en second recours. */}
-          <button
-            type="button"
-            className="settings-pane__btn"
-            onClick={() => onAdvancedOpenChange(!advancedOpen)}
-            disabled={loading}
-          >
-            <Icon icon="solar:code-square-linear" width={13} height={13} />
-            <span>{advancedOpen ? "Masquer la configuration" : "Configuration avancée"}</span>
-          </button>
-          <button
-            type="button"
-            className="settings-pane__btn"
-            data-primary="true"
-            onClick={onSave}
-            disabled={loading || saving || !dirty}
-          >
-            <Icon
-              icon={saving ? "solar:refresh-linear" : "solar:diskette-linear"}
-              width={13}
-              height={13}
-            />
-            <span>
-              {saving ? "Vérification…" : dirty ? "Enregistrer" : "Enregistré"}
-            </span>
-          </button>
-        </div>
-      </header>
-
-      {catalogOpen ? (
-        <McpCatalogPanel
-          busy={saving}
-          error={parseError}
-          existingIds={servers.map((server) => server.id)}
-          onTest={onTestCandidate}
-          onAdd={onAddServer}
-          onCancel={onCloseCatalog}
-        />
-      ) : null}
-
-      <div className="settings-pane__body settings-pane__body--mcp">
-        <aside className="settings-pane__nav-list">
-          <div className="settings-pane__nav-list-head">
-            <span>Serveurs</span>
-            {probing && (
-              <span className="settings-pane__servers-meta">vérification…</span>
-            )}
-          </div>
-          <div className="settings-pane__nav-list-items">
-            {servers.map((server) => {
-              const probe = probes.find((item) => item.serverId === server.id);
-              const tone = !server.enabled
-                ? "off"
-                : !probe
-                  ? "pending"
-                  : probe.ok
-                    ? "ok"
-                    : "error";
-              const isActive = selectedServer?.id === server.id;
-              const knownCount = knownToolCounts[server.id];
-              const toolCount = probe?.ok
-                ? probe.tools.length
-                : knownCount ?? null;
-              // mcp-guide — état en clair (survol) et signalé dans la liste s'il faut agir.
-              const etat = etatServeurMcp(server, probe, probing);
-              const toggleDisabled =
-                loading || saving || Boolean(parseError);
-              const displayName = server.name || "Sans nom";
-              return (
-                <div
-                  key={server.id}
-                  className="settings-pane__nav-list-item"
-                  data-server={server.name}
-                  data-active={isActive ? "true" : "false"}
-                  data-on={server.enabled ? "true" : "false"}
-                >
-                  <button
-                    type="button"
-                    className="settings-pane__nav-list-item-main"
-                    title={etat.libelle}
-                    data-etat={etat.ton}
-                    onClick={() => onSelectServer(server.id)}
-                  >
-                    <span
-                      className="settings-pane__nav-list-item-dot"
-                      data-tone={tone}
-                      aria-hidden
-                    />
-                    <span className="settings-pane__nav-list-item-name">
-                      {displayName}
-                    </span>
-                    {(etat.ton === "error" || etat.ton === "auth") && (
-                      <span className="settings-pane__nav-list-item-etat" data-tone={etat.ton}>
-                        {etat.ton === "auth" ? "À connecter" : "Erreur"}
-                      </span>
-                    )}
-                    {toolCount !== null && etat.ton !== "error" && etat.ton !== "auth" && (
-                      <span
-                        className="settings-pane__nav-list-item-count"
-                        data-on={server.enabled ? "true" : "false"}
-                        title={`${toolCount} outil${toolCount === 1 ? "" : "s"}`}
-                        aria-label={`${toolCount} outil${toolCount === 1 ? "" : "s"}`}
-                      >
-                        {toolCount}
-                      </span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    className="settings-pane__switch"
-                    role="switch"
-                    aria-checked={server.enabled}
-                    aria-label={`${server.enabled ? "Désactiver" : "Activer"} ${displayName}`}
-                    data-on={server.enabled ? "true" : "false"}
-                    disabled={toggleDisabled}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      onToggleEnabled(server.id);
-                    }}
-                  >
-                    <span className="settings-pane__switch-thumb" />
-                  </button>
-                </div>
-              );
-            })}
-            {servers.length === 0 && (
-              <div className="settings-pane__nav-list-empty">
-                Aucun serveur pour l'instant — utilisez « Ajouter un serveur ».
-              </div>
-            )}
-          </div>
-        </aside>
-
-        <main className="settings-pane__detail-pane">
-          {advancedOpen ? (
-            <div className="settings-pane__editor-card">
-              <div className="settings-pane__editor-bar">
-                <div className="settings-pane__editor-bar-left">
-                  <Icon icon="solar:code-square-linear" width={13} height={13} />
-                  <span>mcp.json</span>
-                </div>
-                <div className="settings-pane__editor-bar-right">
-                  {dirty ? (
-                    <span className="settings-pane__pill" data-tone="dirty">
-                      <span className="settings-pane__pill-dot" />
-                      Modifié
-                    </span>
-                  ) : (
-                    <span className="settings-pane__pill" data-tone="ok">
-                      À jour
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="settings-pane__editor-host">
-                <Editor
-                  value={jsonText}
-                  language="json"
-                  theme="axecode-cool"
-                  onChange={(value) => onJsonChange(value ?? "")}
-                  onMount={onMount}
-                  options={{
-                    fontFamily:
-                      '"Geist Mono", ui-monospace, "SF Mono", Menlo, monospace',
-                    fontSize: Math.max(1, Math.round(MONO_BASE_PX * textScale)),
-                    lineHeight: Math.max(1, Math.round(MONO_LINE_BASE_PX * textScale)),
-                    minimap: { enabled: false },
-                    scrollBeyondLastLine: false,
-                    smoothScrolling: true,
-                    renderLineHighlight: "line",
-                    padding: { top: 12, bottom: 12 },
-                    tabSize: 2,
-                    wordWrap: "off",
-                    automaticLayout: true,
-                    lineNumbers: "on",
-                    lineNumbersMinChars: 3,
-                    folding: true,
-                    bracketPairColorization: { enabled: true },
-                    scrollbar: {
-                      verticalScrollbarSize: 9,
-                      horizontalScrollbarSize: 9,
-                    },
-                  }}
-                />
-              </div>
-              {parseError && (
-                <div className="settings-pane__editor-error">
-                  <Icon icon="solar:danger-triangle-linear" width={13} height={13} />
-                  <span>{parseError}</span>
-                </div>
-              )}
-            </div>
-          ) : selectedServer ? (
-            <ServerDetail
-              key={selectedServer.id}
-              server={selectedServer}
-              probe={selectedProbe}
-              probing={probing}
-              knownToolCount={knownToolCounts[selectedServer.id]}
-              oauthStatus={oauthStatuses[selectedServer.id]}
-              oauthBusy={oauthBusyId === selectedServer.id}
-              onConnectOAuth={onConnectOAuth}
-              onCancelOAuth={onCancelOAuth}
-              onDisconnectOAuth={onDisconnectOAuth}
-              deleting={deletingServerId === selectedServer.id}
-              testing={testingServerId === selectedServer.id}
-              onTest={onTestServer}
-              deleteDisabled={saving || loading || deletingServerId !== null}
-              onDelete={onDeleteServer}
-            />
-          ) : (
-            <div className="settings-pane__empty-state">
-              <Icon icon="solar:server-square-cloud-linear" width={18} height={18} />
-              <div>
-                <strong>Aucun serveur MCP configuré.</strong>
-                <span>
-                  « Ajouter un serveur » écrit la configuration à votre place ;
-                  la configuration avancée reste là en second recours.
-                </span>
-              </div>
-            </div>
-          )}
-        </main>
-      </div>
-    </>
-  );
-}
-
-type ServerDetailProps = {
-  server: McpServerConfig;
-  probe: McpServerProbe | null;
-  probing: boolean;
-  knownToolCount: number | undefined;
-  oauthStatus: McpOAuthStatus | undefined;
-  oauthBusy: boolean;
-  onConnectOAuth: (id: string) => void;
-  onCancelOAuth: (id: string) => void;
-  onDisconnectOAuth: (id: string) => void;
-  deleting: boolean;
-  deleteDisabled: boolean;
-  onDelete: (id: string) => void;
-  testing: boolean;
-  onTest: (id: string) => void;
-};
-
-function ServerDetail({
-  server,
-  probe,
-  probing,
-  knownToolCount,
-  oauthStatus,
-  oauthBusy,
-  onConnectOAuth,
-  onCancelOAuth,
-  onDisconnectOAuth,
-  deleting,
-  deleteDisabled,
-  onDelete,
-  testing,
-  onTest,
-}: ServerDetailProps) {
-  // mcp-supprimer — un premier clic arme, le second (dans les 3 s) supprime.
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  useEffect(() => {
-    if (!confirmDelete) return;
-    const id = window.setTimeout(() => setConfirmDelete(false), 3000);
-    return () => window.clearTimeout(id);
-  }, [confirmDelete]);
-  const [expandedTools, setExpandedTools] = useState<Set<string>>(
-    () => new Set<string>(),
-  );
-  const toggleTool = useCallback((toolName: string) => {
-    setExpandedTools((prev) => {
-      const next = new Set(prev);
-      if (next.has(toolName)) {
-        next.delete(toolName);
-      } else {
-        next.add(toolName);
-      }
-      return next;
-    });
-  }, []);
-  const tone = !server.enabled
-    ? "off"
-    : !probe
-      ? "pending"
-      : probe.ok
-        ? "ok"
-        : "error";
-  const statusLabel = !server.enabled
-    ? knownToolCount != null
-      ? `${knownToolCount} outil${knownToolCount === 1 ? "" : "s"}`
-      : "désactivé"
-    : !probe
-      ? probing
-        ? "vérification…"
-        : "en attente"
-      : !probe.ok
-        ? probe.authRequired
-          ? "à connecter"
-          : "en erreur"
-        : `${probe.tools.length} outil${probe.tools.length === 1 ? "" : "s"}`;
-  // e7 — une chaine de connexion (PostgreSQL) contient le mot de passe :
-  // elle est masquee a l'affichage, comme dans le JSON.
-  const command = redactCommand([server.command, ...server.args]);
-
-  const serverUrl = server.url?.trim() ?? "";
-  const isUrlBased = serverUrl.length > 0;
-  // OAuth only applies to URL-based servers; surface it when the probe demands
-  // authentication or simply because a URL server is able to authenticate.
-  const canAuthenticate = isUrlBased || Boolean(probe?.authRequired);
-  const connecting = oauthStatus?.connectionState === "connecting";
-  const authenticated = connecting
-    ? false
-    : oauthStatus
-      ? oauthStatus.connected
-      : Boolean(probe?.authenticated);
-  const oauthError =
-    oauthStatus?.connectionState === "error" ? oauthStatus.error : null;
-  const authLabel = connecting
-    ? "Connexion\u2026"
-    : authenticated
-      ? "Connecté"
-      : "Non connecté";
-  const authTone = connecting ? "pending" : authenticated ? "ok" : "off";
-
-  return (
-    <div className="settings-pane__detail">
-      <div className="settings-pane__detail-head">
-        <span className="settings-pane__detail-title">{server.name}</span>
-        <span className="settings-pane__detail-head-actions">
-          <span className="settings-pane__chip" data-tone={tone}>
-            <span className="settings-pane__chip-dot" />
-            <span className="settings-pane__chip-texte" title={statusLabel}>{statusLabel}</span>
-          </span>
-          <button
-            type="button"
-            className="settings-pane__btn settings-pane__mcp-tester"
-            onClick={() => onTest(server.id)}
-            disabled={testing}
-            title="Tester la connexion : lancer le serveur et lister ses outils"
-          >
-            <Icon icon={testing ? "solar:refresh-linear" : "solar:plug-circle-linear"} width={13} height={13} />
-            <span>{testing ? "Test…" : "Tester"}</span>
-          </button>
-          <button
-            type="button"
-            className="settings-pane__skill-doc-action settings-pane__mcp-delete"
-            data-danger="true"
-            data-confirm={confirmDelete ? "true" : "false"}
-            disabled={deleteDisabled}
-            title={
-              confirmDelete
-                ? "Cliquer encore pour confirmer"
-                : "Retirer ce serveur de la configuration et l'arrêter"
-            }
-            aria-label={
-              confirmDelete
-                ? `Confirmer la suppression de ${server.name}`
-                : `Supprimer ${server.name}`
-            }
-            onClick={() => {
-              if (confirmDelete) {
-                setConfirmDelete(false);
-                onDelete(server.id);
-              } else {
-                setConfirmDelete(true);
-              }
-            }}
-          >
-            <Icon
-              icon={deleting ? "solar:refresh-linear" : "solar:trash-bin-trash-linear"}
-              width={13}
-              height={13}
-            />
-            <span>
-              {deleting
-                ? "Suppression…"
-                : confirmDelete
-                  ? "Confirmer la suppression"
-                  : "Supprimer"}
-            </span>
-          </button>
-        </span>
-      </div>
-
-      <div className="settings-pane__detail-body">
-        {isUrlBased ? (
-          <code className="settings-pane__detail-cmd" title={serverUrl}>
-            {serverUrl}
-          </code>
-        ) : command ? (
-          <code className="settings-pane__detail-cmd" title={command}>
-            {command}
-          </code>
-        ) : null}
-        <div className="settings-pane__detail-meta">
-          <span className="settings-pane__detail-key">type</span>
-          <code>{isUrlBased ? "URL \u00b7 HTTP" : "stdio"}</code>
-        </div>
-        {server.cwd && (
-          <div className="settings-pane__detail-meta">
-            <span className="settings-pane__detail-key">cwd</span>
-            <code>{server.cwd}</code>
-          </div>
-        )}
-        {server.env.length > 0 && (
-          <div className="settings-pane__detail-meta">
-            <span className="settings-pane__detail-key">env</span>
-            <code>{server.env.map((item) => item.key).join(", ")}</code>
-          </div>
-        )}
-
-        {canAuthenticate && (
-          <div className="settings-pane__mcp-auth">
-            <div className="settings-pane__mcp-auth-head">
-              <span className="settings-pane__detail-section" title="Authentification">
-                Authentification
-              </span>
-              <span className="settings-pane__chip" data-tone={authTone}>
-                <span className="settings-pane__chip-dot" />
-                <span className="settings-pane__chip-texte" title={authLabel}>{authLabel}</span>
-              </span>
-            </div>
-            <div className="settings-pane__mcp-auth-row">
-              <span className="settings-pane__mcp-auth-hint">
-                {authenticated
-                  ? "Connecté : le jeton est enregistré. « Déconnecter » le supprime."
-                  : "Autorisez ce serveur dans votre navigateur pour charger ses outils."}
-              </span>
-              {connecting ? (
-                <button
-                  type="button"
-                  className="settings-pane__btn"
-                  onClick={() => onCancelOAuth(server.id)}
-                >
-                  <Icon
-                    icon="solar:close-circle-linear"
-                    width={13}
-                    height={13}
-                  />
-                  <span>Annuler</span>
-                </button>
-              ) : authenticated ? (
-                <button
-                  type="button"
-                  className="settings-pane__btn"
-                  onClick={() => onDisconnectOAuth(server.id)}
-                  disabled={oauthBusy}
-                >
-                  <Icon icon="solar:logout-2-linear" width={13} height={13} />
-                  <span>{oauthBusy ? "Déconnexion\u2026" : "Déconnecter"}</span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="settings-pane__btn"
-                  data-primary="true"
-                  onClick={() => onConnectOAuth(server.id)}
-                  disabled={oauthBusy}
-                >
-                  <Icon
-                    icon={
-                      oauthBusy
-                        ? "solar:refresh-linear"
-                        : "solar:login-2-linear"
-                    }
-                    width={13}
-                    height={13}
-                  />
-                  <span>{oauthBusy ? "Ouverture\u2026" : "Connecter"}</span>
-                </button>
-              )}
-            </div>
-            {oauthError && (
-              <div className="settings-pane__mcp-auth-error">{oauthError}</div>
-            )}
-          </div>
-        )}
-
-        {probe && !probe.ok && (() => {
-          // mcp-guide — erreur expliquée, journal brut (secrets masqués) dépliable.
-          const erreur = expliquerErreurMcp(probe.error, {
-            transport: probe.transport,
-            authRequired: probe.authRequired,
-          });
-          return erreur ? <ErreurMcp erreur={erreur} /> : null;
-        })()}
-
-        <div className="settings-pane__detail-section">Outils</div>
-        <div className="settings-pane__tool-list">
-          {probe?.tools.map((tool) => {
-            const isOpen = expandedTools.has(tool.toolName);
-            const hasDescription = Boolean(tool.description?.trim());
-            return (
-              <div className="settings-pane__tool" key={tool.toolName}>
-                <button
-                  type="button"
-                  className="settings-pane__tool-head"
-                  onClick={() => toggleTool(tool.toolName)}
-                  aria-expanded={isOpen}
-                  data-open={isOpen ? "true" : "false"}
-                >
-                  <span className="settings-pane__tool-head-text">
-                    <span className="settings-pane__tool-name">
-                      {tool.title || tool.name}
-                    </span>
-                    <code className="settings-pane__tool-id">
-                      {tool.toolName}
-                    </code>
-                  </span>
-                  <Icon
-                    icon="solar:alt-arrow-down-linear"
-                    width={12}
-                    height={12}
-                    className="settings-pane__tool-caret"
-                  />
-                </button>
-                {isOpen && (
-                  <div className="settings-pane__tool-body">
-                    {hasDescription ? (
-                      <Markdown
-                        text={tool.description ?? ""}
-                        onOpenFile={noop}
-                      />
-                    ) : (
-                      <div className="settings-pane__muted">
-                        Aucune description.
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {probe?.ok && probe.tools.length === 0 && (
-            <div className="settings-pane__muted">Le serveur n'a renvoyé aucun outil.</div>
-          )}
-          {!probe && (
-            <div className="settings-pane__muted">
-              {probing ? "Interrogation du serveur…" : "Pas encore interrogé."}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
   );
 }
 

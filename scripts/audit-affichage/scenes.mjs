@@ -143,6 +143,14 @@ const REPRISES = () => {
   return [r("c-001", null, "Conversation du banc"), r("sa-1", "c-001", "t-lotA-correction-des-colonnes-du-banc-a-800-px-et-du-compositeur")];
 };
 
+const MCP_SERVEURS = [
+  { id: "node_repl", name: "node_repl", command: "C:\\Users\\utilisateur\\AppData\\Local\\OpenAI\\Codex\\runtimes\\node\\node.exe",
+    args: ["C:\\Users\\utilisateur\\AppData\\Local\\OpenAI\\Codex\\runtimes\\node_repl\\server.js", "--stdio"],
+    env: [["CODEX_HOME", "C:\\Users\\utilisateur\\.codex"], ["NODE_OPTIONS", "--max-old-space-size=4096"], ["CODEX_SANDBOX", "seatbelt"], ["CODEX_API_KEY", "sk-proj-AbCdEf0123456789"], ["PATH", "C:\\Windows\\system32;C:\\Program Files\\nodejs"]].map(([key, value]) => ({ key, value })) },
+  { id: "linear", name: "linear", url: "https://mcp.linear.app/mcp" },
+  { id: "github", name: "github", command: "npx", args: ["-y", "@modelcontextprotocol/server-github"], env: [{ key: "GITHUB_PERSONAL_ACCESS_TOKEN", value: "" }] },
+];
+const MCP_OUTILS = { node_repl: [["eval", "Évalue du JavaScript dans une session Node persistante."], ["reset", "Réinitialise la session."], ["inspect", "Décrit une variable de la session."], ["install", "Installe un paquet npm dans la session."]] };
 export const SCENES = [
   // Mise à jour disponible (demande utilisateur) : badge discret en haut à droite, jamais d'écran bloquant ;
   // au clic, fenêtre avec les notes et « Installer maintenant » / « Plus tard ».
@@ -825,6 +833,13 @@ export const SCENES = [
     clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__nav-list-item[data-server='github'] .settings-pane__nav-list-item-main", ".settings-pane__detail .settings-pane__mcp-tester", ".settings-pane__mcp-journal > summary"],
     temoins: ["sel:.settings-pane__nav-list-item[data-server='github'] .settings-pane__nav-list-item-main[data-etat='error']", "sel:.settings-pane__mcp-erreur", "sel:.settings-pane__mcp-journal[open] > pre", "appel:test_mcp_server", "clic:.settings-pane__detail .settings-pane__mcp-tester", "absent:.settings-pane__nav-list-item[data-server='postgres'] .settings-pane__nav-list-item-main[data-etat='error']"] },
   // … ajout guidé : « Serveur personnalisé » (par défaut), « Serveur distant », adresse, « Tester » -> connexion requise (OAuth).
+  // Réglages > MCP : un serveur importé de Codex (stdio, 4 outils), un http et un en erreur.
+  { id: "mcp-page", sim: { mcpServeurs: MCP_SERVEURS, mcpOutils: MCP_OUTILS, mcpErreur: "github" }, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__nav-list-item[data-server='node_repl'] .settings-pane__nav-list-item-main"],
+    temoins: ["sel:.settings-pane__nav-list-item[data-server='node_repl']"] },
+  { id: "mcp-page-tester", sim: { mcpServeurs: MCP_SERVEURS, mcpOutils: MCP_OUTILS, mcpErreur: "github" }, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__nav-list-item[data-server='github'] .settings-pane__nav-list-item-main", ".settings-pane__detail .settings-pane__mcp-tester"],
+    temoins: ["appel:test_mcp_server", "sel:.settings-pane__mcp-erreur"] },
   { id: "mcp-ajout-perso", sim: { mcp: ["postgres"] }, stockage: () => colonnes([ids(3)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__header .settings-pane__btn[data-primary='true']", ".settings-pane__mcp-mode-btn[data-mode='http']"],
     saisies: [["input[data-champ='nom']", "Interne"], ["input[data-champ='url']", "https://mcp.exemple.fr/mcp"]],
