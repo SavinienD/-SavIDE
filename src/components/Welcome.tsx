@@ -4,7 +4,9 @@ import { useEffect, useState, type ReactNode } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { Icon } from "@iconify/react";
-import { dossiersNumerotes, libererOrdre, removeRecent } from "../lib/recents";
+import { basculerEpingle, deplacerEpingle, dossiersNumerotes, libererOrdre, removeRecent } from "../lib/recents";
+import { MenuFlottant } from "./worktrees/Menu";
+import "./worktrees/worktrees.css";
 import { api, cloudRpc } from "../lib/ipc";
 import { CloudLoginButton, useCloudState } from "./cloud/CloudLoginButton";
 import { CLOUD_CONNECTION } from "./cloud/cloudApi";
@@ -73,6 +75,13 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, avis, derive
   const [aConfirmer, setAConfirmer] = useState<string | null>(null);
   const [avisChats, setAvisChats] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
+  // Clic droit sur un dossier (Épingler / Désépingler / Retirer) et glisser des épinglés.
+  const [menuDossier, setMenuDossier] = useState<{ x: number; y: number; dossier: RecentWorkspace } | null>(null);
+  const [glisse, setGlisse] = useState<string | null>(null);
+  const basculer = (d: RecentWorkspace) => {
+    basculerEpingle(d.path, d.name);
+    setRecents(dossiersNumerotes());
+  };
   const [active, setActive] = useState(() => activeSets([]));
   // Sessions « running » du service local (sous-agents et tours relancés par le service
   // compris), lues au montage puis tenues à jour par ses événements « status ».
@@ -328,15 +337,49 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, avis, derive
                 {recents.map((recent, i) => {
                   const isActive = dossierAuTravail(recent.path, active.workspaces, service);
                   const nom = recent.name || deriveName(recent.path);
-                  // les 9 premiers : numéro de Ctrl+1…9 (⌘1…9) sur la carte et dans l'info-bulle.
+                  // Les 9 premiers (épinglés d'abord) : numéro de Ctrl+1…9 (⌘1…9) sur la carte et dans l'info-bulle.
                   const numero = i < 9 ? i + 1 : null;
+                  const epingle = Boolean(recent.epingle);
+                  const titreSection =
+                    i === 0 && epingle ? "Épinglés" : !epingle && i > 0 && recents[i - 1].epingle ? "Récents" : null;
                   return (
-                    <div key={recent.path} className="welcome__recent-item">
+                    <div key={recent.path} className="welcome__recent-groupe">
+                    {titreSection && <div className="welcome__recents-sous-titre">{titreSection}</div>}
+                    <div
+                      className="welcome__recent-item"
+                      data-epingle={epingle ? "true" : undefined}
+                      data-absent={recent.absent ? "true" : undefined}
+                      data-glisse={glisse === recent.path ? "true" : undefined}
+                      draggable={epingle}
+                      onDragStart={epingle ? (e) => { setGlisse(recent.path); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", recent.path); } : undefined}
+                      onDragEnd={() => setGlisse(null)}
+                      onDragOver={epingle && glisse ? (e) => e.preventDefault() : undefined}
+                      onDrop={
+                        epingle && glisse
+                          ? (e) => {
+                              e.preventDefault();
+                              if (glisse !== recent.path) deplacerEpingle(glisse, i);
+                              setGlisse(null);
+                              setRecents(dossiersNumerotes());
+                            }
+                          : undefined
+                      }
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        setMenuDossier({ x: e.clientX, y: e.clientY, dossier: recent });
+                      }}
+                    >
                     <button
                       className="welcome__recent"
                       data-active={isActive ? "true" : "false"}
                       data-numero={numero ?? undefined}
-                      title={numero ? infoBulleNumero(`Ouvrir ${nom}`, "dossierRecent", numero) : undefined}
+                      title={
+                        recent.absent
+                          ? `${nom} est introuvable à son emplacement`
+                          : numero
+                            ? infoBulleNumero(`Ouvrir ${nom}`, "dossierRecent", numero)
+                            : undefined
+                      }
                       onClick={() => onPick(recent.path)}
                     >
                       <span className="welcome__recent-icon">
@@ -350,14 +393,31 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, avis, derive
                         <span className="welcome__recent-name">
                           {nom}
                         </span>
-                        <span className="welcome__recent-path">{displayPath(recent.path)}</span>
+                        <span className="welcome__recent-path">{recent.absent ? `Introuvable · ${displayPath(recent.path)}` : displayPath(recent.path)}</span>
                       </span>
+                      {epingle && (
+                        <span className="welcome__recent-punaise" aria-hidden="true">
+                          <Icon icon="solar:pin-bold" width={14} height={14} />
+                        </span>
+                      )}
                       {numero && (
                         <span className="welcome__recent-num" aria-hidden="true">
                           {numero}
                         </span>
                       )}
                     </button>
+                    <button
+                      type="button"
+                      className="welcome__recent-epingler"
+                      data-epingle={epingle ? "true" : "false"}
+                      title={epingle ? "Désépingler" : "Épingler en tête (numéro Ctrl stable)"}
+                      aria-label={epingle ? `Désépingler ${nom}` : `Épingler ${nom}`}
+                      aria-pressed={epingle}
+                      onClick={(e) => { e.stopPropagation(); basculer(recent); }}
+                    >
+                      <Icon icon={epingle ? "solar:pin-bold" : "solar:pin-linear"} width={15} height={15} />
+                    </button>
+                    {!epingle && (
                     <button
                       type="button"
                       className="welcome__recent-retirer"
@@ -367,9 +427,25 @@ export function Welcome({ onPick, onFreeChat, onCloudFolder, error, avis, derive
                     >
                       <Icon icon="solar:close-circle-linear" width={16} height={16} />
                     </button>
+                    )}
+                    </div>
                     </div>
                   );
                 })}
+                {menuDossier && (
+                  <MenuFlottant
+                    x={menuDossier.x}
+                    y={menuDossier.y}
+                    onFermer={() => setMenuDossier(null)}
+                    entrees={[
+                      { cle: "ouvrir", libelle: "Ouvrir", action: () => onPick(menuDossier.dossier.path) },
+                      { cle: "epingler", libelle: menuDossier.dossier.epingle ? "Désépingler" : "Épingler", action: () => basculer(menuDossier.dossier) },
+                      ...(menuDossier.dossier.epingle
+                        ? []
+                        : [{ cle: "retirer", libelle: "Retirer de la liste", action: () => setRecents(removeRecent(menuDossier.dossier.path)) }]),
+                    ]}
+                  />
+                )}
               </div>
             ) : (
               <div className="welcome__empty">Aucun dossier ouvert récemment.</div>

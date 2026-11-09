@@ -12,6 +12,11 @@ import { SCENES_INTEROP } from "./scenes-interop.mjs";
 
 const ids = (n, depart = 0) => Array.from({ length: n }, (_, i) => `c-${String(depart + i + 1).padStart(3, "0")}`);
 const recents25 = () => Array.from({ length: 25 }, (_, i) => ({ path: `C:\\Users\\utilisateur\\Documents\\Clients\\client-${String(i + 1).padStart(2, "0")}`, name: `client-${String(i + 1).padStart(2, "0")}`, lastOpenedMs: 1_790_000_000_000 - i * 3_600_000 }));
+const EPINGLES = () => [
+  { path: "C:\\Users\\utilisateur\\Documents\\Clients\\client-12", name: "client-12" },
+  { path: "C:\\Users\\utilisateur\\Documents\\Clients\\client-07", name: "client-07" },
+  { path: "C:\\Users\\utilisateur\\Documents\\Ancien-projet", name: "Ancien-projet", absent: true },
+];
 // formes réelles (sessions.list du service du poste) : préfixe \\?\ côté service,
 // chemin simple dans les dossiers récents.
 const SESSIONS_DOSSIER = (parent, enfants) => {
@@ -582,6 +587,18 @@ export const SCENES = [
     temoins: ["compte:.welcome__recent-num=9", "sel:.welcome__recent[data-numero='9'][title$='· ⌘9']"] },
   { id: "accueil-cmd-chiffre-mac", mac: true, sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25() }), touches: ["Meta+9"],
     temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\client-09", "ouvertures:1"] },
+  // Dossiers épinglés : section en tête (ordre d'épinglage), mêmes Ctrl+1…9 ; punaise au survol ; épinglé introuvable grisé.
+  { id: "accueil-epingles", sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25(), "axecode.pinnedWorkspaces": EPINGLES() }),
+    temoins: ["Épinglés", "Récents", "compte:.welcome__recent-item[data-epingle='true']=3", "compte:.welcome__recent-item[data-absent='true']=1",
+      "sel:.welcome__recent-item[data-epingle='true'] .welcome__recent[data-numero='1'][title$='· Ctrl+1']", "compte:.welcome__recent-num=9",
+      "compte:.welcome__recents[data-liste='dossiers'] .welcome__recent-retirer=23", "compte:.welcome__recents[data-liste='dossiers'] .welcome__recent=26", "compte:.welcome__recent-punaise=3"] },
+  { id: "accueil-epingles-ctrl", sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25(), "axecode.pinnedWorkspaces": EPINGLES() }), touches: ["Control+2"],
+    temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\client-07", "ouvertures:1"] },
+  { id: "accueil-epingler-clic", sim: { cloud: true }, espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25() }),
+    clics: [".welcome__recents[data-liste='dossiers'] .welcome__recent-item:not([data-epingle]) .welcome__recent-epingler"],
+    temoins: ["stocke:axecode.pinnedWorkspaces=1", "compte:.welcome__recent-item[data-epingle='true']=1", "absent:.workspace"] },
+  { id: "palette-aller-epingles", espace: false, stockage: () => ({ "axecode.recentWorkspaces": recents25(), "axecode.pinnedWorkspaces": EPINGLES() }), touches: ["Control+k"],
+    temoins: ["épinglé · Ctrl+2", "Ctrl+4"] },
   { id: "ide-ctrl-chiffre", sim: {}, stockage: () => colonnes([ids(3)]), saisir: "bonjour", touches: ["Control+2"],
     temoins: ["ouvert:C:\\Users\\utilisateur\\Documents\\Clients\\cabinet-martin", "ouvertures:2"] },
   { id: "ide-ctrl-chiffre-introuvable", sim: { introuvables: ["C:\\Users\\utilisateur\\Documents\\Clients\\cabinet-martin"] }, stockage: () => colonnes([ids(3)]), touches: ["Control+2"],

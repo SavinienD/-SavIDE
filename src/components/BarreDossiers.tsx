@@ -23,13 +23,14 @@ export function BarreDossiers({ courant, onOuvrir }: Props) {
       {dossiers.map((d, i) => {
         const n = i + 1;
         const actif = Boolean(courant && samePath(courant, d.path));
-        const nom = d.name || deriveName(d.path);
+        const nom = (d.name || deriveName(d.path)) + (d.epingle ? " (épinglé)" : "");
         return (
           <button
             key={d.path}
             type="button"
             className="barre-dossiers__btn"
             data-numero={n}
+            data-epingle={d.epingle ? "true" : undefined}
             aria-current={actif ? "true" : undefined}
             aria-label={`Dossier ${n} : ${nom}`}
             title={infoBulleNumero(actif ? `${nom} (ouvert)` : nom, "dossierRecent", n)}

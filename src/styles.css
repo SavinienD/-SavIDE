@@ -11245,3 +11245,76 @@ textarea {
 .settings-pane__mcp-catalog-title { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .settings-pane__header-text { min-width: 0; max-width: 100%; }
 .settings-pane__header-text > .settings-pane__title { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+/* Dossiers épinglés : punaise au survol (toujours visible si épinglé), sous-titres, grisé si introuvable. */
+.welcome__recent-groupe {
+  display: contents;
+}
+.welcome__recents-sous-titre {
+  margin: 4px 0 0 4px;
+  font-size: calc(11px * var(--text-scale, 1));
+  color: var(--text-3);
+  font-weight: 500;
+}
+.welcome__recent-item > .welcome__recent {
+  padding-right: 72px;
+}
+.welcome__recent-epingler {
+  position: absolute;
+  top: 50%;
+  right: 38px;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease, background 120ms ease, color 120ms ease;
+}
+.welcome__recent-epingler[data-epingle="true"] {
+  color: var(--text-1);
+}
+/* Marque des épinglés (dans la carte), remplacée par le bouton au survol. */
+.welcome__recent-punaise {
+  position: absolute;
+  top: 50%;
+  right: 44px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  color: var(--text-2);
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+.welcome__recent-item:hover .welcome__recent-punaise,
+.welcome__recent-item:focus-within .welcome__recent-punaise {
+  opacity: 0;
+}
+.welcome__recent-item:hover .welcome__recent-epingler,
+.welcome__recent-item:focus-within .welcome__recent-epingler {
+  opacity: 1;
+}
+.welcome__recent-epingler:hover,
+.welcome__recent-epingler:focus-visible {
+  color: var(--text-0);
+  background: var(--bg-5);
+}
+/* Épinglé : pas de croix, le numéro reste visible au survol. */
+.welcome__recent-item[data-epingle="true"]:hover .welcome__recent-num,
+.welcome__recent-item[data-epingle="true"]:focus-within .welcome__recent-num {
+  opacity: 1;
+}
+.welcome__recent-item[data-epingle="true"] {
+  cursor: grab;
+}
+.welcome__recent-item[data-glisse="true"] {
+  opacity: 0.5;
+}
+.welcome__recent-item[data-absent="true"] > .welcome__recent {
+  opacity: 0.55;
+}
+

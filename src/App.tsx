@@ -3,7 +3,7 @@ import { Welcome } from "./components/Welcome";
 import { Workspace } from "./components/Workspace";
 import { useServiceNotifications } from "./components/notifications/useServiceNotifications";
 import { UpdateBadge } from "./components/UpdateBadge";
-import { noterOuverture, libererOrdre, deriveName, dossierRecentNumero, loadRecents, removeRecent } from "./lib/recents";
+import { noterOuverture, libererOrdre, deriveName, dossierRecentNumero, loadRecents, removeRecent, marquerEpingleAbsent } from "./lib/recents";
 import { open as choisirDossier } from "@tauri-apps/plugin-dialog";
 import { dependancesTauri, deplacerEtOuvrir, nomDe, noterDossiersRecents, ouvrirDossier, parentDe, type Dependances, type Ouverture } from "./lib/dossierDeplace";
 import { DossierIntrouvable } from "./components/DossierIntrouvable";
@@ -77,6 +77,7 @@ export default function App() {
   const appliquerOuverture = useCallback(async (r: Ouverture, chemin: string, conversationId?: string) => {
     if (r.kind === "introuvable") {
       void api.resetWindowTitle().catch(() => undefined);
+      marquerEpingleAbsent(chemin, true); // un épinglé introuvable reste affiché, grisé
       setIntrouvable({ chemin, nom: nomDossier(chemin), conversationId, recherche: false });
       setState({ kind: "welcome" });
       return;

@@ -5,7 +5,7 @@
 // internes du projet.
 import { invoke } from "@tauri-apps/api/core";
 import type { WorkspaceBootstrap } from "../types";
-import { loadRecents } from "./recents";
+import { loadRecents, remplacerCheminEpingle } from "./recents";
 
 const RECENTS_KEY = "axecode.recentWorkspaces";
 const LAST_KEY = "axecode.lastWorkspace";
@@ -55,6 +55,7 @@ export function nomDe(chemin: string): string {
 /** Récents : l'entrée de `ancien` prend le nouveau chemin à la même place (même numéro
  *  Ctrl+n) ; une autre entrée déjà au nouveau chemin est retirée (pas de doublon). */
 export function remplacerCheminRecent(ancien: string, nouveau: string, nom?: string): void {
+  remplacerCheminEpingle(ancien, nouveau, nom);
   const liste = loadRecents();
   const i = liste.findIndex((r) => r.path === ancien);
   if (i < 0) return;
