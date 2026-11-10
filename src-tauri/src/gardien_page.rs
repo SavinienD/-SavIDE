@@ -1,8 +1,11 @@
 //! Rattrapage de la page de l'appli (« écran noir après une longue utilisation »).
 //!
 //! WebView2 signale la mort d'un de ses processus (rendu, GPU, navigateur) ou une page qui ne
-//! répond plus par l'événement `ProcessFailed`. Sans réaction de l'appli, la fenêtre reste noire
-//! ou vide. Ici : on journalise la raison dans `page.log` (dossier des journaux de l'appli) et on
+//! répond plus par l'événement `ProcessFailed`. Sur macOS, WKWebView appelle
+//! `webViewWebContentProcessDidTerminate:` quand son processus de rendu (WebContent) s'arrête
+//! (plantage, ou processus tué par le système, par exemple quand la mémoire manque) ; sous Linux,
+//! WebKitGTK émet `web-process-terminated`. Sans réaction de l'appli, la fenêtre reste noire,
+//! grise ou vide. Ici : on journalise la raison dans `page.log` (dossier des journaux de l'appli) et on
 //! recharge la page quand le rendu est mort ou figé ; au rechargement, l'interface rouvre le même
 //! écran (dossier, conversation, colonnes) grâce à `page_reprise_demandee`.
 //! La page envoie aussi un battement (toutes les 10 s, avec la mémoire JS) : il sert à décider
@@ -25,6 +28,10 @@ const TAILLE_MAX_JOURNAL: u64 = 1024 * 1024;
 pub(crate) const DELAI_FIGEE: Duration = Duration::from_secs(20);
 /// Deux rechargements automatiques plus rapprochés que ça : on s'arrête (boucle de plantage).
 pub(crate) const ECART_MIN_RECHARGEMENTS: Duration = Duration::from_secs(15);
+/// Boucle plus lente (la page meurt à chaque fois peu après son chargement) : au plus
+/// `MAX_RECHARGEMENTS` rechargements automatiques sur `FENETRE_RECHARGEMENTS`.
+pub(crate) const MAX_RECHARGEMENTS: usize = 3;
+pub(crate) const FENETRE_RECHARGEMENTS: Duration = Duration::from_secs(600);
 /// Une ligne « mémoire » au plus toutes les 10 minutes.
 const ECART_LIGNES_MEMOIRE: Duration = Duration::from_secs(600);
 
@@ -57,6 +64,8 @@ pub(crate) struct EtatPage {
     pub(crate) dernier_battement: Option<Instant>,
     pub(crate) figee_depuis: Option<Instant>,
     pub(crate) dernier_rechargement: Option<Instant>,
+    /// Rechargements automatiques récents (moins de `FENETRE_RECHARGEMENTS`).
+    pub(crate) rechargements: Vec<Instant>,
     pub(crate) derniere_ligne_memoire: Option<Instant>,
     pub(crate) reprise_demandee: bool,
 }
@@ -86,6 +95,12 @@ pub(crate) fn decider(etat: &mut EtatPage, panne: Panne, maintenant: Instant) ->
             return Action::Rien;
         }
     }
+    etat.rechargements
+        .retain(|t| maintenant.saturating_duration_since(*t) < FENETRE_RECHARGEMENTS);
+    if etat.rechargements.len() >= MAX_RECHARGEMENTS {
+        return Action::Rien;
+    }
+    etat.rechargements.push(maintenant);
     etat.dernier_rechargement = Some(maintenant);
     etat.figee_depuis = None;
     etat.reprise_demandee = true;
@@ -145,6 +160,18 @@ pub(crate) fn ecrire_journal(chemin: &Path, ligne: &str, max: u64) -> std::io::R
     writeln!(f, "{} {ligne}", horodatage())
 }
 
+/// Libellé d'une décision, pour le journal.
+pub(crate) fn texte_action(panne: Panne, action: Action) -> &'static str {
+    match (panne, action) {
+        (_, Action::Recharger) => "page rechargée",
+        (_, Action::Attendre) => "attente",
+        (Panne::RenduMort | Panne::RenduFige, Action::Rien) => {
+            "PAS de rechargement automatique (trop de rechargements récents) : relancer l'appli"
+        }
+        (_, Action::Rien) => "rien",
+    }
+}
+
 fn etats() -> &'static Mutex<HashMap<String, EtatPage>> {
     static ETATS: OnceLock<Mutex<HashMap<String, EtatPage>>> = OnceLock::new();
     ETATS.get_or_init(|| Mutex::new(HashMap::new()))
@@ -172,32 +199,59 @@ pub(crate) fn oublier(fenetre: &str) {
     etats().lock().unwrap_or_else(|e| e.into_inner()).remove(fenetre);
 }
 
+fn branchees() -> &'static Mutex<std::collections::HashSet<String>> {
+    static BRANCHEES: OnceLock<Mutex<std::collections::HashSet<String>>> = OnceLock::new();
+    BRANCHEES.get_or_init(Default::default)
+}
+
 /// Branche le gardien sur une vue (une seule fois par vue ; appelé à chaque chargement de page).
 pub(crate) fn surveiller<R: Runtime>(webview: &Webview<R>) {
-    static BRANCHEES: OnceLock<Mutex<std::collections::HashSet<String>>> = OnceLock::new();
     let label = webview.label().to_string();
     {
-        let mut b = BRANCHEES.get_or_init(Default::default).lock().unwrap_or_else(|e| e.into_inner());
+        let mut b = branchees().lock().unwrap_or_else(|e| e.into_inner());
         if !b.insert(label.clone()) {
             return;
         }
     }
     #[cfg(windows)]
     windows_webview2::brancher(webview, label);
-    #[cfg(not(windows))]
+    #[cfg(target_os = "macos")]
+    macos_wkwebview::brancher(webview, label);
+    #[cfg(target_os = "linux")]
+    linux_webkitgtk::brancher(webview, label);
+    #[cfg(not(any(windows, target_os = "macos", target_os = "linux")))]
     let _ = label;
 }
 
-/// Fenêtre détruite : la vue pourra être rebranchée si une autre reprend son nom.
+/// Fenêtre détruite : la vue pourra être rebranchée si une autre reprend son nom.
 pub(crate) fn fenetre_detruite(fenetre: &str) {
     oublier(fenetre);
+    branchees().lock().unwrap_or_else(|e| e.into_inner()).remove(fenetre);
+    #[cfg(target_os = "macos")]
+    macos_wkwebview::oublier_vue(fenetre);
+}
+
+/// Le processus de rendu d'une vue WebKit (macOS, Linux) s'est arrêté : décide, note dans le
+/// journal et rend `true` s'il faut recharger la page.
+#[cfg(any(target_os = "macos", target_os = "linux"))]
+fn rendu_termine<R: Runtime>(app: &AppHandle<R>, label: &str, moteur: &str, raison: &str) -> bool {
+    let action = avec_etat(label, |e| decider(e, Panne::RenduMort, Instant::now()));
+    journaliser(
+        app,
+        &format!(
+            "[{label}] {moteur} : processus de rendu terminé ({raison}) -> {}",
+            texte_action(Panne::RenduMort, action)
+        ),
+    );
+    action == Action::Recharger
 }
 
 #[tauri::command]
 pub(crate) fn page_battement(app: AppHandle, window: Window, tas_mo: Option<f64>, noeuds: Option<u64>) {
     let ecrire = avec_etat(window.label(), |e| battement(e, Instant::now()));
     if ecrire {
-        let tas = tas_mo.map(|t| format!("{t:.0} Mo")).unwrap_or_else(|| "?".into());
+        // WebKit (macOS, Linux) ne donne pas la taille du tas JS : seuls les nœuds sont comptés.
+        let tas = tas_mo.map(|t| format!("{t:.0} Mo")).unwrap_or_else(|| "non mesurable".into());
         let n = noeuds.map(|n| n.to_string()).unwrap_or_else(|| "?".into());
         let ligne = format!("[{}] mémoire de la page : tas JS {tas}, nœuds DOM {n}", window.label());
         if let Some(chemin) = chemin_journal(&app) {
@@ -214,8 +268,131 @@ pub(crate) fn page_journal(app: AppHandle, window: Window, texte: String) {
 
 /// Au démarrage de l'interface : vrai une seule fois après un rechargement fait par le gardien.
 #[tauri::command]
-pub(crate) fn page_reprise_demandee(window: Window) -> bool {
-    avec_etat(window.label(), |e| std::mem::take(&mut e.reprise_demandee))
+pub(crate) fn page_reprise_demandee(app: AppHandle, window: Window) -> bool {
+    let reprise = avec_etat(window.label(), |e| std::mem::take(&mut e.reprise_demandee));
+    if reprise {
+        // Preuve que la page rechargée a bien redémarré (l'interface demande la reprise au démarrage).
+        journaliser(&app, &format!("[{}] page relancée : l'interface a redémarré", window.label()));
+    }
+    reprise
+}
+
+#[cfg(target_os = "macos")]
+mod macos_wkwebview {
+    //! Tauri ne transmet pas `webViewWebContentProcessDidTerminate:` : le délégué de navigation
+    //! de wry implémente cette méthode mais n'appelle rien quand aucun rappel n'est donné (et Tauri
+    //! n'en donne pas). On remplace donc l'implémentation de cette seule méthode sur la classe du
+    //! délégué : l'ancienne est toujours appelée d'abord, puis le gardien décide et recharge.
+    use super::*;
+    use objc2::runtime::{AnyClass, AnyObject, Imp, Sel};
+    use objc2::{msg_send, sel};
+    use std::sync::Arc;
+
+    type Rappel = Arc<dyn Fn() -> bool + Send + Sync>;
+    type Methode = unsafe extern "C-unwind" fn(*mut AnyObject, Sel, *mut AnyObject);
+
+    /// Implémentation d'origine, par classe de délégué (adresse de la classe).
+    fn originales() -> &'static Mutex<HashMap<usize, usize>> {
+        static M: OnceLock<Mutex<HashMap<usize, usize>>> = OnceLock::new();
+        M.get_or_init(Default::default)
+    }
+
+    /// Vue WKWebView (adresse) -> (nom de la fenêtre, rappel du gardien).
+    fn rappels() -> &'static Mutex<HashMap<usize, (String, Rappel)>> {
+        static M: OnceLock<Mutex<HashMap<usize, (String, Rappel)>>> = OnceLock::new();
+        M.get_or_init(Default::default)
+    }
+
+    pub(super) fn oublier_vue(fenetre: &str) {
+        rappels().lock().unwrap_or_else(|e| e.into_inner()).retain(|_, (l, _)| l != fenetre);
+    }
+
+    unsafe extern "C-unwind" fn rendu_termine_wk(this: *mut AnyObject, cmd: Sel, vue: *mut AnyObject) {
+        if !this.is_null() {
+            let classe = unsafe { (*this).class() } as *const AnyClass as usize;
+            let origine = originales().lock().unwrap_or_else(|e| e.into_inner()).get(&classe).copied();
+            if let Some(imp) = origine {
+                let f: Methode = unsafe { std::mem::transmute::<usize, Methode>(imp) };
+                unsafe { f(this, cmd, vue) };
+            }
+        }
+        let rappel = rappels().lock().unwrap_or_else(|e| e.into_inner()).get(&(vue as usize)).map(|(_, r)| r.clone());
+        let Some(rappel) = rappel else { return };
+        let recharger = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| rappel())).unwrap_or(false);
+        if recharger && !vue.is_null() {
+            let _: *mut AnyObject = unsafe { msg_send![vue, reload] };
+        }
+    }
+
+    /// Remplace (une fois par classe) la méthode de fin du rendu du délégué de navigation.
+    unsafe fn accrocher(vue: *mut AnyObject) -> Result<(), &'static str> {
+        let delegue: *mut AnyObject = unsafe { msg_send![vue, navigationDelegate] };
+        if delegue.is_null() {
+            return Err("vue sans délégué de navigation");
+        }
+        let classe = unsafe { (*delegue).class() };
+        let cle = classe as *const AnyClass as usize;
+        let mut originales = originales().lock().unwrap_or_else(|e| e.into_inner());
+        if originales.contains_key(&cle) {
+            return Ok(());
+        }
+        let Some(methode) = classe.instance_method(sel!(webViewWebContentProcessDidTerminate:)) else {
+            return Err("méthode webViewWebContentProcessDidTerminate: absente du délégué");
+        };
+        let nouvelle: Imp = unsafe { std::mem::transmute::<Methode, Imp>(rendu_termine_wk as Methode) };
+        let ancienne = unsafe { methode.set_implementation(nouvelle) };
+        originales.insert(cle, ancienne as usize);
+        Ok(())
+    }
+
+    pub(super) fn brancher<R: Runtime>(webview: &Webview<R>, label: String) {
+        let app = webview.app_handle().clone();
+        let _ = webview.with_webview(move |plateforme| {
+            let vue = plateforme.inner() as *mut AnyObject;
+            if vue.is_null() {
+                return;
+            }
+            match unsafe { accrocher(vue) } {
+                Ok(()) => {
+                    let (app2, label2) = (app.clone(), label.clone());
+                    let rappel: Rappel = Arc::new(move || {
+                        rendu_termine(&app2, &label2, "WKWebView", "raison non transmise par macOS")
+                    });
+                    rappels()
+                        .lock()
+                        .unwrap_or_else(|e| e.into_inner())
+                        .insert(vue as usize, (label.clone(), rappel));
+                }
+                Err(e) => journaliser(&app, &format!("[{label}] gardien non branché : {e}")),
+            }
+        });
+    }
+}
+
+#[cfg(target_os = "linux")]
+mod linux_webkitgtk {
+    use super::*;
+    use webkit2gtk::{WebProcessTerminationReason, WebViewExt};
+
+    fn raison(r: WebProcessTerminationReason) -> String {
+        match r {
+            WebProcessTerminationReason::Crashed => "plantage".into(),
+            WebProcessTerminationReason::ExceededMemoryLimit => "MÉMOIRE ÉPUISÉE".into(),
+            WebProcessTerminationReason::TerminatedByApi => "arrêté par l'appli".into(),
+            autre => format!("{autre:?}"),
+        }
+    }
+
+    pub(super) fn brancher<R: Runtime>(webview: &Webview<R>, label: String) {
+        let app = webview.app_handle().clone();
+        let _ = webview.with_webview(move |plateforme| {
+            plateforme.inner().connect_web_process_terminated(move |vue, r| {
+                if rendu_termine(&app, &label, "WebKitGTK", &raison(r)) {
+                    vue.reload();
+                }
+            });
+        });
+    }
 }
 
 #[cfg(windows)]
@@ -270,7 +447,7 @@ mod windows_webview2 {
                 args.ProcessFailedKind(&mut kind)?;
                 let panne = panne_de(kind);
                 let action = avec_etat(&label2, |e| decider(e, panne, Instant::now()));
-                journaliser(&app2, &format!("[{label2}] WebView2 : {panne:?} ({}) -> {action:?}", raison(&args, kind)));
+                journaliser(&app2, &format!("[{label2}] WebView2 : {panne:?} ({}) -> {}", raison(&args, kind), texte_action(panne, action)));
                 if action == Action::Recharger {
                     if let Some(vue) = vue {
                         vue.Reload()?;
@@ -312,6 +489,25 @@ mod tests {
         assert_eq!(decider(&mut e, Panne::RenduMort, t), Action::Recharger);
         assert_eq!(decider(&mut e, Panne::RenduMort, t + Duration::from_secs(3)), Action::Rien);
         assert_eq!(decider(&mut e, Panne::RenduMort, t + Duration::from_secs(40)), Action::Recharger);
+    }
+
+    #[test]
+    fn boucle_lente_limitee_puis_reprise() {
+        let mut e = EtatPage::default();
+        let t = t0();
+        for i in 0..MAX_RECHARGEMENTS as u64 {
+            assert_eq!(decider(&mut e, Panne::RenduMort, t + Duration::from_secs(60 * i)), Action::Recharger);
+        }
+        // Encore une mort peu après : la limite est atteinte, plus de rechargement automatique.
+        assert_eq!(decider(&mut e, Panne::RenduMort, t + Duration::from_secs(240)), Action::Rien);
+        // Les anciens rechargements sortent de la fenêtre : on recharge de nouveau.
+        assert_eq!(decider(&mut e, Panne::RenduMort, t + Duration::from_secs(661)), Action::Recharger);
+    }
+
+    #[test]
+    fn libelles_du_journal() {
+        assert_eq!(texte_action(Panne::RenduMort, Action::Recharger), "page rechargée");
+        assert!(texte_action(Panne::RenduMort, Action::Rien).contains("PAS de rechargement"));
     }
 
     #[test]
