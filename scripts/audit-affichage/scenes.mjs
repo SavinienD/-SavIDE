@@ -310,6 +310,26 @@ export const SCENES = [
       commandes: {
         goal: null,
         heartbeat: null,
+        autonomous: null,
+        guets: [
+          { id: "g1a2b3c", genre: "condition", cmd: "gh run view 4242 --exit-status", cree_ms: Date.UTC(2026, 9, 23, 12, 10), prochain_ms: Date.UTC(2026, 9, 23, 12, 33, 30), essais: 7, statut: "actif", message: "construction GitHub de la 0.1.68" },
+          { id: "g4d5e6f", genre: "commande", cmd: "cargo test --workspace", cree_ms: Date.UTC(2026, 9, 23, 12, 25), statut: "actif" },
+        ],
+      },
+    },
+    stockage: () => colonnes([ids(1)]),
+    evenements: [
+      { type: "turn_started" },
+      { type: "heartbeat_received", message: "guet g9a8b7c : terminée", at_ms: Date.UTC(2026, 9, 23, 12, 31) },
+      { type: "text_started" },
+      { type: "text_chunk", delta: "La construction est finie." },
+      { type: "text_finished" },
+      { type: "turn_finished" },
+    ],
+    cliquer: ".axe-indicateur[data-kind='guet']",
+    temoins: ["sel:.axe-indicateur[data-kind='guet']", "sel:.axe-reveil[data-kind='guet']", "sel:.axe-indicateurs__detail", "sel:.axe-indicateurs__guet"],
+    attendus: ["gh run view 4242 --exit-status", "cargo test --workspace", "Annuler", "Tout annuler", "Prochain essai", "guet g9a8b7c"],
+  },
   // Mode sans fin (/nonstop) : badge « Sans fin · 12 » avec son bouton d'arrêt à côté du modèle,
   // relance automatique en bulle discrète dans la conversation, détail au clic (compteurs, arrêt).
   {
@@ -334,26 +354,6 @@ export const SCENES = [
     cliquer: ".axe-indicateur[data-kind='sans-fin']",
     temoins: ["sel:.axe-indicateur[data-kind='sans-fin']", "sel:.axe-sans-fin__arret", "sel:.axe-reveil[data-kind='sans-fin']", "sel:.axe-indicateurs__detail"],
     attendus: ["Mode sans fin", "relance n°", "Arrêter le mode sans fin", "12 tours", "Lot 2 livré"],
-  },
-        autonomous: null,
-        guets: [
-          { id: "g1a2b3c", genre: "condition", cmd: "gh run view 4242 --exit-status", cree_ms: Date.UTC(2026, 9, 23, 12, 10), prochain_ms: Date.UTC(2026, 9, 23, 12, 33, 30), essais: 7, statut: "actif", message: "construction GitHub de la 0.1.68" },
-          { id: "g4d5e6f", genre: "commande", cmd: "cargo test --workspace", cree_ms: Date.UTC(2026, 9, 23, 12, 25), statut: "actif" },
-        ],
-      },
-    },
-    stockage: () => colonnes([ids(1)]),
-    evenements: [
-      { type: "turn_started" },
-      { type: "heartbeat_received", message: "guet g9a8b7c : terminée", at_ms: Date.UTC(2026, 9, 23, 12, 31) },
-      { type: "text_started" },
-      { type: "text_chunk", delta: "La construction est finie." },
-      { type: "text_finished" },
-      { type: "turn_finished" },
-    ],
-    cliquer: ".axe-indicateur[data-kind='guet']",
-    temoins: ["sel:.axe-indicateur[data-kind='guet']", "sel:.axe-reveil[data-kind='guet']", "sel:.axe-indicateurs__detail", "sel:.axe-indicateurs__guet"],
-    attendus: ["gh run view 4242 --exit-status", "cargo test --workspace", "Annuler", "Tout annuler", "Prochain essai", "guet g9a8b7c"],
   },
   // html — page .html : Code par défaut ; le bouton de bascule (le même que le
   // Markdown) passe au rendu, dans une iframe sandbox sans scripts ni réseau (CSP).
