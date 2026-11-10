@@ -16,7 +16,7 @@
 .jauge-contexte__barre { position: relative; width: 36px; height: 4px; border-radius: var(--r-pill); background: var(--bg-4); }
 .jauge-contexte__barre > span { position: absolute; inset: 0 auto 0 0; border-radius: var(--r-pill); background: var(--text-3); }
 .jauge-contexte__barre > i { position: absolute; top: -2px; width: 1px; height: 8px; background: var(--text-2); }
-.jauge-contexte__jauge[data-ton="warn"] { color: #f5a623; }
+.jauge-contexte__jauge[data-ton="warn"] { color: var(--warn); }
 .jauge-contexte__jauge[data-ton="warn"] .jauge-contexte__barre > span { background: #f5a623; }
 .jauge-contexte__jauge[data-ton="danger"] { color: var(--danger); }
 .jauge-contexte__jauge[data-ton="danger"] .jauge-contexte__barre > span { background: var(--danger); }

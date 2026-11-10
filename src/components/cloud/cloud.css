@@ -92,7 +92,7 @@
 /* Roue de chargement 16 px en CSS pur. */
 .axc-spinner {
   display: inline-block; flex: none; width: 16px; height: 16px;
-  vertical-align: middle; border: 2px solid rgba(252, 97, 11, .25);
+  vertical-align: middle; border: 2px solid color-mix(in srgb, var(--accent) 25%, transparent);
   border-top-color: var(--accent); border-radius: 50%;
   animation: axc-spin .8s linear infinite;
 }
@@ -264,7 +264,7 @@
   cursor: pointer;
 }
 .axc-btn:hover { background: var(--bg-4); }
-.axc-btn--primary { color: #fff; background: var(--accent); border-color: transparent; }
+.axc-btn--primary { color: var(--accent-ink, #fff); background: var(--accent); border-color: transparent; }
 .axc-btn--primary:hover { background: var(--accent-hi); }
 .axc-btn--ghost { color: var(--text-2); background: none; border-color: transparent; }
 .axc-btn--ghost:hover { color: var(--text-0); background: var(--bg-3); }

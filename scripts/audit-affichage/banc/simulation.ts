@@ -296,11 +296,7 @@ export function installerSimulation(scene: Scene): void {
       if (auto !== undefined) return auto;
       switch (a.method) {
         case "queue.state":
-        case "harness.list": // harnais de l'espace cloud (lu en plus de celui du poste)
-          return [];
-        case "harness.refinements":
-          return [];
-          return { items: fileDe(a.params), paused: false };
+          return { items: fileDe(a.params), paused: scene.filePause === true };
         case "queue.list":
           return fileDe(a.params);
         case "queue.remove":
@@ -309,6 +305,10 @@ export function installerSimulation(scene: Scene): void {
         case "queue.move":
         case "queue.resume":
           return null;
+        case "harness.list": // harnais de l'espace cloud (lu en plus de celui du poste)
+          return [];
+        case "harness.refinements":
+          return [];
         case "queue.state":
           return { items: filesBanc[a.params?.sessionId] ?? [], paused: scene.filePause === true };
         case "queue.list":

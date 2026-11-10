@@ -3909,7 +3909,6 @@ export function ChatPane({
         <button
           type="button"
           className="axe-agents-bandeau"
-          style={{ display: "block", width: "100%", textAlign: "left", padding: "4px 10px", fontSize: 12, border: "none", cursor: "pointer", background: "var(--accent-soft, rgba(80,140,255,0.12))", color: "inherit" }}
           title="Ouvrir la conversation de l'agent"
           onClick={() => {
             // bg-c — comme la vue Agents : ouvre la conversation (journal) de l'agent.

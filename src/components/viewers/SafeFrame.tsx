@@ -36,7 +36,7 @@ function themeCss(): string {
   const v = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
   const bg = v("--editor-bg", v("--bg-0", "#0b0b0d"));
   return `
-    :root { color-scheme: dark; }
+    :root { color-scheme: ${document.documentElement.dataset.axeScheme === "light" ? "light" : "dark"}; }
     html, body { margin: 0; background: ${bg}; color: ${v("--text-1", "#d4d4d8")}; }
     body { font: 14px/1.65 ${v("--font-ui", "system-ui, sans-serif")}; padding: 28px 40px 48px;
       max-width: 860px; margin: 0 auto; word-wrap: break-word; }
@@ -50,8 +50,8 @@ function themeCss(): string {
     pre { background: ${v("--bg-2", "#18181b")}; padding: 10px 12px; border-radius: 8px; overflow: auto; }
     blockquote { margin: 0; padding-left: 14px; border-left: 3px solid ${v("--line", "#2a2a2e")}; color: ${v("--text-2", "#a1a1aa")}; }
     hr { border: 0; border-top: 1px solid ${v("--line", "#2a2a2e")}; margin: 24px 0; }
-    mark.xv-hit { background: rgba(252, 97, 11, .35); color: inherit; border-radius: 2px; }
-    mark.xv-hit[data-current="true"] { background: rgba(252, 97, 11, .8); color: #fff; }
+    mark.xv-hit { background: ${v("--highlight-bg", "rgba(252, 97, 11, .35)")}; color: inherit; border-radius: 2px; }
+    mark.xv-hit[data-current="true"] { background: ${v("--accent", "#fc610b")}; color: ${v("--accent-ink", "#fff")}; }
   `;
 }
 

@@ -3968,7 +3968,7 @@ export function Workspace({
           <span className="titlebar__brand-name">SavIDE</span>
           {miroir && !EDITION_LOCALE ? (
             <span className="titlebar__mirror" title={miroir.ok ? "Copie des conversations de ce PC sur la VM (.axe-conversations/) : OK" : !cloudReady ? "Copie des conversations vers la VM impossible : non connecté au cloud" : `Copie des conversations de ce PC vers la VM en échec : ${miroir.error ?? "erreur inconnue"}`}
-              style={{ marginLeft: 8, fontSize: 11, color: miroir.ok ? "#22c55e" : !cloudReady ? "#9ca3af" : "#ef4444" }}>
+              style={{ marginLeft: 8, fontSize: 11, color: miroir.ok ? "var(--ok)" : !cloudReady ? "var(--text-3)" : "var(--danger)" }}>
               {miroir.ok ? `VM ✓ ${miroir.n} · ${new Date(miroir.atMs).toLocaleTimeString("fr-FR")}` : !cloudReady ? "VM —" : "VM ✗"}
             </span>
           ) : null}

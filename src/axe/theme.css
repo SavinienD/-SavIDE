@@ -1,6 +1,6 @@
 /* Theme overrides. Imported after styles.css.
  * Background-derived tones (surfaces, lines, text) are set at runtime by
- * src/axe/theme.ts on :root; the accent is the fixed orange. */
+ * src/axe/theme.ts on :root, with the accent tones (default: orange). */
 :root {
   --axe-bg: #0b0b0d;
   --axe-accent: #fc610b;
@@ -11,6 +11,13 @@
   --accent-deep: #b34307;
   --accent-glow: rgba(252, 97, 11, 0.35);
   --accent-soft: rgba(252, 97, 11, 0.12);
+  /* Accent-derived tones; recomputed for the chosen accent by theme.ts. */
+  --accent-strong: rgba(252, 97, 11, 0.24);
+  --accent-ink:  #ffffff;
+  --focus-ring:  rgba(252, 97, 11, 0.6);
+  --selection-bg: rgba(252, 97, 11, 0.32);
+  --highlight-bg: rgba(252, 97, 11, 0.3);
+  --highlight-bg-strong: rgba(252, 97, 11, 0.55);
   --skill:       #a78bfa; /* couleurs — skills dans le compositeur et les bulles */
 }
 
@@ -109,7 +116,7 @@
 .axe-preview__bubble--user { align-self: flex-end; padding: 4px 8px; border-radius: var(--r-med); background: var(--bg-3); color: var(--text-0); }
 .axe-preview__card { padding: 4px 6px; border: 1px solid var(--line); border-radius: var(--r-small); background: var(--bg-2); color: var(--text-2); font-family: var(--font-mono); font-size: calc(10px * var(--text-scale, 1)); }
 .axe-preview__composer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding: 4px 4px 4px 8px; border: 1px solid var(--line-strong); border-radius: var(--r-med); background: var(--bg-0); color: var(--text-3); }
-.axe-preview__send { padding: 2px 8px; border-radius: var(--r-small); background: var(--accent); color: #fff; }
+.axe-preview__send { padding: 2px 8px; border-radius: var(--r-small); background: var(--accent); color: var(--accent-ink); }
 
 /* providers — Settings > Providers, configurable instances */
 .axe-providers { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
@@ -256,3 +263,38 @@
 .remote-panel__relay { display: flex; gap: 8px; align-items: center; }
 .remote-panel__relay input { flex: 1; min-width: 0; padding: 6px 8px; font: inherit; font-size: calc(12.5px * var(--text-scale, 1)); background: transparent; color: inherit; border: 1px solid var(--border, rgba(127,127,127,.3)); border-radius: 6px; }
 .remote-panel__hint[data-tone="warn"] { color: var(--accent, #fc610b); }
+
+/* "N agent(s) au travail" banner above the composer: an accent tint, with
+   hover and keyboard focus derived from the same accent. */
+.axe-agents-bandeau {
+  display: block; width: 100%; padding: 4px 10px; border: none; cursor: pointer; text-align: left;
+  font-size: 12px; background: var(--accent-soft); color: var(--text-1);
+}
+.axe-agents-bandeau:hover { background: var(--accent-strong); color: var(--text-0); }
+.axe-agents-bandeau:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+
+/* Code blocks in chat on light grounds: the default palette above is tuned for
+   dark backgrounds; these darker tones keep about 4.5:1 on light surfaces. */
+:root[data-axe-scheme="light"] .md .hljs-comment,
+:root[data-axe-scheme="light"] .md .hljs-quote { color: #6b6e75; }
+:root[data-axe-scheme="light"] .md .hljs-keyword,
+:root[data-axe-scheme="light"] .md .hljs-selector-tag,
+:root[data-axe-scheme="light"] .md .hljs-literal,
+:root[data-axe-scheme="light"] .md .hljs-built_in { color: #3d5a8a; }
+:root[data-axe-scheme="light"] .md .hljs-string,
+:root[data-axe-scheme="light"] .md .hljs-regexp,
+:root[data-axe-scheme="light"] .md .hljs-attribute { color: #3d6b47; }
+:root[data-axe-scheme="light"] .md .hljs-number,
+:root[data-axe-scheme="light"] .md .hljs-meta { color: #8a5626; }
+:root[data-axe-scheme="light"] .md .hljs-title,
+:root[data-axe-scheme="light"] .md .hljs-name,
+:root[data-axe-scheme="light"] .md .hljs-function,
+:root[data-axe-scheme="light"] .md .hljs-symbol,
+:root[data-axe-scheme="light"] .md .hljs-bullet,
+:root[data-axe-scheme="light"] .md .hljs-link { color: #2f5f8a; }
+:root[data-axe-scheme="light"] .md .hljs-type,
+:root[data-axe-scheme="light"] .md .hljs-class .hljs-title { color: #7a5524; }
+:root[data-axe-scheme="light"] .md .hljs-variable,
+:root[data-axe-scheme="light"] .md .hljs-template-variable,
+:root[data-axe-scheme="light"] .md .hljs-tag,
+:root[data-axe-scheme="light"] .md .hljs-params { color: #8a4566; }

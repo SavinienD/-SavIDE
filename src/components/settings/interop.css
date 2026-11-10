@@ -17,7 +17,7 @@
 
 /* Réglages > Skills : bouton « Importer » et boîte d'import (Claude Code, Codex, adresse). */
 .axe-interop__badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px;
-  border-radius: 999px; background: var(--accent); color: #fff; font-size: calc(10px * var(--text-scale, 1)); line-height: 1; }
+  border-radius: 999px; background: var(--accent); color: var(--accent-ink, #fff); font-size: calc(10px * var(--text-scale, 1)); line-height: 1; }
 .axe-interop__boite { width: min(640px, 100%); }
 .axe-interop__onglets { display: flex; gap: 4px; border-bottom: 1px solid var(--line-strong); }
 .axe-interop__onglets button { padding: 6px 10px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--text-1);

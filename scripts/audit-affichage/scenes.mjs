@@ -9,6 +9,7 @@ import { SCENES_WORKTREES } from "./scenes-worktrees.mjs"; // worktrees
 import { SCENES_REVUE } from "./scenesRevue.mjs"; // revue des changements
 import { SCENES_EDITEUR } from "./scenes-editeur.mjs";
 import { SCENES_INTEROP } from "./scenes-interop.mjs";
+import { scenesTheme } from "./scenes-theme.mjs";
 
 const ids = (n, depart = 0) => Array.from({ length: n }, (_, i) => `c-${String(depart + i + 1).padStart(3, "0")}`);
 const recents25 = () => Array.from({ length: 25 }, (_, i) => ({ path: `C:\\Users\\utilisateur\\Documents\\Clients\\client-${String(i + 1).padStart(2, "0")}`, name: `client-${String(i + 1).padStart(2, "0")}`, lastOpenedMs: 1_790_000_000_000 - i * 3_600_000 }));
@@ -1212,3 +1213,4 @@ export const SCENES = [
     temoins: ["appel:ouvrir_dossier_journaux", "sel:.aide-appli__message"] },
 ];
 SCENES.push(...SCENES_INTEROP);
+SCENES.push(...scenesTheme({ colonnes, ids, fileAttente }));
