@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import { McpCatalogPanel } from "./McpCatalogPanel";
 import { ErreurMcp } from "./McpErreur";
 import { expliquerErreurMcp } from "../../axe/mcpGuide";
+import { confierALIa, demandeInstallationMcp, serveurLocal, systemeCourant } from "../../axe/mcpDemandeIa";
 import { redactCommand } from "../../axe/mcpCatalog";
 import { serveurInterne, sondeDuServeur, etatLigne } from "../../lib/mcpServeurs";
 import { loadTextScale, MONO_BASE_PX, MONO_LINE_BASE_PX, onTextScaleChange } from "../../axe/zoom";
@@ -339,7 +340,14 @@ function DetailServeur({
         </div>
       )}
 
-      {erreur && <ErreurMcp erreur={erreur} />}
+      {erreur && (
+        <ErreurMcp
+          erreur={erreur}
+          onDemanderIa={serveurLocal(server) && !probe?.authRequired
+            ? (e) => confierALIa(demandeInstallationMcp(server, { systeme: systemeCourant(), erreur: e }))
+            : undefined}
+        />
+      )}
 
       <div className="mcp-detail__titre">Outils{outils.length ? ` (${outils.length})` : ""}</div>
       {outils.length > 0 ? (
