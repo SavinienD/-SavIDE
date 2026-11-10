@@ -142,9 +142,9 @@ import type {
   WorkspaceEntry,
   WorkspaceFileChangedPayload,
 } from "../types";
-import { estMac, formaterTexte, modPrincipal } from "../lib/plateforme";
+import { estMac, estWindows, formaterTexte, modPrincipal } from "../lib/plateforme";
 import { brancherAvis, brancherExistence } from "../axe/voix/dicteeCible";
-import { dansRect, messageDepotVide, pointCss } from "../lib/depot";
+import { dansRect, echelleDepot, messageDepotVide, pointCss, zoneSous } from "../lib/depot";
 import { loadUiZoom } from "../axe/zoom";
 import { apprendreDuMessage } from "../axe/voix/vocabulaireAuto"; // voix-vocabulaire
 import { noterConversation } from "../lib/gardienPage";
@@ -1992,12 +1992,15 @@ export function Workspace({
   );
   const dropSubsRef = useRef<
     Set<
-      (attachments: { path: string; name: string; origin: "finder" }[]) => void
+      (
+        attachments: { path: string; name: string; origin: "finder" }[],
+        cible: Element | null,
+      ) => void
     >
   >(new Set());
-  const dragSubsRef = useRef<Set<(active: boolean) => void>>(new Set());
+  const dragSubsRef = useRef<Set<(active: boolean, cible: Element | null) => void>>(new Set());
   const chatDropZoneRef = useRef<HTMLDivElement | null>(null);
-  // e17b — les colonnes sans focus ne reçoivent pas les fichiers déposés.
+  // Le dépôt de fichiers vise la conversation sous le pointeur (chatSousPoint), pas ces refs.
   const chatDropZoneMorteRef = useRef<HTMLDivElement | null>(null);
   const fileTreeDropZoneRef = useRef<HTMLDivElement | null>(null);
   const [fileTreeDropState, setFileTreeDropState] = useState<{
@@ -2006,6 +2009,20 @@ export function Workspace({
   }>({ active: false, targetRelative: null });
   const [importError, setImportError] = useState<string | null>(null);
   const echelleDepotRef = useRef<number | null>(null);
+
+  const chatSousPoint = useCallback((p: { x: number; y: number } | null): Element | null => {
+    if (!p) return null;
+    const dessus = document.elementFromPoint(p.x, p.y);
+    const direct =
+      dessus?.closest(".chat-col") ??
+      dessus?.closest(".colonne-chat")?.querySelector(".chat-col") ??
+      null;
+    if (direct) return direct;
+    return zoneSous(
+      p,
+      [...document.querySelectorAll(".chat-col")].map((el) => ({ cle: el, rect: el.getBoundingClientRect() })),
+    );
+  }, []);
 
   const findFolderTargetAt = useCallback(
     (x: number, y: number): string | null => {
@@ -2034,9 +2051,15 @@ export function Workspace({
           const physique =
             "position" in event.payload ? event.payload.position : null;
           const position = physique
-            ? pointCss(physique, echelleDepotRef.current ?? window.devicePixelRatio ?? 1, loadUiZoom())
+            ? pointCss(
+                physique,
+                echelleDepot(estWindows(), echelleDepotRef.current ?? window.devicePixelRatio),
+                loadUiZoom(),
+              )
             : null;
-          const chatRect = chatDropZoneRef.current?.getBoundingClientRect();
+          // La conversation sous le pointeur (toute sa hauteur, saisie comprise), mesurée
+          // à chaque événement : plusieurs colonnes, fenêtre ou panneau redimensionnés.
+          const zoneChat = chatSousPoint(position);
           const sidebarRect =
             fileTreeDropZoneRef.current?.getBoundingClientRect();
           // un .md déposé sur la liste de Réglages > Harnais s'importe dans le harnais
@@ -2045,11 +2068,11 @@ export function Workspace({
             position,
             document.querySelector("[data-depot-harnais]")?.getBoundingClientRect(),
           );
-          const overChat = !surHarnais && dansRect(position, chatRect);
+          const overChat = !surHarnais && zoneChat !== null;
           const overSidebar = !surHarnais && !overChat && dansRect(position, sidebarRect);
 
           if (type === "enter" || type === "over") {
-            for (const handler of dragSubsRef.current) handler(overChat);
+            for (const handler of dragSubsRef.current) handler(overChat, overChat ? zoneChat : null);
             if (overSidebar && position) {
               const target = findFolderTargetAt(position.x, position.y);
               setFileTreeDropState({ active: true, targetRelative: target });
@@ -2061,12 +2084,12 @@ export function Workspace({
             return;
           }
           if (type === "leave") {
-            for (const handler of dragSubsRef.current) handler(false);
+            for (const handler of dragSubsRef.current) handler(false, null);
             setFileTreeDropState({ active: false, targetRelative: null });
             return;
           }
           if (type === "drop") {
-            for (const handler of dragSubsRef.current) handler(false);
+            for (const handler of dragSubsRef.current) handler(false, null);
             setFileTreeDropState({ active: false, targetRelative: null });
             const paths = event.payload.paths ?? [];
             if (surHarnais) {
@@ -2091,7 +2114,7 @@ export function Workspace({
                 name: basename(path),
                 origin: "finder" as const,
               }));
-              for (const handler of dropSubsRef.current) handler(attachments);
+              for (const handler of dropSubsRef.current) handler(attachments, zoneChat);
               return;
             }
             if (overSidebar && position) {
@@ -2120,7 +2143,7 @@ export function Workspace({
       cancelled = true;
       if (unlisten) unlisten();
     };
-  }, [workspacePath, findFolderTargetAt, refreshFileTree]);
+  }, [workspacePath, findFolderTargetAt, chatSousPoint, refreshFileTree]);
 
   // E17a — toutes les actions prennent explicitement leur conversation. Ainsi
   // un futur ChatPane dans une autre colonne ne peut pas envoyer/arrêter le fil actif par erreur.

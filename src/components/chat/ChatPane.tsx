@@ -11,6 +11,7 @@ import {
   useLayoutEffect,
   useMemo,
   type CSSProperties,
+  type MutableRefObject,
   type ReactNode,
   type RefObject,
   useRef,
@@ -442,8 +443,9 @@ function saveFastServiceTierPreference(enabled: boolean) {
 }
 
 export type ExternalDropFeed = {
-  subscribe(handler: (attachments: Attachment[]) => void): () => void;
-  subscribeDrag(handler: (active: boolean) => void): () => void;
+  /** `cible` : la zone (.chat-col) sous le pointeur ; seule cette conversation reçoit. */
+  subscribe(handler: (attachments: Attachment[], cible: Element | null) => void): () => void;
+  subscribeDrag(handler: (active: boolean, cible: Element | null) => void): () => void;
 };
 
 const BROUILLONS_PARTAGES = new Map<string, ComposerDraft>();
@@ -611,6 +613,15 @@ export function ChatPane({
   // slash end
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [dropActive, setDropActive] = useState(false);
+  // Élément de CETTE conversation : un fichier déposé ne va qu'à celle sous le pointeur.
+  const zoneDepotRef = useRef<HTMLDivElement | null>(null);
+  const refZoneDepot = useCallback(
+    (el: HTMLDivElement | null) => {
+      zoneDepotRef.current = el;
+      (dropZoneRef as MutableRefObject<HTMLDivElement | null>).current = el;
+    },
+    [dropZoneRef],
+  );
   const [optimisticModeSelectionsByConversation, setOptimisticModeSelectionsByConversation] =
     useState<Map<string, PartialModeModelSelections>>(() => new Map());
   const [mode, setMode] = useState<AgentMode>(() =>
@@ -1779,16 +1790,17 @@ export function ChatPane({
   }, [subscribeEvents, applyEventToConversationView]);
 
   useEffect(() => {
-    const unsubscribe = externalDrops.subscribe((incoming) => {
-      setAttachments((prev) => mergeAttachments(prev, incoming));
+    const unsubscribe = externalDrops.subscribe((incoming, cible) => {
       setDropActive(false);
+      if (!cible || cible !== zoneDepotRef.current) return;
+      setAttachments((prev) => mergeAttachments(prev, incoming));
     });
     return unsubscribe;
   }, [externalDrops]);
 
   useEffect(() => {
-    const unsubscribe = externalDrops.subscribeDrag((active) => {
-      setDropActive(active);
+    const unsubscribe = externalDrops.subscribeDrag((active, cible) => {
+      setDropActive(active && cible !== null && cible === zoneDepotRef.current);
     });
     return unsubscribe;
   }, [externalDrops]);
@@ -3668,7 +3680,7 @@ export function ChatPane({
     <ActionsCheminChatContext.Provider value={actionsChemin}>
     <div
       className="chat-col"
-      ref={dropZoneRef}
+      ref={refZoneDepot}
       data-drop={dropActive && !viewingSubAgent ? "true" : "false"}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
