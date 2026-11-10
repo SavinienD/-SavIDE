@@ -78,6 +78,8 @@ const ZOOMS = opt("zooms", "0.8,1,1.2").split(",").map(Number);
 const POLICES = opt("polices", "app").split(",");
 const ETAPES = opt("etapes", "normal,pleine,retour,scinde,redim,defilement,zoom+,zoom-,ecran").split(",");
 const CAPTURES = drapeau("captures");
+// Délai entre une étape et sa mesure (ms) : plus long sur une machine chargée.
+const ATTENTE = Number(opt("attente", "900"));
 const stockage = SCENES.find((s) => s.id === "terminal-scinde").stockage;
 // Polices du terminal (variable --font-mono lue à l'ouverture) : celle de l'appli, ou une autre.
 const POLICE = { app: null, dejavu: '"DejaVu Sans Mono", monospace', liberation: '"Liberation Mono", monospace' };
@@ -102,8 +104,8 @@ async function ouvrir(page, cas) {
   await page.addStyleTag({ content: "*,*::before,*::after{transition-duration:0s!important;animation-duration:0.001s!important}" });
   await page.waitForSelector(".welcome", { timeout: 15000 });
   if (POLICE[cas.police]) await page.evaluate((f) => document.documentElement.style.setProperty("--font-mono", f), POLICE[cas.police]);
-  // Dossier le plus récent de l'accueil (celui du banc).
-  await page.evaluate(() => document.querySelector("button.welcome__recent")?.click());
+  // Dossier le plus récent de l'accueil (celui du banc), pas une conversation.
+  await page.evaluate(() => document.querySelector(".welcome__recents[data-liste='dossiers'] button.welcome__recent")?.click());
   await page.waitForSelector(".workspace .composer", { timeout: 15000 });
   await page.evaluate(() => window.__bancEmettre?.("terminal-open-requested", null));
   await page.waitForSelector(".acli-surface .xterm-screen", { visible: true, timeout: 15000 });
@@ -250,7 +252,7 @@ for (const c of cas) {
     for (const etape of ETAPES) {
       const id = `${base}-${etape}`;
       await ETAPE[etape](page, c);
-      await pause(900);
+      await pause(ATTENTE);
       const png = await page.screenshot({ encoding: "base64" });
       const m = await mesurer(page, png);
       const defauts = juger(m);
