@@ -151,7 +151,11 @@ pub fn transcrire_pcm(chemin: &std::path::Path, echantillons: &[f32], amorce: &s
     let mut garde = contexte().lock().map_err(|_| "moteur local bloqué".to_string())?;
     if garde.as_ref().map(|(c, _)| c != &cle).unwrap_or(true) {
         *garde = None;
-        let ctx = WhisperContext::new_with_params(&cle, WhisperContextParameters::default())
+        // GPU (Metal) quand la fonction est compilée (Mac Apple Silicon), et attention
+        // « flash » : moins de calcul à l'encodeur, sur GPU comme sur processeur.
+        let mut params = WhisperContextParameters::default();
+        params.flash_attn(true);
+        let ctx = WhisperContext::new_with_params(&cle, params)
             .map_err(|e| format!("modèle illisible\u{a0}: {e}"))?;
         *garde = Some((cle, ctx));
     }

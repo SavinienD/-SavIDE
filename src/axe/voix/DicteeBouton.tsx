@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "re
 import { createPortal } from "react-dom";
 
 import { formaterDuree } from "./inserer";
+import type { Remplacer } from "./dicteeCible";
 import { useDictee } from "./useDictee";
 import { useDicteeDisponible } from "./useDicteeDisponible"; // 0.1.71
 import "./voix.css";
@@ -19,7 +20,7 @@ type Props = {
   /** Conversation affichée : la dictée commencée ici revient ici. */
   conversationId?: string;
   modele?: { provider: string; name: string } | null;
-  onTexte: (texte: string) => void;
+  onTexte: (texte: string) => Remplacer | void;
 };
 
 function IconeMicro() {

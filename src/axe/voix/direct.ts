@@ -1,5 +1,5 @@
 // 0.1.75 — dictée en direct (moyens gratuits : Whisper local de la VM ou du poste).
-// Pendant qu'on parle, l'audio est découpé en morceaux de 4 à 8 s (de préférence sur un
+// Pendant qu'on parle, l'audio est découpé en morceaux de 6 à 10 s (de préférence sur un
 // court silence), transcrits au fil de l'eau : texte provisoire grisé, remplacé à la fin
 // par la transcription de tout l'enregistrement (puis, en option, le nettoyage par l'IA
 // de la conversation). Module pur : testé par tests/voixDirect.test.cjs.
@@ -10,15 +10,21 @@ export type ReglageTaille = "auto" | TailleWhisper;
 /** Fréquence envoyée à Whisper (son format natif). */
 export const FREQUENCE = 16_000;
 /**
- * Morceau visé : coupé sur un silence entre 4 s et 8 s. Whisper encode au moins 768 trames
- * (≈ 10 s de voix) quelle que soit la durée : des morceaux de 3 s coûtaient le même calcul
- * pour deux fois moins de voix, la file prenait du retard et la fin attendait. Mesuré
- * (10/11/2026, VM chargée, voix réelle) : délai fin de parole -> texte 10,0/8,0/10,1 s
- * avec 2,5-4,5 s contre 6,3/7,1/7,2 s avec 4-8 s, et moins de coupes en plein mot.
+ * Morceau visé : coupé sur un silence entre 6 s et 10 s. Whisper encode au moins 768 trames
+ * (≈ 10 s de voix) quelle que soit la durée : un morceau de 4 s coûte autant qu'un de 10 s.
+ * Mesuré (10/11/2026, voix réelle, phrases de 4 à 5 s) : avec 4-8 s la phrase était coupée
+ * vers 4 s et la fin attendait deux encodages (4,0 à 5,1 s) ; avec 6-10 s, un seul (2,4 à 2,6 s).
  */
-export const MORCEAU_MIN_MS = 4_000;
-export const MORCEAU_MAX_MS = 8_000;
+export const MORCEAU_MIN_MS = 6_000;
+export const MORCEAU_MAX_MS = 10_000;
 export const SILENCE_MS = 250;
+/**
+ * Pause de fin de phrase : au-delà de 1,2 s de voix, un silence de 0,5 s coupe aussi. Le
+ * morceau part pendant que l'on va cliquer sur Terminer, et la fin n'a plus rien à
+ * transcrire. Mesuré : fin de dictée 2,2-2,4 s -> 1,6-1,7 s, même taux d'erreur.
+ */
+export const PAUSE_FIN_MS = 500;
+export const PAUSE_FIN_MIN_MS = 1_200;
 /** Au-delà de 2× le temps réel, le modèle « moyen » ne suit plus : on passe au « petit ». */
 export const SEUIL_TEMPS_REEL = 2;
 /** La mesure automatique est refaite au bout d'un jour (charge de la machine variable). */
@@ -26,6 +32,7 @@ export const VALIDITE_MESURE_MS = 24 * 3600 * 1000;
 
 export function doitCouper(attenteMs: number, silenceMs: number): boolean {
   if (attenteMs >= MORCEAU_MAX_MS) return true;
+  if (attenteMs >= PAUSE_FIN_MIN_MS && silenceMs >= PAUSE_FIN_MS) return true;
   return attenteMs >= MORCEAU_MIN_MS && silenceMs >= SILENCE_MS;
 }
 

@@ -46,7 +46,7 @@ import { avecNote, noteConversation } from "./arrierePlan"; // arriere-plan
 import { fileIcon } from "../../lib/fileIcon";
 import { DicteeBouton } from "../../axe/voix/DicteeBouton"; // voix
 import { BoutonCommandesChat } from "../agents-cli/CommandesEnregistrees"; // commandes et prompts enregistrés
-import { insererTexteDicte } from "../../axe/voix/inserer"; // voix
+import { insererTexteDicte, remplacerTexteDicte } from "../../axe/voix/inserer"; // voix
 import { brancherBrouillons, enregistrerComposeur } from "../../axe/voix/dicteeCible";
 import { brancherCompositeur } from "../pr/versAgent"; // panneau Git : consignes envoyées à l'agent
 import { ajouterAuTexte, enregistrerCibleChat } from "../navigateur/versChat"; // élément choisi dans le navigateur
@@ -2971,6 +2971,17 @@ export function ChatPane({
     );
     pendingCaretRef.current = curseur;
     setText(valeur);
+    // Le nettoyage IA arrive après l'affichage : il ne remplace le texte dicté que si la
+    // saisie n'a pas bougé depuis cette insertion.
+    return (nouveau: string): boolean => {
+      const zone = textareaRef.current;
+      if (!zone) return false;
+      const r = remplacerTexteDicte(zone.value, valeur, curseur, dicte, nouveau);
+      if (!r) return false;
+      pendingCaretRef.current = r.curseur;
+      setText(r.valeur);
+      return true;
+    };
   }, [text]);
   // Ce compositeur reçoit la dictée de SA conversation (commencée ici ou dans
   // une autre colonne) ; une dictée commencée ailleurs ne vient jamais ici.

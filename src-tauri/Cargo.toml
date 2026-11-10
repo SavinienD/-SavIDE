@@ -55,6 +55,11 @@ reqwest = { workspace = true }
 whisper-rs = "0.16" # micro-local
 sha2 = { workspace = true } # micro-local
 
+# Dictée locale sur Mac Apple Silicon : whisper.cpp sur le GPU (Metal) au lieu du seul
+# processeur. Les Mac Intel, Linux et Windows restent sur le processeur.
+[target.'cfg(all(target_os = "macos", target_arch = "aarch64"))'.dependencies]
+whisper-rs = { version = "0.16", features = ["metal"] }
+
 # événement ProcessFailed de WebView2 (mêmes versions que wry).
 [target.'cfg(windows)'.dependencies]
 webview2-com = "0.38"
