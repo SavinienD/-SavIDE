@@ -21,6 +21,7 @@ import { xtermTheme } from "../axe/themeTargets"; // theme
 import { MONO_BASE_PX } from "../axe/zoom"; // zoom — taille fixe (e19 : le reglage ne concerne que le chat et les documents)
 import { identifiantPty } from "../lib/terminalDossier";
 import { prendreCommandeDepart } from "./worktrees/terminauxDepart"; // worktrees
+import { suivreMesuresTerminal } from "./terminalMesures";
 import type { TerminalDataPayload, TerminalExitPayload } from "../types";
 import { ouvrirLien } from "./navigateur/liens"; // navigateur intégré ou du système
 import { BoutonNouvelAgent, type LancementAgent } from "./agents-cli/NouvelAgentMenu"; // agents en ligne de commande
@@ -820,6 +821,15 @@ function TerminalSurface({
       if (activeRef.current) fitTerminal();
     });
     resizeObserverRef.current.observe(container);
+    // Cells resized without the host resizing (screen scale, font metrics): refit so the
+    // grid stays inside the panel and the PTY gets the size really shown.
+    const arreterMesures = suivreMesuresTerminal(window, document.fonts, () => {
+      if (!activeRef.current) return;
+      fitTerminal();
+      // New cell size: redraw every row (glyphs are re-rasterised for the new scale).
+      terminal.refresh(0, Math.max(0, terminal.rows - 1));
+    });
+    disposablesRef.current.push({ dispose: arreterMesures });
 
     // Agent rouvert avec l'appli : historique affiché, rien ne tourne (« Relancer »).
     if (session.enPause) {

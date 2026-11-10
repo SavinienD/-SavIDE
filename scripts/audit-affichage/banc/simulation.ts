@@ -14,6 +14,7 @@ import { simulationNavigateur } from "./navigateur"; // navigateur intégré
 import { simulationAutomatisations } from "./automatisations"; // automatisations
 import { simulationInterop } from "./interop";
 import { simulationAgentsCli } from "./agentsCli"; // agents en ligne de commande
+import { simulationTerminalCadre } from "./terminalCadre"; // terminal plein écran (cadre)
 import { simulationPalette } from "./palette";
 
 export type Scene = {
@@ -646,6 +647,7 @@ export function installerSimulation(scene: Scene): void {
   Object.assign(h, simulationInterop(scene, h));
   Object.assign(h, simulationAgentsCli(scene)); // agents en ligne de commande
   if (scene.terminaux) Object.assign(h, simulationTerminaux());
+  Object.assign(h, simulationTerminalCadre(scene)); // terminal plein écran (scène « cadre »)
   mockWindows("main");
   mockConvertFileSrc("windows");
   mockIPC(
