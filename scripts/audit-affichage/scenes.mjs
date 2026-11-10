@@ -746,10 +746,10 @@ export const SCENES = [
     temoins: ["absent:.composer__picker[data-kind=model] .composer__popover", "qwen3-coder:30b"] },
   // catalogue des fournisseurs intégrés complété par l'API (GET /v1/models) : Opus 6,
   // annoncé par Anthropic mais absent de la liste en dur, apparaît une fois (pas sa version datée,
-  // pas de doublon d'Opus 5.5) ; 6 Anthropic + 1 nouveau + 3 OpenAI = 10.
+  // pas de doublon d'Opus 5.5) ; 8 Anthropic (dont Fable 5.2 et Mythos 5.2) + 1 nouveau + 3 OpenAI = 12.
   { id: "modeles-catalogue", sim: { catalogue: true }, stockage: () => colonnes([ids(1)]),
     clics: [".composer__picker[data-kind=model] .composer__picker-btn"],
-    temoins: ["compte:.composer__picker[data-kind=model] .composer__popover-row=10", "Opus 6", "appel:catalogue_modeles"] },
+    temoins: ["compte:.composer__picker[data-kind=model] .composer__popover-row=12", "Opus 6", "Fable 5.2", "Mythos 5.2", "appel:catalogue_modeles"] },
   // deux comptes Claude connectés (claude@… = connexion d'avant, deuxieme@… ajouté) :
   // un groupe Anthropic par compte, e-mail en sous-titre ; un modèle du 2e compte se choisit.
   { id: "modeles-comptes", sim: { comptesMultiples: true }, stockage: () => colonnes([ids(1)]),
