@@ -3,7 +3,7 @@
 // réduits, terminal, hauteur du terminal), quelle que soit la façon d'y revenir
 // (Ctrl+1/2/3, accueil puis carte du dossier) et après un rechargement de la page.
 // Vraie interface (src/) + backend simulé du banc d'affichage, dans Chromium sans écran.
-//   node scripts/audit-affichage/disposition.mjs [--sans-build] [--strict] [--mac]
+//   node scripts/audit-affichage/disposition.mjs [--sans-build] [--strict] [--mac] [--parties disposition,terminaux]
 // --mac : macOS simulé (raccourcis avec ⌘ au lieu de Ctrl).
 // Fenêtre normale (1366x768) puis plein écran simulé (1920x1080).
 import { build } from "vite";
@@ -19,6 +19,7 @@ const argv = process.argv.slice(2);
 const STRICT = argv.includes("--strict");
 const MAC = argv.includes("--mac");
 const MOD = MAC ? "Meta" : "Control";
+const PARTIES = (() => { const i = argv.indexOf("--parties"); return (i >= 0 ? argv[i + 1] : "disposition,terminaux").split(","); })();
 const BUILD = join(ici, "sortie", "build-disposition");
 process.env.AXECODE_AUDIT_BUILD = BUILD;
 if (!argv.includes("--sans-build") || !existsSync(join(BUILD, "scripts/audit-affichage/banc.html"))) {
@@ -210,10 +211,83 @@ async function parcours(largeur, hauteur) {
   return attendus;
 }
 
+
+// Terminaux : chaque dossier garde ses terminaux ; ceux du dossier quitté restent vivants
+// (pas relancés) et reviennent au retour ; ses onglets ne sont pas recopiés dans un autre dossier.
+async function terminaux() {
+  console.log(`\n=== Terminaux par dossier${MAC ? " (macOS)" : ""} ===`);
+  const contexte = await navigateur.createBrowserContext();
+  const page = await contexte.newPage();
+  page.on("pageerror", (e) => erreurs.push(String(e)));
+  await (MAC ? emulerMac : emulerWindows)(page);
+  await page.setViewport({ width: 1366, height: 768 });
+  await page.goto(`${BASE}?s=${encodeURIComponent(JSON.stringify({ ...scene, terminaux: true, cloud: false }))}`, { waitUntil: "load" });
+  await page.waitForSelector(".welcome", { timeout: 15000 });
+  const etat = () => page.evaluate(() => {
+    const vivants = window.__bancTerminaux?.() ?? [];
+    const panneau = [...document.querySelectorAll(".workspace .terminal-panel")].find((p) => p.offsetParent !== null);
+    return {
+      vivants,
+      lancements: (window.__bancLancements ?? []).length,
+      arrets: (window.__bancArrets ?? []).length,
+      onglets: panneau ? panneau.querySelectorAll(".terminal-tab:not([data-tab='git'])").length : 0,
+    };
+  });
+  const parDossier = (e, d) => e.vivants.filter((v) => v.dossier === d).length;
+  const attendre = async (cond) => { for (let i = 0; i < 40; i += 1) { const e = await etat(); if (cond(e)) return e; await pause(100); } return etat(); };
+
+  await parNumero(page, 1, D1);
+  await touche(page, `${MOD}+j`);
+  await attendre((e) => e.vivants.length >= 1);
+  await page.evaluate(() => [...document.querySelectorAll(".workspace .terminal-panel button[title='Nouveau terminal']")].find((b) => b.offsetParent !== null)?.click());
+  let e = await attendre((x) => x.vivants.length >= 2);
+  noter(e.onglets === 2 && parDossier(e, D1) === 2, `${NOMS[D1]} : 2 terminaux lancés (${JSON.stringify(e)})`);
+  const lancesD1 = e.lancements;
+
+  await parNumero(page, 2, D2);
+  e = await etat();
+  noter(parDossier(e, D1) === 2 && e.arrets === 0, `Ctrl+2 : les 2 terminaux de ${NOMS[D1]} restent vivants (vivants ${e.vivants.length}, arrêts ${e.arrets})`);
+  noter(e.onglets === 0, `${NOMS[D2]} : pas de terminal affiché (jamais ouvert ici) : ${e.onglets} onglet(s)`);
+  await touche(page, `${MOD}+j`);
+  e = await attendre((x) => parDossier(x, D2) >= 1);
+  noter(e.onglets === 1, `${NOMS[D2]}, Ctrl+J : 1 terminal à lui, pas les onglets de ${NOMS[D1]} (${e.onglets} onglet(s))`);
+  noter(parDossier(e, D1) === 2 && parDossier(e, D2) === 1 && e.arrets === 0, `terminaux vivants : ${NOMS[D1]} 2, ${NOMS[D2]} 1, aucun arrêté (${JSON.stringify(e.vivants)})`);
+
+  for (let tour = 1; tour <= 2; tour += 1) {
+    await parNumero(page, 1, D1);
+    e = await attendre((x) => x.onglets > 0);
+    noter(e.onglets === 2 && parDossier(e, D1) === 2 && e.arrets === 0, `tour ${tour}, Ctrl+1 -> ${NOMS[D1]} : ses 2 terminaux reviennent, toujours vivants (${e.onglets} onglets, arrêts ${e.arrets})`);
+    await parNumero(page, 3, D3);
+    e = await etat();
+    noter(e.vivants.length === 3 && e.onglets === 0, `tour ${tour}, Ctrl+3 -> ${NOMS[D3]} : 3 terminaux vivants ailleurs, aucun affiché ici`);
+    await parNumero(page, 2, D2);
+    e = await attendre((x) => x.onglets > 0);
+    noter(e.onglets === 1 && parDossier(e, D2) === 1 && e.arrets === 0, `tour ${tour}, Ctrl+2 -> ${NOMS[D2]} : son terminal revient (${e.onglets} onglet)`);
+  }
+  e = await etat();
+  noter(e.lancements === lancesD1 + 1, `aucun terminal relancé pendant les allers-retours (${e.lancements} lancements)`);
+  const stocke = await page.evaluate((d1, d2) => ({
+    d1: JSON.parse(localStorage.getItem(`axecode:terminals:${d1}`) ?? "[]").length,
+    d2: JSON.parse(localStorage.getItem(`axecode:terminals:${d2}`) ?? "[]").length,
+  }), D1, D2);
+  noter(stocke.d1 === 2 && stocke.d2 === 1, `onglets enregistrés par dossier : ${JSON.stringify(stocke)}`);
+  // Fermer tous les terminaux de ce dossier n'arrête pas ceux de l'autre.
+  await page.evaluate(() => [...document.querySelectorAll(".workspace .terminal-panel button[title='Fermer tous les terminaux']")].find((b) => b.offsetParent !== null)?.click());
+  e = await attendre((x) => parDossier(x, D2) === 0);
+  noter(parDossier(e, D2) === 0 && parDossier(e, D1) === 2, `${NOMS[D2]}, fermer tous les terminaux : les siens arrêtés, ceux de ${NOMS[D1]} vivants`);
+  await parNumero(page, 1, D1);
+  e = await attendre((x) => x.onglets > 0);
+  noter(e.onglets === 2 && parDossier(e, D1) === 2, `Ctrl+1 -> ${NOMS[D1]} : ses 2 terminaux toujours là`);
+  await contexte.close();
+}
+
 // Fenêtre normale, plein écran simulé ; puis passage d'une taille à l'autre sur la même page.
+if (PARTIES.includes("terminaux")) await terminaux();
+if (PARTIES.includes("disposition")) {
 await parcours(1366, 768);
 await parcours(1920, 1080);
-{
+}
+if (PARTIES.includes("disposition")) {
   console.log("\n=== Passage fenêtre normale -> plein écran -> fenêtre normale ===");
   const contexte = await navigateur.createBrowserContext();
   const page = await contexte.newPage();
