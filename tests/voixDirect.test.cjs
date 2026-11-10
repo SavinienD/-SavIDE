@@ -20,11 +20,12 @@ function charger(rel) {
 const D = charger("../src/axe/voix/direct.ts");
 const R = charger("../src/axe/voix/reglages.ts");
 
-test("coupe d'un morceau : sur un silence après 2,5 s, d'office à 4,5 s", () => {
+test("coupe d'un morceau : sur un silence après 4 s, d'office à 8 s", () => {
   assert.equal(D.doitCouper(1000, 900), false);
-  assert.equal(D.doitCouper(2600, 100), false);
-  assert.equal(D.doitCouper(2600, 300), true);
-  assert.equal(D.doitCouper(4600, 0), true);
+  assert.equal(D.doitCouper(2600, 300), false);
+  assert.equal(D.doitCouper(4100, 100), false);
+  assert.equal(D.doitCouper(4100, 300), true);
+  assert.equal(D.doitCouper(8100, 0), true);
 });
 
 test("WAV 16 kHz mono 16 bits, rééchantillonnage 48 kHz -> 16 kHz", () => {
@@ -108,4 +109,44 @@ test("useDictee : bascule sur les segments sans PCM, erreur d'un morceau affich�
   assert.match(u, /catch \(err\)[\s\S]*setDirect\(\{ actif: true, erreur: texteErreur\(err\)/);
   assert.match(e, /contexte\.state === "suspended"\) void this\.contexte\.resume\(\)/);
   assert.match(b, /Aperçu en direct indisponible/);
+});
+
+// Fin de dictée par morceaux : seule la fin est transcrite, coupe forcée au point le plus calme.
+test("fin par morceaux seulement avec un aperçu PCM sain", () => {
+  const sain = { actif: true, pcm: true, segments: false, erreurs: 0 };
+  assert.equal(D.finParMorceaux(sain), true);
+  assert.equal(D.finParMorceaux({ ...sain, actif: false }), false); // aperçu arrêté (trop lent)
+  assert.equal(D.finParMorceaux({ ...sain, segments: true }), false); // segments webm coupés toutes les 3 s
+  assert.equal(D.finParMorceaux({ ...sain, pcm: false }), false);
+  assert.equal(D.finParMorceaux({ ...sain, erreurs: 1 }), false); // un morceau raté : transcription complète
+  assert.ok(D.RESTE_MIN_MS > 0 && D.RESTE_MIN_MS < 500);
+});
+
+test("coupe forcée : au bloc le plus calme après 4 s, pas en plein mot", () => {
+  const E = charger("../src/axe/voix/enregistreur.ts");
+  const bloc = 85; // 4096 échantillons à 48 kHz
+  const niveaux = Array.from({ length: 95 }, () => 0.1); // ≈ 8 s de voix continue
+  niveaux[30] = 0.001; // creux avant 4 s : ignoré
+  niveaux[70] = 0.02; // creux après 4 s
+  assert.equal(E.blocsJusquAuCalme(niveaux, bloc, D.MORCEAU_MIN_MS), 71);
+  // aucun creux : tout est pris (comportement d'avant)
+  assert.equal(E.blocsJusquAuCalme(Array(95).fill(0.1), bloc, D.MORCEAU_MIN_MS), 95);
+  assert.equal(E.blocsJusquAuCalme([], bloc, D.MORCEAU_MIN_MS), 0);
+  assert.equal(E.blocsJusquAuCalme([0.1, 0.2], bloc, D.MORCEAU_MIN_MS), 2);
+});
+
+test("seuil de silence adaptatif : au-dessus du bruit de fond du micro", () => {
+  const E = charger("../src/axe/voix/enregistreur.ts");
+  // Gain automatique : bruit de fond à 0,015 ; l'ancien seuil fixe (0,012) n'y voyait aucun silence.
+  let plancher = 0.005;
+  for (let i = 0; i < 400; i += 1) plancher = E.suivrePlancher(plancher, 0.015);
+  assert.ok(E.seuilSon(plancher) > 0.015, `seuil ${E.seuilSon(plancher)}`);
+  // La voix (0,1) ne relève presque pas le plancher sur une phrase (≈ 3 s = 35 blocs).
+  let p2 = 0.004;
+  for (let i = 0; i < 35; i += 1) p2 = E.suivrePlancher(p2, 0.1);
+  assert.ok(E.seuilSon(p2) < 0.1);
+  // Une baisse est suivie tout de suite ; bornes min/max.
+  assert.equal(E.suivrePlancher(0.02, 0.001), 0.001);
+  assert.equal(E.seuilSon(0), E.SEUIL_SON_MIN);
+  assert.equal(E.seuilSon(1), E.SEUIL_SON_MAX);
 });
