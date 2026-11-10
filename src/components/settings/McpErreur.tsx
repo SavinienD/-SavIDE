@@ -5,7 +5,9 @@ import { Icon } from "@iconify/react";
 import { expliquerErreurMcp, type ErreurExpliquee } from "../../axe/mcpGuide";
 import type { McpServerProbe } from "../../types";
 
-export function ErreurMcp({ erreur }: { erreur: ErreurExpliquee }) {
+type DemanderIa = (erreur: ErreurExpliquee) => void;
+
+export function ErreurMcp({ erreur, onDemanderIa }: { erreur: ErreurExpliquee; onDemanderIa?: DemanderIa }) {
   const [copie, setCopie] = useState(false);
   const copier = async () => {
     try {
@@ -23,6 +25,18 @@ export function ErreurMcp({ erreur }: { erreur: ErreurExpliquee }) {
         <strong>{erreur.titre}</strong>
       </div>
       <p className="settings-pane__mcp-erreur-conseil">{erreur.conseil}</p>
+      {onDemanderIa && (
+        <button
+          type="button"
+          className="settings-pane__btn settings-pane__mcp-demande-ia"
+          data-primary="true"
+          title="Prépare dans le chat une demande à l'IA (commande exacte, système, journal) : vous la relisez avant de l'envoyer."
+          onClick={() => onDemanderIa(erreur)}
+        >
+          <Icon icon="solar:magic-stick-3-linear" width={13} height={13} />
+          <span>Demander à l'IA de corriger</span>
+        </button>
+      )}
       {erreur.journal.trim() && (
         <details className="settings-pane__mcp-journal">
           <summary>Journal du serveur</summary>
@@ -37,7 +51,7 @@ export function ErreurMcp({ erreur }: { erreur: ErreurExpliquee }) {
   );
 }
 
-export function ResultatTestMcp({ probe }: { probe: McpServerProbe }) {
+export function ResultatTestMcp({ probe, onDemanderIa }: { probe: McpServerProbe; onDemanderIa?: DemanderIa }) {
   if (probe.ok) {
     const noms = probe.tools.map((tool) => tool.title || tool.name);
     return (
@@ -63,5 +77,5 @@ export function ResultatTestMcp({ probe }: { probe: McpServerProbe }) {
       </div>
     );
   }
-  return erreur ? <ErreurMcp erreur={erreur} /> : null;
+  return erreur ? <ErreurMcp erreur={erreur} onDemanderIa={onDemanderIa} /> : null;
 }

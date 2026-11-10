@@ -98,6 +98,11 @@ function notifier(titre: string, texte: string): void {
   );
 }
 
+/** Vrai si une saisie de conversation est affichée (dans `dossier` s'il est donné). */
+export function compositeurAffiche(dossier?: string): boolean {
+  return compositeurs.some((c) => !dossier || memeDossier(c.dossier, dossier));
+}
+
 /**
  * Met `texte` dans la saisie de la conversation affichée (dans `dossier` s'il est donné).
  * Aucune conversation affichée : le texte est copié dans le presse-papiers.

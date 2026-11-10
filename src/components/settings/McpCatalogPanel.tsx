@@ -13,8 +13,10 @@ import {
   construireServeurPerso,
   SAISIE_PERSO_VIDE,
   validerServeurPerso,
+  type ErreurExpliquee,
   type SaisieServeurPerso,
 } from "../../axe/mcpGuide";
+import { confierALIa, demandeInstallationMcp, systemeCourant } from "../../axe/mcpDemandeIa";
 import type { McpServerConfig, McpServerProbe } from "../../types";
 import { ResultatTestMcp } from "./McpErreur";
 
@@ -80,6 +82,26 @@ export function McpCatalogPanel({ busy, error, existingIds, onAdd, onTest, onCan
   };
 
   const connecter = Boolean(selected?.oauth);
+  // Serveur lancé par une commande sur ce poste : plutôt que de la taper soi-même, on l'ajoute
+  // puis l'IA reçoit (dans la saisie du chat, jamais envoyée seule) la demande d'installation.
+  const local = selected ? !selected.url && Boolean(selected.command) : perso.mode === "stdio";
+  const installerAvecIa = async (erreur?: ErreurExpliquee) => {
+    if (busy || missingRequired) return;
+    setSubmitError(null);
+    const s = serveur();
+    const ok = await onAdd(s, false);
+    if (!ok) {
+      setSubmitError("Impossible d'ajouter ce serveur.");
+      return;
+    }
+    confierALIa(
+      demandeInstallationMcp(s, {
+        systeme: systemeCourant(),
+        note: selected?.note,
+        erreur: erreur ? { titre: erreur.titre, journal: erreur.journal } : null,
+      }),
+    );
+  };
   const submit = async () => {
     if (busy || missingRequired) return;
     setSubmitError(null);
@@ -151,7 +173,7 @@ export function McpCatalogPanel({ busy, error, existingIds, onAdd, onTest, onCan
             <>
               <div className="settings-pane__mcp-catalog-form-head">
                 <span className="settings-pane__detail-section">{selected.name}</span>
-                <code className="settings-pane__mcp-catalog-install">{selected.install}</code>
+                <code className="settings-pane__mcp-catalog-install" title={selected.install}>{selected.install}</code>
               </div>
               {selected.vars.length === 0 ? (
                 <p className="settings-pane__muted">
@@ -250,10 +272,24 @@ export function McpCatalogPanel({ busy, error, existingIds, onAdd, onTest, onCan
               <Icon icon={test.etat === "en-cours" ? "solar:refresh-linear" : "solar:plug-circle-linear"} width={13} height={13} />
               <span>{test.etat === "en-cours" ? "Test…" : "Tester"}</span>
             </button>
+            {local && (
+              <button
+                type="button"
+                className="settings-pane__btn settings-pane__mcp-demande-ia"
+                data-primary="true"
+                title="Ajoute le serveur et prépare dans le chat une demande à l'IA : installer ce qu'il faut, vérifier qu'il répond et lister ses outils. Vous la relisez avant de l'envoyer."
+                onClick={() => void installerAvecIa()}
+                disabled={busy || missingRequired}
+              >
+                <Icon icon="solar:magic-stick-3-linear" width={13} height={13} />
+                <span>Installer avec l'IA</span>
+              </button>
+            )}
             <button
               type="button"
               className="settings-pane__btn settings-pane__mcp-ajouter"
-              data-primary="true"
+              data-primary={local ? undefined : "true"}
+              title={connecter ? "Ajouter et se connecter" : "Ajouter"}
               onClick={() => void submit()}
               disabled={busy || missingRequired}
             >
@@ -262,7 +298,9 @@ export function McpCatalogPanel({ busy, error, existingIds, onAdd, onTest, onCan
             </button>
           </div>
 
-          {test.etat === "fini" && <ResultatTestMcp probe={test.probe} />}
+          {test.etat === "fini" && (
+            <ResultatTestMcp probe={test.probe} onDemanderIa={local ? (e) => void installerAvecIa(e) : undefined} />
+          )}
           {test.etat === "echec" && (
             <div className="settings-pane__editor-error">
               <Icon icon="solar:danger-triangle-linear" width={13} height={13} />

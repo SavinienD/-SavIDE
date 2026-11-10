@@ -870,6 +870,8 @@ async function auditer(page, si, sc, journal, preparation) {
       : t.startsWith("compte:") ? compte(t.slice(7))
       : t.startsWith("stocke:") ? stocke(t.slice(7))
       : t.startsWith("champ:") ? champ(t.slice(6))
+      // « saisiecontient:<texte> » : une saisie de conversation contient ce texte (préparé, pas envoyé).
+      : t.startsWith("saisiecontient:") ? [...document.querySelectorAll(".composer textarea")].some((x) => x.value.replace(/[\u00a0\u202f]/g, " ").includes(t.slice(15)))
       : t.startsWith("enregistre:") ? enregistre(t.slice(11))
       : t.startsWith("qcm:") ? window.__bancQcm === t.slice(4) // contenu enregistré
       : t.startsWith("presse:") ? window.__bancPresse === t.slice(7)

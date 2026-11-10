@@ -11204,6 +11204,11 @@ textarea {
 .settings-pane__mcp-catalog-item-desc { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .settings-pane__mcp-journal-copier { max-width: 100%; min-width: 0; }
 .settings-pane__mcp-journal-copier > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Formulaire du catalogue dans une colonne étroite : adresse ou commande sur une ligne (entière au survol),
+   boutons d'action rognés plutôt que débordants. */
+.settings-pane__mcp-catalog-install { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; word-break: normal; }
+.settings-pane__mcp-catalog-actions > .settings-pane__btn { min-width: 0; max-width: 100%; }
+.settings-pane__mcp-catalog-actions > .settings-pane__btn > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .settings-pane__mcp-erreur, .settings-pane__mcp-journal { min-width: 0; max-width: 100%; }
 @container reglages-main (max-width: 360px) {
   /* Volet très étroit : l'état reste porté par la pastille de couleur (et le survol). */

@@ -224,6 +224,12 @@
       "raison": "Consigne longue mise dans la saisie par le panneau Git : la saisie défile et son calque de mise en forme suit ce défilement (rogné exprès, ChatPane syncOverlayScroll), rien n'est perdu."
     },
     {
+      "regle": "texte-coupe",
+      "selecteur": ".composer__overlay-inner",
+      "situation": "/mcp-ia-(catalogue|catalogue-mac|erreur)$",
+      "raison": "Demande d'installation d'un serveur MCP mise dans la saisie par Réglages > MCP (plusieurs lignes) : la saisie défile et son calque suit ce défilement (rogné exprès, comme pour le panneau Git), rien n'est perdu."
+    },
+    {
       "regle": "hors-conteneur",
       "selecteur": ".onglets-chat__titre",
       "situation": "/git-issues-ouvrir$",

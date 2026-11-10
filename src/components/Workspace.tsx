@@ -153,6 +153,8 @@ import { EntreesMenuOnglet } from "./editeur/MenuOnglet";
 import { DEPOT_MARKDOWN_EVENT } from "./editeur/useImagesMarkdown";
 import { useOngletNavigateur } from "./navigateur/useOngletNavigateur"; // navigateur intégré
 import { PaletteEspace } from "./palette/PaletteEspace"; // Ctrl+P, Ctrl+K
+import { ecouterDemandesIa } from "../axe/mcpDemandeIa";
+import { compositeurAffiche, deposerPourConversation, envoyerALAgent } from "./pr/versAgent";
 
 type Props = {
   bootstrap: WorkspaceBootstrap;
@@ -2538,6 +2540,21 @@ export function Workspace({
       localStorage.setItem("axe:volet-droit-reduit", droiteReduite ? "1" : "0");
     } catch { /* stockage indisponible : l'état vit le temps de la session */ }
   }, [gaucheReduite, droiteReduite]);
+  // Réglages > MCP : une commande à lancer devient une demande à l'IA, prête dans la saisie de
+  // la conversation active (jamais envoyée seule) ; les réglages se ferment pour la montrer.
+  const settingsOpenRef = useRef(settingsOpen);
+  settingsOpenRef.current = settingsOpen;
+  useEffect(
+    () =>
+      ecouterDemandesIa((texte) => {
+        if (!settingsOpenRef.current) return;
+        closeSettings();
+        if (layout !== "chat") setDroiteReduite(false);
+        if (compositeurAffiche(workspacePath)) envoyerALAgent(texte, workspacePath);
+        else deposerPourConversation(activeConvIdRef.current, texte);
+      }),
+    [closeSettings, layout, workspacePath],
+  );
   useEffect(() => {
     const touche = (e: KeyboardEvent) => {
       if (!modPrincipal(e) || e.shiftKey || e.code !== "KeyB") return;
