@@ -247,7 +247,11 @@ export function installerSimulation(scene: Scene): void {
     voix_modele_local: () => ({ ok: true, modeles: [{ nom: "base", octets: 147951465, present: true }, { nom: "small", octets: 487601967, present: true }] }),
     // 0.1.75 — dictée en direct : un morceau de ≈ 3 s rend un bout de phrase (texte provisoire grisé).
     voix_transcrire: (a: any) => (a?.morceau ?? a?.input?.morceau)
-      ? { text: "Je relance le banc d'affichage sur les quatre largeurs et je regarde la colonne étroite,", moteur: "whisper small (poste) de secours", taille: "moyen", transcriptionMs: 1400, ms: 1500 }
+      // « transcriptionLente » vaut aussi pour les morceaux : la fin de dictée garde le texte des
+      // morceaux et attend le dernier (moteur lent), le temps de changer de conversation.
+      ? (typeof scene.transcriptionLente === "number"
+        ? new Promise((ok) => window.setTimeout(() => ok({ text: "Je relance le banc d'affichage sur les quatre largeurs et je regarde la colonne étroite,", moteur: "whisper small (poste) de secours", taille: "moyen", transcriptionMs: 1400, ms: 1500 }), scene.transcriptionLente as number))
+        : { text: "Je relance le banc d'affichage sur les quatre largeurs et je regarde la colonne étroite,", moteur: "whisper small (poste) de secours", taille: "moyen", transcriptionMs: 1400, ms: 1500 })
       // « transcriptionLente » (ms) : la transcription finale arrive après un délai
       // (le temps de changer de conversation pendant que l'IA transcrit).
       : typeof scene.transcriptionLente === "number"
