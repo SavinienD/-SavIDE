@@ -56,7 +56,10 @@ impl SessionHost for Daemon {
     }
     async fn stop_turn(&self, session_id: &str) -> SessionResult<()> {
         self.wake_archived(session_id);
-        self.stop(session_id)
+        self.stop(session_id)?;
+        // Stopped by its parent (rlm.stop): same as the Stop button.
+        crate::commandes_rpc::arreter_sans_fin(self, session_id, "arrêté par l'agent parent (Stop)");
+        Ok(())
     }
     async fn kernel_snapshot(&self, session_id: &str) -> Option<Vec<u8>> {
         std::fs::read(journal::snapshot_path(&self.config.data_dir, session_id)).ok()
@@ -335,6 +338,8 @@ impl Daemon {
                 // (un Stop sur une session libre ne bloque pas la file).
                 let running = lock(&self.sessions).get(&id).is_some_and(|s| s.cancel.is_some());
                 self.stop(&id)?;
+                // Stop button / Échap: only the user ends the endless mode, here he does.
+                crate::commandes_rpc::arreter_sans_fin(self, &id, "arrêté par l'utilisateur (Stop)");
                 if running {
                     crate::queue_rpc::pause_after_stop(self, &id);
                 }

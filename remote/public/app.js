@@ -365,12 +365,65 @@ function parseQuestionArgs(raw) {
 
 /* ── Blocks: history + live events, no duplication ─────────────────────── */
 
+/* ── Endless mode (/nonstop): badge with a stop button, relaunch line ───── */
+
+/** Badge text, only while the mode runs. */
+export function endlessLabel(state) {
+  if (!state || state.status !== "running") return null;
+  const turns = Number(state.turns) || 0;
+  return turns > 0 ? `Endless · ${turns}` : "Endless";
+}
+
+/** Automatic relaunch in the history: `<nonstop_continue … n="3">…</nonstop_continue>`. */
+export function endlessRelaunch(text) {
+  const m = /^<nonstop_continue((?:\s+[a-z_]+="[^"]*")*)\s*>[\s\S]*<\/nonstop_continue>$/.exec(String(text || "").trim());
+  if (!m) return null;
+  const n = /\bn="(\d+)"/.exec(m[1]);
+  return n ? `Endless mode: relaunch #${n[1]}` : "Endless mode: relaunch";
+}
+
+function EndlessBadge({ cmd, conversationId, reachable }) {
+  const [state, setState] = useState(null);
+  const read = useCallback(async () => {
+    if (!reachable || !conversationId) return;
+    try {
+      const r = await cmd({ type: "endless_mode", conversation_id: conversationId });
+      setState(r && r.endless);
+    } catch {
+      setState(null);
+    }
+  }, [cmd, conversationId, reachable]);
+  useEffect(() => {
+    setState(null);
+    void read();
+    const t = setInterval(() => void read(), 5000);
+    return () => clearInterval(t);
+  }, [read]);
+  const label = endlessLabel(state);
+  if (!label) return null;
+  const stop = async () => {
+    try {
+      const r = await cmd({ type: "endless_mode", conversation_id: conversationId, stop: true });
+      setState(r && r.endless);
+    } catch {
+      /* the next read shows the real state */
+    }
+  };
+  return h("div", { className: "endless", title: state.task || "" },
+    h("span", { className: "endless__label" }, `\u221e ${label}`),
+    h("button", { type: "button", className: "endless__stop", onClick: () => void stop(), "aria-label": "Stop endless mode" }, "Stop"),
+  );
+}
+
 function blocksFromHistory(history = []) {
   const blocks = [];
   for (const message of history) {
     if (message.role === "user") {
       const text = plainTextFromParts(message.parts);
-      if (text) blocks.push({ kind: "user", text });
+      // Endless mode: automatic relaunch, shown as a quiet status line.
+      const relaunch = text && endlessRelaunch(text);
+      if (relaunch) blocks.push({ kind: "status", text: relaunch });
+      else if (text) blocks.push({ kind: "user", text });
       continue;
     }
     if (message.role === "assistant") {
@@ -1367,6 +1420,7 @@ function App() {
                 : canReachPc ? "Encrypted" : "PC unreachable",
           ),
         ),
+        h(EndlessBadge, { cmd, conversationId: conv.id, reachable: canReachPc }),
         h("button", { className: "icon-btn", disabled: !canReachPc || isStreaming, onClick: compact }, "Compact"),
       ),
       h("div", { className: "chat-body", ref: bodyRef, onScroll: onBodyScroll },

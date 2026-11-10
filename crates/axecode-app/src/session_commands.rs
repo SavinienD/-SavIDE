@@ -163,6 +163,131 @@ pub struct Autonomous {
     pub last_gate_passed: Option<bool>,
 }
 
+/// Endless mode (`/nonstop`): minimum pause between two turns (never a tight loop).
+pub const SANS_FIN_DELAY_MS: u64 = 10_000;
+/// Endless mode: wait after a failed turn (429, quota, network), doubled for each
+/// failure in a row up to [`SANS_FIN_ERROR_DELAY_MAX_MS`]; the mode never ends on errors.
+pub const SANS_FIN_ERROR_DELAY_MS: u64 = 30_000;
+pub const SANS_FIN_ERROR_DELAY_MAX_MS: u64 = 15 * 60_000;
+/// Endless mode: idle with nothing planned for that long (crashed turn, restart of
+/// the service) → a relaunch is planned.
+pub const SANS_FIN_WATCHDOG_MS: u64 = 120_000;
+/// Summaries of `goal.complete` kept by the endless mode.
+pub const SANS_FIN_SUMMARIES_MAX: usize = 20;
+
+/// Endless mode: the agent is relaunched after every turn until the USER stops it
+/// (Stop button, badge, `/nonstop stop`, `/autonomous stop`). `goal.complete` and
+/// errors never end it.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct SansFin {
+    pub task: String,
+    /// `running`, `stopped`
+    pub status: String,
+    pub started_ms: i64,
+    /// Turns finished (or failed) in this mode.
+    #[serde(default)]
+    pub turns: u32,
+    /// Automatic relaunches delivered.
+    #[serde(default)]
+    pub relaunches: u32,
+    #[serde(default)]
+    pub tokens: u64,
+    /// Failed turns in a row (backoff).
+    #[serde(default)]
+    pub errors: u32,
+    #[serde(default)]
+    pub last_error: Option<String>,
+    /// Next planned relaunch (shown by the badge).
+    #[serde(default)]
+    pub next_relaunch_ms: Option<i64>,
+    /// End of the turn after which the relaunch was planned.
+    #[serde(default)]
+    pub relaunch_after_ms: Option<i64>,
+    /// Last start or end of a turn (watchdog).
+    #[serde(default)]
+    pub last_activity_ms: Option<i64>,
+    /// Summaries given to `goal.complete` while the mode runs (the mode goes on).
+    #[serde(default)]
+    pub summaries: Vec<String>,
+    #[serde(default)]
+    pub stopped_ms: Option<i64>,
+    #[serde(default)]
+    pub stop_reason: Option<String>,
+}
+
+impl SansFin {
+    pub fn running(&self) -> bool {
+        self.status == "running"
+    }
+}
+
+/// Plan the next turn of the endless mode after a turn (pure, tested): `error` =
+/// the turn failed (rate limit, quota, network). Never sooner than `delay_ms`.
+pub fn sans_fin_after_turn(sf: &mut SansFin, error: Option<&str>, now: i64, delay_ms: u64, error_delay_ms: u64) -> Option<i64> {
+    if !sf.running() {
+        sf.next_relaunch_ms = None;
+        return None;
+    }
+    sf.turns = sf.turns.saturating_add(1);
+    let wait = match error {
+        None => {
+            sf.errors = 0;
+            sf.last_error = None;
+            delay_ms
+        }
+        Some(e) => {
+            sf.errors = sf.errors.saturating_add(1);
+            sf.last_error = Some(truncate_bytes(e.trim(), 300));
+            let max = SANS_FIN_ERROR_DELAY_MAX_MS.max(error_delay_ms);
+            error_delay_ms.saturating_mul(1u64 << (sf.errors - 1).min(16)).min(max)
+        }
+    };
+    let at = now + wait.max(delay_ms) as i64;
+    sf.next_relaunch_ms = Some(at);
+    sf.relaunch_after_ms = Some(now);
+    sf.last_activity_ms = Some(now);
+    Some(at)
+}
+
+/// Watchdog of the endless mode (pure, tested): running, idle, nothing planned and
+/// no activity for `watchdog_ms` → a relaunch must be planned now.
+pub fn sans_fin_needs_relaunch(sf: &SansFin, now: i64, busy: bool, watchdog_ms: u64) -> bool {
+    sf.running()
+        && !busy
+        && sf.next_relaunch_ms.is_none()
+        && sf.last_activity_ms.map_or(true, |t| now - t >= watchdog_ms as i64)
+}
+
+/// Message of an endless-mode relaunch (shown in the IDE as « sans fin : relance n° … »).
+pub fn sans_fin_continue_text(task: &str, at_ms: i64, n: u32) -> String {
+    format!("<nonstop_continue at_ms=\"{at_ms}\" n=\"{n}\">\nMode sans fin, continue : {task}\n</nonstop_continue>")
+}
+
+pub fn is_sans_fin_continue(text: &str) -> bool {
+    text.trim_start().starts_with("<nonstop_continue")
+}
+
+/// Words that stop the endless mode (`/nonstop stop`, `/autonomous stop`).
+fn est_arret(mot: &str) -> bool {
+    matches!(
+        mot.trim().trim_end_matches(['.', '!']).to_lowercase().as_str(),
+        "stop" | "off" | "arrête" | "arrete" | "arrêter" | "arreter" | "arrêt" | "arret" | "stoppe" | "fin" | "termine"
+    )
+}
+
+/// `/autonomous sans fin …`, `/autonomous nonstop …`: the endless mode; returns the task.
+fn autonomous_sans_fin(rest: &str) -> Option<String> {
+    let t = rest.trim();
+    let lower = t.to_lowercase();
+    for p in ["sans fin", "sans-fin", "sansfin", "nonstop", "non-stop", "--sans-fin", "--nonstop", "infini"] {
+        if lower == p || lower.starts_with(&format!("{p} ")) || lower.starts_with(&format!("{p}\n")) {
+            return Some(t[p.len()..].trim().trim_start_matches([':', ',']).trim().to_string());
+        }
+    }
+    None
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct Heartbeat {
@@ -209,6 +334,9 @@ pub struct SessionState {
     pub autonomous: Option<Autonomous>,
     #[serde(default)]
     pub heartbeat: Option<Heartbeat>,
+    /// Endless mode (`/nonstop`).
+    #[serde(default)]
+    pub sans_fin: Option<SansFin>,
     /// guet — guets en cours (commande, condition, fichier) et réveils à livrer.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub guets: Vec<Guet>,
@@ -333,7 +461,7 @@ pub fn parse_slash(text: &str) -> Option<SlashCommand> {
 
 /// commandes reconnues aussi au milieu du message (première occurrence) : « fais X puis
 /// /heartbeat dis coucou toutes les 5 minutes ». Une commande en tête garde la priorité.
-pub const COMMANDES_PARTOUT: [&str; 2] = ["goal", "heartbeat"];
+pub const COMMANDES_PARTOUT: [&str; 3] = ["goal", "heartbeat", "nonstop"];
 
 /// La première commande que le service interprète (voir [`parse_slashes`]).
 pub fn parse_slash_partout(text: &str) -> Option<SlashCommand> {
@@ -520,6 +648,11 @@ struct Inner {
     /// guet — tâche de chaque guet (clé : id du guet).
     guets: Mutex<HashMap<String, tokio::task::JoinHandle<()>>>,
     refine: refine::RefineRunner,
+    /// Endless mode: supervisor task of each session, pauses (tests: a few ms).
+    sans_fin: Mutex<HashMap<String, tokio::task::JoinHandle<()>>>,
+    sans_fin_delay_ms: std::sync::atomic::AtomicU64,
+    sans_fin_error_delay_ms: std::sync::atomic::AtomicU64,
+    sans_fin_watchdog_ms: std::sync::atomic::AtomicU64,
 }
 
 fn lock<T>(m: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
@@ -619,7 +752,8 @@ impl Inner {
             let state = me.load(&sid);
             let Some(goal) = state.goal.as_ref().filter(|g| g.status == "active" && g.next_relaunch_ms == Some(at_ms)) else { return };
             let after = goal.relaunch_after_ms.unwrap_or(at_ms);
-            let autonomous = state.autonomous.as_ref().is_some_and(|a| a.status == "running");
+            let autonomous = state.autonomous.as_ref().is_some_and(|a| a.status == "running")
+                || state.sans_fin.as_ref().is_some_and(SansFin::running);
             let Some(host) = me.host(&sid) else { return };
             let running = host.get_session(&sid).await.map_or(true, |m| m.status == SessionStatus::Running);
             let spoke = me.journal_entries(&sid).iter().rev().take_while(|e| e.ts > after).any(|e| matches!(e.kind, JournalEntryKind::Message { .. }));
@@ -639,6 +773,86 @@ impl Inner {
             let _ = host.send_user_message(&sid, goal_continue_text(&text, now, n)).await;
         });
         lock(&self.pursuits).insert(id.to_string(), handle);
+    }
+
+    /// Endless mode: one supervisor per session while the mode runs. It delivers the
+    /// planned relaunch once the session is idle (never during a turn, never before
+    /// the planned time), plans one if a turn died without planning (watchdog), and
+    /// ends as soon as the mode is stopped or the conversation is gone.
+    fn arm_sans_fin(self: &Arc<Self>, id: &str) {
+        if let Some(old) = lock(&self.sans_fin).remove(id) {
+            old.abort();
+        }
+        let me = self.clone();
+        let sid = id.to_string();
+        let handle = tokio::spawn(async move {
+            loop {
+                let state = me.load(&sid);
+                let Some(sf) = state.sans_fin.filter(SansFin::running) else { break };
+                let pause = sf.next_relaunch_ms.map_or(1_000, |at| (at - now_ms()).clamp(20, 1_000));
+                tokio::time::sleep(Duration::from_millis(pause as u64)).await;
+                let Some(sf) = me.load(&sid).sans_fin.filter(SansFin::running) else { break };
+                let Some(host) = me.host(&sid) else { continue };
+                let meta = match host.get_session(&sid).await {
+                    Ok(m) => m,
+                    Err(_) => {
+                        me.sans_fin_stop(&sid, "conversation archivée ou supprimée").await;
+                        break;
+                    }
+                };
+                if meta.status == SessionStatus::Running {
+                    continue;
+                }
+                let now = now_ms();
+                let watchdog = me.sans_fin_watchdog_ms.load(std::sync::atomic::Ordering::Relaxed);
+                match sf.next_relaunch_ms {
+                    Some(at) if now >= at => {
+                        let after = sf.relaunch_after_ms.unwrap_or(at);
+                        let spoke = me.journal_entries(&sid).iter().rev().take_while(|e| e.ts > after).any(|e| matches!(e.kind, JournalEntryKind::Message { .. }));
+                        let Some((task, n)) = me.update(&sid, |s| {
+                            let sf = s.sans_fin.as_mut().filter(|f| f.running() && f.next_relaunch_ms == Some(at))?;
+                            sf.next_relaunch_ms = None;
+                            sf.last_activity_ms = Some(now);
+                            if spoke {
+                                // Someone spoke: that message runs its own turn, which plans the next one.
+                                return None;
+                            }
+                            sf.relaunches += 1;
+                            Some((sf.task.clone(), sf.relaunches))
+                        }) else { continue };
+                        me.journal(&sid, "sans_fin", json!({"op": "relaunch", "n": n, "at_ms": now})).await;
+                        let _ = host.send_user_message(&sid, sans_fin_continue_text(&task, now, n)).await;
+                    }
+                    Some(_) => {}
+                    None if sans_fin_needs_relaunch(&sf, now, false, watchdog) => {
+                        me.update(&sid, |s| {
+                            if let Some(f) = s.sans_fin.as_mut().filter(|f| f.running() && f.next_relaunch_ms.is_none()) {
+                                f.next_relaunch_ms = Some(now);
+                                f.relaunch_after_ms = Some(now);
+                            }
+                        });
+                    }
+                    None => {}
+                }
+            }
+        });
+        lock(&self.sans_fin).insert(id.to_string(), handle);
+    }
+
+    /// Stop the endless mode (no-op when it is not running).
+    async fn sans_fin_stop(&self, id: &str, reason: &str) -> bool {
+        let stopped = self.update(id, |s| {
+            let Some(sf) = s.sans_fin.as_mut().filter(|f| f.running()) else { return false };
+            sf.status = "stopped".into();
+            sf.next_relaunch_ms = None;
+            sf.stopped_ms = Some(now_ms());
+            sf.stop_reason = Some(reason.into());
+            true
+        });
+        if stopped {
+            self.journal(id, "sans_fin", json!({"op": "stop", "reason": reason})).await;
+        }
+        stopped
     }
 
     /// (Re)start the heartbeat timer of a session.
@@ -871,6 +1085,10 @@ impl SessionCommandsHook {
                 pursuit_delay_ms: std::sync::atomic::AtomicU64::new(GOAL_PURSUIT_DELAY_MS),
                 guets: Mutex::new(HashMap::new()),
                 refine: refine::RefineRunner::new(),
+                sans_fin: Mutex::new(HashMap::new()),
+                sans_fin_delay_ms: std::sync::atomic::AtomicU64::new(SANS_FIN_DELAY_MS),
+                sans_fin_error_delay_ms: std::sync::atomic::AtomicU64::new(SANS_FIN_ERROR_DELAY_MS),
+                sans_fin_watchdog_ms: std::sync::atomic::AtomicU64::new(SANS_FIN_WATCHDOG_MS),
             }),
         })
     }
@@ -883,6 +1101,22 @@ impl SessionCommandsHook {
     /// goal165 — pause before an automatic relaunch (tests: a few ms).
     pub fn set_pursuit_delay(&self, delay: Duration) {
         self.inner.pursuit_delay_ms.store(delay.as_millis() as u64, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// Endless mode: pause between turns, wait after an error, watchdog (tests: a few ms).
+    pub fn set_sans_fin_delays(&self, delay: Duration, error_delay: Duration, watchdog: Duration) {
+        use std::sync::atomic::Ordering::Relaxed;
+        self.inner.sans_fin_delay_ms.store(delay.as_millis() as u64, Relaxed);
+        self.inner.sans_fin_error_delay_ms.store(error_delay.as_millis() as u64, Relaxed);
+        self.inner.sans_fin_watchdog_ms.store(watchdog.as_millis() as u64, Relaxed);
+    }
+
+    /// Ends the endless-mode supervisors of the process (end of the service; tests
+    /// simulate a restart this way).
+    pub fn stop_sans_fin_tasks(&self) {
+        for (_, h) in lock(&self.inner.sans_fin).drain() {
+            h.abort();
+        }
     }
 
     /// guet — arrête toutes les tâches de guet du processus (fin du service ;
@@ -933,12 +1167,32 @@ impl SessionCommandsHook {
                     I::Flou { raison } => objectif_a_confier(brut, &raison),
                 }
             }
+            "nonstop" => {
+                let brut = cmd.rest.trim();
+                let running = inner.load(id).sans_fin.is_some_and(|f| f.running());
+                if est_arret(brut) {
+                    return Some(if inner.sans_fin_stop(id, "arrêté par l'utilisateur (/nonstop stop)").await {
+                        "L'utilisateur a arrêté le mode sans fin : tu ne seras plus relancé. Termine proprement ce que tu fais et résume-lui en deux phrases où en est le travail.".into()
+                    } else {
+                        "L'utilisateur a demandé d'arrêter le mode sans fin, mais il n'était pas actif. Dis-le-lui en une phrase.".into()
+                    });
+                }
+                if brut.is_empty() && running {
+                    "L'utilisateur demande l'état du mode sans fin (rappelé plus bas) : redis-le-lui en une phrase, puis continue le travail.".into()
+                } else {
+                    self.sans_fin_start(session, brut).await
+                }
+            }
             "autonomous" => {
+                if let Some(task) = autonomous_sans_fin(&cmd.rest) {
+                    return Some(self.sans_fin_start(session, &task).await);
+                }
                 let (flags, words) = take_flags(&cmd.args, &["max-turns", "max-tokens", "timeout-ms", "gate"]);
-                if words.first().is_some_and(|w| w == "stop" || w == "off") {
+                if words.first().is_some_and(|w| w == "stop" || w == "off" || est_arret(w)) {
                     inner.update(id, |s| if let Some(a) = s.autonomous.as_mut() { a.status = "stopped".into(); });
                     inner.journal(id, "autonomous", json!({"status": "stopped"})).await;
-                    return Some("The user stopped autonomous mode.".into());
+                    let endless = inner.sans_fin_stop(id, "arrêté par l'utilisateur (/autonomous stop)").await;
+                    return Some(if endless { "The user stopped autonomous mode and the endless mode (sans fin): you will not be relaunched anymore." } else { "The user stopped autonomous mode." }.into());
                 }
                 let auto = Autonomous {
                     max_turns: flags.get("max-turns").and_then(|v| v.parse().ok()),
@@ -1038,6 +1292,36 @@ impl SessionCommandsHook {
         })
     }
 
+    /// Start (or restart with a new task) the endless mode; returns the notice for the agent.
+    async fn sans_fin_start(&self, session: &SessionMeta, brut: &str) -> String {
+        let id = session.id.as_str();
+        let inner = &self.inner;
+        let now = now_ms();
+        let task = inner.update(id, |s| {
+            let task = if !brut.is_empty() {
+                brut.to_string()
+            } else if let Some(g) = s.goal.as_ref().filter(|g| g.status != "complete") {
+                g.text.clone()
+            } else if let Some(f) = s.sans_fin.as_ref() {
+                f.task.clone()
+            } else {
+                "le travail en cours de cette conversation".to_string()
+            };
+            // A bounded /autonomous is replaced (two loops would compete).
+            if let Some(a) = s.autonomous.as_mut().filter(|a| a.status == "running") {
+                a.status = "stopped".into();
+                a.note = Some("remplacé par le mode sans fin".into());
+            }
+            s.sans_fin = Some(SansFin { task: task.clone(), status: "running".into(), started_ms: now, last_activity_ms: Some(now), ..Default::default() });
+            task
+        });
+        inner.journal(id, "sans_fin", json!({"op": "start", "task": task})).await;
+        inner.arm_sans_fin(id);
+        format!(
+            "L'utilisateur a lancé le MODE SANS FIN : {task}\nTu travailles sans t'arrêter jusqu'à ce qu'il l'arrête lui-même (bouton Stop, badge « Sans fin », /nonstop stop). Après chaque tour, tu es relancé tout seul. Ne pose aucune question à l'utilisateur : décide toi-même et note tes décisions (goal.progress, todo ou fichier de suivi). `goal.complete(summary)` n'arrête pas ce mode : le résumé est noté et tu passes à la suite (vérifier, tester, améliorer, piste suivante de la liste). Si tu attends quelque chose (construction, sous-agent), termine ton tour : tu seras relancé. (Demande d'origine : « /nonstop {brut} ».)"
+        )
+    }
+
     async fn start_refine(&self, session: &SessionMeta, trigger: &str, focus: Option<String>) -> Result<bool, String> {
         let provider = self.providers.provider(&session.model.provider)?;
         let history = history_from_journal(&self.inner.journal_entries(&session.id));
@@ -1093,6 +1377,21 @@ impl SessionCommandsHook {
             }
             Ok(serde_json::to_value(&state.goal).unwrap_or(Value::Null))
         })?;
+        // Endless mode: completing the goal never ends it; the summary is kept.
+        if method == "goal.complete" {
+            let summary = s("summary").unwrap_or_else(|| "objectif atteint".into());
+            let noted = inner.update(id, |st| {
+                let sf = st.sans_fin.as_mut().filter(|f| f.running())?;
+                sf.summaries.push(summary.clone());
+                let excess = sf.summaries.len().saturating_sub(SANS_FIN_SUMMARIES_MAX);
+                sf.summaries.drain(..excess);
+                st.notices.push("Mode sans fin : le résumé de l'objectif atteint est noté ; le mode continue. Passe à la suite : vérifie, teste, améliore, ou prends la piste suivante de la liste.".into());
+                Some(())
+            });
+            if noted.is_some() {
+                inner.journal(id, "sans_fin", json!({"op": "summary", "summary": summary})).await;
+            }
+        }
         if matches!(method, "goal.pause" | "goal.complete" | "goal.clear" | "goal.set") {
             inner.cancel_pursuit(id);
             inner.update(id, |s| if let Some(g) = s.goal.as_mut() { g.next_relaunch_ms = None; });
@@ -1226,7 +1525,7 @@ pub fn parse_heartbeat_text(text: &str) -> Option<(String, Option<i64>)> {
 
 /// Commands served by [`SessionCommandsHook::run_slash`] (the IDE checks its
 /// autocompletion list against it).
-pub const SLASH_COMMANDS: &[&str] = &["goal", "autonomous", "heartbeat", "guet", "refine", "compact"];
+pub const SLASH_COMMANDS: &[&str] = &["goal", "autonomous", "nonstop", "heartbeat", "guet", "refine", "compact"];
 
 /// guet — `/guet` en phrase libre : l'agent pose lui-même le bon guet.
 fn guet_a_confier(brut: &str, raison: &str) -> String {
@@ -1308,8 +1607,19 @@ impl SessionCommandsHook {
                 a.turns += 1;
                 a.tokens += used;
             }
+            if let Some(f) = s.sans_fin.as_mut().filter(|f| f.running()) {
+                f.tokens += used;
+            }
             s.clone()
         });
+        // Endless mode: the next turn is planned after a pause, whatever the goal says.
+        if state.sans_fin.as_ref().is_some_and(SansFin::running) {
+            if state.goal.as_ref().is_some_and(|g| g.status == "active" && g.budget_tokens.is_some_and(|b| g.used_tokens >= b)) {
+                let _ = self.goal_call(session, "goal.pause", json!({"reason": "token budget reached"})).await;
+            }
+            self.sans_fin_plan(id, None);
+            return false;
+        }
         // Goal budget exhausted → pause (reported, not a success).
         if let Some(g) = state.goal.as_ref().filter(|g| g.status == "active") {
             if g.budget_tokens.is_some_and(|b| g.used_tokens >= b) {
@@ -1407,6 +1717,18 @@ impl SessionCommandsHook {
         }
     }
 
+    /// Endless mode: plan the next turn after a finished (`error` = None) or failed turn.
+    fn sans_fin_plan(&self, id: &str, error: Option<&str>) {
+        use std::sync::atomic::Ordering::Relaxed;
+        let delay = self.inner.sans_fin_delay_ms.load(Relaxed);
+        let error_delay = self.inner.sans_fin_error_delay_ms.load(Relaxed);
+        self.inner.update(id, |s| {
+            if let Some(f) = s.sans_fin.as_mut() {
+                sans_fin_after_turn(f, error, now_ms(), delay, error_delay);
+            }
+        });
+    }
+
     async fn stop_autonomous(&self, id: &str, status: &str, note: &str) {
         let inner = &self.inner;
         inner.update(id, |s| {
@@ -1435,6 +1757,10 @@ impl TurnHook for SessionCommandsHook {
             if tokio::runtime::Handle::try_current().is_ok() {
                 self.inner.arm_heartbeat(&context.session.id);
             }
+        }
+        // Endless mode running before a restart of the service.
+        if self.inner.load(&context.session.id).sans_fin.is_some_and(|f| f.running()) && tokio::runtime::Handle::try_current().is_ok() {
+            self.inner.arm_sans_fin(&context.session.id);
         }
         // guet — guets posés avant un redémarrage du service.
         if !self.inner.load(&context.session.id).guets.is_empty() && tokio::runtime::Handle::try_current().is_ok() {
@@ -1479,7 +1805,20 @@ impl TurnHook for SessionCommandsHook {
         // the count of relaunches without progress.
         let input = user_text(request);
         let relaunch = input.as_deref().is_some_and(is_goal_continue);
-        let by_user = input.is_some() && !relaunch && !input.as_deref().is_some_and(|t| t.trim_start().starts_with("<heartbeat") || guet::est_reveil(t) || t.trim_start().starts_with("<system_reminder"));
+        let endless_relaunch = input.as_deref().is_some_and(is_sans_fin_continue);
+        let by_user = input.is_some() && !relaunch && !endless_relaunch && !input.as_deref().is_some_and(|t| t.trim_start().starts_with("<heartbeat") || guet::est_reveil(t) || t.trim_start().starts_with("<system_reminder"));
+        // Endless mode: a turn starting cancels the planned relaunch (its end plans the next one).
+        let endless = self.inner.update(id, |s| {
+            let f = s.sans_fin.as_mut().filter(|f| f.running())?;
+            f.next_relaunch_ms = None;
+            f.last_activity_ms = Some(now_ms());
+            Some((f.relaunches, f.turns, f.tokens))
+        });
+        if let (true, Some((n, turns, tokens))) = (endless_relaunch, endless) {
+            blocks.push(format!(
+                "## Mode sans fin : relance automatique n° {n}\nCe tour a été lancé tout seul ({turns} tours, {tokens} jetons depuis le début du mode). Continue : vérifie, teste, améliore, puis passe à la suite de la liste des tâches ou des pistes. Ne pose pas de question à l'utilisateur : décide toi-même et note tes décisions. Si tu attends quelque chose, vérifie-le puis termine ton tour : tu seras relancé. Seul l'utilisateur arrête ce mode."
+            ));
+        }
         let active = self.inner.load(id).goal.is_some_and(|g| g.status == "active");
         if active {
             self.inner.cancel_pursuit(id);
@@ -1523,6 +1862,16 @@ impl TurnHook for SessionCommandsHook {
                 "## Autonomous mode\nRunning ({}); turn {} so far, {} tokens. Keep going without asking the user; call `goal.complete(summary)` when done.",
                 describe_autonomous(a), a.turns, a.tokens
             ));
+        }
+        if let Some(f) = state.sans_fin.as_ref().filter(|f| f.running()) {
+            let mut b = format!(
+                "## Mode sans fin (actif)\nTâche : {}\nTour {} · {} jetons · relance n° {}. Tu es relancé après chaque tour jusqu'à ce que l'utilisateur arrête ce mode lui-même ; `goal.complete` ne l'arrête pas. Ne pose pas de question : décide et note tes décisions.",
+                f.task, f.turns, f.tokens, f.relaunches
+            );
+            if let Some(e) = &f.last_error {
+                b.push_str(&format!("\nDernière erreur ({} de suite, reprise automatique) : {e}", f.errors));
+            }
+            blocks.push(b);
         }
         if let Some(hb) = &state.heartbeat {
             blocks.push(format!(
@@ -1580,6 +1929,21 @@ impl TurnHook for SessionCommandsHook {
 
     async fn wants_continuation(&self, session: &SessionMeta, outcome: &TurnOutcome) -> bool {
         self.autonomous_step(session, outcome).await
+    }
+
+    /// Endless mode: a failed turn (rate limit, quota, network) is retried after a
+    /// growing wait, without leaving the mode.
+    async fn turn_failed(&self, session: &SessionMeta, error: &str, usage_tokens: u64) {
+        let id = session.id.as_str();
+        let running = self.inner.update(id, |s| {
+            let f = s.sans_fin.as_mut().filter(|f| f.running())?;
+            f.tokens += usage_tokens;
+            Some(())
+        });
+        if running.is_some() {
+            self.sans_fin_plan(id, Some(error));
+            self.inner.journal(id, "sans_fin", json!({"op": "retry", "error": truncate_bytes(error, 300)})).await;
+        }
     }
 }
 
@@ -1729,6 +2093,46 @@ mod tests {
         assert!(g.auto_pause.is_some());
         assert_eq!(pursuit_after_turn(&mut g, false, 1_000, 20_000), None, "en pause : plus de relance");
         assert!(is_goal_continue(&goal_continue_text("x", 1, 1)));
+    }
+
+    /// Endless mode: pause between turns, growing wait after errors (never leaves the
+    /// mode), watchdog, commands.
+    #[test]
+    fn mode_sans_fin() {
+        let mut f = SansFin { task: "lot".into(), status: "running".into(), ..Default::default() };
+        assert_eq!(sans_fin_after_turn(&mut f, None, 1_000, 10_000, 30_000), Some(11_000));
+        assert_eq!((f.turns, f.errors), (1, 0));
+        // 429 / quota / network: 30 s, 60 s, 120 s… capped at 15 min; still running.
+        let attentes: Vec<i64> = (0..8).map(|_| sans_fin_after_turn(&mut f, Some("HTTP 429 rate_limit_error"), 0, 10_000, 30_000).unwrap()).collect();
+        assert_eq!(attentes, vec![30_000, 60_000, 120_000, 240_000, 480_000, 900_000, 900_000, 900_000]);
+        assert!(f.running() && f.errors == 8 && f.last_error.as_deref() == Some("HTTP 429 rate_limit_error"));
+        // Never sooner than the minimum pause, even with a tiny error delay.
+        assert_eq!(sans_fin_after_turn(&mut f, None, 0, 10_000, 1), Some(10_000));
+        assert_eq!((f.errors, f.last_error.clone()), (0, None), "un tour réussi remet le compteur à zéro");
+        // Watchdog: idle, nothing planned, quiet for 2 min → relaunch.
+        f.next_relaunch_ms = None;
+        f.last_activity_ms = Some(0);
+        assert!(!sans_fin_needs_relaunch(&f, 60_000, false, 120_000));
+        assert!(sans_fin_needs_relaunch(&f, 120_000, false, 120_000));
+        assert!(!sans_fin_needs_relaunch(&f, 120_000, true, 120_000), "tour en cours : rien");
+        f.status = "stopped".into();
+        assert!(!sans_fin_needs_relaunch(&f, 999_999, false, 120_000));
+        assert_eq!(sans_fin_after_turn(&mut f, None, 0, 10_000, 30_000), None, "arrêté : plus de relance");
+        // Commands.
+        assert!(is_sans_fin_continue(&sans_fin_continue_text("lot", 5, 2)));
+        assert!(!is_goal_continue(&sans_fin_continue_text("lot", 5, 2)));
+        assert_eq!(autonomous_sans_fin("sans fin finir le lot 3").as_deref(), Some("finir le lot 3"));
+        assert_eq!(autonomous_sans_fin("nonstop").as_deref(), Some(""));
+        assert_eq!(autonomous_sans_fin("--max-turns 3 fix"), None);
+        assert_eq!(autonomous_sans_fin("sans finir"), None);
+        for mot in ["stop", "Arrête", "off", "arrêter."] {
+            assert!(est_arret(mot), "{mot}");
+        }
+        assert!(!est_arret("stoppe le serveur puis relance"));
+        let noms = |t: &str| parse_slashes(t).into_iter().map(|c| (c.name, c.rest)).collect::<Vec<_>>();
+        assert_eq!(noms("/nonstop finir le lot"), vec![("nonstop".to_string(), "finir le lot".to_string())]);
+        assert_eq!(noms("corrige les tests /nonstop"), vec![("nonstop".to_string(), String::new())]);
+        assert!(noms("voir /nonstops").is_empty());
     }
 
     #[test]

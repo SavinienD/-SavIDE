@@ -920,6 +920,18 @@ impl RemoteRuntime {
                     .await?;
                 Ok(json!({ "subscribed": false }))
             }
+            RemotePhoneCommand::EndlessMode { conversation_id, stop } => {
+                let connection = crate::daemon_client::cloud_connection_id(std::path::Path::new(&workspace_path));
+                let (method, params) = if stop {
+                    ("sessions.commands_set", json!({ "sessionId": conversation_id, "op": "sans_fin_stop" }))
+                } else {
+                    ("sessions.commands_state", json!({ "sessionId": conversation_id }))
+                };
+                let view = crate::connections::call_on(app, connection.as_deref(), method, params)
+                    .await
+                    .map_err(|err| anyhow::anyhow!(err))?;
+                Ok(json!({ "endless": view.get("sans_fin").cloned().unwrap_or(Value::Null) }))
+            }
             RemotePhoneCommand::Ping => Ok(json!({ "pong": true, "nowMs": now_ms() })),
         }
     }
@@ -1566,6 +1578,12 @@ enum RemotePhoneCommand {
     },
     UnsubscribePush {
         endpoint: String,
+    },
+    /// Endless mode (/nonstop) of a conversation: its state, or stop it.
+    EndlessMode {
+        conversation_id: String,
+        #[serde(default)]
+        stop: bool,
     },
     Ping,
 }

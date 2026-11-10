@@ -462,7 +462,9 @@ impl Daemon {
                 || v.get("guets").and_then(Value::as_object).is_some_and(|o| !o.is_empty());
             let goal = v.get("goal").is_some_and(|g| g.get("status").and_then(Value::as_str) == Some("active")
                 && g.get("next_relaunch_ms").is_some_and(|n| !n.is_null()));
-            if hb || guets || goal { out.push(id); }
+            // Endless mode running: its supervisor is re-armed by the hook.
+            let sans_fin = v.get("sans_fin").and_then(|f| f.get("status")).and_then(Value::as_str) == Some("running");
+            if hb || guets || goal || sans_fin { out.push(id); }
         }
         out.sort();
         out

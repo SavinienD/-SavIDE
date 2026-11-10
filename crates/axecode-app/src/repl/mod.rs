@@ -63,6 +63,8 @@ pub trait TurnHook: Send + Sync {
     async fn wants_continuation(&self, _session: &SessionMeta, _outcome: &TurnOutcome) -> bool {
         false
     }
+    /// Called when a turn ends on a provider error (rate limit, quota, network).
+    async fn turn_failed(&self, _session: &SessionMeta, _error: &str, _usage_tokens: u64) {}
     // goal end
 }
 

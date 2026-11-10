@@ -11,7 +11,7 @@ import type {
 } from "../../types";
 import { canonicalToolName, isToolName } from "../../lib/tools";
 import { resumeOutilEnFrancais } from "./resumesOutils";
-import { lirePoursuite, lireReveil } from "./logiqueIndicateurs"; // commandes
+import { lirePoursuite, lireRelanceSansFin, lireReveil } from "./logiqueIndicateurs"; // commandes
 
 const MIN_VISIBLE_TURN_DURATION_MS = 90_000;
 const CLEANED_TOOL_OUTPUT =
@@ -99,7 +99,8 @@ export type ChatBlock =
   // commandes — message injecté par un /heartbeat (bulle discrète « réveil : … »).
   | { kind: "wake"; id: string; message: string; atMs: number | null }
   // goal165 — relance automatique de l'objectif (bulle discrète).
-  | { kind: "goal-continue"; id: string; message: string; atMs: number | null };
+  | { kind: "goal-continue"; id: string; message: string; atMs: number | null }
+  | { kind: "nonstop-continue"; id: string; message: string; atMs: number | null; n: number | null };
 
 export type SubAgentBlock = {
   id: string;
@@ -326,6 +327,12 @@ function blocksFromHistory(history: ChatMessage[]): ChatBlock[] {
         const relance = lirePoursuite(trimmed);
         if (relance) {
           blocks.push({ kind: "goal-continue", id: id("g"), message: relance.message, atMs: relance.atMs });
+          continue;
+        }
+        // Mode sans fin : relance automatique, bulle discrète (pas un message de l'utilisateur).
+        const sansFin = lireRelanceSansFin(trimmed);
+        if (sansFin) {
+          blocks.push({ kind: "nonstop-continue", id: id("n"), message: sansFin.message, atMs: sansFin.atMs, n: sansFin.n });
           continue;
         }
         const reveil = lireReveil(trimmed);
@@ -1637,6 +1644,18 @@ export function applyEvent(
     // commandes — un /heartbeat a réveillé la session : bulle « réveil : … ».
     case "heartbeat_received": {
       const last = state.blocks[state.blocks.length - 1];
+      // Mode sans fin : relance automatique (le service passe le message balisé tel quel).
+      const sansFin = lireRelanceSansFin(event.message);
+      if (sansFin) {
+        if (last?.kind === "nonstop-continue" && last.n === sansFin.n && last.atMs === sansFin.atMs) return state;
+        return {
+          ...state,
+          blocks: [
+            ...state.blocks,
+            { kind: "nonstop-continue", id: `s-n-${sansFin.n ?? event.at_ms}`, message: sansFin.message, atMs: sansFin.atMs ?? (event.at_ms || null), n: sansFin.n },
+          ],
+        };
+      }
       if (last?.kind === "wake" && last.message === event.message && last.atMs === event.at_ms) {
         return state;
       }

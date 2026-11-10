@@ -346,6 +346,7 @@ export function installerSimulation(scene: Scene): void {
             etat.guets = cible ? (etat.guets ?? []).filter((g: any) => g.id !== cible) : [];
           }
           if (a.params?.op === "goal_pause" && etat.goal) etat.goal = { ...etat.goal, status: "paused" };
+          if (a.params?.op === "sans_fin_stop" && etat.sans_fin) etat.sans_fin = { ...etat.sans_fin, status: "stopped" };
           scene.commandes = etat;
           return etat;
         }

@@ -425,6 +425,10 @@ pub(crate) fn heartbeat_from_entry(data: &Value) -> Option<(String, i64)> {
     if let Some((id, statut, _)) = axecode_app::guet::lire_reveil(&text) {
         return Some((format!("guet {id} : {}", axecode_app::guet::libelle_statut(&statut)), ts));
     }
+    // Mode sans fin : la relance passe telle quelle (bulle « sans fin : relance n° … »).
+    if axecode_app::session_commands::is_sans_fin_continue(&text) {
+        return Some((text.trim().to_string(), ts));
+    }
     let (body, at_ms) = axecode_app::session_commands::parse_heartbeat_text(&text)?;
     Some((body, at_ms.unwrap_or(ts)))
 }
@@ -1095,6 +1099,10 @@ mod bridge_turn_error_tests {
         assert_eq!(heartbeat_from_entry(&guet), Some(("guet g1a2b3c : terminée".to_string(), 9)));
         let assistant = json!({"kind": "message", "message": {"role": "assistant", "parts": [{"type": "text", "text": "<heartbeat>\nx\n</heartbeat>"}]}});
         assert_eq!(heartbeat_from_entry(&assistant), None);
+        // Mode sans fin : la relance est suivie (tour adopté) et passée telle quelle à l'IDE.
+        let relance = axecode_app::session_commands::sans_fin_continue_text("lot 3", 7, 2);
+        let sans_fin = json!({"kind": "message", "ts": 7, "message": {"role": "user", "parts": [{"type": "text", "text": relance.clone()}]}});
+        assert_eq!(heartbeat_from_entry(&sans_fin), Some((relance, 7)));
     }
 
     #[test]

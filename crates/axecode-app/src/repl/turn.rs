@@ -285,6 +285,11 @@ async fn run_inner(
                 if let Err(err) = shared.family.on_turn_failed(&message).await {
                     tracing::warn!(error = %err, "sub-agent error delivery failed");
                 }
+                let meta = shared.meta();
+                let used = (usage_total.input_tokens + usage_total.output_tokens) as u64;
+                for hook in &shared.deps.hooks {
+                    hook.turn_failed(&meta, &message, used).await;
+                }
                 return Ok(TurnOutcome {
                     final_text: message,
                     usage: usage_total,
