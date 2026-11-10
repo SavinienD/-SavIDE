@@ -37,6 +37,7 @@ import {
   noterEcran,
   type Ecran,
 } from "./lib/gardienPage"; // écran noir, reprise après rechargement
+import { signalerRelance } from "./lib/avisAffichage";
 
 /** Nom de la fenêtre (une reprise par fenêtre). */
 function nomFenetre(): string {
@@ -222,6 +223,7 @@ export default function App() {
       // on rouvre le même écran au lieu de l'accueil. Les colonnes et onglets de
       // conversations se relisent seuls (stockage local du dossier).
       const repriseDemandee = await invoke<boolean>("page_reprise_demandee").catch(() => false);
+      if (repriseDemandee === true) signalerRelance();
       const ecran = ecranARouvrir(window.localStorage, nomFenetre(), {
         repriseDemandee: repriseDemandee === true,
         rechargement: estUnRechargement(window.performance),

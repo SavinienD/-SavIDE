@@ -19,6 +19,7 @@ import "./lib/customIcons";
 import { api } from "./lib/ipc";
 import { noterLancement, versionAppli } from "./lib/versionAppli"; // apropos
 import { ErrorBoundary, verrouillerRacine } from "./components/ErrorBoundary"; // robustesse
+import { AvisAffichageRelance } from "./components/AvisAffichageRelance";
 
 // Suppress the native WebKit context menu everywhere except inside text
 // inputs and while text is selected (where the OS-level copy/paste menu is
@@ -89,6 +90,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <ErrorBoundary label="SavIDE">
       <App />
     </ErrorBoundary>
+    <AvisAffichageRelance />
   </React.StrictMode>,
 );
 
