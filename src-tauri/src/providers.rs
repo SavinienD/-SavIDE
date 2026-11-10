@@ -877,11 +877,16 @@ pub(super) async fn start_openai_oauth_login(
     }
 
     let providers = state.providers.clone();
+    let store = state.store.clone();
     tauri::async_runtime::spawn(async move {
         let result =
             run_openai_oauth_server(listener, redirect_uri, oauth_state, pkce, cancel, cible).await;
         let login_outcome = match result {
             Ok(()) => match installer_apres_connexion("openai", rang.as_deref(), &providers, install_openai_provider) {
+                Ok(()) if rang.is_none() => {
+                    outils_par_abonnement_chatgpt(&store);
+                    OpenAiLoginOutcome { success: true, error: None }
+                }
                 Ok(()) => OpenAiLoginOutcome {
                     success: true,
                     error: None,
@@ -902,6 +907,20 @@ pub(super) async fn start_openai_oauth_login(
     });
 
     Ok(StartOpenAiLoginOutput { login_id, auth_url })
+}
+
+/// ChatGPT connecté : la recherche web et les images passent par l'abonnement, même si une
+/// clé API OpenAI est saisie (la case des Réglages > REPL permet de revenir à la clé).
+fn outils_par_abonnement_chatgpt(store: &AppStore) {
+    let result = store.load_tool_settings().and_then(|mut settings| {
+        if settings.prefer_chatgpt_subscription() {
+            store.save_tool_settings(&settings)?;
+        }
+        Ok(())
+    });
+    if let Err(err) = result {
+        tracing::warn!(error = %err, "unable to switch OpenAI tools to the ChatGPT subscription");
+    }
 }
 
 #[tauri::command]

@@ -441,6 +441,15 @@ impl ToolSettings {
             .unwrap_or_else(|| default_tool_enabled(tool_names::canonical_tool_name(name)))
     }
 
+    /// ChatGPT vient d'être connecté (compte principal) : les outils OpenAI (recherche
+    /// web, images) passent par l'abonnement plutôt que par la clé API. Rend vrai si
+    /// le réglage a changé.
+    pub fn prefer_chatgpt_subscription(&mut self) -> bool {
+        let changed = !self.openai_image_use_subscription;
+        self.openai_image_use_subscription = true;
+        changed
+    }
+
     pub fn openai_image_api_key(&self) -> Option<String> {
         let key = self.openai_image_api_key.trim();
         if key.is_empty() {
@@ -2069,6 +2078,18 @@ mod tests {
             description: description.to_string(),
             input_schema: json!({ "type": "object" }),
         }
+    }
+
+    #[test]
+    fn connecting_chatgpt_makes_the_tools_use_the_subscription() {
+        // Réglages enregistrés avant : clé API saisie, case décochée.
+        let mut settings: ToolSettings =
+            serde_json::from_value(json!({"openaiImageApiKey": "sk-x"})).unwrap();
+        assert!(!settings.openai_image_use_subscription);
+        assert!(settings.prefer_chatgpt_subscription());
+        assert!(settings.openai_image_use_subscription);
+        assert_eq!(settings.openai_image_api_key().as_deref(), Some("sk-x"));
+        assert!(!settings.prefer_chatgpt_subscription());
     }
 
     #[test]

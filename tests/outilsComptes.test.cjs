@@ -39,3 +39,19 @@ test("les réglages disent quel compte sert et quoi connecter", () => {
   assert.ok(section.includes("libelleImages(") && section.includes("libelleRecherche("), "règle affichée");
   assert.ok(!section.includes('"classic"'), "plus de valeur classic côté écran");
 });
+
+test("la case « abonnement » sert aussi à la recherche web, pas seulement aux images", () => {
+  const section = lire("../src/components/settings/ReplServicesSection.tsx");
+  const recherche = section.slice(section.indexOf("const routeRecherche"), section.indexOf("const routeImages"));
+  assert.match(recherche, /forcerAbonnement: settings\.openaiImageUseSubscription/);
+  assert.match(section, /plutôt que la clé \(recherche web et images\)/);
+  assert.equal(O.routeOpenAi({ cle: "sk-x", connecte: true, forcerAbonnement: true }), "abonnement");
+});
+
+test("connecter ChatGPT choisit l'abonnement pour les outils (service)", () => {
+  const providers = lire("../src-tauri/src/providers.rs");
+  const debut = providers.indexOf("pub(super) async fn start_openai_oauth_login");
+  const corps = providers.slice(debut, providers.indexOf("#[tauri::command]", debut + 10));
+  assert.match(corps, /Ok\(\(\)\) if rang\.is_none\(\) => \{\s*outils_par_abonnement_chatgpt\(&store\);/);
+  assert.match(providers, /fn outils_par_abonnement_chatgpt[\s\S]*prefer_chatgpt_subscription\(\)[\s\S]*save_tool_settings/);
+});

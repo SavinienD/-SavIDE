@@ -271,8 +271,9 @@ impl CreateImageTool {
         let background = normalize_background(parsed.background.as_deref())?;
         let moderation = normalize_moderation(parsed.moderation.as_deref())?;
 
-        // clé API d'abord ; sans clé, l'abonnement ChatGPT connecté (sans
-        // réglage) ; la case « Utiliser l'abonnement » le fait passer devant la clé.
+        // Clé API saisie d'abord, sauf si la case « Utiliser l'abonnement » est cochée
+        // (d'office à la connexion de ChatGPT) ; sinon l'abonnement ChatGPT connecté ;
+        // la variable OPENAI_API_KEY ne sert qu'à défaut d'abonnement.
         let api_key = match openai_compte::openai_route(
             self.openai_api_key.as_deref(),
             self.openai_auth_path.as_deref(),

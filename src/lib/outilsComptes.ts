@@ -1,6 +1,7 @@
 // Quel compte servent la recherche web et les images du REPL (web.*, images.*).
 // Même règle que le service (crates/axecode-app/src/openai_compte.rs) :
-// clé API OpenAI d'abord, sinon abonnement ChatGPT connecté, sinon rien
+// clé API OpenAI saisie d'abord sauf si la case « Utiliser l'abonnement ChatGPT » est cochée
+// (elle l'est d'office quand on connecte ChatGPT), sinon abonnement ChatGPT connecté, sinon rien
 // (images : message qui dit quoi connecter ; recherche web : Exa, gratuit).
 
 export type RouteOpenAi = "cle" | "abonnement" | "aucun";

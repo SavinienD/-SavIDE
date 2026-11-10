@@ -35,6 +35,8 @@ pub struct WebSearchTool {
     api_key: Option<String>,
     /// Clé API OpenAI des réglages (sinon `OPENAI_API_KEY`) : mode Automatique.
     openai_api_key: Option<String>,
+    /// Abonnement ChatGPT choisi plutôt que la clé (même case que les images).
+    openai_prefer_subscription: bool,
     /// Tests : fichier du compte ChatGPT et adresses des API remplacés.
     openai_auth_path: Option<PathBuf>,
     openai_api_url: String,
@@ -65,6 +67,7 @@ impl WebSearchTool {
                 .map(|key| key.trim().to_string())
                 .filter(|key| !key.is_empty()),
             openai_api_key: None,
+            openai_prefer_subscription: false,
             openai_auth_path: None,
             openai_api_url: openai_compte::OPENAI_API_RESPONSES_URL.into(),
             chatgpt_url: openai_compte::CHATGPT_RESPONSES_URL.into(),
@@ -76,6 +79,13 @@ impl WebSearchTool {
     pub fn from_settings(settings: &crate::store::ToolSettings) -> Self {
         Self::with_settings(settings.web_search_provider, settings.linkup_api_key())
             .with_openai_api_key(settings.openai_image_api_key())
+            .with_openai_prefer_subscription(settings.openai_image_use_subscription)
+    }
+
+    /// Case « Utiliser l'abonnement ChatGPT plutôt que la clé » (recherche et images).
+    pub fn with_openai_prefer_subscription(mut self, prefer: bool) -> Self {
+        self.openai_prefer_subscription = prefer;
+        self
     }
 
     /// Clé API OpenAI des réglages (mode Automatique : clé, sinon abonnement ChatGPT, sinon Exa).
@@ -95,7 +105,11 @@ impl WebSearchTool {
 
     /// Fournisseur réellement utilisé par le mode Automatique, en clair.
     pub fn auto_route(&self) -> OpenAiRoute {
-        openai_compte::openai_route(self.openai_api_key.as_deref(), self.openai_auth_path.as_deref(), false)
+        openai_compte::openai_route(
+            self.openai_api_key.as_deref(),
+            self.openai_auth_path.as_deref(),
+            self.openai_prefer_subscription,
+        )
     }
 
     pub fn descriptor(&self) -> ToolDescriptor {
@@ -1304,6 +1318,38 @@ mod tests {
         assert_eq!(body["tools"][0]["type"], "web_search");
         assert_eq!(body["stream"], true);
         assert!(body["instructions"].as_str().unwrap().contains("up to 2 sources"));
+    }
+
+    #[tokio::test]
+    async fn auto_follows_the_saved_subscription_choice_over_the_api_key() {
+        use crate::faux_http::{compte_chatgpt, lancer, Reponse};
+        let dir = tempfile::tempdir().unwrap();
+        let serveur = lancer(|r, _| match r.path.as_str() {
+            "/codex" => Reponse::sse(&[
+                json!({"type": "response.output_item.done", "item": reponse_openai()}),
+                json!({"type": "response.completed", "response": {"output": []}}),
+            ]),
+            "/api" => Reponse::json(json!({"output": [reponse_openai()]})),
+            _ => exa_sse(),
+        })
+        .await;
+        let b = serveur.base.clone();
+        let settings = crate::store::ToolSettings {
+            openai_image_api_key: "sk-test".into(),
+            openai_image_use_subscription: true,
+            ..Default::default()
+        };
+        let tool = WebSearchTool::from_settings(&settings).with_test_endpoints(
+            compte_chatgpt(dir.path()),
+            format!("{b}/api"),
+            format!("{b}/codex"),
+            format!("{b}/exa"),
+        );
+        let out = tool.run(json!({"query": "rust"})).await;
+        assert!(out.content.contains("abonnement ChatGPT"), "{}", out.content);
+        let reqs = serveur.requetes();
+        assert_eq!(reqs[0].path, "/codex", "la clé API ne doit pas passer devant l'abonnement choisi : {reqs:?}");
+        assert_eq!(reqs[0].header("authorization"), Some("Bearer jeton-test"));
     }
 
     #[tokio::test]
