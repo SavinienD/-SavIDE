@@ -24,8 +24,11 @@ test("coupe d'un morceau : sur un silence après 4 s, d'office à 8 s", () => {
   assert.equal(D.doitCouper(1000, 900), false);
   assert.equal(D.doitCouper(2600, 300), false);
   assert.equal(D.doitCouper(4100, 100), false);
-  assert.equal(D.doitCouper(4100, 300), true);
-  assert.equal(D.doitCouper(8100, 0), true);
+  assert.equal(D.doitCouper(4100, 300), false); // coupée vers 4 s, une phrase de 5 s attendait deux encodages
+  assert.equal(D.doitCouper(6100, 300), true);
+  assert.equal(D.doitCouper(1300, 520), true); // pause de fin de phrase
+  assert.equal(D.doitCouper(8100, 0), false);
+  assert.equal(D.doitCouper(10100, 0), true);
 });
 
 test("WAV 16 kHz mono 16 bits, rééchantillonnage 48 kHz -> 16 kHz", () => {
