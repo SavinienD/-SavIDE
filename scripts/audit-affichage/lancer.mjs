@@ -662,6 +662,23 @@ async function preparerScene(page, si, sc) {
     const ecart = await clicDroitChemin(page, sc.cheminChat);
     if (ecart) sc._echecDefil = (sc._echecDefil ? sc._echecDefil + " ; " : "") + ecart;
   }
+  // Theme scenes: a visible text selection (::selection colour) on the capture.
+  if (sc.selectionner) {
+    await page.evaluate((sel) => {
+      // Last match fully on screen (the first ones are often scrolled away).
+      const vus = [...document.querySelectorAll(sel)].filter((e) => {
+        const r = e.getBoundingClientRect();
+        return r.height > 0 && r.top >= 0 && r.bottom <= window.innerHeight;
+      });
+      const el = vus[vus.length - 1];
+      if (!el) return;
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      const s = window.getSelection();
+      s?.removeAllRanges();
+      s?.addRange(r);
+    }, sc.selectionner);
+  }
   if (sc.copieSelection) {
     const ecart = await copieSelection(page);
     if (ecart) sc._echecDefil = (sc._echecDefil ? sc._echecDefil + " ; " : "") + ecart;
