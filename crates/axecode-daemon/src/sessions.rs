@@ -655,6 +655,8 @@ impl Daemon {
 
         // 1. La conversation ne doit plus travailler.
         self.stop(id).ok();
+        // An archived conversation leaves the endless mode.
+        crate::commandes_rpc::arreter_sans_fin(self, id, "conversation archivée");
 
         // 2. L'état d'archive est écrit **avant** le déplacement : une coupure
         //    ne peut pas laisser un fichier archivé présenté comme actif.
