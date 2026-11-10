@@ -585,17 +585,18 @@ async function preparerScene(page, si, sc) {
     await pause(400);
   }
 
-  // depot — glisser-déposer simulé depuis le système (événements Tauri, position en
-  // pixels PHYSIQUES comme sur un écran Retina) : « depot: { cible, chemins } ».
+  // depot — glisser-déposer simulé depuis le système (événements Tauri) : « depot: { cible, chemins } ».
+  // Position comme la donne wry : pixels PHYSIQUES sous Windows, points logiques sur macOS
+  // (même sur un écran Retina) et Linux.
   if (sc.depot) {
     // « echelle » : écran Retina simulé au moment du dépôt (le banc ne prépare la scène qu'à l'échelle 1).
     if (sc.depot.echelle) { await page.setViewport({ ...page.viewport(), deviceScaleFactor: sc.depot.echelle }); await pause(300); }
-    const position = await page.evaluate((sel) => {
+    const position = await page.evaluate((sel, mac) => {
       const r = document.querySelector(sel)?.getBoundingClientRect();
       if (!r) return null;
-      const d = window.devicePixelRatio || 1;
+      const d = mac ? 1 : window.devicePixelRatio || 1;
       return { x: (r.left + r.width / 2) * d, y: (r.top + r.height / 2) * d };
-    }, sc.depot.cible);
+    }, sc.depot.cible, !!sc.mac);
     if (!position) throw new Error(`depot : cible absente ${sc.depot.cible}`);
     const paths = sc.depot.chemins ?? [];
     await page.evaluate((p) => window.__bancEmettre?.("tauri://drag-enter", { paths: p.paths, position: p.position }), { paths, position });
