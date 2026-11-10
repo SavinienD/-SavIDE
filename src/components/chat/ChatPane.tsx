@@ -605,7 +605,6 @@ export function ChatPane({
   const [text, setText] = useState("");
   const histRef = useRef<EtatHistorique>({ index: null, brouillon: "" });
   // slash
-  const slashMenu = useSlashCommandMenu(text, setText);
   const [slashNotice, setSlashNotice] = useState<string | null>(null);
   const slashCompactRef = useRef<((directive?: string) => Promise<void>) | null>(null);
   // slash end
@@ -716,6 +715,15 @@ export function ChatPane({
   const skillMentionRef = useRef<MentionState | null>(null);
   const [skillList, setSkillList] = useState<InstalledSkill[] | null>(null);
   const [skillMention, setSkillMention] = useState<MentionState | null>(null);
+  // Slash commands menu: at the start of the message or after a blank (token under the caret).
+  const jetonSlash = useMemo(
+    () => (skillMention ? { debut: skillMention.tokenStart, requete: skillMention.query } : null),
+    [skillMention],
+  );
+  const slashMenu = useSlashCommandMenu(text, setText, jetonSlash, (curseur) => {
+    pendingCaretRef.current = curseur;
+    setSkillMention(null);
+  });
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const overlayInnerRef = useRef<HTMLDivElement | null>(null);
   const planWritingRef = useRef<{ conversationId: string; placeholderId: string } | null>(null);

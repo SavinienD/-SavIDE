@@ -5,6 +5,7 @@
 import { useMemo, useState, type KeyboardEvent } from "react";
 import { harnessApi } from "../settings/harnessApi";
 import { demanderSectionReglages } from "../../lib/sectionReglages";
+import { commandesAProposer } from "./jetonsMessage";
 import "./slash.css";
 
 export type SlashCommandSpec = {
@@ -98,23 +99,45 @@ export async function runClientSlashCommand(text: string, ctx: SlashContext): Pr
   }
 }
 
-/** Autocompletion for `/command` while the composer holds a single word. */
-export function useSlashCommandMenu(text: string, setText: (value: string) => void) {
+/** Jeton « /requete » en cours de frappe (début dans le texte, lettres tapées après « / »). */
+export type JetonSlash = { debut: number; requete: string };
+
+/**
+ * Autocompletion for `/command`: at the start of the message (all commands) or after a blank
+ * anywhere else (the commands the service also reads there, see commandesAProposer).
+ * `jeton` is the token under the caret (null: the whole text must be a single `/word`);
+ * `apresCompletion` receives the caret position after the inserted command.
+ */
+export function useSlashCommandMenu(
+  text: string,
+  setText: (value: string) => void,
+  jeton: JetonSlash | null = null,
+  apresCompletion?: (curseur: number) => void,
+) {
   const [index, setIndex] = useState(0);
   const [dismissed, setDismissed] = useState<string | null>(null);
 
-  const matches = useMemo(() => {
+  const cible = useMemo<JetonSlash | null>(() => {
+    if (jeton) return jeton;
     const m = /^\/([a-z0-9_-]*)$/i.exec(text);
-    if (!m || dismissed === text) return [];
-    const q = m[1].toLowerCase();
-    return SLASH_COMMANDS.filter((c) => c.name.startsWith(q) && c.name !== q);
-  }, [text, dismissed]);
+    return m ? { debut: 0, requete: m[1] } : null;
+  }, [text, jeton]);
+
+  const matches = useMemo(() => {
+    if (!cible || dismissed === text) return [];
+    const noms = commandesAProposer(text, cible.debut, cible.requete, SLASH_COMMANDS.map((c) => c.name));
+    return SLASH_COMMANDS.filter((c) => noms.includes(c.name));
+  }, [text, dismissed, cible]);
 
   const current = Math.min(index, Math.max(matches.length - 1, 0));
 
   const complete = (spec: SlashCommandSpec) => {
-    setText(`/${spec.name} `);
+    if (!cible) return;
+    const apres = text.slice(cible.debut + 1 + cible.requete.length);
+    const insertion = `/${spec.name}${/^\s/.test(apres) ? "" : " "}`;
+    setText(text.slice(0, cible.debut) + insertion + apres);
     setIndex(0);
+    apresCompletion?.(cible.debut + insertion.length);
   };
 
   /** Returns true when the key was handled by the menu. */
