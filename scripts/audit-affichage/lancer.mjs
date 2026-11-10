@@ -847,8 +847,25 @@ async function auditer(page, si, sc, journal, preparation) {
     const stocke = (spec) => { const i = spec.lastIndexOf("="); try { return JSON.parse(localStorage.getItem(spec.slice(0, i)) ?? "[]").length === Number(spec.slice(i + 1)); } catch { return false; } };
     // « dedans:<sél> » : le premier élément visible tient entier dans la fenêtre.
     const dedans = (sel) => { const r = visibles(sel)[0]?.getBoundingClientRect(); return !!r && r.top >= 0 && r.left >= 0 && r.bottom <= window.innerHeight + 0.5 && r.right <= window.innerWidth + 0.5; };
+    // « fond:<sél> » : toutes les zones qui défilent sont amenées tout en bas ; le DERNIER élément visible
+    // doit alors tenir entier dans chaque ancêtre qui le rogne et dans la fenêtre (liste longue rognée en bas).
+    const fond = (sel) => {
+      const els = visibles(sel); const e = els.at(-1); if (!e) return false;
+      for (let a = e.parentElement; a; a = a.parentElement) { if (/auto|scroll/.test(getComputedStyle(a).overflowY)) a.scrollTop = a.scrollHeight; }
+      const r = e.getBoundingClientRect(); let bas = window.innerHeight, haut = 0, coupe = "fenetre";
+      for (let a = e.parentElement; a && a !== document.documentElement; a = a.parentElement) {
+        if (getComputedStyle(a).overflowY !== "visible") {
+          const t = a.getBoundingClientRect().top + a.clientTop, b = t + a.clientHeight;
+          if (t > haut) haut = t;
+          if (b < bas) { bas = b; coupe = String(a.className || a.tagName).split(" ")[0]; }
+        }
+      }
+      const d = { n: els.length, hautCarte: Math.round(r.top), basCarte: Math.round(r.bottom), hautVisible: Math.round(haut), basVisible: Math.round(bas), coupe, ok: r.top >= haut - 0.5 && r.bottom <= bas + 0.5 };
+      (window.__bancFond ??= []).push(d); return d.ok;
+    };
     const special = (t) =>
-      t.startsWith("defile:") ? defile(t.slice(7))
+      t.startsWith("fond:") ? fond(t.slice(5))
+      : t.startsWith("defile:") ? defile(t.slice(7))
       : t.startsWith("dedans:") ? dedans(t.slice(7))
       : t.startsWith("compte:") ? compte(t.slice(7))
       : t.startsWith("stocke:") ? stocke(t.slice(7))
@@ -879,7 +896,7 @@ async function auditer(page, si, sc, journal, preparation) {
     const disparus = attendus.filter((t) => !window.__texteVisible(t));
     const fil = document.querySelector(".colonne-chat[data-focus='true'] .chat-body")?.getBoundingClientRect();
     const polices = document.fonts.check('13px "Geist"') && document.fonts.check('12px "Geist Mono"');
-    return { manquants, disparus, polices, fil: fil ? { x: Math.round(fil.x), y: Math.round(fil.y), l: Math.round(fil.width), h: Math.round(fil.height) } : null };
+    const fondMes = window.__bancFond ?? []; window.__bancFond = []; return { fond: fondMes, manquants, disparus, polices, fil: fil ? { x: Math.round(fil.x), y: Math.round(fil.y), l: Math.round(fil.width), h: Math.round(fil.height) } : null };
   }, sc.temoins ?? [], sc.attendus ?? []);
   for (const t of verif.disparus) {
     audit.defauts.unshift({ regle: "texte-disparu", element: "div.colonne-chat > div.chat-col > div.chat-body", libelle: t.slice(0, 70), detail: "texte de la conversation qui n'est plus visible à l'écran", rect: verif.fil ?? { x: 0, y: 0, l: si.largeur, h: si.hauteur }, gravite: 3, cle: "texte-disparu|" + t.slice(0, 40) });
@@ -887,6 +904,7 @@ async function auditer(page, si, sc, journal, preparation) {
   if (!verif.polices) preparation = (preparation ? preparation + " ; " : "") + "polices Geist non chargées";
   if (sc._echecPoignee) preparation = (preparation ? preparation + " ; " : "") + "poignée : " + sc._echecPoignee;
   if (sc._echecDefil) preparation = (preparation ? preparation + " ; " : "") + "défilement : " + sc._echecDefil;
+  sc._fond = verif.fond;
   if (verif.manquants.length) preparation = (preparation ? preparation + " ; " : "") + "témoins absents : " + verif.manquants.join(", ");
   if (preparation) audit.defauts.unshift({ regle: "scene-incomplete", element: sc.id, libelle: "", detail: preparation, rect: { x: 0, y: 0, l: 1, h: 1 }, gravite: 0, cle: "scene-incomplete|" + sc.id });
   const defZones = { ...(ZONES["*"] ?? {}), ...(ZONES[sc.id] ?? {}) };
@@ -937,7 +955,7 @@ async function auditer(page, si, sc, journal, preparation) {
   }
   return {
     situation: si.id, scene: sc.id, capture: capture.slice(SORTIE.length + 1), annotee: annotee ? annotee.slice(SORTIE.length + 1) : null,
-    defauts: audit.defauts, exceptes: audit.exceptes, mesures: audit.mesures, echelle: si.echelle, largeur: si.largeur, hauteur: si.hauteur, zones,
+    fond: sc._fond, defauts: audit.defauts, exceptes: audit.exceptes, mesures: audit.mesures, echelle: si.echelle, largeur: si.largeur, hauteur: si.hauteur, zones,
     erreursPage: journal.filter((l) => l.startsWith("[pageerror]") || l.startsWith("[error]")).slice(0, 5),
     commandesNonSimulees: inconnues,
   };
