@@ -81,6 +81,20 @@ export const THINKING_LEVELS: { value: ThinkingLevel; label: string }[] = [
 
 export const MODELS: ModelEntry[] = [
   {
+    value: "anthropic:claude-fable-5-2",
+    provider: "anthropic",
+    label: "Fable 5.2",
+    thinking: ["off", "low", "medium", "high", "xhigh", "max"],
+    defaultThinking: "medium",
+  },
+  {
+    value: "anthropic:claude-mythos-5-2",
+    provider: "anthropic",
+    label: "Mythos 5.2",
+    thinking: ["off", "low", "medium", "high", "xhigh", "max"],
+    defaultThinking: "medium",
+  },
+  {
     value: "anthropic:claude-fable-5-1",
     provider: "anthropic",
     label: "Fable 5.1",
