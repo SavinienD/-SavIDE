@@ -1,9 +1,16 @@
 Nouveautés :
-- Dossiers épinglés : toujours en tête, Ctrl+1, 2, 3 fixes
-- Appareils : ajout par commande à copier puis réponse à coller
+- Mode sans fin : /nonstop jusqu'à l'arrêt
+- Couleur d'accent au choix dans Préférences
+- Modèles Claude Fable 5.2 et Mythos 5.2
+- MCP : installation confiée à l'IA
 Changements :
-- Page des serveurs MCP refaite : état, outils, test lisible
-- Notifications en français
+- Dictée nettement plus rapide
+- Disposition et terminaux gardés par dossier
+- Couleurs adaptées au thème clair ou sombre
+- Abonnement ChatGPT pour recherche et images
+- /goal et /heartbeat reconnus en milieu de message
 Corrections :
-- Liste des outils MCP vide après import
-- Serveurs internes de Codex plus proposés à l'import
+- Dépôt de fichiers sur toute la conversation
+- Terminal coupé sur les bords
+- Liste des serveurs MCP coupée en bas
+- Écran gris : affichage relancé automatiquement
