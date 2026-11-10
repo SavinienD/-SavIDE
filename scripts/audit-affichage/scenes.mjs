@@ -852,6 +852,19 @@ export const SCENES = [
     clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__nav-list-item[data-server='github'] .settings-pane__nav-list-item-main", ".settings-pane__detail .settings-pane__mcp-tester", ".settings-pane__mcp-journal > summary"],
     temoins: ["sel:.settings-pane__nav-list-item[data-server='github'] .settings-pane__nav-list-item-main[data-etat='error']", "sel:.settings-pane__mcp-erreur", "sel:.settings-pane__mcp-journal[open] > pre", "appel:test_mcp_server", "clic:.settings-pane__detail .settings-pane__mcp-tester", "absent:.settings-pane__nav-list-item[data-server='postgres'] .settings-pane__nav-list-item-main[data-etat='error']"] },
   // … ajout guidé : « Serveur personnalisé » (par défaut), « Serveur distant », adresse, « Tester » -> connexion requise (OAuth).
+  // Réglages > MCP : un serveur lancé par une commande (Excel, npx) : « Installer avec l'IA » l'ajoute, ferme les
+  // réglages et prépare la demande (commande exacte, système) dans la saisie du chat, sans l'envoyer.
+  { id: "mcp-ia-catalogue", sim: { mcp: ["postgres"] }, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__header .settings-pane__btn[data-primary='true']", ".settings-pane__mcp-catalog-item[data-entry='excel']", ".settings-pane__mcp-catalog-actions .settings-pane__mcp-demande-ia"],
+    temoins: ["appel:save_mcp_settings", "absent:.settings-pane__mcp-catalog", "saisiecontient:Installe et configure le serveur MCP « Excel »", "saisiecontient:npx -y @negokaz/excel-mcp-server", "saisiecontient:Node.js"] },
+  // … sur macOS, volets réduits : la saisie réapparaît et reçoit la demande, système « macOS » écrit dedans.
+  { id: "mcp-ia-catalogue-mac", mac: true, reduireVolets: true, sim: { mcp: ["postgres"] }, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__header .settings-pane__btn[data-primary='true']", ".settings-pane__mcp-catalog-item[data-entry='excel']", ".settings-pane__mcp-catalog-actions .settings-pane__mcp-demande-ia"],
+    temoins: ["appel:save_mcp_settings", "saisiecontient:Installe et configure le serveur MCP « Excel » sur ce poste (macOS)", "saisiecontient:npx -y @negokaz/excel-mcp-server"] },
+  // … test en échec d'un serveur enregistré : « Demander à l'IA de corriger » met l'erreur et la commande dans la saisie.
+  { id: "mcp-ia-erreur", sim: { mcp: ["github", "postgres"], mcpErreur: "github" }, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__nav-list-item[data-server='github'] .settings-pane__nav-list-item-main", ".settings-pane__detail .settings-pane__mcp-tester", ".settings-pane__mcp-erreur .settings-pane__mcp-demande-ia"],
+    temoins: ["absent:.settings-pane__mcp-erreur", "saisiecontient:ne fonctionne pas sur ce poste", "saisiecontient:Il est lancé par la commande : npx"] },
   // Réglages > MCP : un serveur importé de Codex (stdio, 4 outils), un http et un en erreur.
   { id: "mcp-page", sim: { mcpServeurs: MCP_SERVEURS, mcpOutils: MCP_OUTILS, mcpErreur: "github" }, stockage: () => colonnes([ids(3)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__nav-list-item[data-server='node_repl'] .settings-pane__nav-list-item-main"],
