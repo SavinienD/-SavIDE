@@ -68,7 +68,11 @@ export function ReplServicesSection({ workspacePath }: { workspacePath: string }
   const brut = settings.webSearchProvider as string | undefined;
   const webSearchProvider: WebSearchProvider = brut === "linkup" || brut === "exa" ? brut : "auto";
   const cleOpenAi = settings.openaiImageApiKey ?? "";
-  const routeRecherche = routeOpenAi({ cle: cleOpenAi, connecte: openAiConnected });
+  const routeRecherche = routeOpenAi({
+    cle: cleOpenAi,
+    connecte: openAiConnected,
+    forcerAbonnement: settings.openaiImageUseSubscription,
+  });
   const routeImages = routeOpenAi({
     cle: cleOpenAi,
     connecte: openAiConnected,
@@ -181,8 +185,9 @@ export function ReplServicesSection({ workspacePath }: { workspacePath: string }
 
       <h4>Compte OpenAI des outils</h4>
       <p className="axe-repl__muted">
-        Clé API OpenAI si elle est saisie, sinon l'abonnement ChatGPT du compte connecté
-        {openAiConnected ? " (connecté)" : " (non connecté : Réglages > Fournisseurs > OpenAI)"}.
+        Abonnement ChatGPT du compte connecté
+        {openAiConnected ? " (connecté)" : " (non connecté : Réglages > Fournisseurs > OpenAI)"}, sinon la clé API OpenAI
+        ci-dessous.
       </p>
       <ApiKeyField
         label="Clé API OpenAI (facultative)"
@@ -197,7 +202,7 @@ export function ReplServicesSection({ workspacePath }: { workspacePath: string }
             checked={settings.openaiImageUseSubscription}
             onChange={(e) => patch({ openaiImageUseSubscription: e.target.checked })}
           />
-          Images : utiliser l'abonnement ChatGPT plutôt que la clé
+          Utiliser l'abonnement ChatGPT plutôt que la clé (recherche web et images)
         </label>
       ) : null}
 

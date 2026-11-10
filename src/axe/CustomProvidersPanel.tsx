@@ -29,6 +29,7 @@ import {
   fournisseurLocal,
   sortieParDefaut,
 } from "./modelesFournisseur";
+import { abonnementPourAdresse, connecterAbonnement } from "../lib/abonnementFournisseur";
 
 type Draft = ProviderConfig & { apiKey: string; hasApiKey: boolean; installed: boolean; isNew: boolean };
 
@@ -391,6 +392,8 @@ export function CustomProvidersPanel() {
         const erreurs = erreursIdentifiants(d.models);
         const premiereErreur = Object.values(erreurs)[0];
         const local = fournisseurLocal(d.kind, Boolean(info?.local), d.baseUrl);
+        // Abonnement ChatGPT / Gemini / Claude saisi comme API : la connexion par abonnement d'abord.
+        const abonnement = d.hasApiKey ? null : abonnementPourAdresse(d.baseUrl);
         const tone = !d.enabled ? "off" : d.installed ? "ok" : "error";
         const label = !d.enabled
           ? "Désactivé"
@@ -443,6 +446,25 @@ export function CustomProvidersPanel() {
                     Activé
                   </label>
                 </div>
+                {abonnement && (
+                  <div className="axe-providers__actions" data-abonnement={abonnement.carte}>
+                    <span className="axe-providers__hint">
+                      Abonnement {abonnement.nom}{"\u00a0"}? Connectez-le plutôt{"\u00a0"}: ses modèles passeront par
+                      l'abonnement, sans clé API. La clé API reste possible ici.
+                    </span>
+                    <button
+                      type="button"
+                      className="settings-pane__btn settings-pane__btn--primary"
+                      data-action="connecter-abonnement"
+                      onClick={() => {
+                        if (d.isNew) setDrafts((prev) => prev.filter((x) => x !== d));
+                        connecterAbonnement(abonnement.carte);
+                      }}
+                    >
+                      Se connecter avec {abonnement.nom}
+                    </button>
+                  </div>
+                )}
 
                 <div className="axe-providers__models-head">
                   <strong>Modèles</strong>

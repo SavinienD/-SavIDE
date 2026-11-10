@@ -1,10 +1,12 @@
 //! Compte OpenAI des outils (recherche web et images du REPL et de l'agent).
 //!
-//! Règle unique : une clé API OpenAI (Réglages > REPL ou
-//! variable `OPENAI_API_KEY`) est utilisée si elle existe ; sinon, si un compte
-//! ChatGPT est connecté (Réglages > Fournisseurs > OpenAI, OAuth), l'outil
-//! passe par l'abonnement ChatGPT (API Responses de chatgpt.com, outils
-//! `web_search` / `image_generation`) ; sinon le message dit quoi connecter.
+//! Règle unique : la clé
+//! API OpenAI saisie dans Réglages > REPL passe d'abord, sauf si la case « Utiliser
+//! l'abonnement ChatGPT » est cochée (elle l'est d'office quand on connecte ChatGPT) ;
+//! sinon, si un compte ChatGPT est connecté (Réglages > Fournisseurs > OpenAI, OAuth),
+//! l'outil passe par l'abonnement ChatGPT (API Responses de chatgpt.com, outils
+//! `web_search` / `image_generation`) ; la variable `OPENAI_API_KEY` ne sert qu'à
+//! défaut d'abonnement ; sinon le message dit quoi connecter.
 
 use std::{env, path::Path};
 
@@ -57,16 +59,31 @@ pub fn chatgpt_credential(auth_path: Option<&Path>) -> Option<Credential> {
     loaded.ok().flatten().filter(Credential::is_oauth)
 }
 
-/// Clé API d'abord, abonnement ChatGPT ensuite. `force_subscription` (case
-/// « Utiliser l'abonnement » des images) fait passer l'abonnement devant la clé.
-pub fn openai_route(configured_key: Option<&str>, auth_path: Option<&Path>, force_subscription: bool) -> OpenAiRoute {
-    let key = openai_api_key(configured_key);
-    if force_subscription || key.is_none() {
-        if let Some(credential) = chatgpt_credential(auth_path) {
-            return OpenAiRoute::Subscription(credential);
-        }
+/// Compte des outils OpenAI. La clé saisie dans les réglages passe d'abord, sauf si
+/// `prefer_subscription` (case « Utiliser l'abonnement ChatGPT », cochée d'office quand on
+/// connecte ChatGPT) ; ensuite l'abonnement ChatGPT connecté ; la variable `OPENAI_API_KEY`
+/// ne sert qu'en dernier, sans abonnement : elle ne doit pas détourner vers l'API payante un
+/// abonnement que l'utilisateur a ajouté.
+pub fn openai_route(configured_key: Option<&str>, auth_path: Option<&Path>, prefer_subscription: bool) -> OpenAiRoute {
+    let env_key = env::var("OPENAI_API_KEY").ok();
+    route_parmi(configured_key, env_key.as_deref(), chatgpt_credential(auth_path), prefer_subscription)
+}
+
+fn route_parmi(
+    configured_key: Option<&str>,
+    env_key: Option<&str>,
+    subscription: Option<Credential>,
+    prefer_subscription: bool,
+) -> OpenAiRoute {
+    let propre = |k: Option<&str>| k.map(str::trim).filter(|k| !k.is_empty()).map(str::to_string);
+    let configured = propre(configured_key);
+    if let Some(key) = configured.clone().filter(|_| !prefer_subscription) {
+        return OpenAiRoute::ApiKey(key);
     }
-    match key {
+    if let Some(credential) = subscription {
+        return OpenAiRoute::Subscription(credential);
+    }
+    match configured.or_else(|| propre(env_key)) {
         Some(key) => OpenAiRoute::ApiKey(key),
         None => OpenAiRoute::None,
     }
@@ -159,5 +176,21 @@ mod tests {
         if env::var("OPENAI_API_KEY").map(|k| k.trim().is_empty()).unwrap_or(true) {
             assert_eq!(openai_route(None, Some(&absent), false).label(), "aucun");
         }
+    }
+
+    #[test]
+    fn la_variable_d_environnement_ne_passe_pas_devant_l_abonnement_connecte() {
+        let dir = tempfile::tempdir().unwrap();
+        let abo = || chatgpt_credential(Some(&auth_file(dir.path())));
+        // Abonnement ajouté, clé seulement dans OPENAI_API_KEY : l'abonnement.
+        assert_eq!(route_parmi(None, Some("sk-env"), abo(), false).label(), "abonnement ChatGPT");
+        assert_eq!(route_parmi(Some(" "), Some("sk-env"), abo(), false).label(), "abonnement ChatGPT");
+        // Sans abonnement, la variable sert encore.
+        assert_eq!(route_parmi(None, Some("sk-env"), None, false).label(), "clé API OpenAI");
+        // Clé saisie dans les réglages : elle passe devant, sauf si l'abonnement est choisi.
+        assert_eq!(route_parmi(Some("sk-x"), Some("sk-env"), abo(), false).label(), "clé API OpenAI");
+        assert_eq!(route_parmi(Some("sk-x"), Some("sk-env"), abo(), true).label(), "abonnement ChatGPT");
+        assert!(matches!(route_parmi(Some("sk-x"), None, None, true), OpenAiRoute::ApiKey(k) if k == "sk-x"));
+        assert_eq!(route_parmi(None, None, None, true).label(), "aucun");
     }
 }
