@@ -85,7 +85,7 @@ async fn voice_transcribe_falls_back_and_returns_the_text() {
         }
         result
     }
-    // 1) mode rapide : fenêtre réduite (2 s -> plancher de 512 trames)
+    // 1) mode rapide : fenêtre réduite (2 s -> plancher de 768 trames)
     let result = run(
         &client,
         json!({"audio": "T1BVUw==", "mime": "audio/webm;codecs=opus", "durationMs": 2000, "prompt": "Grafana", "fast": true}),
@@ -94,7 +94,7 @@ async fn voice_transcribe_falls_back_and_returns_the_text() {
     assert_eq!(result["status"], "done", "{result}");
     assert_eq!(result["text"], "Bonjour, crée un worktree.");
     assert_eq!(result["model"], "faux whisper");
-    assert_eq!(result["audioCtx"], 512);
+    assert_eq!(result["audioCtx"], 768);
     assert!(result["fallbacks"][0].as_str().unwrap().starts_with("mort : "), "{result}");
 
     // 2) par défaut : fenêtre complète (aucun audio_ctx envoyé)
@@ -109,7 +109,7 @@ async fn voice_transcribe_falls_back_and_returns_the_text() {
     let request = requests.remove(0);
     assert!(request.starts_with("POST /inference HTTP/1.1"));
     assert!(request.contains("name=\"language\"\r\n\r\nfr\r\n"));
-    assert!(request.contains("name=\"audio_ctx\"\r\n\r\n512\r\n"));
+    assert!(request.contains("name=\"audio_ctx\"\r\n\r\n768\r\n"));
     assert!(request.contains("worktree, un commit"), "amorce absente");
     assert!(request.contains("Autres termes : Grafana."));
     assert!(request.contains("filename=\"dictee.webm\"\r\nContent-Type: audio/webm;codecs=opus\r\n\r\nOPUS\r\n"));
