@@ -3,6 +3,7 @@
 // (« écran bleu ») et il faut fermer l'appli. Avec lui : la zone touchée affiche l'erreur, le reste reste utilisable,
 // et le détail peut être copié pour le support.
 import { Component, type CSSProperties, type ErrorInfo, type ReactNode } from "react";
+import { invoke } from "@tauri-apps/api/core";
 
 type Props = { label: string; children: ReactNode };
 type State = { error: Error | null; stack: string };
@@ -27,6 +28,11 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error(`[${this.props.label}]`, error, info.componentStack);
     this.setState({ stack: info.componentStack ?? "" });
+    // Trace durable (page.log) : la console de la vue est perdue quand la fenêtre se ferme.
+    const texte = `erreur d'affichage rattrapée (${this.props.label}) : ${error?.name ?? "Erreur"} : ${error?.message ?? ""}\n${(info.componentStack ?? "").slice(0, 800)}`;
+    void Promise.resolve()
+      .then(() => invoke("page_journal", { texte }))
+      .catch(() => undefined);
   }
 
   private detail() {
