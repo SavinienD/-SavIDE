@@ -462,7 +462,7 @@
   height: 0;
 }
 .xv-pdf .textLayer ::selection {
-  background: rgba(252, 97, 11, 0.3);
+  background: var(--selection-bg, rgba(252, 97, 11, 0.3));
 }
 .xv-pdf .textLayer br::selection {
   background: transparent;
@@ -478,7 +478,7 @@
 .xv-pdf .textLayer mark.xv-pdf-hit {
   position: static;
   color: transparent;
-  background: rgba(252, 97, 11, 0.38);
+  background: var(--highlight-bg-strong, rgba(252, 97, 11, 0.38));
   border-radius: 2px;
 }
 
@@ -1029,7 +1029,7 @@
   color: var(--text-3);
 }
 .xv-json__key {
-  color: #7dd3fc;
+  color: var(--tone-read);
 }
 .xv-json__index {
   color: var(--text-3);
@@ -1046,13 +1046,13 @@
   text-overflow: ellipsis;
 }
 .xv-json__value--string {
-  color: #86efac;
+  color: var(--tone-grep);
 }
 .xv-json__value--number {
-  color: #fdba74;
+  color: var(--tone-thinking);
 }
 .xv-json__value--boolean {
-  color: #c4b5fd;
+  color: var(--tone-edit);
 }
 .xv-json__value--null {
   color: var(--text-3);
@@ -1133,8 +1133,8 @@
   word-break: break-word;
 }
 .xv-nb__stream[data-stderr="true"] {
-  background: rgba(239, 68, 68, 0.1);
-  color: #fca5a5;
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--danger);
 }
 .xv-nb__image {
   display: block;
@@ -1164,8 +1164,8 @@
 }
 .xv-hex__error {
   padding: 6px 12px;
-  color: #fca5a5;
-  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
   font-family: var(--font-ui);
   font-size: var(--fs-xs);
 }

@@ -427,7 +427,8 @@ export function EditorPane({
           inlineClassName: "editor-search-hit",
           className: "editor-search-line-hit",
           overviewRuler: {
-            color: "rgba(196, 181, 253, 0.8)",
+            // Monaco needs a literal colour: the current accent.
+            color: getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#fc610b",
             position: monacoNs.editor.OverviewRulerLane.Center,
           },
         },

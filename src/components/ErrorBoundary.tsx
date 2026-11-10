@@ -8,13 +8,13 @@ type Props = { label: string; children: ReactNode };
 type State = { error: Error | null; stack: string };
 
 const boite: CSSProperties = {
-  margin: 16, padding: 16, borderRadius: 8, border: "1px solid rgba(248,113,113,0.5)",
-  background: "rgba(248,113,113,0.08)", color: "#fecaca", fontSize: 13, lineHeight: 1.5, maxHeight: "80vh", overflow: "auto",
+  margin: 16, padding: 16, borderRadius: 8, border: "1px solid var(--danger)",
+  background: "var(--bg-1)", color: "var(--text-0)", fontSize: 13, lineHeight: 1.5, maxHeight: "80vh", overflow: "auto",
 };
 const pre: CSSProperties = { whiteSpace: "pre-wrap", wordBreak: "break-word", fontSize: 11, opacity: 0.85, margin: "8px 0" };
 const bouton: CSSProperties = {
-  marginRight: 8, padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.25)",
-  background: "rgba(255,255,255,0.06)", color: "inherit", cursor: "pointer", font: "inherit",
+  marginRight: 8, padding: "4px 10px", borderRadius: 6, border: "1px solid var(--text-3)",
+  background: "var(--bg-2)", color: "inherit", cursor: "pointer", font: "inherit",
 };
 
 export class ErrorBoundary extends Component<Props, State> {

@@ -1,7 +1,7 @@
 /* Réglages > Serveurs MCP : liste dépliable sur une colonne. */
 .settings-pane__body--mcp.mcp-page { display: block; overflow: auto; padding: 12px 18px 18px; min-height: 0; }
 .mcp-avis { margin: 0 18px 8px; padding: 6px 10px; border-radius: 6px; font-size: 12px; overflow-wrap: anywhere; background: var(--bg-2, rgba(127,127,127,.08)); }
-.mcp-avis[data-tone="error"] { color: var(--danger); background: rgba(248, 81, 73, 0.08); }
+.mcp-avis[data-tone="error"] { color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, transparent); }
 .mcp-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .settings-pane__nav-list-item.mcp-serveur { display: block; padding: 0; border: 1px solid var(--border, rgba(127,127,127,.25)); border-radius: 8px; background: transparent; min-width: 0; height: auto; }
 .mcp-serveur[data-open="true"] { background: var(--bg-1, rgba(127,127,127,.04)); }
@@ -12,17 +12,17 @@
 .mcp-serveur__point { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--text-2); }
 .mcp-serveur__point[data-tone="ok"] { background: var(--ok, #3fb950); }
 .mcp-serveur__point[data-tone="error"] { background: var(--danger); }
-.mcp-serveur__point[data-tone="auth"] { background: #d29922; }
+.mcp-serveur__point[data-tone="auth"] { background: var(--warn); }
 .mcp-serveur__point[data-tone="off"] { background: var(--text-3); opacity: .45; }
 .mcp-serveur__nom { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .mcp-serveur[data-on="false"] .mcp-serveur__nom { opacity: .65; }
-.mcp-serveur__marque { flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: 11px; padding: 1px 6px; border-radius: 4px; color: #d29922; background: rgba(210, 153, 34, 0.12); white-space: nowrap; }
+.mcp-serveur__marque { flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: 11px; padding: 1px 6px; border-radius: 4px; color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); white-space: nowrap; }
 .mcp-serveur__etat { flex: 0 0 auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: var(--text-2); white-space: nowrap; }
 .mcp-serveur__etat[data-tone="error"] { color: var(--danger); }
-.mcp-serveur__etat[data-tone="auth"] { color: #d29922; }
+.mcp-serveur__etat[data-tone="auth"] { color: var(--warn); }
 .mcp-serveur .settings-pane__switch { flex: 0 0 auto; }
 .settings-pane__detail.mcp-detail { display: flex; flex-direction: column; gap: 10px; padding: 2px 10px 12px 28px; min-width: 0; height: auto; border: 0; background: none; overflow: visible; }
-.mcp-detail__alerte { margin: 0; padding: 6px 8px; border-radius: 6px; font-size: 12px; background: rgba(210, 153, 34, 0.1); }
+.mcp-detail__alerte { margin: 0; padding: 6px 8px; border-radius: 6px; font-size: 12px; background: color-mix(in srgb, var(--warn) 10%, transparent); }
 .mcp-detail__infos { display: flex; flex-direction: column; gap: 2px; margin: 0; font-size: 12px; min-width: 0; }
 .mcp-detail__infos dt { color: var(--text-2); }
 .mcp-detail__infos dd { margin: 0 0 4px; min-width: 0; }
@@ -34,7 +34,7 @@
 .mcp-detail__actions { display: flex; flex-wrap: wrap; gap: 6px; }
 .settings-pane__mcp-delete[data-confirm="true"] { color: var(--danger); border-color: var(--danger); }
 .mcp-detail__test { padding: 6px 8px; border-radius: 6px; font-size: 12px; }
-.mcp-detail__test[data-tone="error"] { background: rgba(248, 81, 73, 0.08); color: var(--danger); }
+.mcp-detail__test[data-tone="error"] { background: color-mix(in srgb, var(--danger) 8%, transparent); color: var(--danger); }
 .mcp-detail__auth { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
 .mcp-detail__titre { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .03em; color: var(--text-2); }
 .settings-pane__tool-list.mcp-outils { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }

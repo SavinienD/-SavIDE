@@ -3,13 +3,13 @@
 .axe-harness h2 { margin: 0 0 4px; font-size: calc(16px * var(--text-scale, 1)); color: var(--text-0); }
 .axe-harness__muted { color: var(--text-2); font-size: calc(12px * var(--text-scale, 1)); }
 .axe-harness__status { color: var(--accent); font-size: calc(12px * var(--text-scale, 1)); margin: 0; }
-.axe-harness__error { color: #f87171; font-size: calc(12px * var(--text-scale, 1)); margin: 0; white-space: pre-wrap; }
+.axe-harness__error { color: var(--danger); font-size: calc(12px * var(--text-scale, 1)); margin: 0; white-space: pre-wrap; }
 .axe-harness__banner { margin: 0; padding: 8px 10px; border: 1px solid var(--accent); border-radius: var(--r-small); background: var(--accent-soft); color: var(--text-0); font-size: calc(12px * var(--text-scale, 1)); }
 .axe-harness__btn { padding: 5px 10px; border: 1px solid var(--line-strong); border-radius: var(--r-small); background: var(--bg-2); color: var(--text-1); cursor: pointer; font-size: calc(12px * var(--text-scale, 1)); }
 .axe-harness__btn:hover:not(:disabled) { border-color: var(--accent); color: var(--text-0); }
 .axe-harness__btn:disabled { opacity: 0.5; cursor: default; }
-.axe-harness__btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.axe-harness__btn--danger:hover:not(:disabled) { border-color: #f87171; color: #f87171; }
+.axe-harness__btn--primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink, #fff); }
+.axe-harness__btn--danger:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); }
 .axe-harness__tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line-strong); }
 .axe-harness__tabs button { padding: 6px 10px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--text-1); cursor: pointer; font-size: calc(12px * var(--text-scale, 1)); }
 .axe-harness__tabs button[data-active="true"] { border-bottom-color: var(--accent); color: var(--text-0); }
