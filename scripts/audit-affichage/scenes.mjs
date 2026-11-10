@@ -433,6 +433,23 @@ export const SCENES = [
     ],
     attendus: ["Relis le module de paiement, puis"],
   },
+  // Commande en tête puis /goal : les deux en orange (le service lit les deux).
+  {
+    id: "couleurs-apres-commande",
+    sim: {},
+    stockage: () => colonnes([ids(1)]),
+    saisir: "/autonomous /goal finir",
+    temoins: ["compte:.composer__overlay .jeton-commande[data-jeton='commande']=2"],
+  },
+  // « / » tapé après un blanc au milieu du message : le menu propose /goal et /heartbeat.
+  {
+    id: "menu-slash-milieu",
+    sim: {},
+    stockage: () => colonnes([ids(1)]),
+    saisir: "/autonomous",
+    touchesCompositeur: [" ", "/"],
+    temoins: ["compte:.axe-slash-menu .axe-slash-menu__item=2", "sel:.axe-slash-menu__item[data-active='true']"],
+  },
   // Clic sur « N agent(s) au travail » : ouvre la conversation (journal) de l'agent, comme la vue Agents.
   // Tour en cours : rond animé sur la ligne de la liste et sur l'onglet, même quand
   // le démon rend le chemin sous une autre forme (\\?\ + casse) ou quand le tour est sur une autre conversation.
