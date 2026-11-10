@@ -24,7 +24,26 @@ export function scenesTheme({ colonnes, ids, fileAttente }) {
         stockage: () => ({ ...colonnes([ids(1)]), ...theme }),
         reglages: true,
         clics: [".settings-pane__nav-item[data-section='appearance']"],
-        temoins: ["sel:.axe-appearance"],
+        // Bring the accent swatches into view (clicking the active one changes nothing).
+        cliquer: ".axe-appearance__accent[data-active]",
+        defilerAvantClic: true,
+        temoins: ["sel:.axe-appearance", "sel:.axe-appearance__accent[data-active]"],
+      });
+    }
+  }
+  // Live change: start orange, click a swatch; the whole UI follows at once.
+  for (const [nomFond, fond] of Object.entries(FONDS_THEME)) {
+    for (const mac of [false, true]) {
+      scenes.push({
+        id: `theme-accent-clic-${nomFond}${mac ? "-mac" : ""}`,
+        mac,
+        sim: {},
+        stockage: () => ({ ...colonnes([ids(1)]), "axe.theme.bg": fond }),
+        reglages: true,
+        clics: [".settings-pane__nav-item[data-section='appearance']"],
+        cliquer: ".axe-appearance__accent[aria-label='Violet']",
+        defilerAvantClic: true,
+        temoins: ["sel:.axe-appearance__accent[aria-label='Violet'][data-active]"],
       });
     }
   }

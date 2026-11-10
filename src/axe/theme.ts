@@ -19,6 +19,17 @@ export const AXE_PRESETS: { id: string; name: string; bg: string }[] = [
   { id: "blanc", name: "Blanc", bg: "#ffffff" },
 ];
 
+/** Accent swatches offered in Settings > Apparence (the first one is the default). */
+export const AXE_ACCENT_PRESETS: { id: string; name: string; accent: string }[] = [
+  { id: "orange", name: "Orange", accent: AXE_ACCENT },
+  { id: "bleu", name: "Bleu", accent: "#2563eb" },
+  { id: "vert", name: "Vert", accent: "#16a34a" },
+  { id: "violet", name: "Violet", accent: "#9333ea" },
+  { id: "rose", name: "Rose", accent: "#db2777" },
+  { id: "cyan", name: "Cyan", accent: "#0891b2" },
+  { id: "sarcelle", name: "Sarcelle", accent: "#0d9488" },
+];
+
 const STORAGE_KEY = "axe.theme.bg";
 const ACCENT_KEY = "axe.theme.accent";
 const CHANGE_EVENT = "axe-theme-change";
@@ -300,4 +311,11 @@ export function onThemeChange(cb: (bg: string) => void): () => void {
 /** Call once at startup, before rendering. */
 export function initTheme(): void {
   applyTheme(loadThemeBg());
+  // Another window of the app changed the theme: follow it.
+  window.addEventListener("storage", (e) => {
+    if (e.key !== null && e.key !== STORAGE_KEY && e.key !== ACCENT_KEY) return;
+    const bg = loadThemeBg();
+    applyTheme(bg);
+    window.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail: bg }));
+  });
 }

@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import {
+  AXE_ACCENT,
+  AXE_ACCENT_PRESETS,
   AXE_DEFAULT_BG,
   AXE_PRESETS,
   contrastRatio,
   currentThemeVars,
   isDarkBg,
+  loadThemeAccent,
   loadThemeBg,
   normalizeBg,
   onThemeChange,
+  setThemeAccent,
   setThemeBg,
 } from "./theme";
 import {
@@ -30,11 +34,13 @@ import { formaterRaccourci } from "../lib/plateforme";
 export function AppearanceSection() {
   const [bg, setBg] = useState<string>(() => loadThemeBg());
   const [draft, setDraft] = useState<string>(bg);
+  const [accent, setAccent] = useState<string>(() => loadThemeAccent());
   const [textScale, setTextScaleState] = useState<number>(() => loadTextScale());
 
   useEffect(() => onThemeChange((value) => {
     setBg(value);
     setDraft(value);
+    setAccent(loadThemeAccent());
   }), []);
   useEffect(() => onTextScaleChange(setTextScaleState), []);
   const [uiZoom, setUiZoomState] = useState<number>(() => loadUiZoom()); // zoom-origine
@@ -61,7 +67,7 @@ export function AppearanceSection() {
         <p className="axe-appearance__hint">
           Une seule couleur de fond pilote toute l'interface : panneaux, bordures, textes, éditeur
           et terminal en sont dérivés, en version claire ou sombre selon sa luminosité.
-          L'accent reste orange.
+          La couleur d'accent (boutons, sélection, liens) se choisit à part, juste en dessous.
         </p>
       </header>
 
@@ -181,6 +187,49 @@ export function AppearanceSection() {
           Lisibilité : texte {textContrast.toFixed(1).replace(".", ",")}:1, texte secondaire {dimContrast.toFixed(1).replace(".", ",")}:1
           {readable ? " — conforme" : " — texte secondaire trop pâle, choisissez une couleur plus franche"}
         </p>
+      </section>
+
+      <section className="axe-appearance__block">
+        <h3>Couleur d'accent</h3>
+        <div className="axe-appearance__accents" role="radiogroup" aria-label="Couleur d'accent">
+          {AXE_ACCENT_PRESETS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              role="radio"
+              aria-checked={p.accent === accent}
+              className="axe-appearance__accent"
+              data-active={p.accent === accent || undefined}
+              title={p.name}
+              aria-label={p.name}
+              style={{ background: p.accent }}
+              onClick={() => setThemeAccent(p.accent)}
+            />
+          ))}
+          <label
+            className="axe-appearance__accent axe-appearance__accent--libre"
+            data-active={!AXE_ACCENT_PRESETS.some((p) => p.accent === accent) || undefined}
+            title="Autre couleur"
+          >
+            <input
+              type="color"
+              aria-label="Autre couleur d'accent"
+              value={accent}
+              onChange={(e) => setThemeAccent(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            className="axe-appearance__button"
+            disabled={accent === AXE_ACCENT}
+            onClick={() => setThemeAccent(null)}
+          >
+            Revenir à l'orange
+          </button>
+        </div>
+        <span className="axe-appearance__hint">
+          Boutons, sélection, liens et repères prennent cette couleur ; le texte posé dessus reste lisible sur fond clair comme sombre.
+        </span>
       </section>
 
       <section className="axe-appearance__block">

@@ -93,3 +93,58 @@ test("no light-on-dark only tints left in the main stylesheet", () => {
   // The default orange written out instead of var(--accent).
   assert.doesNotMatch(css, /rgba\(\s*252,\s*97,\s*11/);
 });
+
+test("accent swatches: default first, distinct, readable on light and dark grounds", () => {
+  const presets = theme.AXE_ACCENT_PRESETS;
+  assert.equal(presets[0].accent, AXE_ACCENT);
+  assert.ok(presets.length >= 6);
+  assert.equal(new Set(presets.map((p) => p.accent)).size, presets.length);
+  for (const p of presets) {
+    assert.equal(theme.normalizeAccent(p.accent), p.accent, p.id);
+    for (const fond of Object.values(FONDS)) {
+      const v = deriveThemeVars(fond, p.accent);
+      assert.ok(contrastRatio(v["--accent-text"], fond) >= 4.4, `${p.id} sur ${fond}`);
+      assert.ok(contrastRatio(v["--accent-ink"], p.accent) >= 3, `${p.id} : encre`);
+    }
+  }
+});
+
+test("chosen accent is persisted, applied live and restored at startup", () => {
+  const stockage = new Map();
+  const proprietes = new Map();
+  const ecouteurs = {};
+  const evenements = [];
+  global.localStorage = {
+    getItem: (k) => (stockage.has(k) ? stockage.get(k) : null),
+    setItem: (k, v) => stockage.set(k, String(v)),
+    removeItem: (k) => stockage.delete(k),
+  };
+  global.document = { documentElement: { style: { setProperty: (k, v) => proprietes.set(k, v) }, dataset: {} } };
+  global.CustomEvent = class { constructor(type, init) { this.type = type; this.detail = init && init.detail; } };
+  global.window = {
+    addEventListener: (type, cb) => { (ecouteurs[type] ||= []).push(cb); },
+    removeEventListener: () => {},
+    dispatchEvent: (e) => { evenements.push(e.type); (ecouteurs[e.type] || []).forEach((cb) => cb(e)); },
+  };
+  try {
+    theme.setThemeAccent("#2563EB");
+    assert.equal(stockage.get("axe.theme.accent"), "#2563eb");
+    assert.equal(proprietes.get("--accent"), "#2563eb");
+    assert.ok(evenements.includes("axe-theme-change"));
+    proprietes.clear();
+    theme.initTheme();
+    assert.equal(proprietes.get("--accent"), "#2563eb");
+    // Another window picks green: this one follows.
+    stockage.set("axe.theme.accent", "#16a34a");
+    ecouteurs.storage.forEach((cb) => cb({ key: "axe.theme.accent" }));
+    assert.equal(proprietes.get("--accent"), "#16a34a");
+    theme.setThemeAccent(null);
+    assert.equal(stockage.has("axe.theme.accent"), false);
+    assert.equal(proprietes.get("--accent"), AXE_ACCENT);
+  } finally {
+    delete global.localStorage;
+    delete global.document;
+    delete global.window;
+    delete global.CustomEvent;
+  }
+});
