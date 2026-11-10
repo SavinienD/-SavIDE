@@ -33,13 +33,16 @@ test("commande seule, en majuscules, ou précédée d'espaces", () => {
 
 // /goal et /heartbeat sont reconnus (et colorés) aussi au milieu de la phrase : la
 // première occurrence, comme le service (session_commands::parse_slash_partout).
-test("/goal et /heartbeat au milieu de la phrase : colorés (première occurrence seulement)", () => {
+test("/goal et /heartbeat au milieu de la phrase : colorés (première occurrence de chacun)", () => {
   assert.deepEqual(resume(decouperJetons("voir /goal", CMD)), ["texte:voir ", "commande:/goal"]);
   assert.deepEqual(resume(decouperJetons("corrige le bug puis /heartbeat dis coucou toutes les 5 minutes", CMD)),
     ["texte:corrige le bug puis ", "commande:/heartbeat", "texte: dis coucou toutes les 5 minutes"]);
-  assert.deepEqual(resume(decouperJetons("a /goal x et /heartbeat y", CMD)), ["texte:a ", "commande:/goal", "texte: x et /heartbeat y"]);
-  // Commande en tête : elle seule compte.
-  assert.deepEqual(resume(decouperJetons("/compact puis /goal x", CMD)), ["commande:/compact", "texte: puis /goal x"]);
+  assert.deepEqual(resume(decouperJetons("a /goal x et /heartbeat y", CMD)),
+    ["texte:a ", "commande:/goal", "texte: x et ", "commande:/heartbeat", "texte: y"]);
+  assert.deepEqual(resume(decouperJetons("a /goal x et /goal y", CMD)), ["texte:a ", "commande:/goal", "texte: x et /goal y"]);
+  // Après une commande en tête, /goal et /heartbeat restent lus (comme le service).
+  assert.deepEqual(resume(decouperJetons("/compact puis /goal x", CMD)), ["commande:/compact", "texte: puis ", "commande:/goal", "texte: x"]);
+  assert.deepEqual(resume(decouperJetons("/autonomous /goal", CMD)), ["commande:/autonomous", "texte: ", "commande:/goal"]);
   // Les autres commandes restent reconnues seulement en tête ; jamais dans un chemin.
   assert.deepEqual(resume(decouperJetons("voir /compact", CMD)), ["texte:voir /compact"]);
   assert.deepEqual(resume(decouperJetons("src/goal x", CMD)), ["texte:src/goal x"]);

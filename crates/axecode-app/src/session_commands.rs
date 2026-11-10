@@ -335,36 +335,60 @@ pub fn parse_slash(text: &str) -> Option<SlashCommand> {
 /// /heartbeat dis coucou toutes les 5 minutes ». Une commande en tête garde la priorité.
 pub const COMMANDES_PARTOUT: [&str; 2] = ["goal", "heartbeat"];
 
-/// La commande que le service interprète : celle du début du message (comme avant), sinon le
-/// premier `/goal` ou `/heartbeat` précédé d'un blanc et suivi d'un blanc ou de la fin ; sa phrase
-/// va jusqu'à la fin de la ligne. Même règle que l'interface (jetonsMessage.commandeInterpretee).
+/// La première commande que le service interprète (voir [`parse_slashes`]).
 pub fn parse_slash_partout(text: &str) -> Option<SlashCommand> {
-    if let Some(cmd) = parse_slash(text) {
-        return Some(cmd);
-    }
+    parse_slashes(text).into_iter().next()
+}
+
+/// Les commandes que le service interprète, dans l'ordre du texte : celle du début du message
+/// (si elle est connue : [`SLASH_COMMANDS`]), puis la première occurrence de chaque commande de
+/// [`COMMANDES_PARTOUT`] (autre que celle du début) placée après elle, précédée d'un blanc et
+/// suivie d'un blanc ou de la fin. « /autonomous /goal finir » : /autonomous puis /goal. La phrase
+/// d'une commande s'arrête à la commande suivante ; hors tête, elle s'arrête aussi à la fin de la
+/// ligne. Même règle que l'interface (jetonsMessage.commandesInterpretees).
+pub fn parse_slashes(text: &str) -> Vec<SlashCommand> {
     let lower = text.to_ascii_lowercase();
-    let mut best: Option<(usize, &str)> = None;
+    // (début du jeton « /nom », fin du jeton, nom, en tête ?)
+    let mut found: Vec<(usize, usize, String, bool)> = Vec::new();
+    let mut from = 0;
+    if let Some(head) = parse_slash(text).filter(|c| SLASH_COMMANDS.contains(&c.name.as_str())) {
+        let at = text.len() - text.trim_start().len();
+        from = at + 1 + head.name.len();
+        found.push((at, from, head.name, true));
+    }
     for name in COMMANDES_PARTOUT {
+        if found.iter().any(|(_, _, n, _)| n == name) {
+            continue;
+        }
         let needle = format!("/{name}");
-        let mut from = 0;
-        while let Some(rel) = lower[from..].find(&needle) {
-            let at = from + rel;
+        let mut search = from;
+        while let Some(rel) = lower[search..].find(&needle) {
+            let at = search + rel;
             let end = at + needle.len();
             let before_ok = at == 0 || lower[..at].chars().next_back().is_some_and(char::is_whitespace);
             let after_ok = lower[end..].chars().next().is_none_or(char::is_whitespace);
             if before_ok && after_ok {
-                if best.is_none_or(|(b, _)| at < b) {
-                    best = Some((at, name));
-                }
+                found.push((at, end, name.to_string(), false));
                 break;
             }
-            from = end;
+            search = end;
         }
     }
-    let (at, name) = best?;
-    let after = &text[at + 1 + name.len()..];
-    let rest = after.split('\n').next().unwrap_or("").trim();
-    Some(SlashCommand { name: name.to_string(), args: split_args(rest), rest: rest.to_string() })
+    found.sort_by_key(|f| f.0);
+    let starts: Vec<usize> = found.iter().map(|f| f.0).collect();
+    found
+        .into_iter()
+        .enumerate()
+        .map(|(i, (_, end, name, head))| {
+            let stop = starts.get(i + 1).copied().unwrap_or(text.len());
+            let mut rest = &text[end..stop];
+            if !head {
+                rest = rest.split('\n').next().unwrap_or("");
+            }
+            let rest = rest.trim();
+            SlashCommand { name, args: split_args(rest), rest: rest.to_string() }
+        })
+        .collect()
 }
 
 /// `--flag value` lookup; returns remaining positional words.
@@ -1421,8 +1445,8 @@ impl TurnHook for SessionCommandsHook {
     async fn reminder(&self, session: &SessionMeta, request: &TurnRequest) -> Option<String> {
         let id = session.id.as_str();
         let mut blocks = Vec::new();
-        // /goal et /heartbeat aussi au milieu du message.
-        if let Some(cmd) = user_text(request).as_deref().and_then(parse_slash_partout) {
+        // /goal et /heartbeat aussi au milieu du message, ou après une autre commande.
+        for cmd in user_text(request).as_deref().map(parse_slashes).unwrap_or_default() {
             if let Some(notice) = self.run_slash(session, &cmd).await {
                 blocks.push(format!("## Commande `/{}`\n{notice}", cmd.name));
             }
@@ -1606,6 +1630,25 @@ mod tests {
         assert!(parse_slash_partout("src/goal x").is_none());
         assert!(parse_slash_partout("voir /goal/x et /goals").is_none());
         assert!(parse_slash_partout("é /goal").is_some_and(|c| c.rest.is_empty()));
+        // Après une commande en tête : /goal et /heartbeat sont lus aussi ; chaque phrase s'arrête
+        // à la commande suivante.
+        let noms = |t: &str| parse_slashes(t).into_iter().map(|c| (c.name, c.rest)).collect::<Vec<_>>();
+        let paire = |n: &str, r: &str| (n.to_string(), r.to_string());
+        assert_eq!(noms("/autonomous /goal"), vec![paire("autonomous", ""), paire("goal", "")]);
+        assert_eq!(
+            noms("/autonomous --max-turns 3 /goal finir la migration"),
+            vec![paire("autonomous", "--max-turns 3"), paire("goal", "finir la migration")]
+        );
+        assert_eq!(
+            noms("/goal migrer la base /heartbeat dis coucou toutes les 5 minutes"),
+            vec![paire("goal", "migrer la base"), paire("heartbeat", "dis coucou toutes les 5 minutes")]
+        );
+        assert_eq!(noms("a /heartbeat 5m x puis /goal y"), vec![paire("heartbeat", "5m x puis"), paire("goal", "y")]);
+        assert_eq!(noms("/compact puis /goal x"), vec![paire("compact", "puis"), paire("goal", "x")]);
+        assert_eq!(noms("/goal a /goal b"), vec![paire("goal", "a /goal b")]);
+        assert_eq!(noms("/inconnu /goal x"), vec![paire("goal", "x")]);
+        assert_eq!(noms("/goal ligne 1\nligne 2"), vec![paire("goal", "ligne 1\nligne 2")]);
+        assert!(noms("voir /compact et /goals").is_empty());
         assert!(parse_slash("/path/to/file").is_none());
     }
 
