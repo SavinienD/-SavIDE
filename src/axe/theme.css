@@ -31,6 +31,7 @@
 }
 .axe-appearance__row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
 }
@@ -60,6 +61,7 @@
   background: var(--bg-2);
   color: var(--text-1);
   cursor: pointer;
+  white-space: nowrap;
 }
 .axe-appearance__button:hover { background: var(--bg-3); color: var(--text-0); }
 .axe-appearance__hint { color: var(--text-3); font-size: var(--fs-sm); }
