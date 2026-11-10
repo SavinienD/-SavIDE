@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  AXE_ACCENT,
   AXE_DEFAULT_BG,
   AXE_PRESETS,
   contrastRatio,
@@ -138,7 +137,7 @@ export function AppearanceSection() {
               onClick={() => setThemeBg(p.bg)}
             >
               <span className="axe-appearance__preset-swatch" style={{ background: p.bg }}>
-                <span style={{ background: AXE_ACCENT }} />
+                <span style={{ background: "var(--accent)" }} />
               </span>
               <span className="axe-appearance__preset-name">{p.name}</span>
               <span className="axe-appearance__preset-kind">{isDarkBg(p.bg) ? "Sombre" : "Clair"}</span>

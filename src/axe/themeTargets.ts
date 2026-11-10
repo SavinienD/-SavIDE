@@ -1,7 +1,7 @@
 // Theme adapters for surfaces that do not read CSS variables themselves:
 // the Monaco editor and the xterm terminal. Both are rebuilt from the same
 // derived variables as the rest of the UI and re-applied on theme change.
-import { AXE_ACCENT, currentThemeVars, type ThemeVars } from "./theme";
+import { currentThemeVars, type ThemeVars } from "./theme";
 
 export const AXE_MONACO_THEME = "axe-theme";
 
@@ -46,7 +46,7 @@ export function monacoThemeData(vars: ThemeVars = currentThemeVars()) {
       "editor.lineHighlightBackground": vars["--bg-1"],
       "editorLineNumber.foreground": vars["--text-faint"],
       "editorLineNumber.activeForeground": vars["--text-2"],
-      "editorCursor.foreground": AXE_ACCENT,
+      "editorCursor.foreground": vars["--accent"],
       "editor.selectionBackground": vars["--editor-selection"],
       "editor.inactiveSelectionBackground": vars["--bg-2"],
       "editorIndentGuide.background1": vars["--bg-2"],
@@ -61,7 +61,7 @@ export function monacoThemeData(vars: ThemeVars = currentThemeVars()) {
       "editorSuggestWidget.selectedBackground": vars["--editor-selection"],
       "editorSuggestWidget.highlightForeground": vars["--accent-text"],
       "editorBracketMatch.background": vars["--editor-selection"],
-      "editorBracketMatch.border": AXE_ACCENT,
+      "editorBracketMatch.border": vars["--accent"],
       "scrollbarSlider.background": `${vars["--bg-5"]}cc`,
       "scrollbarSlider.hoverBackground": `${vars["--text-faint"]}99`,
       "scrollbarSlider.activeBackground": `${vars["--text-3"]}99`,
@@ -86,7 +86,7 @@ export function xtermTheme(vars: ThemeVars = currentThemeVars()) {
   return {
     background: vars["--bg-0"],
     foreground: vars["--editor-fg"],
-    cursor: AXE_ACCENT,
+    cursor: vars["--accent"],
     cursorAccent: vars["--bg-0"],
     selectionBackground: vars["--editor-selection"],
     red: vars["--danger"],
