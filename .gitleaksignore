@@ -10,3 +10,5 @@
 088364f4d6d75623c77c8c5de3d5c14522cc7035:src-tauri/src/forges/masque.rs:generic-api-key:311
 # Faux secret de la scène du banc « serveurs MCP » (variables masquées) : exemple, pas une vraie clé.
 3b87bdbc81a6abb384626c509bcbacb7d56f2574:scripts/audit-affichage/scenes.mjs:generic-api-key:149
+# Faux secret du test de la demande à l'IA (serveurs MCP) : exemple, pas une vraie clé.
+f8415e4143ebc61abe6d1cf548826913e7092a24:tests/mcpDemandeIa.test.cjs:generic-api-key:40
