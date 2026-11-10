@@ -16,6 +16,10 @@ import {
   assemblerProvisoire,
   choisirTaille,
   doitCouper,
+  finParMorceaux,
+  MORCEAU_MIN_MS,
+  RESTE_MIN_MS,
+  SILENCE_MS,
   ecrireMesure,
   lireMesure,
   noterMesure,
@@ -47,6 +51,8 @@ const ANNULE = "dictée annulée";
 /** 0.1.77 — sans PCM du WebAudio après ce délai, le direct passe aux segments MediaRecorder. */
 export const ATTENTE_PCM_MS = 1_500;
 export const SEGMENT_MS = 3_000;
+/** Fin de dictée : attente maximale des derniers morceaux avant la transcription complète. */
+export const ATTENTE_MORCEAUX_MAX_MS = 60_000;
 
 type Options = {
   workspacePath?: string;
@@ -125,6 +131,11 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
   const facteurs = useRef<number[]>([]);
   const session = useRef(0);
   const minuterieDirect = useRef<number | null>(null);
+  /** Morceaux en erreur dans cette dictée (la fin par morceaux exige zéro). */
+  const erreursDirect = useRef(0);
+  /** Fin de dictée en cours : les derniers morceaux sont attendus, l'aperçu ne s'arrête plus. */
+  const finalisation = useRef(false);
+  const moteurDirect = useRef<string | null>(null);
   const moyenPresent = useRef(false);
   // 0.1.77 — le petit (base) aussi peut manquer (premier usage) : sans lui, chaque
   // morceau échouait (« pas encore sur le poste ») et l'aperçu restait vide sans explication.
@@ -138,8 +149,14 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
       .catch(() => undefined);
   }, []);
 
+  const arreterMinuterieDirect = useCallback(() => {
+    if (minuterieDirect.current !== null) window.clearInterval(minuterieDirect.current);
+    minuterieDirect.current = null;
+  }, []);
+
   const arreterDirect = useCallback(() => {
     directActif.current = false;
+    finalisation.current = false;
     setDirect((d) => (d.actif ? { ...d, actif: false } : d));
     if (minuterieDirect.current !== null) window.clearInterval(minuterieDirect.current);
     minuterieDirect.current = null;
@@ -195,6 +212,7 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
         morceauxTexte.current.push(texte);
         setProvisoire(assemblerProvisoire(morceauxTexte.current));
       }
+      if (typeof r.moteur === "string") moteurDirect.current = r.moteur;
       setDirect((d) => (d.erreur ? { ...d, erreur: null } : d));
       const duree = r.transcriptionMs ?? r.ms ?? 0;
       const facteur = duree / Math.max(1, audioMs);
@@ -204,7 +222,7 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
         ecrireMesure(mesure);
         if (mesure?.taille === "petit") tailleSession.current = "petit";
       }
-      if (apercuTropLent(facteurs.current)) {
+      if (!finalisation.current && apercuTropLent(facteurs.current)) {
         arreterDirect();
         setDirect({ actif: false, erreur: "le moteur ne suit pas, la transcription complète arrive à la fin" });
         setInfo("Aperçu en direct arrêté : le moteur ne suit pas. La transcription complète arrive à la fin.");
@@ -212,6 +230,7 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
     } catch (err) {
       // Un morceau raté n'arrête pas la dictée (le texte final le contiendra), mais la
       // raison s'affiche dans l'encadré du direct.
+      if (session.current === maSession) erreursDirect.current += 1;
       if (session.current === maSession && directActif.current) {
         setDirect({ actif: true, erreur: texteErreur(err).slice(0, 200) });
       }
@@ -226,6 +245,9 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
     session.current += 1;
     viderProvisoire();
     facteurs.current = [];
+    erreursDirect.current = 0;
+    finalisation.current = false;
+    moteurDirect.current = null;
     tailleSession.current = choisirTaille(reglageTaille(reglages.modeleLocal), lireMesure());
     // Automatique : le moyen (small) n'est pas encore sur le poste -> petit pour cette
     // dictée, et téléchargement du moyen en arrière-plan (gratuit, empreinte vérifiée).
@@ -272,8 +294,9 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
         return;
       }
       if (!doitCouper(enr.pcmEnAttenteMs(), enr.silenceMs())) return;
-      const ms = enr.pcmEnAttenteMs();
-      const { echantillons, frequence } = enr.prendrePcm();
+      // Pas de silence (coupe forcée) : coupe au moment le plus calme, pas en plein mot.
+      const { echantillons, frequence } = enr.prendrePcm(enr.silenceMs() < SILENCE_MS ? MORCEAU_MIN_MS : 0);
+      const ms = (echantillons.length / frequence) * 1000;
       fileMorceaux.current.push({ audio: reechantillonner(echantillons, frequence), ms });
       void pomper();
     }, 250);
@@ -370,11 +393,42 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
   }, [arreterAnimation, arreterDirect, viderProvisoire]);
   annulerRef.current = annuler;
 
+  /** Attend les derniers morceaux de l'aperçu ; rend leur texte, ou null (erreur, annulation, vide). */
+  const texteDesMorceaux = useCallback(async (maSession: number): Promise<string | null> => {
+    const limite = performance.now() + ATTENTE_MORCEAUX_MAX_MS;
+    while (session.current === maSession && (morceauEnCours.current || fileMorceaux.current.length > 0)) {
+      if (performance.now() > limite) return null;
+      await new Promise((fin) => window.setTimeout(fin, 40));
+    }
+    if (session.current !== maSession || erreursDirect.current > 0) return null;
+    return assemblerProvisoire(morceauxTexte.current) || null;
+  }, []);
+
   const terminer = useCallback(async () => {
     const enr = enregistreur.current;
     if (!enr || !enr.actif()) return;
     arreterAnimation();
-    arreterDirect();
+    // Aperçu en direct sain : le texte des morceaux est gardé et seule la fin pas encore
+    // envoyée est transcrite (fenêtre réduite), au lieu de retranscrire tout l'enregistrement.
+    const parMorceaux = finParMorceaux({
+      actif: directActif.current,
+      pcm: enr.pcmLivre(),
+      segments: enr.segmentsActifs(),
+      erreurs: erreursDirect.current,
+    });
+    if (parMorceaux) {
+      arreterMinuterieDirect();
+      finalisation.current = true;
+      // Fin sans voix (silence depuis la dernière coupe) : rien à transcrire, pas d'appel de plus.
+      const muette = enr.silenceMs() >= enr.pcmEnAttenteMs();
+      const { echantillons, frequence } = enr.prendrePcm();
+      const ms = (echantillons.length / frequence) * 1000;
+      if (ms >= RESTE_MIN_MS && !muette) fileMorceaux.current.push({ audio: reechantillonner(echantillons, frequence), ms });
+      void pomper();
+    } else {
+      arreterDirect();
+    }
+    const maSession = session.current;
     enregistreur.current = null;
     const taille = tailleSession.current;
     const demande = nouvelleDemande();
@@ -388,13 +442,30 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
         cibleRef.current = null;
         setCible(null);
         setPhase("repos");
+        arreterDirect();
         viderProvisoire();
         setInfo("Enregistrement trop court.");
         return;
       }
+      const texteDirect = parMorceaux ? await texteDesMorceaux(maSession) : null;
+      arreterDirect();
+      if (demandeCourante.current !== demande) return; // annulée entre-temps
+      const reglagesFin = lireReglagesVoix();
+      // Sans nettoyage IA, le texte des morceaux est le texte final : aucun appel de plus.
+      if (texteDirect && !reglagesFin.nettoyer) {
+        demandeCourante.current = null;
+        viderProvisoire();
+        const ici = livrer(texteDirect);
+        setPhase("repos");
+        if (!ici) return;
+        const secondes = ((performance.now() - debutTranscription.current) / 1000).toFixed(1).replace(".", ",");
+        setInfo(`Transcrit en direct par ${moteurDirect.current ?? "le moteur"} en ${secondes} s.`);
+        return;
+      }
       // micro-local — SavIDE : whisper.cpp embarqué, audio décodé ici en PCM 16 kHz.
-      const audio = pcmEnBase64(await blobEnPcm16k(blob));
-      const reglages = lireReglagesVoix();
+      // Avec nettoyage IA : le texte des morceaux part tel quel au nettoyage (pas de retranscription).
+      const audio = texteDirect ? "" : pcmEnBase64(await blobEnPcm16k(blob));
+      const reglages = reglagesFin;
       const { workspacePath: espace, modele: chat } = contexteRef.current;
       const resultat = await invoke<ResultatTranscription>("voix_transcrire", {
         input: {
@@ -412,6 +483,8 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
           rapide: reglages.rapide,
           taille,
           demande,
+          texte: texteDirect,
+          moteurTexte: texteDirect ? moteurDirect.current : null,
         },
       });
       if (demandeCourante.current !== demande) return; // annulée entre-temps
@@ -455,7 +528,7 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
       }
       echouer(message);
     }
-  }, [arreterAnimation, arreterDirect, echouer, livrer, viderProvisoire]);
+  }, [arreterAnimation, arreterDirect, arreterMinuterieDirect, echouer, livrer, pomper, texteDesMorceaux, viderProvisoire]);
   terminerRef.current = () => void terminer();
 
   // On change de conversation pendant l'enregistrement : l'enregistrement s'arrête

@@ -1,5 +1,5 @@
 // 0.1.75 — dictée en direct (moyens gratuits : Whisper local de la VM ou du poste).
-// Pendant qu'on parle, l'audio est découpé en morceaux de ≈ 3 s (de préférence sur un
+// Pendant qu'on parle, l'audio est découpé en morceaux de 4 à 8 s (de préférence sur un
 // court silence), transcrits au fil de l'eau : texte provisoire grisé, remplacé à la fin
 // par la transcription de tout l'enregistrement (puis, en option, le nettoyage par l'IA
 // de la conversation). Module pur : testé par tests/voixDirect.test.cjs.
@@ -9,9 +9,15 @@ export type ReglageTaille = "auto" | TailleWhisper;
 
 /** Fréquence envoyée à Whisper (son format natif). */
 export const FREQUENCE = 16_000;
-/** Morceau visé : ≈ 3 s, coupé sur un silence entre 2,5 s et 4,5 s. */
-export const MORCEAU_MIN_MS = 2_500;
-export const MORCEAU_MAX_MS = 4_500;
+/**
+ * Morceau visé : coupé sur un silence entre 4 s et 8 s. Whisper encode au moins 768 trames
+ * (≈ 10 s de voix) quelle que soit la durée : des morceaux de 3 s coûtaient le même calcul
+ * pour deux fois moins de voix, la file prenait du retard et la fin attendait. Mesuré
+ * (10/11/2026, VM chargée, voix réelle) : délai fin de parole -> texte 10,0/8,0/10,1 s
+ * avec 2,5-4,5 s contre 6,3/7,1/7,2 s avec 4-8 s, et moins de coupes en plein mot.
+ */
+export const MORCEAU_MIN_MS = 4_000;
+export const MORCEAU_MAX_MS = 8_000;
 export const SILENCE_MS = 250;
 /** Au-delà de 2× le temps réel, le modèle « moyen » ne suit plus : on passe au « petit ». */
 export const SEUIL_TEMPS_REEL = 2;
@@ -100,6 +106,20 @@ export function assemblerProvisoire(morceaux: string[]): string {
 export function apercuTropLent(facteurs: number[]): boolean {
   const derniers = facteurs.slice(-2);
   return derniers.length === 2 && derniers.every((f) => f > SEUIL_TEMPS_REEL * 1.5);
+}
+
+/** Son de la fin plus court que ça : rien à transcrire. */
+export const RESTE_MIN_MS = 200;
+
+/**
+ * Fin de dictée : avec un aperçu en direct sain (PCM découpé sur les silences, aucun morceau
+ * en erreur), le texte des morceaux est gardé et seule la fin pas encore envoyée est
+ * transcrite, au lieu de retranscrire tout l'enregistrement (fenêtre Whisper de 30 s,
+ * ≈ 10 s sur la VM même pour une phrase). Sinon (segments webm coupés toutes les 3 s,
+ * morceau raté, aperçu arrêté), transcription complète comme avant.
+ */
+export function finParMorceaux(etat: { actif: boolean; pcm: boolean; segments: boolean; erreurs: number }): boolean {
+  return etat.actif && etat.pcm && !etat.segments && etat.erreurs === 0;
 }
 
 const CLE_MESURE = "axe.voix.mesureTaille";

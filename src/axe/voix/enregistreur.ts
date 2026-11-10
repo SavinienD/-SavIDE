@@ -80,6 +80,10 @@ export class EnregistreurVoix {
   private processeur: ScriptProcessorNode | null = null;
   private pcm: Float32Array[] = [];
   private pcmLongueur = 0;
+  /** Niveau RMS de chaque bloc de `pcm` (coupe au point le plus calme). */
+  private pcmNiveaux: number[] = [];
+  /** Bruit de fond du micro (seuil de silence adaptatif). */
+  private plancher = 0.005;
   private dernierSon = 0;
   private frequence = 48_000;
   // 0.1.77 — PCM reçu depuis le début (0 = WebAudio muet) et secours par segments MediaRecorder.
@@ -144,7 +148,12 @@ export class EnregistreurVoix {
             this.pcmTotal += canal.length;
             let somme = 0;
             for (let i = 0; i < canal.length; i += 1) somme += canal[i] * canal[i];
-            if (Math.sqrt(somme / canal.length) > 0.012) this.dernierSon = performance.now();
+            const rms = Math.sqrt(somme / canal.length);
+            this.pcmNiveaux.push(rms);
+            // Seuil au-dessus du bruit de fond : avec le gain automatique, un seuil fixe
+            // ne voyait aucun silence et chaque morceau était coupé à 4,5 s en plein mot.
+            if (rms > seuilSon(this.plancher)) this.dernierSon = performance.now();
+            this.plancher = suivrePlancher(this.plancher, rms);
           };
           source.connect(proc);
           proc.connect(this.contexte.destination);
@@ -232,16 +241,28 @@ export class EnregistreurVoix {
     }
   }
 
-  /** Prend le son capté depuis la dernière coupe (fréquence du micro). */
-  prendrePcm(): { echantillons: Float32Array; frequence: number } {
-    const sortie = new Float32Array(this.pcmLongueur);
+  /**
+   * Prend le son capté depuis la dernière coupe (fréquence du micro). `auCalmeApresMs` > 0 :
+   * coupe forcée sans silence, on s'arrête au bloc le plus calme après ce délai (le reste
+   * attend le morceau suivant) au lieu de couper au milieu d'un mot.
+   */
+  prendrePcm(auCalmeApresMs = 0): { echantillons: Float32Array; frequence: number } {
+    let n = this.pcm.length;
+    if (auCalmeApresMs > 0 && this.pcm.length > 1 && this.pcmNiveaux.length === this.pcm.length) {
+      const blocMs = (this.pcmLongueur / this.pcm.length / this.frequence) * 1000;
+      n = blocsJusquAuCalme(this.pcmNiveaux, blocMs, auCalmeApresMs);
+    }
+    const blocs = this.pcm.slice(0, n);
+    const longueur = blocs.reduce((t, b) => t + b.length, 0);
+    const sortie = new Float32Array(longueur);
     let pos = 0;
-    for (const bloc of this.pcm) {
+    for (const bloc of blocs) {
       sortie.set(bloc, pos);
       pos += bloc.length;
     }
-    this.pcm = [];
-    this.pcmLongueur = 0;
+    this.pcm = this.pcm.slice(n);
+    this.pcmNiveaux = this.pcmNiveaux.slice(n);
+    this.pcmLongueur -= longueur;
     return { echantillons: sortie, frequence: this.frequence };
   }
 
@@ -307,12 +328,41 @@ export class EnregistreurVoix {
     this.processeur = null;
     this.pcm = [];
     this.pcmLongueur = 0;
+    this.pcmNiveaux = [];
     const contexte = this.contexte;
     this.contexte = null;
     this.analyseur = null;
     this.tampon = null;
     if (contexte) void contexte.close().catch(() => undefined);
   }
+}
+
+/**
+ * Coupe d'un morceau forcée (8 s sans silence) : au bloc le plus calme après
+ * `minMs` plutôt qu'au milieu d'un mot. `niveaux` = niveau RMS de chaque bloc de PCM,
+ * `blocMs` = durée d'un bloc. Rend le nombre de blocs à prendre (bloc calme compris).
+ */
+export function blocsJusquAuCalme(niveaux: number[], blocMs: number, minMs: number): number {
+  if (niveaux.length === 0 || !(blocMs > 0)) return niveaux.length;
+  const premier = Math.min(niveaux.length - 1, Math.max(0, Math.ceil(minMs / blocMs) - 1));
+  let meilleur = niveaux.length - 1;
+  for (let i = premier; i < niveaux.length; i += 1) {
+    if (niveaux[i] < niveaux[meilleur]) meilleur = i;
+  }
+  return meilleur + 1;
+}
+
+/** Seuil de son : au-dessus du bruit de fond mesuré (un seuil fixe ne voit aucun silence sur un micro bruité). */
+export const SEUIL_SON_MIN = 0.006;
+export const SEUIL_SON_MAX = 0.03;
+export function seuilSon(plancher: number): number {
+  return Math.min(SEUIL_SON_MAX, Math.max(SEUIL_SON_MIN, plancher * 2.5));
+}
+
+/** Bruit de fond : suit tout de suite une baisse, monte lentement (la voix ne le relève pas). */
+export function suivrePlancher(plancher: number, niveau: number): number {
+  if (!(niveau >= 0)) return plancher;
+  return niveau < plancher ? niveau : plancher + (niveau - plancher) * 0.02;
 }
 
 export async function blobEnBase64(blob: Blob): Promise<string> {

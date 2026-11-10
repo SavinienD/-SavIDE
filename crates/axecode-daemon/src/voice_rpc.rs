@@ -149,14 +149,18 @@ fn engines() -> Vec<Engine> {
 /// large-v3-turbo, ≈ 5,7 s avec 512 trames pour une phrase de 3 s. Mesuré le
 /// 20/10/2026 : la qualité chute de façon imprévisible (12,4 s d'audio : 1024
 /// trames parfait, 960 et 896 très dégradés ; 256 trames fait boucler le modèle),
-/// d'où la fenêtre complète par défaut. Marge ×1,3 + 2 s, au moins 512 trames.
+/// d'où la fenêtre complète par défaut. Marge ×1,3 + 2 s, au moins 768 trames.
+/// Plancher relevé de 512 à 768 (mesure du 10/11/2026, whisper small, voix réelle, morceaux de
+/// 2 à 4,5 s) : à 512 des mots manquent et un morceau coupé en plein mot boucle
+/// (« ma maman, ma maman… », jusqu'à 40 s de replis qui bloquent le serveur) ; à 768 le
+/// texte est celui de la fenêtre complète pour ≈ 2× moins de temps.
 /// `None` = fenêtre complète.
 pub fn audio_ctx_for(duration_ms: Option<u64>) -> Option<u32> {
     let ms = duration_ms.filter(|ms| *ms > 0)?;
     let frames = ms as f64 / 20.0;
     let ctx = (frames * 1.3 + 100.0).ceil() as u32;
     let ctx = ctx.div_ceil(64) * 64;
-    let ctx = ctx.max(512);
+    let ctx = ctx.max(768);
     (ctx < 1400).then_some(ctx)
 }
 
@@ -689,8 +693,8 @@ mod tests {
     fn audio_ctx_keeps_a_safe_margin_and_full_window_for_long_audio() {
         assert_eq!(audio_ctx_for(None), None);
         assert_eq!(audio_ctx_for(Some(0)), None);
-        // 3 s -> plancher de 512 trames (≈ 10 s), jamais 256 (boucle mesurée).
-        assert_eq!(audio_ctx_for(Some(3_000)), Some(512));
+        // 3 s -> plancher de 768 trames (≈ 15 s) : 256 et 512 bouclent sur un morceau court.
+        assert_eq!(audio_ctx_for(Some(3_000)), Some(768));
         // 12,4 s -> 620 trames × 1,3 + 100 = 906 -> 960.
         assert_eq!(audio_ctx_for(Some(12_400)), Some(960));
         // au-delà de ≈ 20 s, fenêtre complète.
