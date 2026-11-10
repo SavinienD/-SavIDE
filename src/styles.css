@@ -10727,7 +10727,10 @@ textarea {
 .onglets-chat__btn:hover { opacity: 1; background: color-mix(in srgb, var(--text-0) 12%, transparent); }
 .onglets-chat__new { display: inline-flex; align-items: center; justify-content: center;
   width: 24px; border: 0; border-radius: 6px; background: transparent;
-  color: var(--text-2, #888); cursor: pointer; flex: 0 0 auto; }
+  color: var(--text-2, #888); cursor: pointer; flex: 0 0 auto;
+  /* Sans onglet (dossier jamais ouvert, colonne vidée), la bande n'a plus que ce bouton :
+     sans hauteur minimale elle tombait à 14 px et le « + » devenait une cible minuscule. */
+  min-height: 28px; }
 .onglets-chat__new:hover { color: var(--text-0, #fff); background: color-mix(in srgb, var(--text-0) 8%, transparent); }
 .onglets-chat__absent { flex: 1; display: flex; align-items: center; justify-content: center;
   flex-wrap: wrap; align-content: center; /* colonne-echec — message + boutons dans une colonne étroite */
