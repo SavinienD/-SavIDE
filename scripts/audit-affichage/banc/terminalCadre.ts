@@ -42,8 +42,13 @@ export function simulationTerminalCadre(scene: Record<string, unknown>) {
     // « cadreNormal » : écran normal avec un long historique (barre de défilement présente).
     const historique = scene.cadreNormal && premier
       ? Array.from({ length: 300 }, (_, i) => `ligne ${i + 1} de l'historique`).join("\r\n") + "\r\n" : "";
-    const data = historique + dessinerCadre(cols, rows, !scene.cadreNormal);
-    window.setTimeout(() => void emit("terminal-data", { sessionId, token, data }), 20);
+    // Comme un vrai programme sur SIGWINCH : il relit la taille ACTUELLE du PTY au moment
+    // de redessiner (plusieurs changements rapprochés donnent le dernier cadre).
+    window.setTimeout(() => {
+      const t = tailles[sessionId];
+      const data = historique + dessinerCadre(t.cols, t.rows, !scene.cadreNormal);
+      void emit("terminal-data", { sessionId, token, data });
+    }, 20);
   };
   if (!scene.cadre) return {} as Record<string, (a: any, brut: any) => unknown>;
   return {
