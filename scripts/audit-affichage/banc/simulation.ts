@@ -19,6 +19,10 @@ import { simulationPalette } from "./palette";
 export type Scene = {
   /** ordre-dossiers — open_workspace ouvre le dossier demandé (et non l'espace du banc). */
   ouvrirChemin?: boolean;
+  /** disposition — un rechargement garde le stockage local (redémarrage simulé). */
+  garderStockage?: boolean;
+  /** disposition — pseudo-terminaux simulés comme le service (un par identifiant). */
+  terminaux?: boolean;
   /** Un fournisseur de modeles est connecte (sinon « Connect a provider »). */
   fournisseur?: boolean;
   /** Tour en cours sur la conversation active. */
@@ -38,6 +42,10 @@ declare global {
     __bancAppels?: Record<string, number>;
     /** dossiers passés à open_workspace, dans l'ordre. */
     __bancOuverts?: string[];
+    /** disposition — pseudo-terminaux vivants, lancements et arrêts (scène « terminaux »). */
+    __bancTerminaux?: () => { id: string; dossier: string }[];
+    __bancLancements?: { id: string; dossier: string }[];
+    __bancArrets?: { id: string; dossier: string }[];
     __bancInconnues?: Record<string, unknown>;
     __bancQcm?: string;
     __bancEcrit?: string; // dernier .md écrit par harness_md_write
@@ -115,6 +123,45 @@ function harnaisScene(scene: Scene): any[] {
   );
   if (scene.harnaisSecret) liste.unshift(e("note_s", "prompt_note", "global", "Clé de test", "Clé API : sk-ant-api03-AbCdEf0123456789AbCdEf0123456789XyZ"));
   return liste;
+}
+
+// disposition — pseudo-terminaux comme le service : un par identifiant (un lancement remplace
+// et arrête celui de même identifiant), arrêt accepté avec le bon jeton seulement.
+function simulationTerminaux(): Record<string, (a: any) => unknown> {
+  const vivants = new Map<string, { jeton: string; dossier: string }>();
+  const lancements: { id: string; dossier: string }[] = [];
+  const arrets: { id: string; dossier: string }[] = [];
+  window.__bancTerminaux = () => [...vivants].map(([id, v]) => ({ id, dossier: v.dossier }));
+  window.__bancLancements = lancements;
+  window.__bancArrets = arrets;
+  const arreter = (id: string, v: { jeton: string; dossier: string }) => {
+    arrets.push({ id, dossier: v.dossier });
+    void emit("terminal-exit", { sessionId: id, token: v.jeton, exitCode: 0 });
+  };
+  const lancer = (a: any) => {
+    const id = String(a.sessionId);
+    const dossier = String(a.workspacePath ?? a.dossier ?? "");
+    const avant = vivants.get(id);
+    if (avant) arreter(id, avant);
+    vivants.set(id, { jeton: String(a.token), dossier });
+    lancements.push({ id, dossier });
+    setTimeout(() => void emit("terminal-data", { sessionId: id, token: String(a.token), data: `shell ${dossier}\r\n` }), 30);
+    return { sessionId: id };
+  };
+  return {
+    spawn_terminal: lancer,
+    spawn_agent_terminal: lancer,
+    kill_terminal: (a: any) => {
+      const id = String(a.sessionId);
+      const v = vivants.get(id);
+      if (!v || v.jeton !== String(a.token)) return false;
+      vivants.delete(id);
+      arreter(id, v);
+      return true;
+    },
+    write_terminal: () => null,
+    resize_terminal: () => null,
+  };
 }
 
 export function installerSimulation(scene: Scene): void {
@@ -593,6 +640,7 @@ export function installerSimulation(scene: Scene): void {
   Object.assign(h, simulationNavigateur(scene)); // navigateur intégré
   Object.assign(h, simulationInterop(scene, h));
   Object.assign(h, simulationAgentsCli(scene)); // agents en ligne de commande
+  if (scene.terminaux) Object.assign(h, simulationTerminaux());
   mockWindows("main");
   mockConvertFileSrc("windows");
   mockIPC(

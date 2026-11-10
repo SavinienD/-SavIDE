@@ -35,6 +35,8 @@ import { OngletsChat, type OngletChat } from "./onglets/OngletsChat"; // e14
 import { ChatCloseButton } from "./chat/ChatCloseButton"; // e17b
 import { VoletRappel, VoletsFlottants, VoletOutils } from "./volets/VoletsFlottants"; // e6
 import { useVolets } from "./volets/volets"; // e6
+import { ecrireDisposition, lireDisposition, stockageLocal } from "../lib/dispositionDossier";
+import { dossiersAvecTerminal, quitterDossier } from "../lib/terminalDossier";
 import "./volets/volets.css"; // e6
 import { cloudConnectionFromPath, cloudRpc } from "../lib/ipc"; // v2-l2.3
 import { preferenceModeleEspace } from "../lib/modelesEspace"; // parcours-collegue
@@ -168,8 +170,6 @@ type Props = {
   onOpenFreeChat?: (conversationId: string) => void;
 };
 
-const INITIAL_LEFT = 280;
-const INITIAL_RIGHT = 420;
 // colonnes-place — largeur minimale d'une colonne de chat (styles.css,
 // .colonne-chat) et du bouton « + colonne » : le panneau de chat s'élargit pour
 // que ses colonnes tiennent (avant, la 2e et la 3e sortaient de l'écran).
@@ -177,8 +177,6 @@ const LARGEUR_MIN_COLONNE_CHAT = 220;
 const LARGEUR_AJOUT_COLONNE = 22;
 const MIN_COL = 220;
 const MAX_COL_RATIO = 0.6;
-const INITIAL_SPLIT_TOP = 0.55;
-const INITIAL_TERMINAL_HEIGHT = 240;
 const MIN_TERMINAL_HEIGHT = 140;
 const MAX_TERMINAL_RATIO = 0.92;
 const TERMINAL_OPEN_EVENT = "terminal-open-requested";
@@ -203,6 +201,42 @@ async function pousserDossierCloud(): Promise<void> {
     window.alert(`${r.fichiers} fichiers (${Math.round(r.octets / 1024)} Ko) envoyés sur le cloud dans ${r.dossier}.`);
   } catch (e) {
     window.alert(`Envoi impossible : ${String(e)}`);
+  }
+}
+
+/** Onglets de chat gardés pour un dossier. */
+function lireOngletsChat(workspacePath: string): OngletChat[] {
+  try {
+    const brut = window.localStorage.getItem(`axe:v2:onglets-chat:${workspacePath}`);
+    const liste = brut ? (JSON.parse(brut) as OngletChat[]) : [];
+    return Array.isArray(liste)
+      ? liste.filter((t) => t && typeof t.id === "string" && typeof t.titre === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Colonnes de chat gardées pour un dossier. */
+function lireColonnesChat(workspacePath: string): EtatColonnes<string> {
+  let brut: string | null = null;
+  try {
+    brut = window.localStorage.getItem(`axe:v2:colonnes-chat:${workspacePath}`);
+  } catch {
+    /* stockage indisponible */
+  }
+  return relireColonnes(brut) ?? { colonnes: [[]], focus: 0 };
+}
+
+/** Largeur de chaque colonne de chat (poids flex) gardée pour un dossier. */
+function lirePoidsColonnesChat(workspacePath: string): number[] {
+  try {
+    const brut = JSON.parse(
+      window.localStorage.getItem(`axe:v2:colonnes-chat-largeurs:${workspacePath}`) ?? "[]",
+    );
+    return Array.isArray(brut) ? brut : [];
+  } catch {
+    return [];
   }
 }
 
@@ -297,17 +331,7 @@ export function Workspace({
   // e14 — les conversations ouvertes, en onglets (comme un navigateur) :
   // un onglet par conversation, l'onglet actif EST la conversation active, et un
   // onglet se detache pour venir devant. La liste est gardee par espace.
-  const [ongletsChat, setOngletsChat] = useState<OngletChat[]>(() => {
-    try {
-      const brut = window.localStorage.getItem(`axe:v2:onglets-chat:${workspacePath}`);
-      const liste = brut ? (JSON.parse(brut) as OngletChat[]) : [];
-      return Array.isArray(liste)
-        ? liste.filter((t) => t && typeof t.id === "string" && typeof t.titre === "string")
-        : [];
-    } catch {
-      return [];
-    }
-  });
+  const [ongletsChat, setOngletsChat] = useState<OngletChat[]>(() => lireOngletsChat(workspacePath));
   const [chatDetache, setChatDetache] = useState<string | null>(null);
   // sub-m — journal of a sub-agent shown read-only in the focused chat column.
   const [journalSession, setJournalSession] = useState<{ id: string; conn: string; title: string } | null>(null);
@@ -2528,18 +2552,10 @@ export function Workspace({
   const droiteRepliee = volets.estDetache("chat") || chatDetacheSeul;
   // Demande de l'utilisateur : réduire entièrement un volet (Ctrl+B gauche, Ctrl+Alt+B
   // droite) pour donner toute la place au terminal ou au chat ; état mémorisé.
-  const [gaucheReduite, setGaucheReduite] = useState(() => {
-    try { return localStorage.getItem("axe:volet-gauche-reduit") === "1"; } catch { return false; }
-  });
-  const [droiteReduite, setDroiteReduite] = useState(() => {
-    try { return localStorage.getItem("axe:volet-droit-reduit") === "1"; } catch { return false; }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem("axe:volet-gauche-reduit", gaucheReduite ? "1" : "0");
-      localStorage.setItem("axe:volet-droit-reduit", droiteReduite ? "1" : "0");
-    } catch { /* stockage indisponible : l'état vit le temps de la session */ }
-  }, [gaucheReduite, droiteReduite]);
+  // Disposition gardée par dossier (lib/dispositionDossier.ts), relue au changement de dossier.
+  const [dispositionInitiale] = useState(() => lireDisposition(stockageLocal(), workspacePath));
+  const [gaucheReduite, setGaucheReduite] = useState(dispositionInitiale.gaucheReduite);
+  const [droiteReduite, setDroiteReduite] = useState(dispositionInitiale.droiteReduite);
   // Réglages > MCP : une commande à lancer devient une demande à l'IA, prête dans la saisie de
   // la conversation active (jamais envoyée seule) ; les réglages se ferment pour la montrer.
   const settingsOpenRef = useRef(settingsOpen);
@@ -2565,8 +2581,8 @@ export function Workspace({
     window.addEventListener("keydown", touche, true);
     return () => window.removeEventListener("keydown", touche, true);
   }, []);
-  const [leftWidth, setLeftWidth] = useState(INITIAL_LEFT);
-  const [rightWidth, setRightWidth] = useState(INITIAL_RIGHT);
+  const [leftWidth, setLeftWidth] = useState(dispositionInitiale.gauche);
+  const [rightWidth, setRightWidth] = useState(dispositionInitiale.droite);
   // barre-titre — les boutons de la barre s'arrêtent avant la marque (et la
   // pastille de mise à jour) : jamais de chevauchement, même fenêtre étroite.
   const barreTitreRef = useRef<HTMLDivElement | null>(null);
@@ -2622,11 +2638,11 @@ export function Workspace({
       tailles.disconnect();
     };
   }, []);
-  const [topSplit, setTopSplit] = useState(INITIAL_SPLIT_TOP);
-  const [terminalAvailable, setTerminalAvailable] = useState(false);
-  const [terminalOpen, setTerminalOpen] = useState(false);
-  const [terminalFullHeight, setTerminalFullHeight] = useState(false);
-  const [terminalHeight, setTerminalHeight] = useState(INITIAL_TERMINAL_HEIGHT);
+  const [topSplit, setTopSplit] = useState(dispositionInitiale.partageHaut);
+  const [terminalAvailable, setTerminalAvailable] = useState(dispositionInitiale.terminalDisponible);
+  const [terminalOpen, setTerminalOpen] = useState(dispositionInitiale.terminalOuvert);
+  const [terminalFullHeight, setTerminalFullHeight] = useState(dispositionInitiale.terminalPleineHauteur);
+  const [terminalHeight, setTerminalHeight] = useState(dispositionInitiale.terminalHauteur);
 
   const clampColumn = useCallback((v: number) => {
     if (typeof window === "undefined") return v;
@@ -2735,12 +2751,8 @@ export function Workspace({
   // e17b — colonnes de chat. Chaque colonne garde ses onglets ; la colonne
   // qui a le focus porte la conversation active (titre, raccourcis, liste de
   // gauche, sélection de texte) ; les autres montrent leur dernier fil lu.
-  const [etatColonnesChat, setEtatColonnesChat] = useState<EtatColonnes<string>>(
-    () =>
-      relireColonnes(window.localStorage.getItem(`axe:v2:colonnes-chat:${workspacePath}`)) ?? {
-        colonnes: [[]],
-        focus: 0,
-      },
+  const [etatColonnesChat, setEtatColonnesChat] = useState<EtatColonnes<string>>(() =>
+    lireColonnesChat(workspacePath),
   );
   const colonnesChat = etatColonnesChat.colonnes;
   // colonnes-place — place demandée par les colonnes (une seule : la largeur réglée).
@@ -2766,16 +2778,7 @@ export function Workspace({
   // hotfix-largeurs — largeur de chaque colonne de chat (poids flex), réglée
   // par la poignée entre deux colonnes ; double-clic = parts égales.
   const colonnesChatRef = useRef<HTMLDivElement | null>(null);
-  const [poidsColonnesChat, setPoidsColonnesChat] = useState<number[]>(() => {
-    try {
-      const brut = JSON.parse(
-        window.localStorage.getItem(`axe:v2:colonnes-chat-largeurs:${workspacePath}`) ?? "[]",
-      );
-      return Array.isArray(brut) ? brut : [];
-    } catch {
-      return [];
-    }
-  });
+  const [poidsColonnesChat, setPoidsColonnesChat] = useState<number[]>(() => lirePoidsColonnesChat(workspacePath));
   useEffect(() => {
     try {
       window.localStorage.setItem(
@@ -2786,6 +2789,47 @@ export function Workspace({
       /* stockage plein : les largeurs vivent le temps de la session */
     }
   }, [poidsColonnesChat, workspacePath]);
+  // Changement de dossier sans démontage (Ctrl+1…9, barre des dossiers) : le nouveau dossier
+  // retrouve SA disposition, ses onglets et ses colonnes de chat. Relu pendant le rendu, avant
+  // tout effet : les écritures ci-dessus et ci-dessous ne recopient jamais l'état du dossier
+  // quitté sous le chemin du nouveau.
+  // Dossiers quittés dont le panneau de terminal reste monté, caché : leurs terminaux
+  // continuent de tourner et reviennent au retour (lib/terminalDossier.ts).
+  const [terminauxQuittes, setTerminauxQuittes] = useState<string[]>([]);
+  const [cheminDisposition, setCheminDisposition] = useState(workspacePath);
+  if (cheminDisposition !== workspacePath) {
+    setCheminDisposition(workspacePath);
+    setTerminauxQuittes(quitterDossier(terminauxQuittes, cheminDisposition, terminalAvailable, workspacePath));
+    const d = lireDisposition(stockageLocal(), workspacePath);
+    setGaucheReduite(d.gaucheReduite);
+    setDroiteReduite(d.droiteReduite);
+    setLeftWidth(d.gauche);
+    setRightWidth(d.droite);
+    setTopSplit(d.partageHaut);
+    setTerminalAvailable(d.terminalDisponible || terminauxQuittes.includes(workspacePath));
+    setTerminalOpen(d.terminalOuvert);
+    setTerminalFullHeight(d.terminalPleineHauteur);
+    setTerminalHeight(d.terminalHauteur);
+    setOngletsChat(lireOngletsChat(workspacePath));
+    setEtatColonnesChat(lireColonnesChat(workspacePath));
+    setPoidsColonnesChat(lirePoidsColonnesChat(workspacePath));
+  }
+  useEffect(() => {
+    ecrireDisposition(stockageLocal(), workspacePath, {
+      gauche: leftWidth,
+      droite: rightWidth,
+      partageHaut: topSplit,
+      gaucheReduite,
+      droiteReduite,
+      terminalDisponible: terminalAvailable,
+      terminalOuvert: terminalOpen,
+      terminalPleineHauteur: terminalFullHeight,
+      terminalHauteur: terminalHeight,
+    });
+  }, [
+    workspacePath, leftWidth, rightWidth, topSplit, gaucheReduite, droiteReduite,
+    terminalAvailable, terminalOpen, terminalFullHeight, terminalHeight,
+  ]);
   const poidsChat = poidsColonnesChatValides(poidsColonnesChat, colonnesChat.length);
   const redimensionnerColonneChat = useCallback(
     (index: number, delta: number) => {
@@ -3711,18 +3755,30 @@ export function Workspace({
           workspacePath={workspacePath}
         />
       ) : null}
-      {terminalAvailable && !cloudConnection && !cloudReady && (
-        <TerminalPanel
-          key={cle}
-          active={terminalVisible}
-          fullHeight={terminalFullHeight}
-          workspacePath={workspacePath}
-          onClose={hideTerminal}
-          onCloseLastSession={closeTerminalPanel}
-          onToggleFullHeight={toggleTerminalFullHeight}
-          onOpenTerminalPath={openTerminalPath}
-        />
-      )}
+      {!cloudConnection && !cloudReady &&
+        // Un panneau par dossier : celui du dossier ouvert, plus (panneau principal seulement)
+        // ceux des dossiers quittés, cachés, dont les terminaux restent vivants.
+        (cle === "principal" || cle === "terminal"
+          ? dossiersAvecTerminal(terminauxQuittes, workspacePath, terminalAvailable)
+          : terminalAvailable ? [workspacePath] : []
+        ).map((dossier) => {
+          const courant = dossier === workspacePath;
+          return (
+            <TerminalPanel
+              key={`${cle}:${dossier}`}
+              active={courant && terminalVisible}
+              masque={!courant}
+              fullHeight={terminalFullHeight}
+              workspacePath={dossier}
+              onClose={hideTerminal}
+              onCloseLastSession={
+                courant ? closeTerminalPanel : () => setTerminauxQuittes((q) => q.filter((d) => d !== dossier))
+              }
+              onToggleFullHeight={toggleTerminalFullHeight}
+              onOpenTerminalPath={openTerminalPath}
+            />
+          );
+        })}
     </>
   );
 
