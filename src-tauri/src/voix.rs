@@ -87,6 +87,13 @@ pub(crate) struct VoixTranscrireInput {
     /// ni repli, ni nettoyage IA (le texte final les aura).
     #[serde(default)]
     morceau: bool,
+    /// Fin de dictée en direct : texte déjà transcrit par morceaux (pas d'audio à
+    /// retranscrire) ; seul le nettoyage IA, s'il est demandé, reste à faire.
+    #[serde(default)]
+    texte: Option<String>,
+    /// Moteur qui a transcrit `texte` (affiché à l'utilisateur).
+    #[serde(default)]
+    moteur_texte: Option<String>,
 }
 
 /// Connexions de service à essayer, dans l'ordre : celle de l'espace cloud
@@ -269,8 +276,9 @@ pub(crate) async fn voix_transcrire(
 
 async fn transcrire(app: &AppHandle, input: VoixTranscrireInput) -> std::result::Result<Value, String> {
     let demande = input.demande.as_deref();
+    let deja = texte_deja_transcrit(&input);
     let audio_b64 = input.audio.trim();
-    if audio_b64.is_empty() {
+    if audio_b64.is_empty() && deja.is_none() {
         return Err("enregistrement vide".into());
     }
     let mime = sanitize_mime(input.mime.as_deref().unwrap_or("audio/webm"));
@@ -281,10 +289,10 @@ async fn transcrire(app: &AppHandle, input: VoixTranscrireInput) -> std::result:
         .filter(|v| !v.is_empty());
     let debut = std::time::Instant::now();
     let mut echecs: Vec<String> = Vec::new();
-    let mut obtenu: Option<Value> = None;
+    let mut obtenu: Option<Value> = deja;
 
     // micro-local — 100 % sur le poste : ni espace, ni VM, ni OpenAI.
-    if input.local {
+    if input.local && obtenu.is_none() {
         let m = crate::voix_local::modele(input.modele_local.as_deref());
         // 0.1.75 — un morceau de la dictée en direct ne déclenche jamais de téléchargement.
         if input.morceau && !crate::voix_local::present(app, m) {
@@ -340,7 +348,7 @@ async fn transcrire(app: &AppHandle, input: VoixTranscrireInput) -> std::result:
     if input.morceau && !input.local {
         return morceau(app, &input, params).await;
     }
-    let services = if input.local { Vec::new() } else { connexions(input.workspace_path.as_deref()) };
+    let services = if input.local || obtenu.is_some() { Vec::new() } else { connexions(input.workspace_path.as_deref()) };
     for connexion in services {
         if est_annulee(demande) {
             return Err(ANNULE.into());
@@ -443,6 +451,20 @@ async fn morceau(app: &AppHandle, input: &VoixTranscrireInput, mut params: Value
     Err(format!("Transcription impossible. {}", echecs.join(" · ")))
 }
 
+/// Texte de la dictée en direct déjà transcrit par morceaux, au format d'un résultat de moteur.
+fn texte_deja_transcrit(input: &VoixTranscrireInput) -> Option<Value> {
+    if input.morceau {
+        return None;
+    }
+    let texte = input.texte.as_deref().map(str::trim).filter(|t| !t.is_empty())?;
+    Some(json!({
+        "text": texte,
+        "model": input.moteur_texte.clone().unwrap_or_else(|| "dictée en direct".into()),
+        "engine": "direct",
+        "ms": 0,
+    }))
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct VoixAnnulerInput {
@@ -518,6 +540,17 @@ pub(crate) async fn voix_modele_local(app: AppHandle, input: VoixModeleInput) ->
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn texte_deja_transcrit_saute_la_retranscription() {
+        let lire = |v: serde_json::Value| serde_json::from_value::<super::VoixTranscrireInput>(v).unwrap();
+        let fin = lire(serde_json::json!({"audio": "", "texte": " Bonjour. ", "moteurTexte": "whisper small"}));
+        let v = super::texte_deja_transcrit(&fin).expect("texte gardé");
+        assert_eq!(v["text"], "Bonjour.");
+        assert_eq!(v["model"], "whisper small");
+        assert!(super::texte_deja_transcrit(&lire(serde_json::json!({"audio": "QQ==", "texte": "  "}))).is_none());
+        assert!(super::texte_deja_transcrit(&lire(serde_json::json!({"audio": "QQ==", "texte": "x", "morceau": true}))).is_none());
+    }
+
     #[test]
     fn echec_service_signale_un_service_a_redeployer() {
         let msg = super::echec_service(&Some("axe-cloud".into()), "protocol error: unknown method voice.transcribe");

@@ -23,7 +23,7 @@ test("micro local : dictee disponible sans aucun service, jamais la VM", () => {
   const d = fs.readFileSync(path.join(__dirname, "../src/axe/voix/useDictee.ts"), "utf8");
   assert.ok(d.includes("local: true") && d.includes("modeleLocal: modeleDe(taille)") && d.includes("mime: MIME_PCM"));
   const r = fs.readFileSync(path.join(__dirname, "../src-tauri/src/voix.rs"), "utf8");
-  assert.ok(r.includes("if input.local { Vec::new() }") && r.includes("!input.local && input.repli_openai"));
+  assert.ok(r.includes("if input.local || obtenu.is_some() { Vec::new() }") && r.includes("!input.local && input.repli_openai"));
   const l = fs.readFileSync(path.join(__dirname, "../src-tauri/src/voix_local.rs"), "utf8");
   for (const s of ["60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe", "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b"]) assert.ok(l.includes(s));
 });
