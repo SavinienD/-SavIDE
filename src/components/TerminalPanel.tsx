@@ -19,6 +19,7 @@ import { GIT_TAB_ID, cycleTab, isExecutablePathTitle, resolveActiveTab, vueScind
 import { onThemeChange } from "../axe/theme"; // theme
 import { xtermTheme } from "../axe/themeTargets"; // theme
 import { MONO_BASE_PX } from "../axe/zoom"; // zoom — taille fixe (e19 : le reglage ne concerne que le chat et les documents)
+import { identifiantPty } from "../lib/terminalDossier";
 import { prendreCommandeDepart } from "./worktrees/terminauxDepart"; // worktrees
 import type { TerminalDataPayload, TerminalExitPayload } from "../types";
 import { ouvrirLien } from "./navigateur/liens"; // navigateur intégré ou du système
@@ -85,6 +86,8 @@ type Props = {
    * external read-only tab, file-tree reveal, ...).
    */
   onOpenTerminalPath?: (rawPath: string) => void;
+  /** Panneau d'un dossier quitté : caché, ses terminaux restent vivants. */
+  masque?: boolean;
 };
 
 const SAVED_LINES = 3000;
@@ -156,6 +159,7 @@ export function TerminalPanel({
   onCloseLastSession,
   onToggleFullHeight,
   onOpenTerminalPath,
+  masque = false,
 }: Props) {
   const [sessions, setSessions] = useState<TerminalSession[]>(() => loadTerminalSessions(workspacePath));
   const [activeId, setActiveId] = useState(() => loadTerminalSessions(workspacePath)[0]?.id ?? "terminal-1");
@@ -332,7 +336,7 @@ export function TerminalPanel({
   if (!activeSession) return null;
 
   return (
-    <section className="terminal-panel" ref={panneauRef}>
+    <section className="terminal-panel" ref={panneauRef} style={masque ? { display: "none" } : undefined}>
       <div className="terminal-tabs">
         <div className="terminal-tabs__list">
           <div
@@ -574,6 +578,8 @@ function TerminalSurface({
   const onApiRef = useRef(onApi);
   onApiRef.current = onApi;
   const [depot, setDepot] = useState(false);
+  // Identifiant donné au service : l'onglet et son dossier (lib/terminalDossier.ts).
+  const idPty = identifiantPty(workspacePath, session.id);
 
   const fitTerminal = useCallback(() => {
     const terminal = terminalRef.current;
@@ -594,7 +600,7 @@ function TerminalSurface({
 
     if (token) {
       void api.resizeTerminal(
-        session.id,
+        idPty,
         token,
         terminal.cols,
         terminal.rows,
@@ -602,7 +608,7 @@ function TerminalSurface({
         Math.max(0, Math.round(rect.height)),
       );
     }
-  }, [session.id]);
+  }, [idPty]);
 
   const startTerminal = useCallback(() => {
     const container = containerRef.current;
@@ -737,13 +743,13 @@ function TerminalSurface({
       terminal,
       arreter: () => {
         const jeton = tokenRef.current;
-        if (jeton) void api.killTerminal(session.id, jeton);
+        if (jeton) void api.killTerminal(idPty, jeton);
       },
       ecrire: (donnees) => {
         const jeton = tokenRef.current;
         if (!jeton) return false;
         if (session.agent) suiviRef.current = surSaisie(suiviRef.current, Date.now());
-        void api.writeTerminal(session.id, jeton, donnees);
+        void api.writeTerminal(idPty, jeton, donnees);
         return true;
       },
     });
@@ -773,7 +779,7 @@ function TerminalSurface({
         const currentToken = tokenRef.current;
         if (!currentToken) return;
         if (agent) suiviRef.current = surSaisie(suiviRef.current, Date.now());
-        void api.writeTerminal(session.id, currentToken, data);
+        void api.writeTerminal(idPty, currentToken, data);
       }),
       terminal.onBell(() => {
         if (agent) signal(null);
@@ -793,7 +799,7 @@ function TerminalSurface({
         if (!currentToken) return;
         const rect = containerRef.current?.getBoundingClientRect();
         void api.resizeTerminal(
-          session.id,
+          idPty,
           currentToken,
           cols,
           rows,
@@ -831,7 +837,7 @@ function TerminalSurface({
       "terminal-data",
       (event) => {
         const payload = event.payload;
-        if (payload.sessionId !== session.id || payload.token !== token) return;
+        if (payload.sessionId !== idPty || payload.token !== token) return;
         terminal.write(payload.data);
         if (agent) suivre({ suivi: surSortie(suiviRef.current, Date.now()), notifier: false });
       },
@@ -841,7 +847,7 @@ function TerminalSurface({
       "terminal-exit",
       (event) => {
         const payload = event.payload;
-        if (payload.sessionId !== session.id || payload.token !== token) return;
+        if (payload.sessionId !== idPty || payload.token !== token) return;
         tokenRef.current = null;
         onStatus(payload.exitCode === 0 ? "exited" : "error");
         if (agent) suivre(surFin(suiviRef.current, payload.exitCode ?? null));
@@ -871,7 +877,7 @@ function TerminalSurface({
               dossier: session.agent.dossier,
               cli: session.agent.cli,
               reprendre: !!session.reprendre,
-              sessionId: session.id,
+              sessionId: idPty,
               token,
               cols: Math.max(terminal.cols, 20),
               rows: Math.max(terminal.rows, 4),
@@ -880,7 +886,7 @@ function TerminalSurface({
             })
           : api.spawnTerminal(
               workspacePath,
-              session.id,
+              idPty,
               token,
               Math.max(terminal.cols, 20),
               Math.max(terminal.rows, 4),
@@ -894,7 +900,7 @@ function TerminalSurface({
             onStatus("running");
             // worktrees : commande de l'onglet ([[terminaux]] de worktrees.toml), une seule fois.
             const depart = prendreCommandeDepart(workspacePath, session.id);
-            if (depart) void api.writeTerminal(session.id, token, `${depart}\r`);
+            if (depart) void api.writeTerminal(idPty, token, `${depart}\r`);
             if (focusRef.current) terminal.focus();
           })
           .catch((err) => {
@@ -910,7 +916,7 @@ function TerminalSurface({
       onStatus("error");
       terminal.write(`\r\n\x1b[31m${stripAnsi(String(err))}\x1b[0m\r\n`);
     });
-  }, [active, fitTerminal, onStatus, onTitle, session.id, workspacePath]);
+  }, [active, fitTerminal, onStatus, onTitle, session.id, idPty, workspacePath]);
   const startTerminalRef = useRef(startTerminal);
   startTerminalRef.current = startTerminal;
 
@@ -951,7 +957,7 @@ function TerminalSurface({
       const token = tokenRef.current;
       tokenRef.current = null;
       if (token) {
-        void api.killTerminal(session.id, token);
+        void api.killTerminal(idPty, token);
       }
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
@@ -974,7 +980,7 @@ function TerminalSurface({
       terminalRef.current = null;
       fitRef.current = null;
     };
-  }, [session.id, workspacePath]);
+  }, [session.id, idPty, workspacePath]);
 
   // Processus arrêté (ou agent rouvert avec l'appli) : Relancer / Reprendre une session.
   const arrete = !!session.enPause || session.status === "exited" || session.status === "error";
@@ -1008,7 +1014,7 @@ function TerminalSurface({
         const jeton = tokenRef.current;
         if (!entrees.length || !jeton) return;
         const wsl = estWindows() && !session.agent && session.shell === "bash";
-        void api.writeTerminal(session.id, jeton, cheminsDeposes(entrees, session.agent ?? null, wsl));
+        void api.writeTerminal(idPty, jeton, cheminsDeposes(entrees, session.agent ?? null, wsl));
         terminalRef.current?.focus();
       }}
     >

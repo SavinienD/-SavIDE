@@ -36,6 +36,7 @@ import { ChatCloseButton } from "./chat/ChatCloseButton"; // e17b
 import { VoletRappel, VoletsFlottants, VoletOutils } from "./volets/VoletsFlottants"; // e6
 import { useVolets } from "./volets/volets"; // e6
 import { ecrireDisposition, lireDisposition, stockageLocal } from "../lib/dispositionDossier";
+import { dossiersAvecTerminal, quitterDossier } from "../lib/terminalDossier";
 import "./volets/volets.css"; // e6
 import { cloudConnectionFromPath, cloudRpc } from "../lib/ipc"; // v2-l2.3
 import { preferenceModeleEspace } from "../lib/modelesEspace"; // parcours-collegue
@@ -2775,16 +2776,20 @@ export function Workspace({
   // retrouve SA disposition, ses onglets et ses colonnes de chat. Relu pendant le rendu, avant
   // tout effet : les écritures ci-dessus et ci-dessous ne recopient jamais l'état du dossier
   // quitté sous le chemin du nouveau.
+  // Dossiers quittés dont le panneau de terminal reste monté, caché : leurs terminaux
+  // continuent de tourner et reviennent au retour (lib/terminalDossier.ts).
+  const [terminauxQuittes, setTerminauxQuittes] = useState<string[]>([]);
   const [cheminDisposition, setCheminDisposition] = useState(workspacePath);
   if (cheminDisposition !== workspacePath) {
     setCheminDisposition(workspacePath);
+    setTerminauxQuittes(quitterDossier(terminauxQuittes, cheminDisposition, terminalAvailable, workspacePath));
     const d = lireDisposition(stockageLocal(), workspacePath);
     setGaucheReduite(d.gaucheReduite);
     setDroiteReduite(d.droiteReduite);
     setLeftWidth(d.gauche);
     setRightWidth(d.droite);
     setTopSplit(d.partageHaut);
-    setTerminalAvailable(d.terminalDisponible);
+    setTerminalAvailable(d.terminalDisponible || terminauxQuittes.includes(workspacePath));
     setTerminalOpen(d.terminalOuvert);
     setTerminalFullHeight(d.terminalPleineHauteur);
     setTerminalHeight(d.terminalHauteur);
@@ -3733,18 +3738,30 @@ export function Workspace({
           workspacePath={workspacePath}
         />
       ) : null}
-      {terminalAvailable && !cloudConnection && !cloudReady && (
-        <TerminalPanel
-          key={cle}
-          active={terminalVisible}
-          fullHeight={terminalFullHeight}
-          workspacePath={workspacePath}
-          onClose={hideTerminal}
-          onCloseLastSession={closeTerminalPanel}
-          onToggleFullHeight={toggleTerminalFullHeight}
-          onOpenTerminalPath={openTerminalPath}
-        />
-      )}
+      {!cloudConnection && !cloudReady &&
+        // Un panneau par dossier : celui du dossier ouvert, plus (panneau principal seulement)
+        // ceux des dossiers quittés, cachés, dont les terminaux restent vivants.
+        (cle === "principal" || cle === "terminal"
+          ? dossiersAvecTerminal(terminauxQuittes, workspacePath, terminalAvailable)
+          : terminalAvailable ? [workspacePath] : []
+        ).map((dossier) => {
+          const courant = dossier === workspacePath;
+          return (
+            <TerminalPanel
+              key={`${cle}:${dossier}`}
+              active={courant && terminalVisible}
+              masque={!courant}
+              fullHeight={terminalFullHeight}
+              workspacePath={dossier}
+              onClose={hideTerminal}
+              onCloseLastSession={
+                courant ? closeTerminalPanel : () => setTerminauxQuittes((q) => q.filter((d) => d !== dossier))
+              }
+              onToggleFullHeight={toggleTerminalFullHeight}
+              onOpenTerminalPath={openTerminalPath}
+            />
+          );
+        })}
     </>
   );
 
