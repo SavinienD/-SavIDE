@@ -20,6 +20,29 @@ export function insererTexteDicte(
   return { valeur: avant + ajout + apres, curseur: avant.length + ajout.length };
 }
 
+/**
+ * Remplace un texte dicté déjà inséré (nettoyage IA arrivé après coup), seulement si la
+ * saisie est restée telle qu'après l'insertion : sinon null, ce que l'utilisateur a tapé
+ * ou déplacé entre-temps prime. `curseur` = position rendue par insererTexteDicte.
+ */
+export function remplacerTexteDicte(
+  courant: string,
+  apresInsertion: string,
+  curseur: number,
+  ancien: string,
+  nouveau: string,
+): { valeur: string; curseur: number } | null {
+  const a = ancien.trim();
+  const n = nouveau.trim();
+  if (courant !== apresInsertion || !a || !n) return null;
+  let fin = -1;
+  if (apresInsertion.slice(curseur - a.length, curseur) === a) fin = curseur;
+  else if (apresInsertion.slice(curseur - 1 - a.length, curseur - 1) === a) fin = curseur - 1;
+  if (fin < 0) return null;
+  const valeur = apresInsertion.slice(0, fin - a.length) + n + apresInsertion.slice(fin);
+  return { valeur, curseur: curseur + n.length - a.length };
+}
+
 /** 75 000 ms -> « 1:15 ». */
 export function formaterDuree(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));

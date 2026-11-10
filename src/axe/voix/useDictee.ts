@@ -26,7 +26,7 @@ import {
   reechantillonner,
   type TailleWhisper,
 } from "./direct";
-import { livrerDictee, type CibleDictee } from "./dicteeCible";
+import { livrerDicteeRemplacable, type CibleDictee, type Remplacer } from "./dicteeCible";
 
 /** voix — machine à états de la dictée : repos -> enregistrement ->
  *  transcription -> texte inséré (jamais envoyé), ou erreur avec secours Win+H. */
@@ -60,7 +60,7 @@ type Options = {
   /** Conversation affichée : devient la cible au début de l'enregistrement. */
   conversationId?: string;
   /** Sans conversationId : le texte va à ce rappel (ancien comportement). */
-  onTexte: (texte: string) => void;
+  onTexte: (texte: string) => Remplacer | void;
 };
 
 /** 0.1.75 — SavIDE : réglage du modèle local -> taille, et taille -> modèle local. */
@@ -101,6 +101,8 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
   conversationRef.current = conversationId;
   const cibleRef = useRef<CibleDictee | null>(null);
   const [cible, setCible] = useState<CibleDictee | null>(null);
+  /** De quoi remplacer le dernier texte livré (nettoyage IA arrivé après l'affichage). */
+  const dernierRemplacer = useRef<Remplacer | null>(null);
   /** Rend vrai si le texte est allé dans la saisie affichée ici (sinon : brouillon de la
    *  conversation de départ ou presse-papiers, et c'est le message du Workspace qui le dit). */
   const livrer = useCallback((texte: string): boolean => {
@@ -108,10 +110,12 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
     cibleRef.current = null;
     setCible(null);
     if (!c) {
-      onTexteRef.current(texte);
+      const r = onTexteRef.current(texte);
+      dernierRemplacer.current = typeof r === "function" ? r : null;
       return true;
     }
-    const ou = livrerDictee(c, texte);
+    const { ou, remplacer } = livrerDicteeRemplacable(c, texte);
+    dernierRemplacer.current = remplacer;
     return ou === "saisie" && c.conversationId === conversationRef.current;
   }, []);
   const terminerRef = useRef<() => void>(() => undefined);
@@ -404,6 +408,43 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
     return assemblerProvisoire(morceauxTexte.current) || null;
   }, []);
 
+  /**
+   * Nettoyage IA après l'affichage : le texte déjà transcrit part seul (aucune
+   * retranscription) au modèle du chat ; le résultat remplace le texte brut s'il est
+   * resté intact dans la saisie (ou le brouillon), sinon le texte de l'utilisateur est gardé.
+   */
+  const nettoyerApres = useCallback(async (
+    brut: string,
+    remplacer: Remplacer,
+    ctx: { espace?: string; chat?: { provider: string; name: string } | null; vocabulaire: string | null },
+  ) => {
+    try {
+      const r = await invoke<ResultatTranscription>("voix_transcrire", {
+        input: {
+          audio: "",
+          mime: MIME_PCM,
+          local: true,
+          workspacePath: ctx.espace ?? null,
+          vocabulaire: ctx.vocabulaire,
+          nettoyer: true,
+          provider: ctx.chat?.provider ?? null,
+          model: ctx.chat?.name ?? null,
+          repliOpenai: false,
+          texte: brut,
+          demande: nouvelleDemande(),
+        },
+      });
+      const propre = (r.text ?? "").trim();
+      if (r.nettoye && propre && propre !== brut.trim()) {
+        setInfo(remplacer(propre) ? "Texte nettoyé par l'IA." : "Nettoyage IA non appliqué : le texte a été modifié entre-temps.");
+      } else if (r.avertissements?.length) {
+        setInfo(r.avertissements.join(" "));
+      }
+    } catch (err) {
+      setInfo(`Nettoyage IA indisponible : texte brut gardé (${texteErreur(err).slice(0, 160)}).`);
+    }
+  }, []);
+
   const terminer = useCallback(async () => {
     const enr = enregistreur.current;
     if (!enr || !enr.actif()) return;
@@ -451,22 +492,29 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
       arreterDirect();
       if (demandeCourante.current !== demande) return; // annulée entre-temps
       const reglagesFin = lireReglagesVoix();
-      // Sans nettoyage IA, le texte des morceaux est le texte final : aucun appel de plus.
-      if (texteDirect && !reglagesFin.nettoyer) {
+      const { workspacePath: espace, modele: chat } = contexteRef.current;
+      const vocabulaire = vocabulaireEffectif(reglagesFin.vocabulaire, chargerVocabulaire()) || null;
+      // Le texte brut s'affiche tout de suite. Le nettoyage IA (un aller-retour vers le modèle
+      // du chat : plusieurs secondes) suit sans bloquer et ne remplace le texte que si
+      // l'utilisateur n'y a pas touché entre-temps.
+      const nettoyerEnsuite = (brut: string) => {
+        const remplacer = dernierRemplacer.current;
+        dernierRemplacer.current = null;
+        if (reglagesFin.nettoyer && brut && remplacer) void nettoyerApres(brut, remplacer, { espace, chat, vocabulaire });
+      };
+      if (texteDirect) {
         demandeCourante.current = null;
         viderProvisoire();
         const ici = livrer(texteDirect);
         setPhase("repos");
+        nettoyerEnsuite(texteDirect);
         if (!ici) return;
         const secondes = ((performance.now() - debutTranscription.current) / 1000).toFixed(1).replace(".", ",");
         setInfo(`Transcrit en direct par ${moteurDirect.current ?? "le moteur"} en ${secondes} s.`);
         return;
       }
-      // micro-local — SavIDE : whisper.cpp embarqué, audio décodé ici en PCM 16 kHz.
-      // Avec nettoyage IA : le texte des morceaux part tel quel au nettoyage (pas de retranscription).
-      const audio = texteDirect ? "" : pcmEnBase64(await blobEnPcm16k(blob));
-      const reglages = reglagesFin;
-      const { workspacePath: espace, modele: chat } = contexteRef.current;
+      // Audio décodé ici en PCM 16 kHz pour whisper.cpp embarqué.
+      const audio = pcmEnBase64(await blobEnPcm16k(blob));
       const resultat = await invoke<ResultatTranscription>("voix_transcrire", {
         input: {
           audio,
@@ -475,16 +523,12 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
           modeleLocal: modeleDe(taille),
           durationMs: Math.round(duree),
           workspacePath: espace ?? null,
-          vocabulaire: vocabulaireEffectif(reglages.vocabulaire, chargerVocabulaire()) || null,
-          nettoyer: reglages.nettoyer,
-          provider: chat?.provider ?? null,
-          model: chat?.name ?? null,
-          repliOpenai: reglages.repliOpenai,
-          rapide: reglages.rapide,
+          vocabulaire,
+          nettoyer: false,
+          repliOpenai: reglagesFin.repliOpenai,
+          rapide: reglagesFin.rapide,
           taille,
           demande,
-          texte: texteDirect,
-          moteurTexte: texteDirect ? moteurDirect.current : null,
         },
       });
       if (demandeCourante.current !== demande) return; // annulée entre-temps
@@ -498,10 +542,11 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
       }
       const ici = livrer(texte);
       setPhase("repos");
+      nettoyerEnsuite(texte);
       if (!ici) return;
       const secondes = ((resultat.ms ?? 0) / 1000).toFixed(1).replace(".", ",");
       const morceaux = [
-        `Transcrit par ${resultat.moteur ?? "le moteur"} en ${secondes} s${resultat.nettoye ? ", nettoyé par l'IA" : ""}.`,
+        `Transcrit par ${resultat.moteur ?? "le moteur"} en ${secondes} s.`,
         ...(resultat.avertissements ?? []),
       ];
       setInfo(morceaux.join(" "));
@@ -528,7 +573,7 @@ export function useDictee({ workspacePath, modele, conversationId, onTexte }: Op
       }
       echouer(message);
     }
-  }, [arreterAnimation, arreterDirect, arreterMinuterieDirect, echouer, livrer, pomper, texteDesMorceaux, viderProvisoire]);
+  }, [arreterAnimation, arreterDirect, arreterMinuterieDirect, echouer, livrer, nettoyerApres, pomper, texteDesMorceaux, viderProvisoire]);
   terminerRef.current = () => void terminer();
 
   // On change de conversation pendant l'enregistrement : l'enregistrement s'arrête

@@ -158,8 +158,9 @@ export function VoixSection({ workspacePath }: { workspacePath?: string }) {
             Nettoyer le texte avec l'IA
             <br />
             <span className="axe-appearance__hint">
-              Ponctuation et termes techniques corrigés par le modèle du chat (quelques secondes et
-              quelques jetons de plus). Sans reformulation. Désactivé par défaut.
+              Ponctuation et termes techniques corrigés par le modèle du chat, après l'affichage du
+              texte brut : il n'est remplacé que si vous n'y avez pas touché (quelques jetons de
+              plus). Sans reformulation. Activé par défaut.
             </span>
           </span>
         </label>

@@ -115,12 +115,58 @@ test("useDictee : le texte passe par la cible mémorisée au démarrage, plus pa
   const src = fs.readFileSync(path.join(racine, "src/axe/voix/useDictee.ts"), "utf8");
   // Un seul appel restant : le repli sans conversation (dans livrer).
   assert.equal(src.split("onTexteRef.current(").length - 1, 1, "plus d'appel direct au onTexte affiché pour le texte final");
-  assert.match(src, /if \(!c\) \{\n\s+onTexteRef\.current\(texte\);/);
-  assert.match(src, /const ou = livrerDictee\(c, texte\);/);
-  assert.match(src, /livrerDictee\(c, texte\)/);
+  assert.match(src, /if \(!c\) \{\n\s+const r = onTexteRef\.current\(texte\);/);
+  assert.match(src, /const \{ ou, remplacer \} = livrerDicteeRemplacable\(c, texte\);/);
+  assert.match(src, /livrerDicteeRemplacable\(c, texte\)/);
   const bouton = fs.readFileSync(path.join(racine, "src/axe/voix/DicteeBouton.tsx"), "utf8");
   assert.match(bouton, /!ailleurs && \(enregistre \|\| d\.phase === "transcription"\)/, "aperçu partiel jamais montré dans une autre conversation");
   const chat = fs.readFileSync(path.join(racine, "src/components/chat/ChatPane.tsx"), "utf8");
   assert.match(chat, /conversationId=\{conversationId\}/);
   assert.match(chat, /enregistrerComposeur\(conversationId/);
+});
+
+test("nettoyage différé : le texte inséré est remplacé seulement si la saisie n'a pas bougé", () => {
+  const I = require(path.join(racine, "src/axe/voix/inserer.ts"));
+  const ins = I.insererTexteDicte("Bonjour", 7, 7, "fais un commit");
+  assert.equal(ins.valeur, "Bonjour fais un commit");
+  const r = I.remplacerTexteDicte(ins.valeur, ins.valeur, ins.curseur, "fais un commit", "Fais un commit.");
+  assert.deepEqual(r, { valeur: "Bonjour Fais un commit.", curseur: ins.curseur + 1 });
+  // espace ajoutée après le texte dicté (insertion au milieu)
+  const mid = I.insererTexteDicte("ab", 1, 1, "x y");
+  assert.equal(mid.valeur, "a x y b");
+  assert.equal(I.remplacerTexteDicte(mid.valeur, mid.valeur, mid.curseur, "x y", "X, Y.").valeur, "a X, Y. b");
+  // saisie modifiée entre-temps : rien n'est remplacé
+  assert.equal(I.remplacerTexteDicte(ins.valeur + "!", ins.valeur, ins.curseur, "fais un commit", "Fais un commit."), null);
+  assert.equal(I.remplacerTexteDicte(ins.valeur, ins.valeur, ins.curseur, "fais un commit", "  "), null);
+});
+
+test("nettoyage différé : compositeur et brouillon rendent un remplacement", () => {
+  const { brouillons } = monter();
+  let saisie = "";
+  D.enregistrerComposeur("conv-A", (t) => {
+    const avant = saisie;
+    saisie = (avant ? avant + " " : "") + t;
+    const apres = saisie;
+    return (n) => (saisie === apres ? ((saisie = avant ? avant + " " + n : n), true) : false);
+  });
+  const l = D.livrerDicteeRemplacable(A, "fais un commit");
+  assert.equal(l.ou, "saisie");
+  assert.equal(l.remplacer("Fais un commit."), true);
+  assert.equal(saisie, "Fais un commit.");
+  // brouillon d'une conversation non affichée
+  brouillons.set("conv-B", "Note");
+  const B = { conversationId: "conv-B", workspacePath: "C:/projet" };
+  const lb = D.livrerDicteeRemplacable(B, "relance le service");
+  assert.equal(lb.ou, "brouillon");
+  assert.equal(brouillons.get("conv-B"), "Note relance le service");
+  assert.equal(lb.remplacer("Relance le service."), true);
+  assert.equal(brouillons.get("conv-B"), "Note Relance le service.");
+  // brouillon modifié depuis : le remplacement est refusé
+  const lb2 = D.livrerDicteeRemplacable(B, "et la VM");
+  brouillons.set("conv-B", brouillons.get("conv-B") + " (modifié)");
+  assert.equal(lb2.remplacer("Et la VM."), false);
+  // ancien compositeur sans remplacement
+  D.reinitialiserDictees();
+  D.enregistrerComposeur("conv-A", () => undefined);
+  assert.equal(D.livrerDicteeRemplacable(A, "x").remplacer, null);
 });

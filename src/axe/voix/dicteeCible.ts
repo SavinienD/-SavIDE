@@ -12,13 +12,16 @@
  *   copié dans le presse-papiers et message.
  * Module sans React (testé par node) : ChatPane et Workspace s'y branchent.
  */
-import { insererTexteDicte } from "./inserer";
+import { insererTexteDicte, remplacerTexteDicte } from "./inserer";
 
 export type CibleDictee = { conversationId: string; workspacePath: string | null };
 export type Livraison = "saisie" | "brouillon" | "presse-papiers";
 export type GenreAvis = "info" | "error";
 
-type Inserer = (texte: string) => void;
+/** Remplace le texte livré par une version corrigée ; false si la saisie a changé entre-temps. */
+export type Remplacer = (nouveau: string) => boolean;
+/** Un compositeur insère le texte et peut rendre de quoi le remplacer ensuite. */
+type Inserer = (texte: string) => Remplacer | void;
 type Brouillons = { lire: (id: string) => string; ecrire: (id: string, texte: string) => void };
 /** true : la conversation existe ; false : archivée / supprimée ; null : ce dossier ne la connaît pas. */
 type Existence = (cible: CibleDictee) => boolean | null;
@@ -118,27 +121,52 @@ function versPressePapiers(texte: string, message: string): Livraison {
 
 /** Livre le texte dicté à SA conversation (jamais à celle qui est affichée). */
 export function livrerDictee(cible: CibleDictee, texte: string): Livraison {
+  return livrerDicteeRemplacable(cible, texte).ou;
+}
+
+/**
+ * Comme livrerDictee, et rend aussi de quoi remplacer ce texte plus tard (nettoyage IA
+ * qui arrive après l'affichage) tant que la saisie ou le brouillon n'a pas été modifié.
+ */
+export function livrerDicteeRemplacable(
+  cible: CibleDictee,
+  texte: string,
+): { ou: Livraison; remplacer: Remplacer | null } {
   const dicte = texte.trim();
-  if (!dicte) return "saisie";
+  if (!dicte) return { ou: "saisie", remplacer: null };
   if (existe(cible) === false) {
-    return versPressePapiers(
-      dicte,
-      "La conversation où la dictée a commencé a été archivée ou supprimée : le texte dicté est copié dans le presse-papiers.",
-    );
+    return {
+      ou: versPressePapiers(
+        dicte,
+        "La conversation où la dictée a commencé a été archivée ou supprimée : le texte dicté est copié dans le presse-papiers.",
+      ),
+      remplacer: null,
+    };
   }
   const pile = composeurs.get(cible.conversationId);
   if (pile?.length) {
-    pile[pile.length - 1](dicte);
-    return "saisie";
+    const remplacer = pile[pile.length - 1](dicte);
+    return { ou: "saisie", remplacer: typeof remplacer === "function" ? remplacer : null };
   }
   if (!brouillons) {
-    return versPressePapiers(dicte, "Texte dicté copié dans le presse-papiers (conversation introuvable).");
+    return {
+      ou: versPressePapiers(dicte, "Texte dicté copié dans le presse-papiers (conversation introuvable)."),
+      remplacer: null,
+    };
   }
-  brouillons.ecrire(cible.conversationId, ajouterAuBrouillon(brouillons.lire(cible.conversationId), dicte));
+  const b = brouillons;
+  const apres = ajouterAuBrouillon(b.lire(cible.conversationId), dicte);
+  b.ecrire(cible.conversationId, apres);
   horsEcran.add(cible.conversationId);
   publier();
   prevenir("info", "Texte dicté ajouté au brouillon de la conversation où la dictée a commencé.");
-  return "brouillon";
+  const remplacer: Remplacer = (nouveau) => {
+    const r = remplacerTexteDicte(b.lire(cible.conversationId), apres, apres.length, dicte, nouveau);
+    if (!r) return false;
+    b.ecrire(cible.conversationId, r.valeur);
+    return true;
+  };
+  return { ou: "brouillon", remplacer };
 }
 
 /** Pour les tests : état remis à zéro. */
