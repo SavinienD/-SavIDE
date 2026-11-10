@@ -861,6 +861,11 @@ export const SCENES = [
   { id: "mcp-ia-catalogue-mac", mac: true, reduireVolets: true, sim: { mcp: ["postgres"] }, stockage: () => colonnes([ids(3)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__header .settings-pane__btn[data-primary='true']", ".settings-pane__mcp-catalog-item[data-entry='excel']", ".settings-pane__mcp-catalog-actions .settings-pane__mcp-demande-ia"],
     temoins: ["appel:save_mcp_settings", "saisiecontient:Installe et configure le serveur MCP « Excel » sur ce poste (macOS)", "saisiecontient:npx -y @negokaz/excel-mcp-server"] },
+  // … un serveur distant (Linear) garde l'ajout direct (pas de demande à l'IA) ; son formulaire tient
+  // dans la page étroite : bouton « Ajouter et se connecter » entier, adresse sur une ligne.
+  { id: "mcp-ia-distant", sim: { mcp: ["postgres"] }, stockage: () => colonnes([ids(3)]), reglages: true,
+    clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__header .settings-pane__btn[data-primary='true']", ".settings-pane__mcp-catalog-item[data-entry='linear']"],
+    temoins: ["absent:.settings-pane__mcp-demande-ia", "sel:.settings-pane__mcp-catalog-actions .settings-pane__mcp-ajouter[data-primary='true']"] },
   // … test en échec d'un serveur enregistré : « Demander à l'IA de corriger » met l'erreur et la commande dans la saisie.
   { id: "mcp-ia-erreur", sim: { mcp: ["github", "postgres"], mcpErreur: "github" }, stockage: () => colonnes([ids(3)]), reglages: true,
     clics: [".settings-pane__nav-item[data-section='mcp']", ".settings-pane__nav-list-item[data-server='github'] .settings-pane__nav-list-item-main", ".settings-pane__detail .settings-pane__mcp-tester", ".settings-pane__mcp-erreur .settings-pane__mcp-demande-ia"],

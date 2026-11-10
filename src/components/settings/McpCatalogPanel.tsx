@@ -173,7 +173,7 @@ export function McpCatalogPanel({ busy, error, existingIds, onAdd, onTest, onCan
             <>
               <div className="settings-pane__mcp-catalog-form-head">
                 <span className="settings-pane__detail-section">{selected.name}</span>
-                <code className="settings-pane__mcp-catalog-install">{selected.install}</code>
+                <code className="settings-pane__mcp-catalog-install" title={selected.install}>{selected.install}</code>
               </div>
               {selected.vars.length === 0 ? (
                 <p className="settings-pane__muted">
@@ -289,6 +289,7 @@ export function McpCatalogPanel({ busy, error, existingIds, onAdd, onTest, onCan
               type="button"
               className="settings-pane__btn settings-pane__mcp-ajouter"
               data-primary={local ? undefined : "true"}
+              title={connecter ? "Ajouter et se connecter" : "Ajouter"}
               onClick={() => void submit()}
               disabled={busy || missingRequired}
             >
