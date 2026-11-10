@@ -20,6 +20,8 @@ use axecode_daemon::{Daemon, DaemonConfig};
 struct Echo {
     /// Texte du dernier prompt système vu (pour vérifier les rappels).
     systems: Mutex<VecDeque<String>>,
+    /// Prochains appels qui échouent (limite de débit) : mode sans fin.
+    echecs: Mutex<u32>,
 }
 
 #[async_trait]
@@ -38,6 +40,13 @@ impl Provider for Echo {
             request.system_prompt.clone().unwrap_or_default()
                 + &serde_json::to_string(&request.transcript).unwrap_or_default(),
         );
+        {
+            let mut echecs = self.echecs.lock().unwrap();
+            if *echecs > 0 {
+                *echecs -= 1;
+                return Err(axecode_core::AppError::RateLimit("HTTP 429 rate_limit_error".into()));
+            }
+        }
         let usage = Usage { input_tokens: 10, output_tokens: 5, ..Default::default() };
         let events = vec![
             StreamEvent::MessageStart { model: "fake".into() },
@@ -88,7 +97,7 @@ fn banc_sur(base: std::path::PathBuf, session: Option<String>) -> Option<Banc> {
     }
     let ws = base.join("ws");
     std::fs::create_dir_all(&ws).unwrap();
-    let provider = Arc::new(Echo { systems: Mutex::new(VecDeque::new()) });
+    let provider = Arc::new(Echo { systems: Mutex::new(VecDeque::new()), echecs: Mutex::new(0) });
     let resolver: Arc<dyn ProviderResolver> = Arc::new(Resolver(provider.clone()));
     let hook = SessionCommandsHook::new(resolver.clone());
     let deps = Arc::new(ReplDeps { providers: resolver, resource_dirs: vec![], hooks: vec![hook.clone()] });
@@ -473,4 +482,127 @@ async fn guet_par_commande_slash() {
     b.send("/guet anulle").await;
     assert!(b.hook.state(&b.id).guets.is_empty(), "« anulle » (faute) annule");
     assert!(b.last_prompt().contains("a annulé 1 guet"));
+}
+
+
+// ------------------------------------------------------------ mode sans fin
+
+impl Banc {
+    fn sans_fin(&self) -> axecode_app::session_commands::SansFin {
+        self.hook.state(&self.id).sans_fin.expect("mode sans fin")
+    }
+    fn appels(&self) -> usize {
+        self.provider.systems.lock().unwrap().len()
+    }
+    async fn attendre_relances(&self, n: u32, secondes: u64) {
+        for _ in 0..secondes * 20 {
+            if self.sans_fin().relaunches >= n && self.idle() {
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+        panic!("{} relance(s) au lieu de {n} : {:?}", self.sans_fin().relaunches, self.sans_fin());
+    }
+}
+
+/// `/nonstop` : relancé après chaque tour, sans s'arrêter sur goal.complete ni sur les
+/// erreurs de débit (attente puis reprise) ; le bouton Stop l'arrête.
+#[tokio::test(flavor = "multi_thread")]
+async fn sans_fin_continue_jusqu_a_l_arret() {
+    let Some(b) = banc() else { return };
+    b.hook.set_sans_fin_delays(Duration::from_millis(100), Duration::from_millis(150), Duration::from_secs(60));
+    b.send("/nonstop finir le lot 3").await;
+    assert!(b.last_prompt().contains("MODE SANS FIN : finir le lot 3"), "consigne au premier tour");
+    let f = b.sans_fin();
+    assert_eq!((f.status.as_str(), f.task.as_str(), f.turns), ("running", "finir le lot 3", 1));
+    b.attendre_relances(2, 20).await;
+    assert!(b.journal_has("<nonstop_continue"), "relance journalisée comme message balisé");
+    assert!(b.last_prompt().contains("Mode sans fin : relance automatique"), "le tour relancé le sait");
+    assert!(b.last_prompt().contains("Ne pose pas de question"), "consigne : décider seul");
+    // goal.complete : résumé noté, le mode continue.
+    b.guet("goal.set", serde_json::json!({"text": "lot 3"})).await;
+    b.guet("goal.complete", serde_json::json!({"summary": "lot 3 livré"})).await;
+    let f = b.sans_fin();
+    assert!(f.running() && f.summaries == vec!["lot 3 livré".to_string()], "{f:?}");
+    let avant = f.relaunches;
+    b.attendre_relances(avant + 2, 20).await;
+    // Limite de débit : deux tours en échec, attente croissante, reprise sans quitter le mode.
+    *b.provider.echecs.lock().unwrap() = 2;
+    let avant = b.sans_fin().relaunches;
+    b.attendre_relances(avant + 3, 30).await;
+    let f = b.sans_fin();
+    assert!(f.running() && f.errors == 0 && f.last_error.is_none(), "reprise après les erreurs : {f:?}");
+    assert!(b.journal_has("\"op\":\"retry\""), "erreurs journalisées");
+    // Jamais en boucle serrée : au moins le délai mini entre deux appels.
+    assert!(f.tokens > 0 && f.turns >= f.relaunches, "{f:?}");
+    // L'interface le voit, le bouton Stop l'arrête.
+    let vue = b.daemon.dispatch(0, "sessions.commands_state", serde_json::json!({"sessionId": b.id})).await.unwrap();
+    assert_eq!(vue["sans_fin"]["status"], "running");
+    b.daemon.dispatch(0, "sessions.stop", serde_json::json!({"sessionId": b.id})).await.unwrap();
+    for _ in 0..200 {
+        if b.idle() {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
+    let f = b.sans_fin();
+    assert_eq!(f.status, "stopped", "{f:?}");
+    assert!(f.stop_reason.as_deref().unwrap_or("").contains("Stop"));
+    tokio::time::sleep(Duration::from_millis(300)).await;
+    let n = b.appels();
+    tokio::time::sleep(Duration::from_millis(1_500)).await;
+    assert_eq!(b.appels(), n, "aucun tour après l'arrêt");
+}
+
+/// `/autonomous sans fin …` démarre le mode, `/autonomous stop` et `/nonstop stop` l'arrêtent ;
+/// le badge de l'interface (sessions.commands_set sans_fin_stop) aussi.
+#[tokio::test(flavor = "multi_thread")]
+async fn sans_fin_commandes_d_arret() {
+    let Some(b) = banc() else { return };
+    b.hook.set_sans_fin_delays(Duration::from_secs(3600), Duration::from_secs(3600), Duration::from_secs(3600));
+    b.send("/autonomous sans fin améliorer les tests").await;
+    assert_eq!(b.sans_fin().task, "améliorer les tests");
+    b.send("/autonomous stop").await;
+    assert_eq!(b.sans_fin().status, "stopped");
+    b.send("fais le ménage /nonstop").await;
+    assert!(b.sans_fin().running(), "reconnu au milieu du message");
+    b.send("/nonstop stop").await;
+    assert_eq!(b.sans_fin().status, "stopped");
+    assert!(b.last_prompt().contains("a arrêté le mode sans fin"));
+    b.send("/nonstop").await;
+    assert!(b.sans_fin().running());
+    let vue = b.daemon.dispatch(0, "sessions.commands_set", serde_json::json!({"sessionId": b.id, "op": "sans_fin_stop"})).await.unwrap();
+    assert_eq!(vue["sans_fin"]["status"], "stopped");
+    b.send("et alors ?").await;
+    assert!(b.last_prompt().contains("arrêté le mode sans fin depuis l'interface"), "l'agent est prévenu");
+}
+
+/// Le mode survit à un redémarrage du service (état dans session_state) et s'arrête
+/// proprement quand la conversation est archivée.
+#[tokio::test(flavor = "multi_thread")]
+async fn sans_fin_survit_au_redemarrage_puis_archive() {
+    let Some(mut b) = banc() else { return };
+    b.hook.set_sans_fin_delays(Duration::from_secs(3600), Duration::from_secs(3600), Duration::from_secs(3600));
+    b.send("/nonstop finir le lot 3").await;
+    assert!(b.sans_fin().next_relaunch_ms.is_some(), "relance planifiée");
+    let (base, id) = (b.base.clone(), b.id.clone());
+    b.keep = true;
+    b.hook.stop_sans_fin_tasks(); // le processus du service s'arrête
+    drop(b);
+    let b = banc_sur(base, Some(id)).expect("banc rechargé");
+    b.hook.set_sans_fin_delays(Duration::from_millis(100), Duration::from_millis(100), Duration::from_millis(500));
+    // L'ancienne relance (dans 1 h) reste prévue ; le service redémarré la ramène à maintenant.
+    let vue = b.daemon.dispatch(0, "sessions.commands_state", serde_json::json!({"sessionId": b.id})).await.unwrap();
+    assert_eq!(vue["sans_fin"]["status"], "running");
+    axecode_app::session_commands::update_state_value(&b.base.join("data"), &b.id, |v| {
+        v["sans_fin"]["next_relaunch_ms"] = serde_json::json!(0);
+        Ok(())
+    })
+    .unwrap();
+    b.daemon.rearmer_au_demarrage().await;
+    b.attendre_relances(2, 30).await;
+    b.daemon.dispatch(0, "sessions.archive", serde_json::json!({"sessionId": b.id})).await.unwrap();
+    let f = axecode_app::session_commands::read_state(&b.base.join("data"), &b.id);
+    assert_eq!(f["sans_fin"]["status"], "stopped", "{f}");
+    assert_eq!(f["sans_fin"]["stop_reason"], "conversation archivée");
 }
