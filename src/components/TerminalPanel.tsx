@@ -818,7 +818,10 @@ function TerminalSurface({
     // Cells resized without the host resizing (screen scale, font metrics): refit so the
     // grid stays inside the panel and the PTY gets the size really shown.
     const arreterMesures = suivreMesuresTerminal(window, document.fonts, () => {
-      if (activeRef.current) fitTerminal();
+      if (!activeRef.current) return;
+      fitTerminal();
+      // New cell size: redraw every row (glyphs are re-rasterised for the new scale).
+      terminal.refresh(0, Math.max(0, terminal.rows - 1));
     });
     disposablesRef.current.push({ dispose: arreterMesures });
 
