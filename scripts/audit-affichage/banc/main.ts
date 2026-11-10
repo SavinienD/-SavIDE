@@ -16,6 +16,8 @@ import { WS, NOM_WS, T0 } from "./donnees";
 
 const scene = lireScene();
 try {
+  // « garderStockage » : un rechargement de la page garde le stockage local (redémarrage simulé).
+  if (scene.garderStockage && window.localStorage.getItem("banc:initialise") === "1") throw new Error("garder");
   window.localStorage.clear();
   window.localStorage.setItem(
     "axecode.recentWorkspaces",
@@ -28,6 +30,7 @@ try {
   for (const [cle, valeur] of Object.entries(stockage)) {
     window.localStorage.setItem(cle, typeof valeur === "string" ? valeur : JSON.stringify(valeur));
   }
+  window.localStorage.setItem("banc:initialise", "1");
 } catch {
   /* stockage indisponible : la scene reste utilisable */
 }

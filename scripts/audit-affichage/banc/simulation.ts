@@ -19,6 +19,8 @@ import { simulationPalette } from "./palette";
 export type Scene = {
   /** ordre-dossiers — open_workspace ouvre le dossier demandé (et non l'espace du banc). */
   ouvrirChemin?: boolean;
+  /** disposition — un rechargement garde le stockage local (redémarrage simulé). */
+  garderStockage?: boolean;
   /** Un fournisseur de modeles est connecte (sinon « Connect a provider »). */
   fournisseur?: boolean;
   /** Tour en cours sur la conversation active. */
