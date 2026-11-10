@@ -9,11 +9,13 @@ import { cloudConnectionFromPath } from "../../lib/ipc";
 import {
   ETAT_VIDE,
   detailGuet,
+  detailSansFin,
   formatHeure,
   formatIntervalle,
   libelleStatutGoal,
   normaliserEtat,
   textePoursuite,
+  texteBadgeSansFin,
   vientDeSeDeclencher,
   type EtatCommandes,
 } from "./logiqueIndicateurs";
@@ -38,7 +40,7 @@ function appel<T>(workspacePath: string, method: string, params: unknown): Promi
 
 export function IndicateursSession({ workspacePath, conversationId, signal, dernierReveil }: Props) {
   const [etat, setEtat] = useState<EtatCommandes>(ETAT_VIDE);
-  const [ouvert, setOuvert] = useState<"heartbeat" | "goal" | "guet" | null>(null);
+  const [ouvert, setOuvert] = useState<"heartbeat" | "goal" | "guet" | "sans-fin" | null>(null);
   const [clignote, setClignote] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const precedent = useRef<EtatCommandes>(ETAT_VIDE);
@@ -47,7 +49,7 @@ export function IndicateursSession({ workspacePath, conversationId, signal, dern
   // Le détail est posé sur <body> (position fixe) : la colonne de conversation rogne
   // tout ce qui dépasse du compositeur (banc 800x600 : haut du détail invisible).
   const [place, setPlace] = useState<CSSProperties>({});
-  const ouvrir = (quoi: "heartbeat" | "goal" | "guet", bouton: HTMLElement) => {
+  const ouvrir = (quoi: "heartbeat" | "goal" | "guet" | "sans-fin", bouton: HTMLElement) => {
     if (ouvert === quoi) {
       setOuvert(null);
       return;
@@ -125,7 +127,8 @@ export function IndicateursSession({ workspacePath, conversationId, signal, dern
       if (
         (op === "heartbeat_off" && !suivant.heartbeat) ||
         (op === "goal_clear" && !suivant.goal) ||
-        (op.startsWith("guet_annuler") && suivant.guets.length === 0)
+        (op.startsWith("guet_annuler") && suivant.guets.length === 0) ||
+        (op === "sans_fin_stop" && !suivant.sansFin)
       )
         setOuvert(null);
     } catch (e) {
@@ -133,11 +136,35 @@ export function IndicateursSession({ workspacePath, conversationId, signal, dern
     }
   };
 
-  const { heartbeat, goal, guets } = etat;
-  if (!heartbeat && !goal && guets.length === 0) return null;
+  const { heartbeat, goal, guets, sansFin } = etat;
+  if (!heartbeat && !goal && guets.length === 0 && !sansFin) return null;
   const poursuite = goal ? textePoursuite(goal) : null;
   return (
     <div className="axe-indicateurs" ref={racine}>
+      {sansFin && (
+        <span className="axe-sans-fin">
+          <button
+            type="button"
+            className="axe-indicateur"
+            data-kind="sans-fin"
+            aria-label="Mode sans fin"
+            title={`Mode sans fin : ${sansFin.task}\n${detailSansFin(sansFin).join("\n")}`}
+            onClick={(e) => ouvrir("sans-fin", e.currentTarget)}
+          >
+            <Icon icon="solar:infinity-linear" width={15} height={15} />
+            <span className="axe-sans-fin__libelle">{texteBadgeSansFin(sansFin)}</span>
+          </button>
+          <button
+            type="button"
+            className="axe-indicateur axe-sans-fin__arret"
+            aria-label="Arrêter le mode sans fin"
+            title="Arrêter le mode sans fin"
+            onClick={() => void agir("sans_fin_stop")}
+          >
+            <Icon icon="solar:stop-bold" width={11} height={11} />
+          </button>
+        </span>
+      )}
       {heartbeat && (
         <button
           type="button"
@@ -178,6 +205,26 @@ export function IndicateursSession({ workspacePath, conversationId, signal, dern
           <Icon icon="solar:eye-scan-linear" width={15} height={15} />
           <span className="axe-indicateur__nombre">{guets.length}</span>
         </button>
+      )}
+      {ouvert === "sans-fin" && sansFin && createPortal(
+        <div className="axe-indicateurs__detail" role="dialog" aria-label="Mode sans fin" ref={detail} style={place}>
+          <div className="axe-indicateurs__titre">Mode sans fin</div>
+          <div className="axe-indicateurs__message">{sansFin.task}</div>
+          {detailSansFin(sansFin).map((l, i) => (
+            <div key={i}>{l}</div>
+          ))}
+          {sansFin.last_error && <div className="axe-indicateurs__erreur">{sansFin.last_error}</div>}
+          {sansFin.summaries.slice(-3).map((s, i) => (
+            <div key={`r${i}`} className="axe-indicateurs__resume">{`Atteint : ${s}`}</div>
+          ))}
+          <div className="axe-indicateurs__actions">
+            <button type="button" onClick={() => void agir("sans_fin_stop")}>
+              Arrêter le mode sans fin
+            </button>
+          </div>
+          {erreur && <div className="axe-indicateurs__erreur">{erreur}</div>}
+        </div>,
+        document.body,
       )}
       {ouvert === "guet" && guets.length > 0 && createPortal(
         <div className="axe-indicateurs__detail" role="dialog" aria-label="Guets en cours" ref={detail} style={place}>

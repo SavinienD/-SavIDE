@@ -120,3 +120,33 @@
   padding-top: 8px;
   border-top: 1px solid var(--border-1, var(--bg-3));
 }
+
+/* Mode sans fin (/nonstop) : badge visible avec son bouton d'arrêt */
+.axe-sans-fin {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  border-radius: var(--r-small);
+  background: color-mix(in srgb, var(--accent, #e5484d) 14%, transparent);
+}
+.axe-indicateur[data-kind="sans-fin"] {
+  color: var(--accent, #e5484d);
+  font-weight: 600;
+  padding-right: 4px;
+}
+.axe-sans-fin__libelle {
+  font-variant-numeric: tabular-nums;
+}
+.axe-sans-fin__arret {
+  padding: 0 6px;
+  color: var(--text-2);
+}
+.axe-sans-fin__arret:hover {
+  color: var(--danger, #e5484d);
+}
+/* Compositeur étroit : le badge garde l'icône et le bouton d'arrêt (libellé dans l'infobulle). */
+@container (max-width: 26em) {
+  .axe-sans-fin__libelle {
+    display: none;
+  }
+}

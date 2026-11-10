@@ -56,10 +56,10 @@ test("après une commande ou du texte : liste proposée = liste colorée", () =>
   for (const avant of ["/autonomous ", "/autonomous --max-turns 3 ", "/compact puis ", "texte ", "a\n", "/goal x ", "a /goal x ", "/heartbeat 5m coucou "]) {
     assert.deepEqual(proposees(avant), colorees(avant), JSON.stringify(avant));
   }
-  // Le cas signalé : « /autonomous /goal » propose /goal et /heartbeat, et /goal est coloré.
-  assert.deepEqual(proposees("/autonomous "), ["goal", "heartbeat"]);
-  assert.deepEqual(proposees("texte "), ["goal", "heartbeat"]);
-  assert.deepEqual(proposees("a /goal x "), ["heartbeat"]);
+  // Le cas signalé : « /autonomous /goal » propose /goal et /heartbeat (et /nonstop, mode sans fin), et /goal est coloré.
+  assert.deepEqual(proposees("/autonomous "), ["goal", "nonstop", "heartbeat"]);
+  assert.deepEqual(proposees("texte "), ["goal", "nonstop", "heartbeat"]);
+  assert.deepEqual(proposees("a /goal x "), ["nonstop", "heartbeat"]);
   assert.deepEqual(
     decouperJetons("/autonomous /goal", REGISTRE).map((s) => `${s.genre}:${s.texte}`),
     ["commande:/autonomous", "texte: ", "commande:/goal"],

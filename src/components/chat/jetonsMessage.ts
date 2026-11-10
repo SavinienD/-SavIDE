@@ -9,7 +9,7 @@ export type SegmentJeton = { genre: GenreJeton; texte: string };
 const FIN_JETON = /[\s.,;:!?)\]}'"`]/;
 
 /** commandes reconnues aussi au milieu du message (première occurrence), comme le service. */
-export const COMMANDES_PARTOUT = ["goal", "heartbeat"] as const;
+export const COMMANDES_PARTOUT = ["goal", "heartbeat", "nonstop"] as const;
 
 export type CommandeTrouvee = { nom: string; debut: number; fin: number };
 

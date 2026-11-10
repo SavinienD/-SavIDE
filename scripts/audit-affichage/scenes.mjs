@@ -306,6 +306,31 @@ export const SCENES = [
       commandes: {
         goal: null,
         heartbeat: null,
+  // Mode sans fin (/nonstop) : badge « Sans fin · 12 » avec son bouton d'arrêt à côté du modèle,
+  // relance automatique en bulle discrète dans la conversation, détail au clic (compteurs, arrêt).
+  {
+    id: "sans-fin",
+    sim: {
+      commandes: {
+        goal: null,
+        heartbeat: null,
+        autonomous: null,
+        sans_fin: { task: "Finir le lot 3 de la recette, puis améliorer les tests", status: "running", started_ms: Date.UTC(2026, 9, 23, 10, 30), turns: 12, relaunches: 11, tokens: 1_234_567, errors: 0, next_relaunch_ms: Date.UTC(2026, 9, 23, 12, 33, 10), summaries: ["Lot 2 livré, tests verts"] },
+      },
+    },
+    stockage: () => colonnes([ids(1)]),
+    evenements: [
+      { type: "turn_started" },
+      { type: "heartbeat_received", message: `<nonstop_continue at_ms="${Date.UTC(2026, 9, 23, 12, 32)}" n="11">\nMode sans fin, continue : Finir le lot 3\n</nonstop_continue>`, at_ms: Date.UTC(2026, 9, 23, 12, 32) },
+      { type: "text_started" },
+      { type: "text_chunk", delta: "Je reprends : tests du lot 3." },
+      { type: "text_finished" },
+      { type: "turn_finished" },
+    ],
+    cliquer: ".axe-indicateur[data-kind='sans-fin']",
+    temoins: ["sel:.axe-indicateur[data-kind='sans-fin']", "sel:.axe-sans-fin__arret", "sel:.axe-reveil[data-kind='sans-fin']", "sel:.axe-indicateurs__detail"],
+    attendus: ["Mode sans fin", "relance n°", "Arrêter le mode sans fin", "12 tours", "Lot 2 livré"],
+  },
         autonomous: null,
         guets: [
           { id: "g1a2b3c", genre: "condition", cmd: "gh run view 4242 --exit-status", cree_ms: Date.UTC(2026, 9, 23, 12, 10), prochain_ms: Date.UTC(2026, 9, 23, 12, 33, 30), essais: 7, statut: "actif", message: "construction GitHub de la 0.1.68" },

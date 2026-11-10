@@ -19,6 +19,7 @@ export type SlashCommandSpec = {
 export const SLASH_COMMANDS: SlashCommandSpec[] = [
   { name: "goal", usage: "/goal <objectif en phrase libre>, ou « pause », « reprends », « c'est fini », « efface »", description: "Objectif persistant de la session (icône à côté du modèle), en phrase libre, ex. « migrer la base, budget 200k jetons »" },
   { name: "autonomous", usage: "/autonomous [--max-turns N] [--max-tokens N] [--timeout-ms N] [--gate \"cmd\"] [tâche]", description: "Continuation bornée, porte de validation optionnelle (stop pour arrêter)" },
+  { name: "nonstop", usage: "/nonstop [tâche], ou « stop »", description: "Mode sans fin : l'agent continue tour après tour (vérifie, teste, améliore) jusqu'à ce que vous l'arrêtiez (Stop, badge « Sans fin », /nonstop stop)" },
   { name: "heartbeat", usage: "/heartbeat <phrase libre>, ou « stop »", description: "Réveil périodique de l'agent, en phrase libre, ex. « dis coucou toutes les 5 minutes »" },
   { name: "guet", usage: "/guet <phrase libre>, ou « annule »", description: "Être réveillé quand une tâche se termine, ex. « quand la construction github est finie » ou « quand `cargo build` est fini »" },
   { name: "compact", usage: "/compact [directive]", description: "Compacter la conversation (faite directement, sans passer par l'IA)" },

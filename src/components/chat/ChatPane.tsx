@@ -78,7 +78,7 @@ import { IndicateursSession } from "./IndicateursSession"; // commandes
 import { MenuModeles } from "./MenuModeles";
 import { useCatalogueModeles } from "../../lib/useCatalogueModeles";
 import { modelesAvecComptes, type CompteModele } from "../../lib/comptesModeles";
-import { estReveilGuet, formatHeure, texteReveil } from "./logiqueIndicateurs"; // commandes
+import { estReveilGuet, formatHeure, texteRelanceSansFin, texteReveil } from "./logiqueIndicateurs"; // commandes
 import { ValidationActions } from "./ValidationActions";
 import { BoutonValidation } from "./BoutonValidation";
 import type {
@@ -6778,6 +6778,16 @@ function BlockView({
           <div className="axe-reveil" data-kind="goal" title={block.message}>
             <Icon icon="solar:target-linear" width={12} height={12} />
             <span>{`objectif\u00a0: poursuite automatique${block.atMs ? ` · ${formatHeure(block.atMs)}` : ""}`}</span>
+          </div>
+        </div>
+      );
+    // Mode sans fin : relance automatique, bulle discrète avec son numéro et l'heure.
+    case "nonstop-continue":
+      return (
+        <div className="msg" data-role="assistant">
+          <div className="axe-reveil" data-kind="sans-fin" title={block.message}>
+            <Icon icon="solar:infinity-linear" width={12} height={12} />
+            <span>{texteRelanceSansFin(block.n, block.atMs)}</span>
           </div>
         </div>
       );

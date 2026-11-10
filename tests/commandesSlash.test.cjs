@@ -83,8 +83,8 @@ test("indicateurs : intervalle, statut, déclenchement, état normalisé", () =>
   assert.equal(c2.heartbeat.last_at_ms, 301000, "heure du dernier réveil lue");
   assert.equal(ind.vientDeSeDeclencher(c1, c2), true, "réveil livré (dernier réveil a changé)");
   assert.equal(ind.vientDeSeDeclencher(c2, c2), false);
-  assert.deepEqual(ind.normaliserEtat(null), { goal: null, heartbeat: null, guets: [] });
-  assert.deepEqual(ind.normaliserEtat({ heartbeat: null, goal: null, autonomous: null }), { goal: null, heartbeat: null, guets: [] });
+  assert.deepEqual(ind.normaliserEtat(null), { goal: null, heartbeat: null, guets: [], sansFin: null });
+  assert.deepEqual(ind.normaliserEtat({ heartbeat: null, goal: null, autonomous: null }), { goal: null, heartbeat: null, guets: [], sansFin: null });
 });
 
 test("réveil : lecture du message injecté et texte de la bulle avec l'heure", () => {
@@ -106,6 +106,63 @@ test("réveil : lecture du message injecté et texte de la bulle avec l'heure", 
 });
 
 const s = require(path.join(racine, "src/components/chat/stream.ts"));
+
+// Mode sans fin (/nonstop) : badge, détail, bulle de relance, commande proposée et colorée.
+test("mode sans fin : badge et détail lus de l'état du service", () => {
+  const at = new Date(2026, 10, 9, 14, 32, 5).getTime();
+  const brut = { sans_fin: { task: "lot 3", status: "running", started_ms: at - 3_600_000, turns: 12, relaunches: 11, tokens: 1_234_567, errors: 0, next_relaunch_ms: at, summaries: ["lot 2 livré", 3] } };
+  const f = ind.normaliserEtat(brut).sansFin;
+  assert.equal(f.task, "lot 3");
+  assert.deepEqual(f.summaries, ["lot 2 livré"], "résumés illisibles ignorés");
+  assert.equal(ind.texteBadgeSansFin(f), "Sans fin · 12");
+  assert.equal(ind.texteBadgeSansFin({ ...f, turns: 0 }), "Sans fin");
+  const lignes = ind.detailSansFin(f, at);
+  assert.equal(lignes[0], "Depuis 13:32 (1 h)");
+  assert.equal(lignes[1], "12 tours · 1,2\u00a0M jetons · 11 relances");
+  assert.equal(lignes[2], "Prochain tour\u00a0: 14:32:05");
+  assert.equal(ind.detailSansFin({ ...f, errors: 2, last_error: "HTTP 429" }, at)[2], "Attente après 2 erreurs\u00a0: reprise à 14:32:05");
+  assert.equal(ind.detailSansFin({ ...f, next_relaunch_ms: null }, at)[2], "Tour en cours");
+  assert.equal(ind.formatJetons(950), "950");
+  assert.equal(ind.formatJetons(12_400), "12,4\u00a0k");
+  // Arrêté : plus de badge.
+  assert.equal(ind.normaliserEtat({ sans_fin: { ...brut.sans_fin, status: "stopped" } }).sansFin, null);
+  assert.equal(ind.normaliserEtat({ sans_fin: null }).sansFin, null);
+});
+
+test("mode sans fin : relance affichée en bulle discrète, pas comme un message de l'utilisateur", () => {
+  const at = new Date(2026, 10, 9, 14, 32).getTime();
+  const texte = `<nonstop_continue at_ms="${at}" n="3">\nMode sans fin, continue : lot 3\n</nonstop_continue>`;
+  assert.deepEqual(ind.lireRelanceSansFin(texte), { message: "Mode sans fin, continue : lot 3", atMs: at, n: 3 });
+  assert.equal(ind.lireRelanceSansFin("bonjour"), null);
+  assert.equal(ind.lirePoursuite(texte), null, "pas une relance de l'objectif");
+  assert.equal(ind.texteRelanceSansFin(3, at), "sans fin\u00a0: relance n°\u00a03 · 14:32");
+  const hist = s.initialStateFromHistory([
+    { role: "user", parts: [{ type: "text", text: texte }] },
+    { role: "assistant", parts: [{ type: "text", text: "ok" }] },
+  ]);
+  assert.deepEqual(hist.blocks.map((b) => b.kind), ["nonstop-continue", "assistant-text"]);
+  assert.equal(hist.blocks[0].n, 3);
+  // En direct : le service passe la relance par heartbeat_received (une seule bulle).
+  let direct = s.initialStateFromHistory([]);
+  for (let i = 0; i < 2; i++) direct = s.applyEvent(direct, { type: "heartbeat_received", message: texte, at_ms: at });
+  assert.deepEqual(direct.blocks.map((b) => [b.kind, b.n]), [["nonstop-continue", 3]]);
+  // Le badge a son bouton d'arrêt et le rendu de la bulle existe.
+  const ui = lire("src/components/chat/IndicateursSession.tsx");
+  assert.ok(ui.includes('agir("sans_fin_stop")') && ui.includes('aria-label="Arrêter le mode sans fin"'));
+  assert.ok(lire("src/components/chat/ChatPane.tsx").includes('case "nonstop-continue":'));
+});
+
+test("/nonstop : proposée, colorée au début et au milieu du message, servie par le service", () => {
+  const j = require(path.join(racine, "src/components/chat/jetonsMessage.ts"));
+  const noms = commandesProposees().map((c) => c.name);
+  assert.ok(noms.includes("nonstop"));
+  assert.deepEqual(j.commandesInterpretees("/nonstop finir le lot", noms).map((c) => c.nom), ["nonstop"]);
+  assert.deepEqual(j.commandesInterpretees("corrige les tests /nonstop", noms).map((c) => c.nom), ["nonstop"]);
+  assert.deepEqual(j.commandesInterpretees("/goal lot 3 /nonstop", noms).map((c) => c.nom), ["goal", "nonstop"]);
+  assert.ok(j.commandesAProposer("fais ça /non", 8, "non", noms).includes("nonstop"), "proposée au milieu du message");
+  const rust = lire("crates/axecode-app/src/session_commands.rs");
+  assert.match(rust, /COMMANDES_PARTOUT: \[&str; 3\] = \["goal", "heartbeat", "nonstop"\]/, "même règle que le service");
+});
 
 test("le message du heartbeat est affiché : en direct et depuis l'historique", () => {
   const at = new Date(2026, 9, 23, 14, 32).getTime();

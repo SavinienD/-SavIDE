@@ -23,9 +23,73 @@ export type GuetEtat = {
   prochain_ms: number | null;
   essais: number;
 };
-export type EtatCommandes = { goal: GoalEtat | null; heartbeat: HeartbeatEtat | null; guets: GuetEtat[] };
+/** Mode sans fin (/nonstop) : relancé après chaque tour jusqu'à l'arrêt par l'utilisateur. */
+export type SansFinEtat = {
+  task: string;
+  status: string;
+  started_ms: number;
+  turns: number;
+  relaunches: number;
+  tokens: number;
+  errors: number;
+  last_error: string | null;
+  next_relaunch_ms: number | null;
+  summaries: string[];
+};
+export type EtatCommandes = { goal: GoalEtat | null; heartbeat: HeartbeatEtat | null; guets: GuetEtat[]; sansFin: SansFinEtat | null };
 
-export const ETAT_VIDE: EtatCommandes = { goal: null, heartbeat: null, guets: [] };
+export const ETAT_VIDE: EtatCommandes = { goal: null, heartbeat: null, guets: [], sansFin: null };
+
+/** Mode sans fin de `sessions.commands_state` : seulement s'il tourne (arrêté = plus de badge). */
+export function normaliserSansFin(brut: unknown): SansFinEtat | null {
+  if (!brut || typeof brut !== "object") return null;
+  const f = brut as Record<string, unknown>;
+  if (f.status !== "running" || typeof f.task !== "string") return null;
+  const nombre = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+  return {
+    task: f.task,
+    status: "running",
+    started_ms: nombre(f.started_ms),
+    turns: nombre(f.turns),
+    relaunches: nombre(f.relaunches),
+    tokens: nombre(f.tokens),
+    errors: nombre(f.errors),
+    last_error: typeof f.last_error === "string" ? f.last_error : null,
+    next_relaunch_ms: typeof f.next_relaunch_ms === "number" ? f.next_relaunch_ms : null,
+    summaries: Array.isArray(f.summaries) ? f.summaries.filter((s): s is string => typeof s === "string") : [],
+  };
+}
+
+/** 950 -> « 950 », 12 400 -> « 12,4 k », 3 200 000 -> « 3,2 M ». */
+export function formatJetons(n: number): string {
+  const v = Math.max(0, Math.round(n));
+  const un = (x: number) => (Math.round(x * 10) / 10).toString().replace(".", ",");
+  if (v < 1000) return String(v);
+  if (v < 1_000_000) return `${un(v / 1000)}\u00a0k`;
+  return `${un(v / 1_000_000)}\u00a0M`;
+}
+
+/** Texte du badge : « Sans fin · 3 » (tours faits). */
+export function texteBadgeSansFin(f: SansFinEtat): string {
+  return f.turns > 0 ? `Sans fin · ${f.turns}` : "Sans fin";
+}
+
+/** Lignes du détail du mode sans fin (tâche, compteurs, prochaine relance ou attente après erreur). */
+export function detailSansFin(f: SansFinEtat, maintenant = Date.now()): string[] {
+  const lignes: string[] = [];
+  if (f.started_ms) lignes.push(`Depuis ${formatHeure(f.started_ms)} (${formatIntervalle(maintenant - f.started_ms)})`);
+  lignes.push(
+    `${f.turns} tour${f.turns > 1 ? "s" : ""} · ${formatJetons(f.tokens)} jetons · ${f.relaunches} relance${f.relaunches > 1 ? "s" : ""}`,
+  );
+  if (f.errors > 0 && f.next_relaunch_ms) {
+    lignes.push(`Attente après ${f.errors} erreur${f.errors > 1 ? "s" : ""} : reprise à ${formatHeure(f.next_relaunch_ms, true)}`);
+  } else if (f.next_relaunch_ms) {
+    lignes.push(`Prochain tour : ${formatHeure(f.next_relaunch_ms, true)}`);
+  } else {
+    lignes.push("Tour en cours");
+  }
+  return lignes;
+}
 
 /** guet — guets de `sessions.commands_state` (entrées illisibles ignorées). */
 export function normaliserGuets(brut: unknown): GuetEtat[] {
@@ -109,6 +173,7 @@ export function normaliserEtat(brut: unknown): EtatCommandes {
           }
         : null,
     guets: normaliserGuets(r.guets),
+    sansFin: normaliserSansFin(r.sans_fin),
   };
 }
 
@@ -181,6 +246,20 @@ export function lirePoursuite(texte: string): { message: string; atMs: number | 
   if (!m) return null;
   const at = /at_ms="(\d+)"/.exec(m[1]);
   return { message: m[2].trim(), atMs: at ? Number(at[1]) : null };
+}
+
+/** Relance du mode sans fin : `<nonstop_continue at_ms="…" n="…">\n…\n</nonstop_continue>`. */
+export function lireRelanceSansFin(texte: string): { message: string; atMs: number | null; n: number | null } | null {
+  const m = /^<nonstop_continue((?:\s+[a-z_]+="[^"]*")*)\s*>\n?([\s\S]*?)\n?<\/nonstop_continue>$/.exec(texte.trim());
+  if (!m) return null;
+  const at = /at_ms="(\d+)"/.exec(m[1]);
+  const n = /\bn="(\d+)"/.exec(m[1]);
+  return { message: m[2].trim(), atMs: at ? Number(at[1]) : null, n: n ? Number(n[1]) : null };
+}
+
+/** Bulle de la relance : « sans fin : relance n° 3 · 14:32 ». */
+export function texteRelanceSansFin(n: number | null, atMs: number | null): string {
+  return `sans fin\u00a0: relance${n ? ` n°\u00a0${n}` : ""}${atMs ? ` · ${formatHeure(atMs)}` : ""}`;
 }
 
 /** Message injecté par un réveil : `<heartbeat at_ms="…">\nmessage\n</heartbeat>`. */
