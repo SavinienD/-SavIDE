@@ -3,6 +3,8 @@
 //! stockage, mêmes conversations) ; ce processus n'en est qu'un client. Aucune fenêtre :
 //! il sort avant que Tauri ne démarre, et marche sans affichage (DISPLAY absent).
 
+mod acp;
+mod acp_maj;
 mod args;
 mod commun;
 mod print;
@@ -42,10 +44,7 @@ pub(crate) fn run_if_requested() -> bool {
     };
     let code = runtime.block_on(async move {
         match options.mode {
-            args::Mode::Acp => {
-                eprintln!("axecode : --mode acp n'est pas encore disponible");
-                2
-            }
+            args::Mode::Acp => acp::executer().await,
             _ => print::executer(options).await,
         }
     });
