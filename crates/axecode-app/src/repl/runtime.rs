@@ -285,6 +285,17 @@ impl ReplRuntime {
                 .map(|(key, value)| (key.to_string(), value.to_string()))
                 .collect(),
         };
+        let mut spec = spec;
+        if settings.kernel_async {
+            spec.env.push(("AXECODE_KERNEL_ASYNC".into(), "1".into()));
+        }
+        // axe:uh-d2 — background commands of a previous kernel died with it:
+        // their wake-ups are delivered as « interrompu ».
+        for hook in &self.shared.deps.hooks {
+            if hook.handles("guet.fond_perdus") {
+                let _ = hook.host_call(&meta, "guet.fond_perdus", json!({})).await;
+            }
+        }
         let (tx, rx) = mpsc::unbounded_channel();
         spawn_event_forwarder(self.shared.clone(), rx);
         let kernel = Kernel::start(spec, Arc::new(RuntimeHost(self.shared.clone())), tx).await?;

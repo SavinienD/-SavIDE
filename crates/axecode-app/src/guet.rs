@@ -100,7 +100,9 @@ pub fn depuis_params(genre: &str, params: &Value, now: i64) -> Result<Guet, Stri
         ..Default::default()
     };
     match genre {
-        "commande" | "condition" => {
+        // axe:uh-d2 — `fond` : commande de fond lancée par `shell.start` dans le
+        // noyau asynchrone ; le noyau la fait tourner et signale sa fin.
+        "commande" | "condition" | "fond" => {
             g.cmd = Some(texte(params, "cmd").ok_or_else(|| format!("guet.{genre} : `cmd` est obligatoire"))?);
         }
         "fichier" => {
@@ -108,7 +110,7 @@ pub fn depuis_params(genre: &str, params: &Value, now: i64) -> Result<Guet, Stri
         }
         autre => return Err(format!("genre de guet inconnu `{autre}`")),
     }
-    if genre != "commande" {
+    if genre != "commande" && genre != "fond" {
         let defaut = if genre == "fichier" { GUET_INTERVALLE_FICHIER_MS } else { GUET_INTERVALLE_DEFAUT_MS };
         g.intervalle_ms = ms("intervalle_ms", defaut).max(GUET_INTERVALLE_MIN_MS);
         g.prochain_ms = Some(now);
@@ -137,6 +139,11 @@ pub fn texte_reveil(g: &Guet, r: &GuetResultat) -> String {
     let duree = crate::commandes_naturelles::decrire_duree((r.fin_ms - g.cree_ms).max(0) as u64);
     let quoi = match g.genre.as_str() {
         "commande" => format!("Commande `{}` : {} après {duree}", g.libelle(), libelle_statut(&r.statut)),
+        "fond" => format!(
+            "Commande de fond `{}` (shell.start) : {} après {duree}",
+            g.libelle(),
+            libelle_statut(&r.statut)
+        ),
         "condition" => format!("Condition `{}` : {} après {duree} ({} essai{})", g.libelle(), libelle_statut(&r.statut), g.essais, if g.essais > 1 { "s" } else { "" }),
         _ => format!("Guet du {} : {} après {duree}", g.libelle(), libelle_statut(&r.statut)),
     };

@@ -923,6 +923,8 @@ impl Inner {
             if g.statut == "actif" {
                 let resultat = match g.genre.as_str() {
                     "commande" => me.guet_commande(&sid, &g).await,
+                    // axe:uh-d2 — run by the kernel, which calls `guet.signaler`.
+                    "fond" => return,
                     _ => me.guet_sonde(&sid, &g).await,
                 };
                 let Some(r) = resultat else { return };
@@ -1055,7 +1057,7 @@ impl Inner {
             if self.guet_vivant(&g.id) {
                 continue;
             }
-            if g.genre == "commande" && g.statut == "actif" {
+            if (g.genre == "commande" || g.genre == "fond") && g.statut == "actif" {
                 let r = GuetResultat {
                     statut: "interrompu".into(),
                     code: None,
@@ -1428,7 +1430,54 @@ impl SessionCommandsHook {
                 inner.journal(id, "guet", json!({"op": "annule", "ids": annules})).await;
                 Ok(json!({"annules": annules}))
             }
-            "guet.commande" | "guet.condition" | "guet.fichier" => {
+            // axe:uh-d2 — fin d'une commande de fond du noyau asynchrone.
+            "guet.signaler" => {
+                let gid = params.get("id").and_then(Value::as_str).unwrap_or("").to_string();
+                let r = GuetResultat {
+                    statut: params.get("statut").and_then(Value::as_str).unwrap_or("termine").to_string(),
+                    code: params.get("code").and_then(Value::as_i64).map(|c| c as i32),
+                    sortie: guet::fin_de(params.get("sortie").and_then(Value::as_str).unwrap_or(""), GUET_SORTIE_MAX),
+                    fin_ms: now_ms(),
+                };
+                let pret = inner.update(id, |s| match s.guets.iter_mut().find(|x| x.id == gid && x.statut == "actif") {
+                    Some(x) => {
+                        x.statut = "a_livrer".into();
+                        x.resultat = Some(r.clone());
+                        true
+                    }
+                    None => false,
+                });
+                if !pret {
+                    return Err(format!("aucun guet de fond actif `{gid}`"));
+                }
+                inner.arm_guet(id, &gid);
+                Ok(json!({"id": gid, "statut": r.statut}))
+            }
+            // axe:uh-d2 — the kernel restarted: its background commands died.
+            "guet.fond_perdus" => {
+                let r = GuetResultat {
+                    statut: "interrompu".into(),
+                    code: None,
+                    sortie: "Le noyau Python a redémarré : la commande de fond s'est arrêtée avec lui.".into(),
+                    fin_ms: now_ms(),
+                };
+                let perdus: Vec<String> = inner.update(id, |s| {
+                    s.guets
+                        .iter_mut()
+                        .filter(|x| x.genre == "fond" && x.statut == "actif")
+                        .map(|x| {
+                            x.statut = "a_livrer".into();
+                            x.resultat = Some(r.clone());
+                            x.id.clone()
+                        })
+                        .collect()
+                });
+                for gid in &perdus {
+                    inner.arm_guet(id, gid);
+                }
+                Ok(json!({"perdus": perdus}))
+            }
+            "guet.commande" | "guet.condition" | "guet.fichier" | "guet.fond" => {
                 let mut g = guet::depuis_params(method.trim_start_matches("guet."), &params, now_ms())?;
                 let racine = PathBuf::from(&session.workspace_id);
                 g.cwd = Some(match g.cwd.take() {

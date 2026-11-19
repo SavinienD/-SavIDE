@@ -3,7 +3,8 @@
 Réglage : `kernelAsync` dans `repl-settings.json` (dossier de données), **éteint par défaut**.
 La variable d'environnement `AXECODE_KERNEL_ASYNC=1` l'allume aussi (tests, essais).
 Il est lu au démarrage du noyau : il vaut pour le prochain noyau (nouvelle conversation,
-redémarrage ou reprise).
+redémarrage ou reprise). Pas encore de case dans Réglages > Outils : la page garde la
+valeur du fichier quand elle enregistre (elle renvoie l'objet complet lu par Rust).
 
 ## Ce qui change quand il est allumé
 
@@ -19,8 +20,9 @@ redémarrage ou reprise).
   la cellule en cours.
 - **Interruption** (Stop) : si la cellule exécute du code, `KeyboardInterrupt` comme avant ;
   si elle attend un `await`, sa tâche est annulée et le résultat dit « exécution
-  interrompue ». Sous Linux/macOS le signal est un vrai SIGINT : il réveille aussi un
-  `time.sleep`. Une tâche de fond bloquée dans du code synchrone reçoit l'interruption.
+  interrompue ». Comme avant, un appel bloqué hors de Python (processus enfant, long
+  `time.sleep`) n'est pas réveillé : l'hôte tue le noyau après son délai de grâce. Une
+  tâche de fond bloquée dans du code synchrone reçoit l'interruption.
 - **`shell.start(cmd)`** rend une poignée `shell.Commande` (sous-classe de `shell.Session`,
   donc `shell.poll(h)` et `shell.stop(h)` marchent toujours) : `h.tail(n)`, `h.poll()`
   (`alive`, `exit_code`, sortie nouvelle), `h.output()`, `h.kill()`, `h.wait(timeout)`,

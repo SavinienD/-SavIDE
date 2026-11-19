@@ -158,6 +158,13 @@ class _LiveTypes:
             labels.insert(0, (shell.Session, "shell.Session (processus shell vivant)"))
         except Exception:  # pragma: no cover - broken shell module
             pass
+        try:
+            from axecode_kernel import _asynchrone
+
+            if _asynchrone.enabled():
+                labels.append((asyncio.Future, "tâche ou futur asyncio"))
+        except Exception:  # pragma: no cover
+            pass
         self.labels = labels
         self.types = tuple(kind for kind, _ in labels)
 
@@ -246,11 +253,21 @@ class Kernel:
         self.config: dict = {"modules": {}}
         self.loaded: list[str] = []
         self.commands: "queue.Queue[dict]" = queue.Queue()
+        # Set by the asynchronous kernel (see _asynchrone.run).
+        self._put_lock = threading.Lock()
+        self._async_put = None
+        self.interrupt = _thread.interrupt_main
+        self.async_state = None
         self.busy = False
         self.base_names: set[str] = set()
         # Names the last snapshot left out (with why): they would not survive
         # a kernel restart. Reported by ``names`` after a compaction.
         self.last_skipped: list[dict] = []
+
+    def put(self, message: dict) -> None:
+        """Remet une commande de l'hôte au fil principal (fil de lecture)."""
+        with self._put_lock:
+            (self._async_put or self.commands.put)(message)
 
     # ----- modules ---------------------------------------------------------
 
@@ -543,11 +560,11 @@ def _reader(kernel: Kernel, stream) -> None:
             bridge.resolve(message)
         elif kind == "interrupt":
             if kernel.busy:
-                _thread.interrupt_main()
+                kernel.interrupt()
         else:
-            kernel.commands.put(message)
+            kernel.put(message)
     bridge.fail_all("l'hôte a fermé la connexion")
-    kernel.commands.put({"type": "shutdown"})
+    kernel.put({"type": "shutdown"})
 
 
 def _reply(kind: str, message: dict, **fields) -> None:
@@ -614,8 +631,13 @@ def main() -> int:
     threading.Thread(target=_reader, args=(kernel, protocol_in), daemon=True).start()
     import IPython
 
+    from axecode_kernel import _asynchrone
+
+    asynchrone = _asynchrone.enabled()
     bridge.emit({"type": "ready", "pid": os.getpid(), "python": sys.version.split()[0],
-                 "ipython": IPython.__version__})
+                 "ipython": IPython.__version__, "async": asynchrone})
+    if asynchrone:  # réglage kernelAsync (lot D2), éteint par défaut
+        return _asynchrone.run(kernel, _handle)
     while True:
         try:
             message = kernel.commands.get()

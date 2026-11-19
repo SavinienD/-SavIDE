@@ -66,6 +66,11 @@ pub struct ReplSettings {
     /// `model` nor a profile model is given. `None` = the parent's model.
     #[serde(default)]
     pub subagent_default_model: Option<String>,
+    /// axe:uh-d2 — asynchronous kernel (one asyncio loop for the kernel's
+    /// life, background commands that wake the session); off by default,
+    /// see docs/noyau-asynchrone.md. `AXECODE_KERNEL_ASYNC=1` also turns it on.
+    #[serde(default)]
+    pub kernel_async: bool,
 }
 
 fn default_true() -> bool {
@@ -91,6 +96,7 @@ impl Default for ReplSettings {
             output_cap_chars: default_output_cap(),
             max_rounds: default_max_rounds(),
             subagent_default_model: None,
+            kernel_async: false,
         }
     }
 }
