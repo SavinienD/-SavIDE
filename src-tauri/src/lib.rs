@@ -120,6 +120,7 @@ mod custom_providers; // providers
 mod catalogue;
 mod comptes;
 mod daemon_client; // daemon
+mod sans_interface; // mode sans interface : -p / --mode json / --mode acp
 mod freechat; // freechat
 mod gardien_page; // écran noir : rattrapage de la page
 mod gemini_web; // gemini-web
@@ -193,6 +194,10 @@ use workflow::*;
 pub fn run() {
     // daemon — `axecode --daemon serve` runs the background service.
     if daemon_client::run_daemon_if_requested() {
+        return;
+    }
+    // uh-cli — `axecode -p …` / `--mode json|acp` : sans fenêtre, puis sortie.
+    if sans_interface::run_if_requested() {
         return;
     }
     let _ = tracing_subscriber::fmt()

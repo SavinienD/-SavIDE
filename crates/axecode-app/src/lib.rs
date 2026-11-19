@@ -4,6 +4,7 @@ pub mod bash;
 pub mod compact;
 pub mod dossiers; // dossiers renommés ou déplacés
 pub mod edit;
+pub mod fournisseur_faux; // uh-cli : fournisseur scripté des essais du mode sans interface
 pub mod glob;
 pub mod grep;
 pub mod image;
