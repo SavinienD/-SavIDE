@@ -290,36 +290,35 @@ impl ReplRuntime {
         let kernel = Kernel::start(spec, Arc::new(RuntimeHost(self.shared.clone())), tx).await?;
         let catalog = kernel.catalog(false).await.unwrap_or(json!([]));
         *lock(&self.catalog) = prompt::render_catalog(&catalog);
-        let restored = self.restore_snapshot(&kernel, &meta.id).await;
-        if slot.is_some() {
-            *lock(&self.restart_note) = Some(format!("kernel restarted: {restored}"));
+        // axe:uh-d1 — the model is told which names came back and which are
+        // lost, after a restart (dead kernel replaced) and after a resume
+        // (first kernel of a conversation that already has a snapshot).
+        let restarted = slot.is_some();
+        if let Some(note) = self.restore_snapshot(&kernel, &meta.id, restarted).await {
+            *lock(&self.restart_note) = Some(note);
         }
         *slot = Some(kernel.clone());
         Ok(kernel)
     }
 
-    /// Restores the session's last snapshot into `kernel`; says what happened.
-    async fn restore_snapshot(&self, kernel: &Kernel, session_id: &str) -> String {
+    /// Restores the session's last snapshot into `kernel`; the note for the
+    /// model (`None`: first kernel of a conversation without snapshot).
+    async fn restore_snapshot(&self, kernel: &Kernel, session_id: &str, restarted: bool) -> Option<String> {
+        let head = if restarted { "kernel restarted" } else { "kernel resumed" };
         let Some(bytes) = self.shared.host.kernel_snapshot(session_id).await else {
-            return "no snapshot to restore, the variables are lost".into();
+            return restarted.then(|| format!("{head}: no snapshot to restore, the variables are lost"));
         };
-        match kernel.restore_vars(&bytes).await {
+        Some(match kernel.restore_vars(&bytes).await {
             Ok(r) => {
-                let mut text = format!(
-                    "{} variable(s) restored from the last snapshot (end of the previous turn); \
-                     changes made since then are lost",
-                    r.restored.len()
-                );
-                if !r.failed.is_empty() {
-                    text.push_str(&format!("; not restored: {}", r.failed.join(", ")));
-                }
-                text
+                let mut names = r.restored.clone();
+                names.retain(|name| !r.failed.contains(name));
+                axecode_repl::etat::notice_after_restore(restarted, &names, &r.lost())
             }
             Err(err) => {
                 tracing::warn!(session = %session_id, error = %err, "kernel snapshot restore failed");
-                format!("the snapshot could not be restored ({err}), the variables are lost")
+                format!("{head}: the snapshot could not be restored ({err}), the variables are lost")
             }
-        }
+        })
     }
 
     /// Takes the note left by the last kernel restart, if any.

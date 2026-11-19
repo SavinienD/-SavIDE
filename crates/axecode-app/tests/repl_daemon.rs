@@ -303,7 +303,9 @@ async fn dead_kernel_is_replaced_and_restored_in_the_same_turn() {
         outputs[2].starts_with("[kernel restarted: 1 variable(s) restored from the last snapshot"),
         "{outputs:?}"
     );
-    assert!(outputs[2].contains("; not restored: big]"), "{outputs:?}");
+    // axe:uh-d1 — the notice names what came back and what is lost, and why.
+    assert!(outputs[2].contains("restored from the last snapshot (end of the previous turn): x;"), "{outputs:?}");
+    assert!(outputs[2].contains("lost, define them again if you need them: big (trop gros"), "{outputs:?}");
     assert!(outputs[2].contains("x = 41"), "{outputs:?}");
     assert!(outputs[3].starts_with("x = 41"), "{outputs:?}");
 }
@@ -355,7 +357,70 @@ async fn reloaded_session_gets_its_variables_back() {
     s.daemon.unload(&s.id).await;
     s.turn("t2", "T2 done").await;
     let outputs = s.repl_outputs();
-    assert!(outputs[1].starts_with("x = 41"), "{outputs:?}");
+    // axe:uh-d1 — a resumed conversation is told which names came back.
+    assert!(
+        outputs[1].starts_with("[kernel resumed: 1 variable(s) restored from the last snapshot (end of the previous turn): x;"),
+        "{outputs:?}"
+    );
+    assert!(outputs[1].contains("]\nx = 41"), "{outputs:?}");
+}
+
+/// axe:uh-d1 — after a resume, the names the snapshot could not keep are
+/// listed as lost, with the reason; the others are listed as restored.
+#[tokio::test(flavor = "multi_thread")]
+async fn resumed_session_lists_restored_and_lost_names() {
+    let Some(s) = setup(vec![
+        Step::Code("x = 41\ndef aide(t):\n    return t\nbig = bytes(17 * 1024 * 1024)\nimport threading\nfil = threading.Thread(target=print)"),
+        Step::Text("T1 done"),
+        Step::Code("print(sorted(n for n in ('x', 'aide', 'big', 'fil') if n in globals()))"),
+        Step::Text("T2 done"),
+    ]) else {
+        return;
+    };
+    s.turn("t1", "T1 done").await;
+    s.daemon.unload(&s.id).await;
+    s.turn("t2", "T2 done").await;
+    let outputs = s.repl_outputs();
+    let out = &outputs[1];
+    assert!(out.starts_with("[kernel resumed: 2 variable(s) restored from the last snapshot"), "{out}");
+    assert!(out.contains("): x, aide;") || out.contains("): aide, x;"), "{out}");
+    assert!(out.contains("big (trop gros"), "{out}");
+    assert!(out.contains("fil (ressource vivante : threading.Thread)"), "{out}");
+    assert!(out.contains("['aide', 'x']"), "{out}");
+}
+
+/// axe:uh-d1 — after a compaction the model is told which names are still
+/// defined and which ones the last snapshot left out (lost on a restart);
+/// the notice is journaled with the summary, so the rebuilt history has it.
+#[tokio::test(flavor = "multi_thread")]
+async fn compaction_notice_lists_kernel_names() {
+    let Some(s) = setup(vec![
+        Step::Code("rows = [1, 2]\nbig = bytes(17 * 1024 * 1024)\nimport json as js"),
+        Step::Text("T1 done"),
+        Step::Code("import threading\nfil = threading.Thread(target=print)\ncompact.run()"),
+        Step::Text("Summary: rows loaded."),
+        Step::Text("T2 done"),
+    ]) else {
+        return;
+    };
+    s.turn("t1", "T1 done").await;
+    s.turn("t2", "T2 done").await;
+    let j = s.daemon.journal(&s.id).unwrap();
+    let j = j.lock().unwrap();
+    let summary = j
+        .entries()
+        .iter()
+        .find_map(|e| match &e.kind {
+            JournalEntryKind::Compaction { summary, .. } => Some(summary.clone()),
+            _ => None,
+        })
+        .expect("no compaction entry");
+    assert!(summary.starts_with("Summary: rows loaded.\n\n[python-state] Your Python kernel persisted through compaction"), "{summary}");
+    assert!(summary.contains("These names are still defined: rows, big, fil."), "{summary}");
+    assert!(summary.contains("Imported modules: js, threading."), "{summary}");
+    assert!(summary.contains("lost if the kernel restarts: fil (ressource vivante : threading.Thread), big (trop gros"), "{summary}");
+    let h = j.history();
+    assert!(h[0].text().contains("These names are still defined: rows, big, fil."), "{h:?}");
 }
 
 #[tokio::test(flavor = "multi_thread")]
