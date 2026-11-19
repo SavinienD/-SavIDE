@@ -12,7 +12,15 @@ export HOME=$T/home XDG_DATA_HOME=$T/home/.local/share
 unset DISPLAY WAYLAND_DISPLAY
 cd $T/projet
 # Chaque essai a son script : le service est relancé pour le relire.
-faux() { $BIN --daemon shutdown --force >/dev/null 2>&1; sleep 1; export AXECODE_FAUX_SCRIPT="$1"; }
+faux() {
+  $BIN --daemon shutdown --force >/dev/null 2>&1
+  # attendre la vraie fin de l'ancien service (sinon le client suivant s'y rattache, avec l'ancien script)
+  for i in $(seq 1 60); do pgrep -f "daemon serve --data-dir $XDG_DATA_HOME" >/dev/null || break; sleep 0.5; done
+  # les guets laissés par l'essai précédent seraient relancés au démarrage du service
+  # (tour de réveil qui consommerait le script de l'essai suivant)
+  rm -rf "$XDG_DATA_HOME"/*/session_state
+  export AXECODE_FAUX_SCRIPT="$1"
+}
 ok() { echo "  OK : $*"; }
 ko() { echo "  ÉCHEC : $*"; ECHECS=$((ECHECS+1)); }
 ECHECS=0
@@ -89,7 +97,7 @@ echo "  stdout=[$OUT] code=$C durée=${D}s stderr=[$(cat $T/err9)]"
 echo "== 9b. attente maximale dépassée"
 faux '{"responses":[{"code":"guet.commande(\"sleep 30\")"},"J attends."]}'
 D=$(date +%s); OUT=$($BIN -p "lance" --wait-max 2000 2>$T/err9b); C=$?; D=$(( $(date +%s) - D ))
-echo "  code=$C durée=${D}s stderr=[$(cat $T/err9b)]"
+echo "  stdout=[$OUT] code=$C durée=${D}s stderr=[$(cat $T/err9b)]"
 [ $D -lt 15 ] && grep -q 'attente maximale' $T/err9b && ok "délai respecté" || ko "9b"
 
 echo "== 10. même stockage que l'appli"
