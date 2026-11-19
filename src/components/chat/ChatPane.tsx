@@ -72,6 +72,7 @@ import {
   type ModeModelSelections,
   type ModelId,
 } from "../../lib/models";
+import { texteBascule } from "../../axe/bascule"; // bascule
 import { customModelEntries, providerApi, type ProviderSettingsView } from "../../axe/providers"; // providers
 import { runClientSlashCommand, SLASH_COMMANDS, useSlashCommandMenu } from "./SlashCommands"; // slash
 import { classeJeton, decouperJetons } from "./jetonsMessage"; // couleurs
@@ -6776,6 +6777,16 @@ function BlockView({
           <div className="turn-duration">
             <Icon icon="solar:clock-circle-linear" width={13} height={13} />
             <span>Travail : {formatTurnDuration(block.durationMs)}</span>
+          </div>
+        </div>
+      );
+    // bascule — fournisseur en panne, suite chez un secours : bulle discrète.
+    case "bascule":
+      return (
+        <div className="msg" data-role="assistant">
+          <div className="axe-reveil" data-kind="bascule" title="Bascule de fournisseur (Réglages > Fournisseurs)">
+            <Icon icon="solar:transfer-horizontal-linear" width={12} height={12} />
+            <span>{texteBascule(block.de, block.vers)}</span>
           </div>
         </div>
       );

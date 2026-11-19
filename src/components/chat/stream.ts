@@ -12,6 +12,7 @@ import type {
 import { canonicalToolName, isToolName } from "../../lib/tools";
 import { resumeOutilEnFrancais } from "./resumesOutils";
 import { lirePoursuite, lireRelanceSansFin, lireReveil } from "./logiqueIndicateurs"; // commandes
+import { basculeDeMeta } from "../../axe/bascule"; // bascule
 
 const MIN_VISIBLE_TURN_DURATION_MS = 90_000;
 const CLEANED_TOOL_OUTPUT =
@@ -98,6 +99,8 @@ export type ChatBlock =
     }
   // commandes — message injecté par un /heartbeat (bulle discrète « réveil : … »).
   | { kind: "wake"; id: string; message: string; atMs: number | null }
+  // bascule — avis « fournisseur indisponible : suite sur … ».
+  | { kind: "bascule"; id: string; de: string; vers: string }
   // goal165 — relance automatique de l'objectif (bulle discrète).
   | { kind: "goal-continue"; id: string; message: string; atMs: number | null }
   | { kind: "nonstop-continue"; id: string; message: string; atMs: number | null; n: number | null };
@@ -353,6 +356,9 @@ function blocksFromHistory(history: ChatMessage[]): ChatBlock[] {
         attachedToFirstText = true;
       }
     } else {
+      // bascule — réponse donnée par un fournisseur de secours : l'avis d'abord.
+      const bascule = basculeDeMeta(message.parts[0]?.meta);
+      if (bascule) blocks.push({ kind: "bascule", id: id("b"), ...bascule });
       for (const part of message.parts) {
         const planArtifact = planArtifactFromMeta(part.meta);
         if (planArtifact) {
@@ -1241,6 +1247,17 @@ export function applyEvent(
       return withStreamPhase(state, "waiting", {
         blocks: dropLiveResponse(state.blocks, state.liveFrom),
       });
+
+    // bascule — avis dans la conversation (relu ensuite depuis meta.bascule).
+    case "provider_failover":
+      return {
+        ...state,
+        blocks: [
+          // Ce que le fournisseur en panne avait commencé à écrire est retiré.
+          ...dropLiveResponse(state.blocks, state.liveFrom),
+          { kind: "bascule", id: `s-b-${state.blocks.length}`, de: event.from, vers: event.to },
+        ],
+      };
 
     case "thinking_started": {
       return withStreamPhase(state, "thinking");

@@ -108,6 +108,7 @@ Les cinq providers d'origine et leurs flux OAuth (Anthropic, OpenAI, Google via 
 - Adaptateurs natifs **Mistral**, **DeepSeek**, **xAI**, **Groq**, **Prime Inference**.
 - Détection automatique d'**Ollama** et **LM Studio** locaux.
 - Surcharge de fenêtre de contexte par modèle ; changement de modèle en cours de session ; indicateur de quota d'abonnement dans la barre d'état.
+- **Bascule de fournisseur** (éteinte par défaut, Réglages > Fournisseurs) : quand un fournisseur tombe, un tour passe par trois étapes. 1) Nouveaux essais sur le même fournisseur (coupure réseau ou flux). 2) Bascule vers un fournisseur de secours qui sert le même modèle, choisi par l'utilisateur pour CE fournisseur (par exemple « anthropic » vers « anthropic~2 ») : 3 essais par fournisseur, 9 appels au plus en tout, bascule immédiate sur une limite d'abonnement ou une erreur HTTP 5xx, avis court dans la conversation. 3) Sans secours, ou si tous sont en panne : le tour échoue comme avant, puis le travail attend le retour du quota. Aucune bascule vers un fournisseur ou une clé que l'utilisateur n'a pas désignés.
 
 ---
 
