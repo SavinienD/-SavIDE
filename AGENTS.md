@@ -7,7 +7,7 @@ Code map:
 ├── AGENTS.md
 ├── Cargo.lock
 ├── Cargo.toml
-├── docs # dont worktrees-toml.md (format de worktrees.toml)
+├── docs # dont worktrees-toml.md (format de worktrees.toml) ; sans-interface.md (savide -p, --mode json, --mode acp)
 ├── EDIT_FILE_HARNESS_COMPARISON.md
 ├── EDIT_TOOL_COMPARISON.md
 ├── FEATURES.md
@@ -50,6 +50,8 @@ Code map:
 ├── test-stop.md
 ├── scripts
 │   ├── capture-refero-heroes.mjs
+│   ├── essai-acp.py # essai de bout en bout de --mode acp (fournisseur faux, sans DISPLAY)
+│   ├── essai-sans-interface.sh # essais de -p / --mode json (fournisseur faux, sans DISPLAY)
 │   ├── prepare-python.mjs # repl — python-build-standalone 3.12 + IPython/dill + openpyxl/python-docx/pypdf (viewers) -> src-tauri/binaries/python-runtime
 │   └── prepare-sidecars.mjs
 ├── python # repl — kernel IPython du REPL (python -m axecode_kernel)
@@ -123,6 +125,7 @@ Code map:
 │   │       │   └── turn.rs
 │   │       ├── bash.rs
 │   │       ├── compact.rs
+│   │       ├── fournisseur_faux.rs # uh-cli — fournisseur `faux` scripté (AXECODE_FAUX_SCRIPT) des essais sans vraie API
 │   │       ├── edit.rs
 │   │       ├── glob.rs
 │   │       ├── grep.rs
@@ -365,6 +368,7 @@ Code map:
 │       ├── connections.rs # remote — registre Local/Distante/SSH (connections.json + connection-secrets.json), tunnels ssh, IPC connections_*, call_on(connexion)
 │       ├── conversations.rs
 │       ├── daemon_client.rs # daemon — mode --daemon (service + REPL), attache IDE, IPC daemon_* (param connection), bridge chat -> sessions ; v2-l2.4c — cloud_connection_id/cloud_service_workspace (espace cloud -> chemin réel du service)
+│       ├── sans_interface # mode sans interface de l'exécutable (sort avant Tauri) : mod.rs (entrée, console Windows), args.rs (options, message /autonomous + /goal), commun.rs (service, conversation, copie dans le stockage de l'appli, réveils en attente), print.rs (-p texte / --mode json, attente des réveils), acp.rs + acp_maj.rs (--mode acp : JSON-RPC, session/update, options modèle et réflexion)
 │       ├── freechat.rs # freechat — conversations libres : espace partagé <data>/scratch côté IDE, IPC freechat_index/open/relocate, synchro service -> store (conversations libres créées sur le web / la Vue Agents), renommage/suppression répercutés
 │       ├── custom_providers.rs # providers — instances configurables (providers.json + provider-keys.json), IPC provider_*, modelOverrides, détection Ollama/LM Studio
 │       ├── git.rs # + état de la branche (avance/retard, opération en cours), fetch, commit avec « modifier le dernier », poussée --force-with-lease, abandon fusion/rebase, hook qui refuse un commit

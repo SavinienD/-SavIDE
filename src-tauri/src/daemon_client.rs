@@ -45,6 +45,13 @@ fn daemon_registry() -> Registry {
     if let Err(err) = custom_providers::install_custom_providers(&registry) {
         tracing::warn!(error = %err, "unable to install configurable providers");
     }
+    // uh-cli — fournisseur scripté des essais (seulement si AXECODE_FAUX_SCRIPT est posé),
+    // ajouté après les fournisseurs configurables (leur installation retire les autres ids).
+    if let Some(provider) = axecode_app::fournisseur_faux::depuis_env() {
+        if let Ok(mut guard) = registry.lock() {
+            guard.insert(axecode_app::fournisseur_faux::FAUX_PROVIDER_ID.into(), provider);
+        }
+    }
     registry
 }
 
