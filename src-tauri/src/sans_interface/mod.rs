@@ -1,4 +1,4 @@
-//! uh-cli — mode sans interface de l'exécutable de l'appli : `axecode -p "<texte>"`,
+//! uh-cli — mode sans interface de l'exécutable de l'appli : `SavIDE -p "<texte>"`,
 //! `--mode json`, `--mode acp`. Le travail se fait dans le service de l'appli (même
 //! stockage, mêmes conversations) ; ce processus n'en est qu'un client. Aucune fenêtre :
 //! il sort avant que Tauri ne démarre, et marche sans affichage (DISPLAY absent).
@@ -20,7 +20,7 @@ pub(crate) fn run_if_requested() -> bool {
     let options = match args::lire(&brut) {
         Ok(o) => o,
         Err(e) => {
-            eprintln!("axecode : {e}\n\n{}", args::AIDE);
+            eprintln!("SavIDE : {e}\n\n{}", args::AIDE);
             std::process::exit(2);
         }
     };
@@ -38,7 +38,7 @@ pub(crate) fn run_if_requested() -> bool {
     let runtime = match tokio::runtime::Builder::new_multi_thread().enable_all().build() {
         Ok(r) => r,
         Err(e) => {
-            eprintln!("axecode : {e}");
+            eprintln!("SavIDE : {e}");
             std::process::exit(1);
         }
     };

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Essai de bout en bout de `axecode --mode acp` (Agent Client Protocol) avec le
+"""Essai de bout en bout de `SavIDE --mode acp` (Agent Client Protocol) avec le
 fournisseur faux : nouvelle session, options de configuration, un tour avec appel du
 noyau, annulation, tour de réveil (guet), puis reprise (`session/load`) après l'arrêt
 du service, avec les variables du noyau retrouvées.
 
-Usage : python3 scripts/essai-acp.py [chemin de l'exécutable axecode]
+Usage : python3 scripts/essai-acp.py [chemin de l'exécutable]
 Variables : AXECODE_PYTHON (Python avec IPython/dill), AXECODE_KERNEL_DIR (dossier python/).
 Données isolées dans un dossier temporaire (HOME et XDG_DATA_HOME), sans DISPLAY.
 """
@@ -19,7 +19,7 @@ import threading
 import time
 
 RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BIN = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/tgt-189/debug/axecode")
+BIN = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser("~/tgt-189-sav/debug/axecode")
 ECHECS = []
 
 
@@ -174,8 +174,8 @@ def main():
     r, notes = a.attendre(a.requete("session/prompt", {"sessionId": sid, "prompt": [{"type": "text", "text": "pose un guet"}]}), 120)
     verifier(r.get("result", {}).get("stopReason") == "end_turn", "tour du guet fini")
     vues = a.notes_jusqu_a(lambda v: v.get("method") == "session/update"
-                           and v["params"]["update"].get("_meta", {}).get("axecode", {}).get("wakeTurn") == "end", 90)
-    reveil = [v["params"]["update"]["_meta"]["axecode"]["wakeTurn"] for v in vues
+                           and v["params"]["update"].get("_meta", {}).get("savide", {}).get("wakeTurn") == "end", 90)
+    reveil = [v["params"]["update"]["_meta"]["savide"]["wakeTurn"] for v in vues
               if v["params"]["update"].get("sessionUpdate") == "session_info_update"]
     verifier(reveil == ["start", "end"], f"début et fin du tour de réveil : {reveil}")
     verifier("guet" in texte(vues, "user_message_chunk"), "message du réveil : " + texte(vues, "user_message_chunk")[:80].replace("\n", " "))
@@ -201,7 +201,7 @@ def main():
     service(env, "shutdown")
 
     import sqlite3
-    c = sqlite3.connect(os.path.join(env["XDG_DATA_HOME"], "axecode", "desktop-state.sqlite3"))
+    c = sqlite3.connect(os.path.join(env["XDG_DATA_HOME"], "savide", "desktop-state.sqlite3"))
     ligne = c.execute("select workspace_id, title from conversations where id=?", (sid,)).fetchone()
     n = c.execute("select count(*) from messages where conversation_id=?", (sid,)).fetchone()[0]
     verifier(ligne is not None and ligne[0] == os.path.realpath(projet) and n >= 6,

@@ -1,10 +1,10 @@
 #!/bin/bash
 # Essais du mode sans interface avec le fournisseur faux (données isolées, sans DISPLAY).
 set -u
-# Usage : scripts/essai-sans-interface.sh [exécutable axecode]
+# Usage : scripts/essai-sans-interface.sh [exécutable]
 # Variables : AXECODE_PYTHON (Python avec IPython/dill), AXECODE_KERNEL_DIR (dossier python/ du dépôt par défaut).
 RACINE=$(cd "$(dirname "$0")/.." && pwd)
-BIN=${1:-$HOME/tgt-189/debug/axecode}
+BIN=${1:-$HOME/tgt-189-sav/debug/axecode}
 export AXECODE_KERNEL_DIR=${AXECODE_KERNEL_DIR:-$RACINE/python}
 pkill -f "axecode --daemon serve --data-dir /tmp/uhcli-t" ; sleep 0.5
 T=/tmp/uhcli-t; rm -rf $T; mkdir -p $T/home $T/projet
@@ -93,7 +93,7 @@ echo "  code=$C durée=${D}s stderr=[$(cat $T/err9b)]"
 [ $D -lt 15 ] && grep -q 'attente maximale' $T/err9b && ok "délai respecté" || ko "9b"
 
 echo "== 10. même stockage que l'appli"
-python3 - "$XDG_DATA_HOME/axecode/desktop-state.sqlite3" "$SID" "$(realpath $T/projet)" <<'EOF'
+python3 - "$XDG_DATA_HOME/savide/desktop-state.sqlite3" "$SID" "$(realpath $T/projet)" <<'EOF'
 import sqlite3,sys
 c=sqlite3.connect(sys.argv[1])
 r=c.execute("select workspace_id,title from conversations where id=?",(sys.argv[2],)).fetchone()

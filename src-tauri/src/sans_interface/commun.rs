@@ -1,5 +1,5 @@
 //! uh-cli — morceaux communs au mode `-p` et au mode ACP : connexion au service (le
-//! même que celui de l'appli, lancé au besoin par `axecode --daemon serve`), choix de
+//! même que celui de l'appli, lancé au besoin par `SavIDE --daemon serve`), choix de
 //! la conversation, copie dans le stockage de l'appli pour qu'elle s'y ouvre ensuite,
 //! et état des réveils en attente.
 
@@ -20,7 +20,7 @@ pub async fn connecter() -> Result<(DaemonClient, Evenements), String> {
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
     let (tx, rx) = mpsc::unbounded_channel();
     let client = axecode_daemon::ensure_daemon(&donnees, &exe, &[crate::daemon_client::DAEMON_FLAG], Some(tx)).await?;
-    let _ = client.call("hello", json!({"client": "axecode-cli"})).await;
+    let _ = client.call("hello", json!({"client": "savide-cli"})).await;
     Ok((client, rx))
 }
 

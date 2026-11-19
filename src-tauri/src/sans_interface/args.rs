@@ -1,4 +1,4 @@
-//! uh-cli — arguments du mode sans interface (`axecode -p …`, `--mode json|acp`).
+//! uh-cli — arguments du mode sans interface (`SavIDE -p …`, `--mode json|acp`).
 //! Lecture à la main, sans dépendance : les options sont peu nombreuses et l'exécutable
 //! reste celui de l'appli (Tauri n'en voit rien : le mode sans interface sort avant).
 
@@ -41,11 +41,11 @@ pub struct Options {
 
 pub const ATTENTE_DEFAUT_MS: u64 = 600_000;
 
-pub const AIDE: &str = "Axecode sans interface
+pub const AIDE: &str = "SavIDE sans interface
 
-  axecode -p \"<texte>\"            un tour ; la réponse sur la sortie standard
-  axecode --mode json -p \"…\"      un événement JSON par ligne
-  axecode --mode acp               Agent Client Protocol (JSON-RPC sur stdin/stdout)
+  SavIDE -p \"<texte>\"            un tour ; la réponse sur la sortie standard
+  SavIDE --mode json -p \"…\"      un événement JSON par ligne
+  SavIDE --mode acp               Agent Client Protocol (JSON-RPC sur stdin/stdout)
 
 Options :
   -p, --print [texte]          texte du message (sinon l'entrée standard redirigée)

@@ -1,4 +1,4 @@
-//! uh-cli (lot B) — `axecode --mode acp` : Agent Client Protocol en JSON-RPC 2.0, une
+//! uh-cli (lot B) — `SavIDE --mode acp` : Agent Client Protocol en JSON-RPC 2.0, une
 //! ligne JSON par message sur stdin/stdout (les journaux vont sur stderr). Méthodes :
 //! `initialize`, `authenticate`, `session/new`, `session/load`, `session/prompt`,
 //! `session/cancel` (notification), `session/set_config_option`. Le travail se fait dans
@@ -88,7 +88,7 @@ pub async fn executer() -> i32 {
     let (client, mut rx) = match commun::connecter().await {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("axecode : service injoignable : {e}");
+            eprintln!("SavIDE : service injoignable : {e}");
             return 3;
         }
     };
@@ -111,7 +111,7 @@ pub async fn executer() -> i32 {
                     }
                 }
                 None => {
-                    eprintln!("axecode : le service a fermé la connexion");
+                    eprintln!("SavIDE : le service a fermé la connexion");
                     return 3;
                 }
             },
@@ -154,7 +154,7 @@ impl Acp {
                     "mcpCapabilities": {"http": false, "sse": false}
                 },
                 "authMethods": [],
-                "agentInfo": {"name": "axecode", "title": "Axecode", "version": env!("CARGO_PKG_VERSION")}
+                "agentInfo": {"name": "savide", "title": "SavIDE", "version": env!("CARGO_PKG_VERSION")}
             })),
             "authenticate" => Ok(json!({})),
             "session/new" => self.nouvelle(&p).await,

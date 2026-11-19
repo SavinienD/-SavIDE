@@ -98,7 +98,7 @@ flowchart LR
 | `/tree` | Historique complet du journal, retour à n'importe quel point. |
 | `/login`, `/settings` | Connexion provider, ouverture des réglages. |
 
-**Sans interface** : `axecode -p "…"` (un tour, réponse sur la sortie standard), `--mode json` (un événement par ligne), `--mode acp` (Agent Client Protocol, pour Zed et les autres clients ACP) ; voir [docs/sans-interface.md](docs/sans-interface.md).
+**Sans interface** : `SavIDE -p "…"` (un tour, réponse sur la sortie standard), `--mode json` (un événement par ligne), `--mode acp` (Agent Client Protocol, pour Zed et les autres clients ACP) ; voir [docs/sans-interface.md](docs/sans-interface.md).
 
 ---
 

@@ -62,7 +62,7 @@ pub fn appel_fin(id: &str, stdout: &str, stderr: &str, erreur: bool) -> Value {
 /// Début ou fin d'un tour lancé par le service lui-même (guet, heartbeat, relance
 /// d'objectif, mode autonome) : rien dans la spécification ne le dit, d'où `_meta`.
 pub fn tour_de_reveil(debut: bool) -> Value {
-    json!({"sessionUpdate": "session_info_update", "_meta": {"axecode": {"wakeTurn": if debut { "start" } else { "end" }}}})
+    json!({"sessionUpdate": "session_info_update", "_meta": {"savide": {"wakeTurn": if debut { "start" } else { "end" }}}})
 }
 
 /// Texte d'un message `session/prompt` : blocs texte, ressources incluses (texte),

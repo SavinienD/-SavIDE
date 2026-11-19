@@ -1,4 +1,4 @@
-//! uh-cli — `axecode -p` : un message, la sortie du ou des tours, puis la fin quand plus
+//! uh-cli — `SavIDE -p` : un message, la sortie du ou des tours, puis la fin quand plus
 //! rien ne doit réveiller la conversation (ou que l'attente maximale est passée).
 //! Sortie texte : la réponse finale de chaque tour. Sortie JSON (`--mode json`) : un
 //! événement par ligne. Comportement repris du mode print d'Unharnessed (uh-cli
@@ -39,7 +39,7 @@ impl Sortie {
         if self.json {
             self.ev(json!({"type": "error", "message": t}));
         }
-        eprintln!("axecode : {t}");
+        eprintln!("SavIDE : {t}");
     }
 }
 
@@ -61,7 +61,7 @@ pub async fn executer(mut o: Options) -> i32 {
     }
     let message = super::args::message(&o);
     if message.trim().is_empty() {
-        sortie.erreur("aucun texte : axecode -p \"<texte>\" (ou l'entrée standard redirigée)");
+        sortie.erreur("aucun texte : SavIDE -p \"<texte>\" (ou l'entrée standard redirigée)");
         return 2;
     }
     let dossier = match commun::dossier(o.dossier.as_deref()) {
@@ -91,7 +91,7 @@ pub async fn executer(mut o: Options) -> i32 {
     } else if o.continuer {
         let d = commun::derniere(&client, &cle).await.unwrap_or(None);
         if d.is_none() {
-            eprintln!("axecode : aucune conversation à continuer dans {cle} ; nouvelle conversation");
+            eprintln!("SavIDE : aucune conversation à continuer dans {cle} ; nouvelle conversation");
         }
         d
     } else {
@@ -183,7 +183,7 @@ pub async fn executer(mut o: Options) -> i32 {
             break boucle.code();
         }
         if o.attente_max_ms == 0 {
-            eprintln!("axecode : réveils en attente ({}) : ils continuent dans le service ; --wait-max 0, sortie", attente.join(", "));
+            eprintln!("SavIDE : réveils en attente ({}) : ils continuent dans le service ; --wait-max 0, sortie", attente.join(", "));
             break boucle.code();
         }
         let depuis = attente_depuis.get_or_insert_with(Instant::now);
