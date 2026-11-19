@@ -61,7 +61,7 @@ pub async fn executer(mut o: Options) -> i32 {
     }
     let message = super::args::message(&o);
     if message.trim().is_empty() {
-        sortie.erreur("aucun texte : axecode -p \"<texte>\" (ou l'entrée standard redirigée)");
+        sortie.erreur("aucun texte : axecode -p \"<texte>\" (ou l'entrée standard redirigée)");
         return 2;
     }
     let dossier = match commun::dossier(o.dossier.as_deref()) {
@@ -75,7 +75,7 @@ pub async fn executer(mut o: Options) -> i32 {
     let (client, mut rx) = match commun::connecter().await {
         Ok(c) => c,
         Err(e) => {
-            sortie.erreur(&format!("service injoignable : {e}"));
+            sortie.erreur(&format!("service injoignable : {e}"));
             return 3;
         }
     };
@@ -161,7 +161,7 @@ pub async fn executer(mut o: Options) -> i32 {
             },
             _ = &mut ctrl_c => {
                 let _ = client.call("sessions.stop", json!({"sessionId": id})).await;
-                sortie.erreur("interrompu (Ctrl+C) : tour arrêté");
+                sortie.erreur("interrompu (Ctrl+C) : tour arrêté");
                 break 130;
             }
             _ = tokio::time::sleep(Duration::from_millis(250)) => {}
@@ -194,7 +194,7 @@ pub async fn executer(mut o: Options) -> i32 {
         }
         if depuis.elapsed() >= attente_max {
             sortie.erreur(&format!(
-                "attente maximale ({} ms) passée ; toujours en attente : {quoi} (cela continue dans le service)",
+                "attente maximale ({} ms) passée ; toujours en attente : {quoi} (cela continue dans le service)",
                 o.attente_max_ms
             ));
             break boucle.code();
@@ -207,7 +207,7 @@ pub async fn executer(mut o: Options) -> i32 {
     if o.autonome.actif && code == 0 {
         let statut = etat["autonomous"]["status"].as_str().unwrap_or("absent");
         if statut != "done" {
-            sortie.erreur(&format!("mode autonome terminé sans réussir (statut : {statut})"));
+            sortie.erreur(&format!("mode autonome terminé sans réussir (statut : {statut})"));
             code = 1;
         }
     }

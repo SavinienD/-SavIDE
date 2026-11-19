@@ -130,7 +130,7 @@ impl Acp {
     async fn message(&mut self, ligne: &str) {
         let v: Value = match serde_json::from_str(ligne) {
             Ok(v) => v,
-            Err(e) => return echec(&Value::Null, ERR_ANALYSE, &format!("JSON illisible : {e}")),
+            Err(e) => return echec(&Value::Null, ERR_ANALYSE, &format!("JSON illisible : {e}")),
         };
         let id = v.get("id").cloned();
         let methode = v["method"].as_str().unwrap_or("").to_string();
@@ -168,7 +168,7 @@ impl Acp {
                 self.annuler(p["sessionId"].as_str().unwrap_or("")).await;
                 Ok(Value::Null)
             }
-            autre => Err((ERR_METHODE, format!("méthode inconnue : {autre}"))),
+            autre => Err((ERR_METHODE, format!("méthode inconnue : {autre}"))),
         };
         match resultat {
             Ok(r) => repondre(&id, r),
@@ -230,7 +230,7 @@ impl Acp {
         }
         self.sessions
             .get_mut(&id)
-            .ok_or_else(|| format!("session inconnue : {id} (session/new ou session/load d'abord)"))?
+            .ok_or_else(|| format!("session inconnue : {id} (session/new ou session/load d'abord)"))?
             .attente
             .push_back(id_requete.clone());
         if let Err(e) = self.client.call("sessions.send", json!({"sessionId": id, "text": texte})).await {
@@ -272,7 +272,7 @@ impl Acp {
         let option = p["configId"].as_str().unwrap_or("");
         let valeur = p["value"].as_str().unwrap_or("");
         let courant = {
-            let s = self.sessions.get(&id).ok_or((ERR_PARAMS, format!("session inconnue : {id}")))?;
+            let s = self.sessions.get(&id).ok_or((ERR_PARAMS, format!("session inconnue : {id}")))?;
             s.modele.clone().unwrap_or_else(commun::modele_par_defaut)
         };
         let m = maj::appliquer(&courant, option, valeur).map_err(|e| (ERR_PARAMS, e))?;

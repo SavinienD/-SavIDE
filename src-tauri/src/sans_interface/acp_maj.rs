@@ -78,10 +78,10 @@ pub fn texte_du_prompt(blocs: &Value) -> String {
                 if let Some(t) = r["text"].as_str() {
                     morceaux.push(format!("<resource uri=\"{uri}\">\n{t}\n</resource>"));
                 } else if !uri.is_empty() {
-                    morceaux.push(format!("[ressource : {uri}]"));
+                    morceaux.push(format!("[ressource : {uri}]"));
                 }
             }
-            Some("resource_link") => morceaux.push(format!("[ressource : {}]", b["uri"].as_str().unwrap_or(""))),
+            Some("resource_link") => morceaux.push(format!("[ressource : {}]", b["uri"].as_str().unwrap_or(""))),
             _ => {}
         }
     }
@@ -133,7 +133,7 @@ pub fn appliquer(courant: &ModelRef, option: &str, valeur: &str) -> Result<Model
             m.effort = if valeur == "default" { None } else { Some(super::args::effort(valeur)?) };
             Ok(m)
         }
-        autre => Err(format!("option inconnue : {autre}")),
+        autre => Err(format!("option inconnue : {autre}")),
     }
 }
 
@@ -189,7 +189,7 @@ mod tests {
         let t = texte_du_prompt(&blocs);
         assert!(t.starts_with("lis ça"));
         assert!(t.contains("<resource uri=\"file:///a.txt\">\ncontenu"));
-        assert!(t.ends_with("[ressource : file:///b.txt]"));
+        assert!(t.ends_with("[ressource\u{a0}: file:///b.txt]"));
     }
 
     #[test]

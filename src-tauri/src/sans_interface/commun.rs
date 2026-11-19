@@ -62,8 +62,8 @@ pub async fn trouver(client: &DaemonClient, id: &str) -> Result<Value, String> {
         .collect();
     match candidates.as_slice() {
         [une] => Ok((*une).clone()),
-        [] => Err(format!("conversation « {id} » introuvable")),
-        _ => Err(format!("« {id} » désigne plusieurs conversations : donner plus de caractères")),
+        [] => Err(format!("conversation « {id} » introuvable")),
+        _ => Err(format!("« {id} » désigne plusieurs conversations : donner plus de caractères")),
     }
 }
 

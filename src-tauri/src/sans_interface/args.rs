@@ -79,7 +79,7 @@ pub fn effort(v: &str) -> Result<Effort, String> {
         "high" | "haut" => Effort::High,
         "xhigh" => Effort::Xhigh,
         "max" => Effort::Max,
-        autre => return Err(format!("niveau de réflexion inconnu : {autre}")),
+        autre => return Err(format!("niveau de réflexion inconnu : {autre}")),
     })
 }
 
@@ -87,13 +87,13 @@ pub fn effort(v: &str) -> Result<Effort, String> {
 pub fn modele(v: &str) -> Result<ModelRef, String> {
     match v.trim().split_once('/') {
         Some((p, n)) if !p.is_empty() && !n.is_empty() => Ok(ModelRef::new(p, n)),
-        _ => Err(format!("modèle « {v} » : écrire fournisseur/modèle (ex. anthropic/claude-opus-4-5)")),
+        _ => Err(format!("modèle « {v} » : écrire fournisseur/modèle (ex. anthropic/claude-opus-4-5)")),
     }
 }
 
 fn nombre(nom: &str, v: &str) -> Result<u64, String> {
     let propre: String = v.chars().filter(|c| !matches!(c, '_' | ' ')).collect();
-    propre.parse().map_err(|_| format!("{nom} : nombre attendu, pas « {v} »"))
+    propre.parse().map_err(|_| format!("{nom} : nombre attendu, pas « {v} »"))
 }
 
 /// `args` sans le nom du programme.
@@ -125,7 +125,7 @@ pub fn lire(args: &[String]) -> Result<Options, String> {
                 return Ok(v);
             }
             *i += 1;
-            args.get(*i).cloned().ok_or_else(|| format!("{cle} : valeur manquante"))
+            args.get(*i).cloned().ok_or_else(|| format!("{cle} : valeur manquante"))
         };
         match cle {
             "-p" | "--print" => {
@@ -163,7 +163,7 @@ pub fn lire(args: &[String]) -> Result<Options, String> {
             "--wait-max" | "--background-wait-ms" => o.attente_max_ms = nombre(cle, &valeur(&mut i)?)?,
             "--cwd" => o.dossier = Some(PathBuf::from(valeur(&mut i)?)),
             "-h" | "--help" => o.aide = true,
-            _ if a.starts_with('-') && a.len() > 1 => return Err(format!("option inconnue : {a}")),
+            _ if a.starts_with('-') && a.len() > 1 => return Err(format!("option inconnue : {a}")),
             _ => libres.push(a.to_string()),
         }
         i += 1;
@@ -171,13 +171,13 @@ pub fn lire(args: &[String]) -> Result<Options, String> {
     if o.texte.is_none() && !libres.is_empty() {
         o.texte = Some(libres.join(" "));
     } else if !libres.is_empty() {
-        return Err(format!("argument en trop : {}", libres.join(" ")));
+        return Err(format!("argument en trop : {}", libres.join(" ")));
     }
     if o.continuer && o.reprendre.is_some() {
-        return Err("-c et -r ensemble : choisir l'un des deux".into());
+        return Err("-c et -r ensemble : choisir l'un des deux".into());
     }
     if o.autonome.gates.iter().any(|g| g.contains('"')) {
-        return Err("--gate : pas de guillemets doubles dans la commande (utiliser des guillemets simples)".into());
+        return Err("--gate : pas de guillemets doubles dans la commande (utiliser des guillemets simples)".into());
     }
     if let (Some(m), Some(e)) = (o.modele.as_mut(), o.effort) {
         m.effort = Some(e);
