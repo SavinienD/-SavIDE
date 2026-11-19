@@ -21,6 +21,7 @@ hôte → noyau ::
 
 from __future__ import annotations
 
+import contextvars
 import json
 import os
 import sys
@@ -67,7 +68,18 @@ def emit(message: dict[str, Any]) -> None:
 
 
 def current_exec_id() -> Optional[str]:
-    return getattr(_exec_state, "exec_id", None) or _main_exec_id
+    return getattr(_exec_state, "exec_id", None) or _task_exec_id.get() or _main_exec_id
+
+
+# Asynchronous kernel: the cell an asyncio task belongs to (inherited by the
+# tasks it creates, so a background task keeps its cell's id). Never set by
+# the synchronous kernel.
+_task_exec_id: "contextvars.ContextVar[Optional[str]]" = contextvars.ContextVar(
+    "axecode_task_exec_id", default=None)
+
+
+def set_task_exec_id(exec_id: Optional[str]) -> None:
+    _task_exec_id.set(exec_id)
 
 
 _main_exec_id: Optional[str] = None

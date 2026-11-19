@@ -6,8 +6,11 @@
 //! provided by the caller (the session runtime), and answered with
 //! `host_result` lines.
 
+pub mod etat;
 pub mod process;
 pub mod python;
+
+pub use etat::{Namespace, Skipped};
 
 use std::{
     collections::HashMap,
@@ -84,6 +87,25 @@ pub struct Restored {
     pub restored: Vec<String>,
     #[serde(default)]
     pub failed: Vec<String>,
+    /// Names the snapshot had left out, with the reason (also in `failed`).
+    #[serde(default)]
+    pub skipped: Vec<Skipped>,
+}
+
+impl Restored {
+    /// Every name that did not come back, with its reason when known.
+    pub fn lost(&self) -> Vec<Skipped> {
+        self.failed
+            .iter()
+            .map(|name| {
+                self.skipped
+                    .iter()
+                    .find(|s| &s.name == name)
+                    .cloned()
+                    .unwrap_or_else(|| Skipped { name: name.clone(), reason: Some("could not be loaded back".into()) })
+            })
+            .collect()
+    }
 }
 
 /// How to start the kernel process.
@@ -196,6 +218,13 @@ impl Kernel {
         let reply = self.command(json!({"type": "gc", "keep": keep})).await?;
         Ok(serde_json::from_value(reply.get("removed").cloned().unwrap_or(json!([])))
             .unwrap_or_default())
+    }
+
+    /// User names still defined, module aliases and the names the last
+    /// snapshot left out (see `etat::notice_after_compaction`).
+    pub async fn names(&self) -> SessionResult<Namespace> {
+        let reply = self.command(json!({"type": "names"})).await?;
+        serde_json::from_value(reply).map_err(|e| err(format!("bad names reply: {e}")))
     }
 
     /// Kills the kernel at once with every program it started (Windows:

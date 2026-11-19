@@ -241,7 +241,7 @@ async fn run_inner(
             let resultat = if slash_compact.is_some() && history.is_empty() {
                 Err(anyhow::anyhow!("la conversation n'a pas d'historique à compacter"))
             } else {
-                super::compaction::compact(&shared, provider.clone(), &system, &history, directive, &sink).await
+                super::compaction::compact(&shared, provider.clone(), &system, &history, directive, &sink, runtime.current_kernel().await).await
             };
             match resultat {
                 Ok(new_history) => {

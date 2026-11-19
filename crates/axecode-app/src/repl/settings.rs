@@ -69,6 +69,11 @@ pub struct ReplSettings {
     /// bascule — provider failover (off by default, backups chosen by the user).
     #[serde(default)]
     pub bascule: BasculeSettings,
+    /// axe:uh-d2 — asynchronous kernel (one asyncio loop for the kernel's
+    /// life, background commands that wake the session); off by default,
+    /// see docs/noyau-asynchrone.md. `AXECODE_KERNEL_ASYNC=1` also turns it on.
+    #[serde(default)]
+    pub kernel_async: bool,
 }
 
 /// bascule — provider failover. When the provider of the session stays
@@ -145,6 +150,7 @@ impl Default for ReplSettings {
             max_rounds: default_max_rounds(),
             subagent_default_model: None,
             bascule: BasculeSettings::default(),
+            kernel_async: false,
         }
     }
 }

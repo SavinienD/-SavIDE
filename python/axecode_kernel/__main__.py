@@ -14,6 +14,8 @@ Commandes hôte → noyau (un objet JSON par ligne sur stdin) ::
     {"type": "catalog", "id": str, "all": bool} -> catalog_result {modules}
     {"type": "configure", "id": str, "modules": {...}, "sys_path": [...]}
     {"type": "gc", "id": str, "keep": [str]}    -> gc_result {removed}
+    {"type": "names", "id": str}                -> names_result {names, modules,
+        total, at_risk: [{name, reason}]}  (avis après compaction)
     {"type": "shutdown"}
     {"type": "host_result", ...}                 (voir bridge.py)
 
@@ -48,6 +50,8 @@ SNAPSHOT_MAX_BYTES = 64 * 1024 * 1024
 # (AXECODE_SNAPSHOT_VARIABLE_SECONDS / AXECODE_SNAPSHOT_TOTAL_SECONDS override them).
 SNAPSHOT_VARIABLE_SECONDS = 2.0
 SNAPSHOT_TOTAL_SECONDS = 20.0
+# Names listed in the kernel-state notice (after a compaction / a restore).
+NAMES_CAP = 200
 
 # Tool modules preloaded in the namespace, in prompt order.
 MODULES = [
@@ -154,6 +158,13 @@ class _LiveTypes:
             labels.insert(0, (shell.Session, "shell.Session (processus shell vivant)"))
         except Exception:  # pragma: no cover - broken shell module
             pass
+        try:
+            from axecode_kernel import _asynchrone
+
+            if _asynchrone.enabled():
+                labels.append((asyncio.Future, "tâche ou futur asyncio"))
+        except Exception:  # pragma: no cover
+            pass
         self.labels = labels
         self.types = tuple(kind for kind, _ in labels)
 
@@ -242,8 +253,21 @@ class Kernel:
         self.config: dict = {"modules": {}}
         self.loaded: list[str] = []
         self.commands: "queue.Queue[dict]" = queue.Queue()
+        # Set by the asynchronous kernel (see _asynchrone.run).
+        self._put_lock = threading.Lock()
+        self._async_put = None
+        self.interrupt = _thread.interrupt_main
+        self.async_state = None
         self.busy = False
         self.base_names: set[str] = set()
+        # Names the last snapshot left out (with why): they would not survive
+        # a kernel restart. Reported by ``names`` after a compaction.
+        self.last_skipped: list[dict] = []
+
+    def put(self, message: dict) -> None:
+        """Remet une commande de l'hôte au fil principal (fil de lecture)."""
+        with self._put_lock:
+            (self._async_put or self.commands.put)(message)
 
     # ----- modules ---------------------------------------------------------
 
@@ -434,6 +458,7 @@ class Kernel:
             if not key.startswith("_") and key not in self.loaded
             and type(value).__name__ == "module"
         )
+        self.last_skipped = list(skipped)
         for item in skipped:
             sys.stderr.write(f"[axecode_kernel] l'instantané laisse de côté {item['name']} : {item['reason']}\n")
         payload = {"vars": saved, "modules": {k: self.shell.user_ns[k].__name__ for k in modules},
@@ -471,6 +496,36 @@ class Kernel:
                 skipped.append({"name": str(name), "reason": reason or "non enregistré"})
         return {"restored": restored, "failed": failed, "skipped": skipped}
 
+    def names(self) -> dict:
+        """Noms que l'utilisateur a définis et qui le sont encore (variables,
+        fonctions, classes ; ``modules`` = alias d'imports), plus ceux que le
+        dernier instantané a laissés de côté (``at_risk`` : ils seraient perdus
+        si le noyau redémarrait). Lecture seule, n'exécute aucun code de
+        l'utilisateur."""
+        import types
+
+        user = [key for key, _ in self._user_items()]
+        modules = sorted(
+            key for key, value in list(self.shell.user_ns.items())
+            if not key.startswith("_") and key not in self.loaded
+            and isinstance(value, types.ModuleType)
+        )
+        present = set(user)
+        # Live resources are known without pickling; the other reasons (too
+        # big, not picklable, timeout) come from the last snapshot.
+        live = _LiveTypes()
+        at_risk, seen = [], set()
+        for key, value in self._user_items():
+            reason = live.reason(value)
+            if reason:
+                at_risk.append({"name": key, "reason": f"ressource vivante : {reason}"})
+                seen.add(key)
+        at_risk += [dict(item) for item in self.last_skipped
+                    if isinstance(item, dict) and item.get("name") in present
+                    and item.get("name") not in seen]
+        return {"names": user[:NAMES_CAP], "modules": modules[:NAMES_CAP],
+                "total": len(user), "at_risk": at_risk[:NAMES_CAP]}
+
     def collect(self, keep) -> list[str]:
         """Supprime les variables de l'utilisateur absentes de ``keep`` (ramasse-miettes de la compaction)."""
         keep = set(keep or [])
@@ -505,11 +560,11 @@ def _reader(kernel: Kernel, stream) -> None:
             bridge.resolve(message)
         elif kind == "interrupt":
             if kernel.busy:
-                _thread.interrupt_main()
+                kernel.interrupt()
         else:
-            kernel.commands.put(message)
+            kernel.put(message)
     bridge.fail_all("l'hôte a fermé la connexion")
-    kernel.commands.put({"type": "shutdown"})
+    kernel.put({"type": "shutdown"})
 
 
 def _reply(kind: str, message: dict, **fields) -> None:
@@ -548,6 +603,8 @@ def _handle(kernel: Kernel, message: dict) -> bool:
             _reply("restore_result", message, ok=True, **kernel.restore(message.get("data") or ""))
         elif kind == "gc":
             _reply("gc_result", message, ok=True, removed=kernel.collect(message.get("keep")))
+        elif kind == "names":
+            _reply("names_result", message, ok=True, **kernel.names())
         elif kind == "shutdown":
             return False
         else:
@@ -574,8 +631,13 @@ def main() -> int:
     threading.Thread(target=_reader, args=(kernel, protocol_in), daemon=True).start()
     import IPython
 
+    from axecode_kernel import _asynchrone
+
+    asynchrone = _asynchrone.enabled()
     bridge.emit({"type": "ready", "pid": os.getpid(), "python": sys.version.split()[0],
-                 "ipython": IPython.__version__})
+                 "ipython": IPython.__version__, "async": asynchrone})
+    if asynchrone:  # réglage kernelAsync (lot D2), éteint par défaut
+        return _asynchrone.run(kernel, _handle)
     while True:
         try:
             message = kernel.commands.get()
