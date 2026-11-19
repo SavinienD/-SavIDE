@@ -36,7 +36,7 @@ valeur du fichier quand elle enregistre (elle renvoie l'objet complet lu par Rus
 - **Windows : arbre de processus.** Chaque commande de fond est créée suspendue, placée
   dans son propre Job Object « tuer à la fermeture », puis relancée : `kill()` arrête tout
   l'arbre, même les petits-enfants orphelins. Le noyau se place lui-même dans un Job
-  Object : quand Axecode le tue, tout ce qu'il a lancé meurt avec lui (avant :
+  Object : quand SavIDE le tue, tout ce qu'il a lancé meurt avec lui (avant :
   `taskkill /T`, qui rate les orphelins). Ailleurs : arbre tué avec psutil, et le groupe
   de processus du noyau comme avant.
 
@@ -58,7 +58,7 @@ gardent leurs signatures et leur comportement.
   cellule qui se termine ensuite.
 - Windows : une fois le noyau dans son Job Object, un programme qu'il lance pour qu'il
   survive au noyau doit être créé avec `CREATE_BREAKAWAY_FROM_JOB` (autorisé) ; sinon
-  il est arrêté à la fermeture du noyau, y compris à une fermeture normale d'Axecode.
+  il est arrêté à la fermeture du noyau, y compris à une fermeture normale d'SavIDE.
 - `shell.start` ne garde plus le shell interactif ouvert après la commande : `h.send()`
   n'existe pas sur une `Commande` (utiliser `shell.session()`).
 - `guet.annuler(id)` d'un guet de fond retire seulement le réveil ; pour arrêter la
