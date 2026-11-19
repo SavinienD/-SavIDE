@@ -902,6 +902,12 @@ pub(crate) fn bridge_event(app: &AppHandle, event: &DaemonEvent, source: &str) {
                         turn.in_thinking = false;
                         events.push(AgentEvent::StreamRetry);
                     }
+                    // bascule — fournisseur en panne : la suite part chez un secours.
+                    "provider_failover" => {
+                        turn.in_text = false;
+                        turn.in_thinking = false;
+                        events.push(AgentEvent::ProviderFailover { from: text("from"), to: text("to") });
+                    }
                     _ => {}
                 }
             }

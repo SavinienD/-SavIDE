@@ -646,6 +646,8 @@ export type AgentEvent =
   | { type: "interrupted" }
   // reprise — stream cut, request sent again: the live reply starts over.
   | { type: "stream_retry" }
+  // bascule — le fournisseur est en panne : le tour continue chez un secours désigné.
+  | { type: "provider_failover"; from: string; to: string }
   | { type: "error"; message: string }
   // commandes — réveil /heartbeat (le service a injecté son message).
   | { type: "heartbeat_received"; message: string; at_ms: number }

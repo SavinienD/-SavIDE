@@ -66,6 +66,59 @@ pub struct ReplSettings {
     /// `model` nor a profile model is given. `None` = the parent's model.
     #[serde(default)]
     pub subagent_default_model: Option<String>,
+    /// bascule — provider failover (off by default, backups chosen by the user).
+    #[serde(default)]
+    pub bascule: BasculeSettings,
+}
+
+/// bascule — provider failover. When the provider of the session stays
+/// down after its retries (or hits its plan limit), the turn goes on with the
+/// same model on a backup provider the user designated for THAT provider.
+/// Off by default; nothing is ever sent to a provider (or key) that is not in
+/// the list of the failing provider (a company key never backs a personal
+/// account, nor the reverse, unless the user wrote that pair).
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BasculeSettings {
+    #[serde(default)]
+    pub enabled: bool,
+    /// Provider id -> backup provider ids, tried in this order.
+    #[serde(default)]
+    pub secours: BTreeMap<String, Vec<String>>,
+}
+
+impl BasculeSettings {
+    /// Backups designated for `provider`, in order, without itself or
+    /// duplicates; empty when failover is off.
+    pub fn secours_pour(&self, provider: &str) -> Vec<String> {
+        if !self.enabled {
+            return Vec::new();
+        }
+        let mut out: Vec<String> = Vec::new();
+        for id in self.secours.get(provider).into_iter().flatten() {
+            let id = id.trim();
+            if !id.is_empty() && id != provider && !out.iter().any(|known| known == id) {
+                out.push(id.to_string());
+            }
+        }
+        out
+    }
+
+    fn normalized(mut self) -> Self {
+        let secours = std::mem::take(&mut self.secours);
+        for (provider, list) in secours {
+            let provider = provider.trim().to_string();
+            if provider.is_empty() {
+                continue;
+            }
+            let probe = Self { enabled: true, secours: BTreeMap::from([(provider.clone(), list)]) };
+            let list = probe.secours_pour(&provider);
+            if !list.is_empty() {
+                self.secours.insert(provider, list);
+            }
+        }
+        self
+    }
 }
 
 fn default_true() -> bool {
@@ -91,6 +144,7 @@ impl Default for ReplSettings {
             output_cap_chars: default_output_cap(),
             max_rounds: default_max_rounds(),
             subagent_default_model: None,
+            bascule: BasculeSettings::default(),
         }
     }
 }
@@ -120,6 +174,7 @@ impl ReplSettings {
         self.compaction_threshold = t - t % 5;
         self.output_cap_chars = self.output_cap_chars.clamp(1_000, 1_000_000);
         self.max_rounds = self.max_rounds.clamp(1, 10_000);
+        self.bascule = self.bascule.normalized();
         self
     }
 
@@ -137,5 +192,36 @@ impl ReplSettings {
             .get(&format!("{provider}/{model}"))
             .copied()
             .filter(|v| *v > 0)
+    }
+}
+
+#[cfg(test)]
+mod bascule_tests {
+    use super::*;
+
+    #[test]
+    fn failover_is_off_by_default_and_only_uses_designated_backups() {
+        let settings: ReplSettings = serde_json::from_str("{}").unwrap();
+        assert!(!settings.bascule.enabled);
+        assert!(settings.bascule.secours_pour("anthropic").is_empty());
+
+        let mut bascule = BasculeSettings {
+            enabled: false,
+            secours: BTreeMap::from([
+                ("anthropic".to_string(), vec!["anthropic~2".into(), " anthropic~2 ".into(), "anthropic".into(), "".into(), "axe-cloud".into()]),
+            ]),
+        };
+        assert!(bascule.secours_pour("anthropic").is_empty(), "off: no backup at all");
+        bascule.enabled = true;
+        assert_eq!(bascule.secours_pour("anthropic"), ["anthropic~2", "axe-cloud"]);
+        // The designation goes one way only.
+        assert!(bascule.secours_pour("anthropic~2").is_empty());
+        assert!(bascule.secours_pour("axe-cloud").is_empty());
+
+        let saved = ReplSettings { bascule, ..ReplSettings::default() }.normalized();
+        assert_eq!(saved.bascule.secours["anthropic"], ["anthropic~2", "axe-cloud"]);
+        let json = serde_json::to_value(&saved).unwrap();
+        assert_eq!(json["bascule"]["enabled"], true);
+        assert_eq!(json["bascule"]["secours"]["anthropic"][0], "anthropic~2");
     }
 }

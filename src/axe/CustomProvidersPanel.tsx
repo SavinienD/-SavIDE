@@ -30,6 +30,7 @@ import {
   sortieParDefaut,
 } from "./modelesFournisseur";
 import { abonnementPourAdresse, connecterAbonnement } from "../lib/abonnementFournisseur";
+import { BasculePanel } from "./BasculePanel"; // bascule
 
 type Draft = ProviderConfig & { apiKey: string; hasApiKey: boolean; installed: boolean; isNew: boolean };
 
@@ -725,6 +726,7 @@ export function CustomProvidersPanel() {
           </div>
         );
       })}
+      <BasculePanel /> {/* bascule */}
     </section>
   );
 }

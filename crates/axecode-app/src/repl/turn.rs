@@ -37,6 +37,12 @@ const CANCEL_POLL: Duration = Duration::from_millis(250);
 const CANCEL_POLL: Duration = Duration::from_millis(2);
 /// Time given to an interrupted cell before the kernel is killed.
 const INTERRUPT_GRACE: Duration = Duration::from_secs(5);
+/// bascule — with backup providers, retries on one provider before going
+/// to the next one (pauses 2 + 4 + 8 units).
+const FAILOVER_RETRIES_PER_PROVIDER: usize = 3;
+/// bascule — with backup providers, retries of one model call across the
+/// whole chain (a switch counts as one): at most 9 attempts in all.
+const FAILOVER_MAX_TOTAL_RETRIES: usize = 8;
 
 pub(crate) async fn run(
     runtime: &ReplRuntime,
@@ -161,6 +167,10 @@ async fn run_inner(
     // compaction — a summary that still exceeds the threshold must not
     // trigger a new (paid) compaction on every round.
     let mut auto_compactions = 0usize;
+    // bascule — backup that answered last in this turn: the next rounds
+    // start there (the outage is probably not over); the next turn starts
+    // again from the session's own provider.
+    let mut sticky_provider: Option<String> = None;
     for _round in 0..settings.max_rounds {
         if sink.is_cancelled() {
             return Err(SessionError::Cancelled);
@@ -256,7 +266,8 @@ async fn run_inner(
 
         let (sent_system, sent_history) =
             stable_request(&mut lock(&shared.stable_prefix), &system, volatile_from, &reminders, &history);
-        let sent_history = without_foreign_signed_parts(sent_history, &origin_of(&meta.model));
+        // bascule — reasoning signed by another provider is dropped per
+        // provider of the chain (see `stream_chain`).
         let mut provider_request = ProviderRequest::new(meta.model.clone(), sent_history)
             .with_system(sent_system)
             .with_tools(tools)
@@ -265,7 +276,14 @@ async fn run_inner(
         provider_request.max_output_tokens = max_output_tokens;
 
         let debut_appel_ms = now_ms();
-        let (assistant, usage, reason) = match stream_once(provider.as_ref(), provider_request, &sink).await {
+        // bascule — the session's provider first (or the backup already
+        // used in this turn), then the backups designated for it.
+        let chain = failover_chain(&shared.deps.providers, &meta.model, provider.clone(), &settings);
+        let start = sticky_provider
+            .as_deref()
+            .and_then(|id| chain.iter().position(|(known, _)| known == id))
+            .unwrap_or(0);
+        let (assistant, usage, reason, used) = match stream_chain(&chain, start, provider_request, &sink).await {
             Ok(done) => done,
             Err(StreamFailure::Cancelled) => return Err(SessionError::Cancelled),
             // Over the context window: compact, then try once more.
@@ -275,7 +293,7 @@ async fn run_inner(
                 *lock(&shared.compact_request) = Some(None);
                 continue;
             }
-            Err(StreamFailure::ContextLength(message) | StreamFailure::Provider(message)) => {
+            Err(StreamFailure::ContextLength(message) | StreamFailure::Provider(message) | StreamFailure::Down(message)) => {
                 sink.record(JournalEntryKind::Extension {
                     name: "turn_error".into(),
                     payload: json!({"error": message}),
@@ -299,11 +317,23 @@ async fn run_inner(
             }
         };
         retried_after_overflow = false;
+        let (provider, call_model, switched) = match used {
+            Some(Used { index, from }) => {
+                let (id, backup) = chain[index].clone();
+                sticky_provider = Some(id.clone());
+                let model = axecode_core::ModelRef { provider: id, ..meta.model.clone() };
+                (backup, model, from)
+            }
+            None => {
+                sticky_provider = None;
+                (provider, meta.model.clone(), None)
+            }
+        };
         add_usage(&mut usage_total, &usage);
         // Jauge du contexte et minuteur du cache de l'en-tête du chat (dernier appel).
         let appel = super::dernier_appel::noter_appel(
             &meta.id,
-            &meta.model,
+            &call_model,
             &usage,
             caps.as_ref(),
             settings.compaction_threshold,
@@ -320,7 +350,10 @@ async fn run_inner(
         }
         stop_reason = Some(reason);
         let mut assistant = assistant;
-        tag_signed_parts(&mut assistant, &origin_of(&meta.model));
+        tag_signed_parts(&mut assistant, &origin_of(&call_model));
+        if let Some(from) = switched {
+            mark_failover(&mut assistant, &from, &call_model.provider);
+        }
         if !assistant.parts.is_empty() {
             sink.record(JournalEntryKind::Message {
                 message: assistant.clone(),
@@ -510,6 +543,156 @@ enum StreamFailure {
     /// The request does not fit in the model's context window.
     ContextLength(String),
     Provider(String),
+    /// bascule — the provider is down or out of quota (retries spent,
+    /// plan limit, HTTP 5xx): a designated backup may take over.
+    Down(String),
+}
+
+/// bascule — an error that says the provider (not the request) is the
+/// problem: another provider serving the same model can answer.
+fn provider_down(err: &AppError) -> bool {
+    retryable(err)
+        || matches!(err, AppError::RateLimit(_))
+        || matches!(err, AppError::Provider(message) if is_http_5xx(message))
+}
+
+fn is_http_5xx(message: &str) -> bool {
+    message
+        .strip_prefix("HTTP ")
+        .is_some_and(|rest| rest.starts_with('5') && rest.as_bytes().get(1).is_some_and(u8::is_ascii_digit))
+}
+
+/// bascule — retries left for one model call.
+struct RetryBudget {
+    /// Retries on one provider.
+    per_provider: usize,
+    /// Retries left for the whole chain.
+    left: usize,
+}
+
+impl RetryBudget {
+    /// Without backups: the historical behaviour ([`STREAM_BACKOFF`]).
+    fn single() -> Self {
+        Self { per_provider: STREAM_BACKOFF.len(), left: STREAM_BACKOFF.len() }
+    }
+
+    fn chain() -> Self {
+        Self { per_provider: FAILOVER_RETRIES_PER_PROVIDER, left: FAILOVER_MAX_TOTAL_RETRIES }
+    }
+}
+
+/// bascule — the chain of one model call: `(provider id, provider)`, the
+/// session's provider first, then the live backups the user designated for it
+/// that serve the same model (`capabilities` known). Failover off or no
+/// backup: the session's provider alone.
+fn failover_chain(
+    resolver: &Arc<dyn super::ProviderResolver>,
+    model: &axecode_core::ModelRef,
+    primary: Arc<dyn axecode_core::Provider>,
+    settings: &super::ReplSettings,
+) -> Vec<(String, Arc<dyn axecode_core::Provider>)> {
+    let mut chain = vec![(model.provider.clone(), primary)];
+    for id in settings.bascule.secours_pour(&model.provider) {
+        let Ok(backup) = resolver.provider(&id) else {
+            tracing::warn!(provider = %id, "backup provider unavailable, skipped");
+            continue;
+        };
+        let same_model = axecode_core::ModelRef { provider: id.clone(), ..model.clone() };
+        if backup.capabilities(&same_model).is_none() {
+            tracing::warn!(provider = %id, model = %model.name, "backup provider does not serve this model, skipped");
+            continue;
+        }
+        chain.push((id, backup));
+    }
+    chain
+}
+
+/// bascule — which link of the chain answered, when it is not the first one tried.
+#[derive(Debug, Clone, PartialEq)]
+struct Used {
+    index: usize,
+    /// Provider it took over from in this call (`None`: no switch in this call).
+    from: Option<String>,
+}
+
+/// bascule — one model call through the failover chain: retries on the
+/// current provider ([`stream_attempts`]), then the next backup when the
+/// provider is down ([`StreamFailure::Down`]), within one retry budget for
+/// the whole call. Each switch is announced in the conversation (event
+/// `provider_failover` + journal entry `bascule_fournisseur`). Returns which
+/// link answered (`None`: the session's own provider).
+async fn stream_chain(
+    chain: &[(String, Arc<dyn axecode_core::Provider>)],
+    start: usize,
+    request: ProviderRequest,
+    sink: &Arc<dyn TurnSink>,
+) -> Result<(ChatMessage, Usage, StopReason, Option<Used>), StreamFailure> {
+    let mut budget = if chain.len() > 1 { RetryBudget::chain() } else { RetryBudget::single() };
+    let mut index = start.min(chain.len().saturating_sub(1));
+    let mut from: Option<String> = None;
+    loop {
+        let (id, provider) = &chain[index];
+        let mut sent = request.clone();
+        sent.model.provider = id.clone();
+        sent.transcript = without_foreign_signed_parts(sent.transcript, &origin_of(&sent.model));
+        match stream_attempts(provider.as_ref(), sent, sink, &mut budget).await {
+            Ok((message, usage, reason)) => {
+                let used = (index > 0).then(|| Used { index, from: from.clone() });
+                return Ok((message, usage, reason, used));
+            }
+            Err(StreamFailure::Down(error)) if index + 1 < chain.len() && budget.left > 0 => {
+                budget.left -= 1;
+                let next = &chain[index + 1].0;
+                let reason = if error.starts_with("rate limited") { "limite" } else { "panne" };
+                tracing::warn!(from = %id, to = %next, %error, "provider down, failing over");
+                sink.emit(json!({
+                    "type": "provider_failover",
+                    "from": id,
+                    "to": next,
+                    "model": request.model.name,
+                    "reason": reason,
+                }))
+                .await;
+                let _ = sink
+                    .record(JournalEntryKind::Extension {
+                        name: "bascule_fournisseur".into(),
+                        payload: json!({
+                            "from": id,
+                            "to": next,
+                            "model": request.model.name,
+                            "reason": reason,
+                            "error": error.chars().take(300).collect::<String>(),
+                        }),
+                    })
+                    .await;
+                from = Some(id.clone());
+                index += 1;
+            }
+            Err(failure) => return Err(failure),
+        }
+    }
+}
+
+/// bascule — the first part of the message that answered after a switch
+/// carries `meta.bascule = {de, vers}`: the conversation shows the notice
+/// again when it is reopened.
+fn mark_failover(message: &mut ChatMessage, from: &str, to: &str) {
+    let notice = json!({"de": from, "vers": to});
+    let Some(part) = message.parts.first_mut() else {
+        return;
+    };
+    let meta = match part {
+        Part::Text { meta, .. }
+        | Part::Image { meta, .. }
+        | Part::Thinking { meta, .. }
+        | Part::ToolCall { meta, .. }
+        | Part::ToolResult { meta, .. } => meta,
+    };
+    let mut value = meta.take().unwrap_or_else(|| json!({}));
+    if let Some(object) = value.as_object_mut() {
+        object.insert("bascule".into(), notice);
+    }
+    *meta = Some(value);
 }
 
 fn retryable(err: &AppError) -> bool {
@@ -525,12 +708,24 @@ fn retryable(err: &AppError) -> bool {
 /// executed, so it is dropped and the same request is sent again (the app,
 /// if it already showed some of it, gets a `stream_retry` event to start the
 /// message over). Stop ends the pauses.
+#[cfg(test)]
 async fn stream_once(
     provider: &dyn axecode_core::Provider,
     request: ProviderRequest,
     sink: &Arc<dyn TurnSink>,
 ) -> Result<(ChatMessage, Usage, StopReason), StreamFailure> {
-    let mut pauses = STREAM_BACKOFF.iter().enumerate();
+    stream_attempts(provider, request, sink, &mut RetryBudget::single()).await
+}
+
+/// [`stream_once`] within a retry budget (bascule): at most
+/// `budget.per_provider` retries here, each one taken from `budget.left`.
+async fn stream_attempts(
+    provider: &dyn axecode_core::Provider,
+    request: ProviderRequest,
+    sink: &Arc<dyn TurnSink>,
+    budget: &mut RetryBudget,
+) -> Result<(ChatMessage, Usage, StopReason), StreamFailure> {
+    let mut pauses = STREAM_BACKOFF.iter().take(budget.per_provider).enumerate();
     loop {
         let mut builder = AssistantMessageBuilder::default();
         let mut usage = Usage::default();
@@ -589,8 +784,9 @@ async fn stream_once(
             Ok(()) => return Ok((builder.finish(), usage, reason)),
             Err(err) => err,
         };
-        match pauses.next() {
+        match pauses.next().filter(|_| budget.left > 0) {
             Some((retry, &units)) if retryable(&err) => {
+                budget.left -= 1;
                 let delay = RETRY_UNIT * units;
                 tracing::warn!(
                     error = %err,
@@ -613,6 +809,7 @@ async fn stream_once(
             _ if matches!(err, AppError::ContextLength(_)) => {
                 return Err(StreamFailure::ContextLength(err.to_string()))
             }
+            _ if provider_down(&err) => return Err(StreamFailure::Down(err.to_string())),
             _ => return Err(StreamFailure::Provider(err.to_string())),
         }
     }
@@ -853,6 +1050,10 @@ mod tests {
     struct Fake {
         calls: AtomicUsize,
         script: fn(usize) -> Events,
+        /// Provider id of each request received (bascule).
+        seen: Mutex<Vec<String>>,
+        /// `capabilities` answers (the provider serves the model).
+        serves: bool,
     }
 
     impl Fake {
@@ -860,6 +1061,8 @@ mod tests {
             Self {
                 calls: AtomicUsize::new(0),
                 script,
+                seen: Mutex::new(Vec::new()),
+                serves: false,
             }
         }
 
@@ -873,8 +1076,18 @@ mod tests {
         fn name(&self) -> &str {
             "fake"
         }
-        fn capabilities(&self, _model: &ModelRef) -> Option<ModelCapabilities> {
-            None
+        fn capabilities(&self, model: &ModelRef) -> Option<ModelCapabilities> {
+            self.serves.then(|| ModelCapabilities {
+                model: model.clone(),
+                context_window: 1_000,
+                preferred_window: 900,
+                max_output_tokens: 100,
+                supports_thinking: false,
+                visible_thinking: false,
+                supports_tools: true,
+                supports_images: false,
+                effort_mode: axecode_core::EffortMode::None,
+            })
         }
         async fn estimate_tokens(&self, _request: ProviderRequest) -> CoreResult<TokenEstimate> {
             Ok(TokenEstimate {
@@ -882,7 +1095,8 @@ mod tests {
                 exact: false,
             })
         }
-        async fn stream(&self, _request: ProviderRequest) -> CoreResult<ProviderStream> {
+        async fn stream(&self, request: ProviderRequest) -> CoreResult<ProviderStream> {
+            self.seen.lock().unwrap().push(request.model.provider.clone());
             let n = self.calls.fetch_add(1, Ordering::SeqCst);
             Ok(Box::pin(stream::iter((self.script)(n))))
         }
@@ -891,12 +1105,14 @@ mod tests {
     #[derive(Default)]
     struct Sink {
         events: Mutex<Vec<Value>>,
+        records: Mutex<Vec<JournalEntryKind>>,
         cancelled: AtomicBool,
     }
 
     #[async_trait]
     impl TurnSink for Sink {
-        async fn record(&self, _kind: JournalEntryKind) -> SessionResult<EntryId> {
+        async fn record(&self, kind: JournalEntryKind) -> SessionResult<EntryId> {
+            self.records.lock().unwrap().push(kind);
             Ok(EntryId::new())
         }
         async fn emit(&self, event: Value) {
@@ -1011,7 +1227,7 @@ mod tests {
         let sink: Arc<dyn TurnSink> = Arc::new(Sink::default());
         let started = Instant::now();
         let failure = stream_once(&provider, request(), &sink).await;
-        assert!(matches!(failure, Err(StreamFailure::Provider(_))));
+        assert!(matches!(failure, Err(StreamFailure::Down(_))));
         assert_eq!(provider.calls(), 1 + STREAM_BACKOFF.len());
         assert!(started.elapsed() >= RETRY_UNIT * 90);
     }
@@ -1023,5 +1239,222 @@ mod tests {
         let failure = stream_once(&provider, request(), &sink).await;
         assert!(matches!(failure, Err(StreamFailure::Provider(_))));
         assert_eq!(provider.calls(), 1);
+    }
+
+    // ---- bascule — provider failover ----
+
+    use super::{
+        failover_chain, is_http_5xx, mark_failover, stream_chain, Used, FAILOVER_MAX_TOTAL_RETRIES,
+        FAILOVER_RETRIES_PER_PROVIDER,
+    };
+    use crate::repl::{settings::BasculeSettings, ProviderResolver, ReplSettings};
+    use axecode_core::ChatMessage;
+
+    fn ok_answer(_n: usize) -> Events {
+        let mut events = text("answer from the backup");
+        events.push(Ok(StreamEvent::MessageStop {
+            stop_reason: StopReason::EndTurn,
+            usage: Usage::default(),
+        }));
+        events
+    }
+
+    fn plan_limit(_n: usize) -> Events {
+        vec![Err(AppError::RateLimit("usage limit reached for this plan".into()))]
+    }
+
+    fn chain(links: &[(&str, &Arc<Fake>)]) -> Vec<(String, Arc<dyn Provider>)> {
+        links
+            .iter()
+            .map(|(id, fake)| (id.to_string(), (*fake).clone() as Arc<dyn Provider>))
+            .collect()
+    }
+
+    fn failovers(sink: &Sink) -> Vec<Value> {
+        sink.events
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|e| e["type"] == "provider_failover")
+            .cloned()
+            .collect()
+    }
+
+    fn journal_notices(sink: &Sink) -> usize {
+        sink.records
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|k| matches!(k, JournalEntryKind::Extension { name, .. } if name == "bascule_fournisseur"))
+            .count()
+    }
+
+    #[tokio::test]
+    async fn bascule_transient_outage_stays_on_the_first_provider() {
+        let (first, second) = (Arc::new(Fake::new(cut_then_complete)), Arc::new(Fake::new(ok_answer)));
+        let sink = Arc::new(Sink::default());
+        let turn_sink: Arc<dyn TurnSink> = sink.clone();
+        let links = chain(&[("anthropic", &first), ("anthropic~2", &second)]);
+        let Ok((message, _, _, used)) = stream_chain(&links, 0, request(), &turn_sink).await else {
+            panic!("the retry on the first provider should succeed");
+        };
+        assert_eq!(message.text(), "complete answer");
+        assert_eq!(used, None);
+        assert_eq!((first.calls(), second.calls()), (2, 0));
+        assert!(failovers(&sink).is_empty());
+    }
+
+    #[tokio::test]
+    async fn bascule_lasting_outage_finishes_on_the_backup() {
+        let (first, second) = (Arc::new(Fake::new(network_down)), Arc::new(Fake::new(ok_answer)));
+        let sink = Arc::new(Sink::default());
+        let turn_sink: Arc<dyn TurnSink> = sink.clone();
+        let links = chain(&[("anthropic", &first), ("anthropic~2", &second)]);
+        let Ok((message, _, _, used)) = stream_chain(&links, 0, request(), &turn_sink).await else {
+            panic!("the backup should answer");
+        };
+        assert_eq!(message.text(), "answer from the backup");
+        assert_eq!(used, Some(Used { index: 1, from: Some("anthropic".into()) }));
+        assert_eq!(first.calls(), 1 + FAILOVER_RETRIES_PER_PROVIDER, "3 retries, not the 7 of the single provider");
+        assert_eq!(second.calls(), 1);
+        assert_eq!(*second.seen.lock().unwrap(), ["anthropic~2"], "the request names the backup");
+        let notices = failovers(&sink);
+        assert_eq!(notices.len(), 1);
+        assert_eq!(notices[0]["from"], "anthropic");
+        assert_eq!(notices[0]["to"], "anthropic~2");
+        assert_eq!(notices[0]["reason"], "panne");
+        assert_eq!(journal_notices(&sink), 1);
+    }
+
+    #[tokio::test]
+    async fn bascule_plan_limit_switches_at_once() {
+        let (first, second) = (Arc::new(Fake::new(plan_limit)), Arc::new(Fake::new(ok_answer)));
+        let sink = Arc::new(Sink::default());
+        let turn_sink: Arc<dyn TurnSink> = sink.clone();
+        let links = chain(&[("anthropic", &first), ("axe-cloud", &second)]);
+        let Ok((_, _, _, used)) = stream_chain(&links, 0, request(), &turn_sink).await else {
+            panic!("the backup should answer");
+        };
+        assert_eq!(used.map(|u| u.index), Some(1));
+        assert_eq!((first.calls(), second.calls()), (1, 1), "a plan limit is not retried");
+        assert_eq!(failovers(&sink)[0]["reason"], "limite");
+    }
+
+    #[tokio::test]
+    async fn bascule_off_keeps_the_old_behaviour() {
+        // Plan limit, no backup: the turn fails as before (then waits for the quota).
+        let first = Arc::new(Fake::new(plan_limit));
+        let sink = Arc::new(Sink::default());
+        let turn_sink: Arc<dyn TurnSink> = sink.clone();
+        let links = chain(&[("anthropic", &first)]);
+        let failure = stream_chain(&links, 0, request(), &turn_sink).await;
+        assert!(matches!(failure, Err(StreamFailure::Down(ref m)) if m.contains("usage limit")));
+        assert_eq!(first.calls(), 1);
+        // Network down, no backup: still the 7 retries of STREAM_BACKOFF.
+        let down = Arc::new(Fake::new(network_down));
+        let links = chain(&[("anthropic", &down)]);
+        assert!(stream_chain(&links, 0, request(), &turn_sink).await.is_err());
+        assert_eq!(down.calls(), 1 + STREAM_BACKOFF.len());
+        assert!(failovers(&sink).is_empty());
+        assert_eq!(journal_notices(&sink), 0);
+    }
+
+    #[tokio::test]
+    async fn bascule_total_attempts_are_bounded() {
+        let fakes: Vec<Arc<Fake>> = (0..4).map(|_| Arc::new(Fake::new(network_down))).collect();
+        let sink = Arc::new(Sink::default());
+        let turn_sink: Arc<dyn TurnSink> = sink.clone();
+        let links = chain(&[("a", &fakes[0]), ("b", &fakes[1]), ("c", &fakes[2]), ("d", &fakes[3])]);
+        let failure = stream_chain(&links, 0, request(), &turn_sink).await;
+        assert!(matches!(failure, Err(StreamFailure::Down(_))));
+        let calls: Vec<usize> = fakes.iter().map(|f| f.calls()).collect();
+        assert_eq!(calls, [4, 4, 1, 0]);
+        assert_eq!(calls.iter().sum::<usize>(), 1 + FAILOVER_MAX_TOTAL_RETRIES);
+    }
+
+    #[tokio::test]
+    async fn bascule_request_errors_never_fail_over() {
+        let (first, second) = (Arc::new(Fake::new(refused)), Arc::new(Fake::new(ok_answer)));
+        let sink = Arc::new(Sink::default());
+        let turn_sink: Arc<dyn TurnSink> = sink.clone();
+        let links = chain(&[("anthropic", &first), ("anthropic~2", &second)]);
+        let failure = stream_chain(&links, 0, request(), &turn_sink).await;
+        assert!(matches!(failure, Err(StreamFailure::Provider(_))));
+        assert_eq!((first.calls(), second.calls()), (1, 0));
+    }
+
+    #[tokio::test]
+    async fn bascule_next_rounds_start_on_the_backup() {
+        let (first, second) = (Arc::new(Fake::new(network_down)), Arc::new(Fake::new(ok_answer)));
+        let sink: Arc<dyn TurnSink> = Arc::new(Sink::default());
+        let links = chain(&[("anthropic", &first), ("anthropic~2", &second)]);
+        let Ok((_, _, _, used)) = stream_chain(&links, 1, request(), &sink).await else {
+            panic!("the backup should answer");
+        };
+        assert_eq!(used, Some(Used { index: 1, from: None }), "no new switch, no new notice");
+        assert_eq!((first.calls(), second.calls()), (0, 1));
+    }
+
+    struct Resolver(Vec<(String, Arc<Fake>)>);
+
+    impl ProviderResolver for Resolver {
+        fn provider(&self, id: &str) -> Result<Arc<dyn Provider>, String> {
+            self.0
+                .iter()
+                .find(|(known, _)| known == id)
+                .map(|(_, fake)| fake.clone() as Arc<dyn Provider>)
+                .ok_or_else(|| format!("provider `{id}` is not configured"))
+        }
+    }
+
+    #[test]
+    fn bascule_chain_holds_only_designated_backups_serving_the_model() {
+        let serving = |serves| Arc::new(Fake { serves, ..Fake::new(ok_answer) });
+        let resolver: Arc<dyn ProviderResolver> = Arc::new(Resolver(vec![
+            ("anthropic~2".into(), serving(true)),
+            ("other-model".into(), serving(false)),
+            ("axe-cloud".into(), serving(true)),
+        ]));
+        let model = ModelRef::new("anthropic", "claude-opus-5-5");
+        let primary: Arc<dyn Provider> = Arc::new(Fake::new(ok_answer));
+        let ids = |settings: &ReplSettings| -> Vec<String> {
+            failover_chain(&resolver, &model, primary.clone(), settings)
+                .into_iter()
+                .map(|(id, _)| id)
+                .collect()
+        };
+        let mut settings = ReplSettings::default();
+        assert_eq!(ids(&settings), ["anthropic"], "off by default");
+        settings.bascule = BasculeSettings {
+            enabled: true,
+            secours: [
+                ("anthropic".to_string(), vec!["missing".into(), "other-model".into(), "anthropic~2".into()]),
+                // A company key designated for ANOTHER provider never backs this one.
+                ("openai".to_string(), vec!["axe-cloud".into()]),
+            ]
+            .into_iter()
+            .collect(),
+        };
+        assert_eq!(ids(&settings), ["anthropic", "anthropic~2"]);
+        settings.bascule.enabled = false;
+        assert_eq!(ids(&settings), ["anthropic"]);
+    }
+
+    #[test]
+    fn bascule_notice_and_error_classes() {
+        let mut message = ChatMessage {
+            role: axecode_core::Role::Assistant,
+            parts: vec![axecode_core::Part::Text { text: "ok".into(), meta: None }],
+        };
+        mark_failover(&mut message, "anthropic", "anthropic~2");
+        let axecode_core::Part::Text { meta: Some(meta), .. } = &message.parts[0] else {
+            panic!("meta expected");
+        };
+        assert_eq!(meta["bascule"], serde_json::json!({"de": "anthropic", "vers": "anthropic~2"}));
+        assert!(is_http_5xx("HTTP 529 <unknown status code>: overloaded"));
+        assert!(is_http_5xx("HTTP 503 Service Unavailable: x"));
+        assert!(!is_http_5xx("HTTP 400 Bad Request: x"));
+        assert!(!is_http_5xx("HTTP 5"));
+        assert!(!is_http_5xx("invalid request"));
     }
 }

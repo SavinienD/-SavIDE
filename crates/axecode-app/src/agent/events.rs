@@ -60,6 +60,12 @@ pub enum AgentEvent {
     /// reprise — the model stream was cut and the request is sent again:
     /// the live text and thinking of the current response start over.
     StreamRetry,
+    /// bascule — the provider is down: the turn goes on with the same
+    /// model on a backup provider designated by the user.
+    ProviderFailover {
+        from: String,
+        to: String,
+    },
     Error {
         message: String,
     },
