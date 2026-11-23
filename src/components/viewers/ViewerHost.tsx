@@ -24,6 +24,7 @@ const NotebookViewer = lazy(() => import("./NotebookViewer"));
 const SvgViewer = lazy(() => import("./SvgViewer"));
 const FallbackViewer = lazy(() => import("./FallbackViewer"));
 const MermaidViewer = lazy(() => import("./MermaidViewer"));
+const PagesViewer = lazy(() => import("./PagesViewer"));
 
 /** Hex / paged-text view for files no other viewer (nor Monaco) can show. */
 export function FallbackHost({ doc }: { doc: FileDocument }) {
@@ -63,6 +64,8 @@ type Props = {
   text: string | null;
   /** Opens a workspace file in a tab (links inside documents). */
   onOpenFile?: (path: string) => void;
+  /** dossier de l'espace (local ou axe-cloud://…) : lecture/écriture binaire des espaces cloud. */
+  espace?: string;
 };
 
 export function ViewerHost(props: Props) {
@@ -73,7 +76,7 @@ export function ViewerHost(props: Props) {
   );
 }
 
-function renderViewer({ spec, doc, text, onOpenFile }: Props) {
+function renderViewer({ spec, doc, text, onOpenFile, espace }: Props) {
   const path = doc.absolutePath;
   const file = { path, size: doc.size, name: doc.name };
   switch (spec.kind) {
@@ -92,7 +95,9 @@ function renderViewer({ spec, doc, text, onOpenFile }: Props) {
     case "pdf":
       return <PdfViewer path={path} size={doc.size} />;
     case "docx":
-      return <DocxViewer {...file} />;
+      return <DocxViewer {...file} espace={espace} relatif={doc.relativePath} />;
+    case "pages":
+      return <PagesViewer {...file} espace={espace} relatif={doc.relativePath} />;
     case "pptx":
       return <PptxViewer {...file} />;
     case "epub":

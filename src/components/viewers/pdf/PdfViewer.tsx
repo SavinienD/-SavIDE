@@ -13,7 +13,7 @@ const ZOOMS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
 
 type Size = { w: number; h: number };
 
-export default function PdfViewer({ path, size }: { path: string; size: number }) {
+export default function PdfViewer({ path, size, data }: { path: string; size: number; data?: Uint8Array }) {
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sizes, setSizes] = useState<Size[]>([]);
@@ -34,7 +34,7 @@ export default function PdfViewer({ path, size }: { path: string; size: number }
     setDoc(null);
     setError(null);
     textCache.current.clear();
-    openPdf(path, size)
+    openPdf(path, size, data)
       .then(async (pdf) => {
         loaded = pdf;
         if (cancelled) return void pdf.destroy();
@@ -55,7 +55,7 @@ export default function PdfViewer({ path, size }: { path: string; size: number }
       cancelled = true;
       void loaded?.destroy();
     };
-  }, [path, size]);
+  }, [path, size, data]);
 
   useEffect(() => {
     const el = scrollRef.current;

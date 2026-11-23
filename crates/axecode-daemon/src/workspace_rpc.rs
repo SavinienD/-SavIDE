@@ -10,6 +10,8 @@ use std::{
 };
 
 const MAX_EDIT: usize = 1024 * 1024;
+/// plus gros morceau rendu par fs.read_bytes.
+const MAX_READ_BYTES: u64 = 4 * 1024 * 1024;
 pub(crate) fn root(d: &Daemon) -> SessionResult<PathBuf> {
     let raw = d
         .config
@@ -673,7 +675,31 @@ pub fn dispatch(d: &Daemon, m: &str, p: &Value) -> SessionResult<Value> {
             let mut f = std::fs::OpenOptions::new().create(true).write(true).append(append).truncate(!append)
                 .open(&path).map_err(|e| SessionError::Protocol(e.to_string()))?;
             std::io::Write::write_all(&mut f, &data).map_err(|e| SessionError::Protocol(e.to_string()))?;
+            // l'explorateur des espaces voit le fichier écrit (éditeur riche, .pages -> .docx).
+            if p.get("notify").and_then(Value::as_bool).unwrap_or(false) {
+                d.broadcast("workspace_changed", None, json!({"path":virt(&r,&path)}));
+            }
             Ok(json!({"ok": true, "bytes": data.len()}))
+        }
+        // lecture binaire par morceaux (base64) : visionneuses et éditeur riche des espaces.
+        "fs.read_bytes" => {
+            use base64::Engine as _;
+            use std::io::{Seek, SeekFrom};
+            let s = opt(p, "path")?;
+            let path = resolve(&r, &s, false)?;
+            let offset = p.get("offset").and_then(Value::as_u64).unwrap_or(0);
+            let length = p.get("length").and_then(Value::as_u64).unwrap_or(MAX_READ_BYTES).min(MAX_READ_BYTES);
+            if !path.is_file() {
+                return Err(SessionError::Protocol("not a file".into()));
+            }
+            let mut f = std::fs::File::open(&path).map_err(|e| SessionError::Protocol(e.to_string()))?;
+            let size = f.metadata().map_err(|e| SessionError::Io(e.to_string()))?.len();
+            let mut buf = Vec::new();
+            if offset < size {
+                f.seek(SeekFrom::Start(offset)).map_err(|e| SessionError::Io(e.to_string()))?;
+                f.take(length.min(size - offset)).read_to_end(&mut buf).map_err(|e| SessionError::Io(e.to_string()))?;
+            }
+            Ok(json!({"data": base64::engine::general_purpose::STANDARD.encode(&buf), "size": size}))
         }
         "fs.search" => {
             let q = p.get("query").and_then(Value::as_str).unwrap_or("");
@@ -1146,6 +1172,26 @@ mod tests {
         f.call("fs.delete", json!({"path":"src/renamed.txt"}))
             .unwrap();
         assert!(!f.root.join("src/renamed.txt").exists());
+    }
+    #[test]
+    fn binary_bytes_roundtrip_by_chunks() {
+        use base64::Engine as _;
+        let b64 = base64::engine::general_purpose::STANDARD;
+        let f = Fixture::new();
+        let data: Vec<u8> = (0..=255u8).cycle().take(1000).collect();
+        f.call("fs.write_bytes", json!({"path":"docs/a.docx","data": b64.encode(&data[..600])})).unwrap();
+        f.call("fs.write_bytes", json!({"path":"docs/a.docx","data": b64.encode(&data[600..]),"append":true,"notify":true})).unwrap();
+        let first = f.call("fs.read_bytes", json!({"path":"docs/a.docx","offset":0,"length":700})).unwrap();
+        assert_eq!(first["size"], 1000);
+        let mut back = b64.decode(first["data"].as_str().unwrap()).unwrap();
+        let rest = f.call("fs.read_bytes", json!({"path":"docs/a.docx","offset":700,"length":5000})).unwrap();
+        back.extend(b64.decode(rest["data"].as_str().unwrap()).unwrap());
+        assert_eq!(back, data);
+        let end = f.call("fs.read_bytes", json!({"path":"docs/a.docx","offset":2000})).unwrap();
+        assert_eq!(end["data"], "");
+        assert!(f.call("fs.read_bytes", json!({"path":"docs/absent.docx"})).is_err());
+        assert!(f.call("fs.read_bytes", json!({"path":"docs"})).is_err());
+        assert!(f.call("fs.read_bytes", json!({"path":"../x"})).is_err());
     }
     #[cfg(unix)]
     #[test]

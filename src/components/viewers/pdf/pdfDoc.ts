@@ -56,7 +56,7 @@ class TauriRangeTransport extends PDFDataRangeTransport {
   }
 }
 
-export async function openPdf(path: string, size: number): Promise<PDFDocumentProxy> {
+export async function openPdf(path: string, size: number, bytes?: Uint8Array): Promise<PDFDocumentProxy> {
   const common = {
     cMapUrl: `${ASSETS}cmaps/`,
     cMapPacked: true,
@@ -66,6 +66,8 @@ export async function openPdf(path: string, size: number): Promise<PDFDocumentPr
     isEvalSupported: false,
     enableXfa: true,
   };
+  // PDF déjà en mémoire (aperçu QuickLook d'un .pages) : copie, pdf.js la transfère au worker.
+  if (bytes) return getDocument({ data: bytes.slice(), ...common }).promise;
   if (size <= WHOLE_FILE_BYTES) {
     const data = await readBytes(path, 0, size);
     return getDocument({ data, ...common }).promise;

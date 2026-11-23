@@ -23,7 +23,8 @@ export type ViewerKind =
   | "zip"
   | "font"
   | "epub"
-  | "mermaid";
+  | "mermaid"
+  | "pages";
 
 export type OverlaySpec = {
   /** Toggle label when the preview is hidden. */
@@ -72,7 +73,9 @@ register(["html", "htm", "xhtml"], {
 register(["pdf"], binary("pdf"));
 register(["docx", "docm", "dotx"], binary("docx"));
 register(["pptx", "pptm", "ppsx", "potx"], binary("pptx"));
-register(["doc", "dot", "ppt", "pps", "pot", "odt", "odp", "rtfd", "pages", "key"], binary("legacy-office"));
+register(["doc", "dot", "ppt", "pps", "pot", "odt", "odp", "rtfd", "key"], binary("legacy-office"));
+// Apple Pages : aperçu PDF, texte extrait ou vignette ; « Modifier » enregistre en .docx.
+register(["pages"], binary("pages"));
 register(["mp3", "wav", "ogg", "oga", "opus", "flac", "m4a", "aac", "weba"], binary("media-audio"));
 register(["mp4", "m4v", "webm", "mov", "ogv", "mkv"], binary("media-video"));
 register(["svg"], {

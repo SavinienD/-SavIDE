@@ -205,7 +205,7 @@ Code map:
 │   │   │   ├── journal.rs # JSONL append-only + arbre + fork
 │   │   │   ├── share_rpc.rs # v2-l4 — RPC share.* : espace commun (Git), publication/suppression
 │   │   │   ├── term_rpc.rs # v2-l3 — RPC term.* : terminaux PTY du service
-│   │   │   ├── workspace_rpc.rs # v2-l2/l2.4 — RPC fs.* (dont index « ouvrir vite », corbeille trash/trash_list/restore) et git.* (status/commit/repos + branches/checkout/push/pull/worktrees), confinés à la racine
+│   │   │   ├── workspace_rpc.rs # v2-l2/l2.4 — RPC fs.* (dont index « ouvrir vite », corbeille trash/trash_list/restore ; fs.read_bytes par morceaux) et git.* (status/commit/repos + branches/checkout/push/pull/worktrees), confinés à la racine
 │   │   │   ├── lib.rs
 │   │   │   ├── listen.rs # remote — écoute WebSocket /ws authentifiée, contrôle Host/Origin, /healthz, HttpFallback (web UI)
 │   │   │   ├── main.rs # binaire de dev (runtime echo)
@@ -400,7 +400,7 @@ Code map:
 │       ├── tests.rs
 │       ├── turns.rs # v2-l2.4c — send_message force le pont REPL en cloud (agent sur le service)
 │       ├── updater.rs
-│       ├── viewers.rs # viewers — viewer_read_bytes (plages, ArrayBuffer brut), viewer_zip_list/read/extract, viewer_sqlite_tables/rows (lecture seule, query_only)
+│       ├── viewers.rs # viewers — viewer_read_bytes (plages, ArrayBuffer brut), viewer_zip_list/read/extract, viewer_sqlite_tables/rows (lecture seule, query_only) ; viewer_write_bytes (écriture atomique d'un .docx édité)
 │       ├── editeur.rs # editeur_fichier_head (contenu à HEAD par git cat-file --filters, délai 10 s, 20 Mo) ; editeur_image_markdown (image collée/déposée -> images/ à côté du .md)
 │       ├── workflow.rs
 │       ├── workspace.rs
@@ -521,7 +521,12 @@ Code map:
     │   │   ├── HtmlPreview.tsx # iframe sandbox, scripts sur autorisation, <base> du dossier
     │   │   ├── SafeFrame.tsx # HTML non fiable : sanitizer + iframe sans scripts + CSP, liens -> navigateur
     │   │   ├── DocumentFrame.tsx # barre de recherche + panneau latéral autour de SafeFrame
-    │   │   ├── DocxViewer.tsx # Word .docx (mammoth -> HTML)
+    │   │   ├── DocxViewer.tsx # Word .docx (mammoth -> HTML) ; bouton « Modifier » -> DocxEditeur
+    │   │   ├── DocxEditeur.tsx # éditeur riche TipTap (gras…, surlignage, couleur, police, taille, titres, listes, alignement, Ctrl+S, copie, avis des pertes)
+    │   │   ├── editeurExtensions.ts # extensions TipTap (attributs data-docx-*, nœuds Word gardés tels quels, palettes)
+    │   │   ├── docxVersHtml.ts / htmlVersDocx.ts / docxPaquet.ts # docx -> HTML de l'éditeur -> docx (corps seul régénéré, reste du paquet gardé ; nouveauDocx)
+    │   │   ├── brouillons.ts / sourceFichier.ts # brouillons non enregistrés ; lecture/écriture binaire PC (viewer_*_bytes) ou espace cloud (fs.read_bytes / fs.write_bytes)
+    │   │   ├── pages.ts / PagesViewer.tsx # Apple Pages : Preview.pdf, sinon texte des Index/*.iwa (snappy + protobuf) ou index.xml(.gz) ancien, sinon vignette ; « Modifier » -> .docx à côté
     │   │   ├── pptx.ts / PptxViewer.tsx # PowerPoint .pptx : diapositives approximatives (texte, images, tableaux) + mode Texte
     │   │   ├── EpubViewer.tsx # epub : chapitres du spine, images intégrées
     │   │   ├── MediaViewer.tsx # audio/vidéo natifs (protocole asset, lecture par plages)
