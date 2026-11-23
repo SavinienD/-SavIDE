@@ -12,14 +12,14 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  CUA_VERSION: "0.38.0"
+  CUA_VERSION: "0.59.4"
 
 jobs:
   windows:
     runs-on: windows-latest
     env:
-      CUA_URL: https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.38.0/cua-driver-rs-0.38.0-windows-x86_64-binary.zip
-      CUA_SHA256: 5edaa74d0afa1b55a9668dbc4f32736507bd2bd4d75b18ca1dc8881bb12402b5
+      CUA_URL: https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.59.4/cua-driver-rs-0.59.4-windows-x86_64-binary.zip
+      CUA_SHA256: 8ec1315d76e1f6ae3e88d2c343fbda7aefd4846b1e38fc292f705af2770528dd
     steps:
       - name: Dossier temporaire sur le disque de travail (EXDEV)
         shell: pwsh
@@ -90,8 +90,8 @@ jobs:
   linux:
     runs-on: ubuntu-22.04
     env:
-      CUA_URL: https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.38.0/cua-driver-rs-0.38.0-linux-x86_64-binary.tar.gz
-      CUA_SHA256: 31ab9709dd91ce73677e49b9f3e75c6f0d3e4d9625c286c9e58262bfbea698dd
+      CUA_URL: https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.59.4/cua-driver-rs-0.59.4-linux-x86_64-binary.tar.gz
+      CUA_SHA256: e846172bacd203d15d41990c3b78c0f110b730346a57427f38c60638cd7196df
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -126,8 +126,9 @@ jobs:
           echo "$CUA_SHA256  cua.tgz" | sha256sum -c -
           mkdir -p cua-x src-tauri/binaries/cua-driver
           tar -xzf cua.tgz -C cua-x
-          find cua-x -maxdepth 1 -type f -exec cp {} src-tauri/binaries/cua-driver/ \;
-          chmod +x src-tauri/binaries/cua-driver/cua-driver
+          # Exécutables MIT seulement (pas le SDK, l'en-tête ni l'aide Wayland).
+          cp cua-x/cua-driver cua-x/cua-cursor-theme src-tauri/binaries/cua-driver/
+          chmod +x src-tauri/binaries/cua-driver/cua-driver src-tauri/binaries/cua-driver/cua-cursor-theme
           rm -rf cua.tgz cua-x
           ls -la src-tauri/binaries/cua-driver
 
@@ -166,8 +167,8 @@ jobs:
     env:
       # whisper.cpp (micro local) utilise std::filesystem : macOS 10.15 minimum.
       MACOSX_DEPLOYMENT_TARGET: "10.15"
-      CUA_URL: https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.38.0/cua-driver-rs-0.38.0-darwin-universal-binary.tar.gz
-      CUA_SHA256: 2bb8dc4a7e69185ffd04c4a9c0eab590bd2c54b72c2c1be13ab675be4f487732
+      CUA_URL: https://github.com/trycua/cua/releases/download/cua-driver-rs-v0.59.4/cua-driver-rs-0.59.4-darwin-universal-binary.tar.gz
+      CUA_SHA256: b18757142044b635182cb10e0c28e5895bc7968965cdcb3360aaa37292aa1c49
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -196,8 +197,9 @@ jobs:
           echo "$CUA_SHA256  cua.tgz" | shasum -a 256 -c -
           mkdir -p cua-x src-tauri/binaries/cua-driver
           tar -xzf cua.tgz -C cua-x
-          find cua-x -maxdepth 1 -type f -exec cp {} src-tauri/binaries/cua-driver/ \;
-          chmod +x src-tauri/binaries/cua-driver/cua-driver
+          # Exécutables MIT seulement (pas le SDK, l'en-tête ni l'aide Wayland).
+          cp cua-x/cua-driver cua-x/cua-cursor-theme src-tauri/binaries/cua-driver/
+          chmod +x src-tauri/binaries/cua-driver/cua-driver src-tauri/binaries/cua-driver/cua-cursor-theme
           rm -rf cua.tgz cua-x
           lipo -archs src-tauri/binaries/cua-driver/cua-driver
 

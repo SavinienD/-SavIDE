@@ -41,3 +41,5 @@ __pycache__/
 
 # v2 - schemas generes par tauri, jamais committer
 /src-tauri/gen/schemas/
+# cua-driver embarqué, posé par le workflow de release
+/src-tauri/binaries/cua-driver/

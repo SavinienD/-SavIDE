@@ -19,7 +19,7 @@ npx tauri build --bundles nsis --config src-tauri/tauri.sidecars.conf.json --con
 
 - `tauri.sidecars.conf.json` ajoute ripgrep, le Python embarqué et cua-driver à l'installeur.
 - `tauri.build-local.json` laisse `createUpdaterArtifacts` à `true` : il faut alors la clé privée dans `TAURI_SIGNING_PRIVATE_KEY` (et `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` vide). Sans clé, retirez ce `--config` et passez `--config '{"bundle":{"createUpdaterArtifacts":false}}'`.
-- cua-driver : posez d'abord les `.exe` de `cua-driver-rs-0.38.0-windows-x86_64-binary.zip` (release officielle trycua/cua, SHA256 `5edaa74d0afa1b55a9668dbc4f32736507bd2bd4d75b18ca1dc8881bb12402b5`) dans `src-tauri/binaries/cua-driver/`, comme le fait le workflow.
+- cua-driver : posez d'abord `cua-driver.exe`, `cua-driver-uia.exe` et `cua-cursor-theme.exe` de `cua-driver-rs-0.59.4-windows-x86_64-binary.zip` (release officielle trycua/cua, SHA256 `8ec1315d76e1f6ae3e88d2c343fbda7aefd4846b1e38fc292f705af2770528dd`) dans `src-tauri/binaries/cua-driver/`, comme le fait le workflow.
 
 L'installeur sort dans `target\release\bundle\nsis\` (dossier `target` à la racine du workspace Cargo, sauf `CARGO_TARGET_DIR`).
 
