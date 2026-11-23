@@ -165,3 +165,17 @@ test("image collée dans l'éditeur : signalée comme non conservée", async () 
   const p = await D.nouveauDocx();
   assert.deepEqual(D.pertesExport(p, '<p>a<img src="data:image/png;base64,AAAA"></p>'), ["images ajoutées dans l'éditeur"]);
 });
+
+test("objets Word modernes (mc:AlternateContent) : préfixes d'espaces de noms gardés", async () => {
+  const ns = `${NS} xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" xmlns:wps="http://schemas.microsoft.com/office/word/2010/wordprocessingShape" xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" mc:Ignorable="w14"`;
+  const p = await D.nouveauDocx();
+  p.documentXml = `<?xml version="1.0"?><w:document ${ns}><w:body><w:p w14:paraId="1A2B3C4D"><w:r><w:t>Avant </w:t></w:r><w:r><mc:AlternateContent><mc:Choice Requires="wps"><w:drawing><wp:inline><wps:wsp><wps:txbx><w:txbxContent><w:p><w:r><w:t>Zone</w:t></w:r></w:p></w:txbxContent></wps:txbx></wps:wsp></wp:inline></w:drawing></mc:Choice><mc:Fallback><w:pict/></mc:Fallback></mc:AlternateContent></w:r></w:p><w:sectPr/></w:body></w:document>`;
+  const { html, pertes } = await D.docxPourEditeur(p);
+  assert.deepEqual(pertes, []);
+  const passe = parEditeur(html, (e) => e.chain().setTextSelection(positionDe(e, "Avant")).setHighlight({ color: "#ffff00" }).run());
+  const zip = await JSZip.loadAsync(await D.enregistrerDocx(p, passe));
+  const xml = await zip.file("word/document.xml").async("string");
+  assert.match(xml, /<w:r><mc:AlternateContent><mc:Choice Requires="wps"><w:drawing><wp:inline><wps:wsp><wps:txbx><w:txbxContent>/);
+  assert.match(xml, /<w:highlight w:val="yellow"\/><\/w:rPr><w:t xml:space="preserve">Avant</);
+  assert.doesNotMatch(xml, /xmlns:ns\d|ns\d:/);
+});

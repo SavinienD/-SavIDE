@@ -112,6 +112,8 @@ export function extensionsTexte(): AnyExtension[] {
       link: { openOnClick: false, autolink: false, linkOnPaste: true },
       codeBlock: false,
       code: false,
+      // Pas de paragraphe ajouté d'office en fin de document : l'ouverture ne doit rien modifier.
+      trailingNode: false,
     }),
     StyleTexte,
     Color,

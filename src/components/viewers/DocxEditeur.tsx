@@ -289,6 +289,7 @@ export default function DocxEditeur({ source, cible, document: docInitial, avis,
   const accord = useRef({ pertes: false, existe: false });
   const cibleRef = useRef<SourceFichier>(cible);
   const modifieRef = useRef(modifie);
+  const pretRef = useRef(false);
   modifieRef.current = modifie;
 
   const editeur = useEditor({
@@ -296,7 +297,12 @@ export default function DocxEditeur({ source, cible, document: docInitial, avis,
     content: brouillon?.html ?? docInitial.html,
     autofocus: "start",
     editorProps: { attributes: { class: "axe-texte__page", spellcheck: "true", lang: "fr" } },
+    onCreate: () => {
+      // Normalisations éventuelles du schéma à l'ouverture : pas une modification de l'utilisateur.
+      window.setTimeout(() => (pretRef.current = true), 0);
+    },
     onUpdate: ({ editor }) => {
+      if (!pretRef.current) return;
       if (!modifieRef.current) setModifie(true);
       BROUILLONS.set(source.chemin, { html: editor.getHTML(), modifie: true });
     },
