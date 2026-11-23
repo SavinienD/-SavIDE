@@ -11,6 +11,10 @@ __all__ = ["run", "call", "snapshot", "click", "type_text", "windows"]
 
 _SANS_FENETRE = 0x08000000 if os.name == "nt" else 0
 
+def _env():
+    """Environnement des lancements de cua-driver : télémétrie coupée."""
+    return {**os.environ, "CUA_DRIVER_RS_TELEMETRY_ENABLED": "0"}
+
 def _binaire():
     if os.environ.get("CUA_DRIVER_BIN"):
         return os.environ["CUA_DRIVER_BIN"]
@@ -22,12 +26,12 @@ def _binaire():
     return "cua-driver"
 
 def _lancer(args, timeout):
-    r = subprocess.run([_binaire(), *args], capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL, creationflags=_SANS_FENETRE)
+    r = subprocess.run([_binaire(), *args], capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL, creationflags=_SANS_FENETRE, env=_env())
     return r.returncode, r.stdout + (("\n[stderr] " + r.stderr.strip()) if r.stderr.strip() else "")
 
 def _demarrer_demon():
     """Lance `cua-driver serve` en arriere-plan et attend que `status` reponde (10 s au plus)."""
-    subprocess.Popen([_binaire(), "serve"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=_SANS_FENETRE, start_new_session=os.name != "nt")
+    subprocess.Popen([_binaire(), "serve"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=_SANS_FENETRE, start_new_session=os.name != "nt", env=_env())
     for _ in range(40):
         time.sleep(0.25)
         try:

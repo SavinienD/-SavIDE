@@ -112,10 +112,14 @@ pub fn binaire() -> String {
 }
 
 /// 0.1.75 : aucun lancement de processus n'ouvre de fenetre console sous Windows.
+/// Télémétrie de cua-driver coupée pour tout lancement fait par l'appli (outil, noyau, démon `serve`).
+pub const TELEMETRIE_CUA: (&str, &str) = ("CUA_DRIVER_RS_TELEMETRY_ENABLED", "0");
+
 #[allow(dead_code)]
 fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
     #[allow(unused_mut)]
     let mut c = std::process::Command::new(p);
+    c.env(TELEMETRIE_CUA.0, TELEMETRIE_CUA.1);
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
@@ -127,6 +131,7 @@ fn __nw_std<S: AsRef<std::ffi::OsStr>>(p: S) -> std::process::Command {
 fn __nw_tokio<S: AsRef<std::ffi::OsStr>>(p: S) -> tokio::process::Command {
     #[allow(unused_mut)]
     let mut c = tokio::process::Command::new(p);
+    c.env(TELEMETRIE_CUA.0, TELEMETRIE_CUA.1);
     #[cfg(windows)]
     c.creation_flags(0x0800_0000);
     c
@@ -134,6 +139,23 @@ fn __nw_tokio<S: AsRef<std::ffi::OsStr>>(p: S) -> tokio::process::Command {
 
 #[cfg(all(test, unix))]
 mod tests {
+    // Télémétrie de cua-driver coupée : la commande et le démon `serve` reçoivent CUA_DRIVER_RS_TELEMETRY_ENABLED=0.
+    #[tokio::test]
+    async fn telemetrie_coupee_pour_la_commande_et_le_demon() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("cua-telemetrie-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let faux = dir.join("cua-driver");
+        std::fs::write(&faux, "#!/bin/sh\nD=$(dirname \"$0\")\ncase \"$1\" in\n serve) echo \"$CUA_DRIVER_RS_TELEMETRY_ENABLED\" > \"$D/demon\"; sleep 3;;\n status) [ -f \"$D/demon\" ];;\n *) if [ -f \"$D/demon\" ]; then echo \"cmd=$CUA_DRIVER_RS_TELEMETRY_ENABLED demon=$(cat \"$D/demon\")\"; else echo \"Cua Driver daemon is not running on x\" >&2; exit 1; fi;;\nesac\n").unwrap();
+        std::fs::set_permissions(&faux, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let bin = faux.to_string_lossy().into_owned();
+        let r = super::run_avec(&bin, &["call".to_string(), "list_windows".to_string()], 20).await;
+        assert!(!r.is_error, "{}", r.content);
+        assert_eq!(r.content.trim(), "cmd=0 demon=0");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     // cua-059 — démon absent : `serve` lancé une fois, puis la commande réussit.
     #[tokio::test]
     async fn demarre_le_demon_quand_il_manque() {
