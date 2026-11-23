@@ -1,6 +1,6 @@
 // éditeur riche des documents Word (.docx) et du texte des .pages.
 //
-// Choix (Savinien, 23/11/2026, tranché par l'agent) : TipTap 3 (ProseMirror, licence MIT) pour
+// Choix (23/11/2026) : TipTap 3 (ProseMirror, licence MIT) pour
 // l'édition ; réécriture du .docx par nos soins (docxPaquet / htmlVersDocx) : seul le corps de
 // word/document.xml est régénéré, le reste du paquet (styles, en-têtes, images…) est gardé.
 // Ce qui ne peut pas être conservé est annoncé AVANT d'écraser, avec « Enregistrer une copie ».
