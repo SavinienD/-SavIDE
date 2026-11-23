@@ -289,7 +289,7 @@ impl ReplRuntime {
         if settings.kernel_async {
             spec.env.push(("AXECODE_KERNEL_ASYNC".into(), "1".into()));
         }
-        // axe:uh-d2 — background commands of a previous kernel died with it:
+        // uh-d2 — background commands of a previous kernel died with it:
         // their wake-ups are delivered as « interrompu ».
         for hook in &self.shared.deps.hooks {
             if hook.handles("guet.fond_perdus") {
@@ -301,7 +301,7 @@ impl ReplRuntime {
         let kernel = Kernel::start(spec, Arc::new(RuntimeHost(self.shared.clone())), tx).await?;
         let catalog = kernel.catalog(false).await.unwrap_or(json!([]));
         *lock(&self.catalog) = prompt::render_catalog(&catalog);
-        // axe:uh-d1 — the model is told which names came back and which are
+        // uh-d1 — the model is told which names came back and which are
         // lost, after a restart (dead kernel replaced) and after a resume
         // (first kernel of a conversation that already has a snapshot).
         let restarted = slot.is_some();

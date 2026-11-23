@@ -923,7 +923,7 @@ impl Inner {
             if g.statut == "actif" {
                 let resultat = match g.genre.as_str() {
                     "commande" => me.guet_commande(&sid, &g).await,
-                    // axe:uh-d2 — run by the kernel, which calls `guet.signaler`.
+                    // uh-d2 — run by the kernel, which calls `guet.signaler`.
                     "fond" => return,
                     _ => me.guet_sonde(&sid, &g).await,
                 };
@@ -1430,7 +1430,7 @@ impl SessionCommandsHook {
                 inner.journal(id, "guet", json!({"op": "annule", "ids": annules})).await;
                 Ok(json!({"annules": annules}))
             }
-            // axe:uh-d2 — fin d'une commande de fond du noyau asynchrone.
+            // uh-d2 — fin d'une commande de fond du noyau asynchrone.
             "guet.signaler" => {
                 let gid = params.get("id").and_then(Value::as_str).unwrap_or("").to_string();
                 let r = GuetResultat {
@@ -1453,7 +1453,7 @@ impl SessionCommandsHook {
                 inner.arm_guet(id, &gid);
                 Ok(json!({"id": gid, "statut": r.statut}))
             }
-            // axe:uh-d2 — the kernel restarted: its background commands died.
+            // uh-d2 — the kernel restarted: its background commands died.
             "guet.fond_perdus" => {
                 let r = GuetResultat {
                     statut: "interrompu".into(),

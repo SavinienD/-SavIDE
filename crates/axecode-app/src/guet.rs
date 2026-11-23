@@ -100,7 +100,7 @@ pub fn depuis_params(genre: &str, params: &Value, now: i64) -> Result<Guet, Stri
         ..Default::default()
     };
     match genre {
-        // axe:uh-d2 — `fond` : commande de fond lancée par `shell.start` dans le
+        // uh-d2 — `fond` : commande de fond lancée par `shell.start` dans le
         // noyau asynchrone ; le noyau la fait tourner et signale sa fin.
         "commande" | "condition" | "fond" => {
             g.cmd = Some(texte(params, "cmd").ok_or_else(|| format!("guet.{genre} : `cmd` est obligatoire"))?);

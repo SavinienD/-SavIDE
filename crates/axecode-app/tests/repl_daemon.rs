@@ -303,7 +303,7 @@ async fn dead_kernel_is_replaced_and_restored_in_the_same_turn() {
         outputs[2].starts_with("[kernel restarted: 1 variable(s) restored from the last snapshot"),
         "{outputs:?}"
     );
-    // axe:uh-d1 — the notice names what came back and what is lost, and why.
+    // uh-d1 — the notice names what came back and what is lost, and why.
     assert!(outputs[2].contains("restored from the last snapshot (end of the previous turn): x;"), "{outputs:?}");
     assert!(outputs[2].contains("lost, define them again if you need them: big (trop gros"), "{outputs:?}");
     assert!(outputs[2].contains("x = 41"), "{outputs:?}");
@@ -357,7 +357,7 @@ async fn reloaded_session_gets_its_variables_back() {
     s.daemon.unload(&s.id).await;
     s.turn("t2", "T2 done").await;
     let outputs = s.repl_outputs();
-    // axe:uh-d1 — a resumed conversation is told which names came back.
+    // uh-d1 — a resumed conversation is told which names came back.
     assert!(
         outputs[1].starts_with("[kernel resumed: 1 variable(s) restored from the last snapshot (end of the previous turn): x;"),
         "{outputs:?}"
@@ -365,7 +365,7 @@ async fn reloaded_session_gets_its_variables_back() {
     assert!(outputs[1].contains("]\nx = 41"), "{outputs:?}");
 }
 
-/// axe:uh-d1 — after a resume, the names the snapshot could not keep are
+/// uh-d1 — after a resume, the names the snapshot could not keep are
 /// listed as lost, with the reason; the others are listed as restored.
 #[tokio::test(flavor = "multi_thread")]
 async fn resumed_session_lists_restored_and_lost_names() {
@@ -389,7 +389,7 @@ async fn resumed_session_lists_restored_and_lost_names() {
     assert!(out.contains("['aide', 'x']"), "{out}");
 }
 
-/// axe:uh-d1 — after a compaction the model is told which names are still
+/// uh-d1 — after a compaction the model is told which names are still
 /// defined and which ones the last snapshot left out (lost on a restart);
 /// the notice is journaled with the summary, so the rebuilt history has it.
 #[tokio::test(flavor = "multi_thread")]
