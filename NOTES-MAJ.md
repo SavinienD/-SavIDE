@@ -1,16 +1,10 @@
-Nouveautés :
-- Mode sans fin : /nonstop jusqu'à l'arrêt
-- Couleur d'accent au choix dans Préférences
-- Modèles Claude Fable 5.2 et Mythos 5.2
-- MCP : installation confiée à l'IA
-Changements :
-- Dictée nettement plus rapide
-- Disposition et terminaux gardés par dossier
-- Couleurs adaptées au thème clair ou sombre
-- Abonnement ChatGPT pour recherche et images
-- /goal et /heartbeat reconnus en milieu de message
-Corrections :
-- Dépôt de fichiers sur toute la conversation
-- Terminal coupé sur les bords
-- Liste des serveurs MCP coupée en bas
-- Écran gris : affichage relancé automatiquement
+Nouveautés
+- Mode sans fenêtre : savide -p et --mode json ; pilotage depuis Zed (ACP).
+- Bascule de fournisseur (au choix) quand un fournisseur tombe.
+- Fichiers Apple Pages (.pages) lisibles ; traitement de texte dans les .docx (surlignage, couleurs, polices, listes).
+- Noyau asynchrone (à activer).
+Changements
+- Après une compaction ou une reprise, l'agent sait quelles variables il a gardées.
+- cua-driver mis à jour en 0.59.4.
+Corrections
+- cua-driver : commandes de l'outil remises à jour ; plus d'arrêt sur un accent dans une sortie coupée.
