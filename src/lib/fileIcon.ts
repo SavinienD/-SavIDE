@@ -43,6 +43,8 @@ export function fileIcon(filename: string): string {
   const dot = lower.lastIndexOf(".");
   if (dot >= 0) {
     const ext = lower.slice(dot + 1);
+    // Apple Pages : icône locale (src/lib/customIcons.ts), absente de vscode-icons.
+    if (ext === "pages") return "local:file-pages";
     const hit = FILE_BY_EXT[ext];
     if (hit) return `${PREFIX}:${hit}`;
   }
@@ -200,6 +202,11 @@ const FILE_BY_EXT: Record<string, string> = {
   rtf: "file-type-text",
   log: "file-type-log",
   pdf: "file-type-pdf2",
+  // documents Word (éditeur riche).
+  docx: "file-type-word",
+  docm: "file-type-word",
+  dotx: "file-type-word",
+  doc: "file-type-word",
 
   // Systems
   rs: "file-type-rust",

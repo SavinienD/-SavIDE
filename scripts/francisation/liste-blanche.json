@@ -311,5 +311,25 @@
   "fichier": "src/components/settings/ajoutAppareilOutils.ts",
   "motif": "(\\$\\(|\\$[a-z]=|Get-|^if \\()",
   "raison": "commande shell ou PowerShell à copier sur la machine à ajouter (code, pas texte affiché)"
+ },
+ {
+  "fichier": "src/components/viewers/docxPaquet.ts",
+  "motif": "^(\\$\\{\\})?<",
+  "raison": "XML Word (OOXML) écrit dans le paquet .docx (balises et attributs imposés par le format)"
+ },
+ {
+  "fichier": "src/components/viewers/docxVersHtml.ts",
+  "motif": "^(<mark |font-size: |style=\")",
+  "raison": "HTML et CSS donnés à l'éditeur riche (noms de propriétés CSS)"
+ },
+ {
+  "fichier": "src/components/viewers/editeurExtensions.ts",
+  "motif": "^(Times New Roman|Courier New)$",
+  "raison": "nom de police (Times New Roman, Courier New)"
+ },
+ {
+  "fichier": "src/components/viewers/htmlVersDocx.ts",
+  "motif": "^<\\?xml ",
+  "raison": "déclaration XML écrite en tête des parties du .docx"
  }
 ]

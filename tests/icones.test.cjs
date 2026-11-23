@@ -9,7 +9,7 @@ const cols = {
   solar: require("@iconify-json/solar/icons.json"),
   "simple-icons": require("@iconify-json/simple-icons/icons.json"),
   "vscode-icons": require("@iconify-json/vscode-icons/icons.json"),
-  local: { icons: { kimi: {} } },
+  local: { icons: { kimi: {}, "file-pages": {} } }, // src/lib/customIcons.ts
 };
 const existe = (p, n) => { const c = cols[p]; return !!c && !!((c.icons || {})[n] || (c.aliases || {})[n]); };
 function fichiers(d) { return fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? fichiers(path.join(d, e.name)) : /\.tsx?$/.test(e.name) ? [path.join(d, e.name)] : []); }

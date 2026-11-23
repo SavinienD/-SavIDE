@@ -812,6 +812,7 @@ export function EditorPane({
                 doc={activeTab.doc}
                 text={null}
                 onOpenFile={handleOpenFileLink}
+                espace={espace}
               />
             </div>
           ) : showTextEditor ? (

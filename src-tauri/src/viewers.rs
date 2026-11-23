@@ -196,6 +196,68 @@ pub(super) async fn viewer_zip_read(input: ZipReadInput) -> Result<Response, Str
     Ok(Response::new(bytes))
 }
 
+// ------------------------------------------------------------- write ----
+
+/// the rich text editor saves a whole .docx at once (base64 in JSON).
+const MAX_WRITE_BYTES: usize = 150 * 1024 * 1024;
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct ViewerWriteBytesInput {
+    pub(super) path: String,
+    /// Base64 content.
+    pub(super) data: String,
+    /// Refuse to replace an existing file.
+    #[serde(default)]
+    pub(super) create_only: bool,
+}
+
+/// Writes `bytes` through a temporary sibling then renames it, so a failed
+/// save never leaves a half-written document behind.
+fn write_atomic(path: &std::path::Path, bytes: &[u8], create_only: bool) -> Result<u64, String> {
+    use std::io::Write;
+    if create_only && path.exists() {
+        return Err(format!("{} existe déjà", path.display()));
+    }
+    let dir = path
+        .parent()
+        .filter(|d| !d.as_os_str().is_empty())
+        .ok_or_else(|| "chemin sans dossier".to_string())?;
+    if !dir.is_dir() {
+        return Err(format!("dossier introuvable : {}", dir.display()));
+    }
+    let name = path
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .ok_or_else(|| "nom de fichier manquant".to_string())?;
+    let tmp = dir.join(format!(".{name}.axe-{}.tmp", std::process::id()));
+    let result = (|| {
+        let mut file = File::create(&tmp).map_err(|err| format!("écriture impossible : {err}"))?;
+        file.write_all(bytes).map_err(|err| format!("écriture impossible : {err}"))?;
+        file.sync_all().map_err(|err| format!("écriture impossible : {err}"))?;
+        drop(file);
+        std::fs::rename(&tmp, path).map_err(|err| format!("remplacement impossible : {err}"))
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_file(&tmp);
+    }
+    result.map(|_| bytes.len() as u64)
+}
+
+/// Saves a binary file edited in a viewer (rich text editor). Returns the size.
+#[tauri::command]
+pub(super) async fn viewer_write_bytes(input: ViewerWriteBytesInput) -> Result<u64, String> {
+    use base64::Engine as _;
+    if input.data.len() > MAX_WRITE_BYTES / 3 * 4 + 4 {
+        return Err("fichier trop volumineux".into());
+    }
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(input.data.as_bytes())
+        .map_err(|err| format!("données invalides : {err}"))?;
+    let path = PathBuf::from(&input.path);
+    blocking(move || write_atomic(&path, &bytes, input.create_only)).await
+}
+
 // ------------------------------------------------------------- sqlite ----
 
 const SQLITE_MAGIC: &[u8; 16] = b"SQLite format 3\0";
@@ -343,6 +405,25 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("axe-viewers-{}-{name}", std::process::id()));
         let _ = std::fs::remove_file(&dir);
         dir
+    }
+
+    #[test]
+    fn write_atomic_replaces_and_respects_create_only() {
+        let path = temp("ecrit.docx");
+        assert_eq!(write_atomic(&path, b"abc", true).unwrap(), 3);
+        assert_eq!(std::fs::read(&path).unwrap(), b"abc");
+        assert!(write_atomic(&path, b"zz", true).is_err());
+        assert_eq!(write_atomic(&path, b"defg", false).unwrap(), 4);
+        assert_eq!(std::fs::read(&path).unwrap(), b"defg");
+        let dir = path.parent().unwrap();
+        let restes = std::fs::read_dir(dir)
+            .unwrap()
+            .flatten()
+            .filter(|e| e.file_name().to_string_lossy().contains("ecrit.docx.axe-"))
+            .count();
+        assert_eq!(restes, 0, "no temporary file left behind");
+        assert!(write_atomic(std::path::Path::new("/dossier-inexistant-axe/x.docx"), b"a", false).is_err());
+        let _ = std::fs::remove_file(path);
     }
 
     #[test]

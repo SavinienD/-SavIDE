@@ -472,6 +472,7 @@ pub fn run() {
             // v2-l6 end
             // viewers
             viewers::viewer_read_bytes,
+            viewers::viewer_write_bytes,
             viewers::viewer_zip_list,
             viewers::viewer_zip_extract,
             viewers::viewer_zip_read,
